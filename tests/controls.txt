@@ -1,0 +1,214 @@
+# Every control of milestone 1. Run from the project folder:
+#   tools/rp6502-emu build/llvm-mos/debug/quarry.rp6502 --script tests/controls.txt --seed 1 --mute
+#
+# The paddle starts centered at x 148 and moves 2 px a step. Its left piece
+# is the sprite at XRAM $0292. A move must reach 160 ($A0) or 136 ($88),
+# and the screen must stop changing once the control is let go. Each test
+# starts from the same saved state, with the ball on the paddle.
+
+# Enter held from boot, as when it loaded the game, does not launch.
+press enter
+wait "stage start" 60
+run 30
+release enter
+run 5
+expect-not "launch"
+
+run 2
+peek xram:$0292 $94 $00
+pad 0 connect
+pad 1 connect
+run 2
+state save "build/controls.state"
+
+# Num Lock is on when the emulator starts.
+peek xram:$0000 $03
+
+# d moves right, Num Lock on
+state load "build/controls.state"
+press d
+wait xram:$0292 $A0 30
+release d
+run 3
+mark
+run 10
+expect-same
+
+# a moves left, Num Lock on
+state load "build/controls.state"
+press a
+wait xram:$0292 $88 30
+release a
+run 3
+mark
+run 10
+expect-same
+
+# right moves right, Num Lock on
+state load "build/controls.state"
+press right
+wait xram:$0292 $A0 30
+release right
+run 3
+mark
+run 10
+expect-same
+
+# left moves left, Num Lock on
+state load "build/controls.state"
+press left
+wait xram:$0292 $88 30
+release left
+run 3
+mark
+run 10
+expect-same
+
+# kp6 moves right, Num Lock on
+state load "build/controls.state"
+press kp6
+wait xram:$0292 $A0 30
+release kp6
+run 3
+mark
+run 10
+expect-same
+
+# kp4 moves left, Num Lock on
+state load "build/controls.state"
+press kp4
+wait xram:$0292 $88 30
+release kp4
+run 3
+mark
+run 10
+expect-same
+
+# Num Lock off: keypad 4 and 6 still move the paddle.
+state load "build/controls.state"
+lock num
+run 2
+peek xram:$0000 $01
+state save "build/controls.state"
+
+# kp6 moves right, Num Lock off
+state load "build/controls.state"
+press kp6
+wait xram:$0292 $A0 30
+release kp6
+run 3
+mark
+run 10
+expect-same
+
+# kp4 moves left, Num Lock off
+state load "build/controls.state"
+press kp4
+wait xram:$0292 $88 30
+release kp4
+run 3
+mark
+run 10
+expect-same
+
+state load "build/controls.state"
+lock num
+run 2
+peek xram:$0000 $03
+state save "build/controls.state"
+
+# gamepad d-pad left
+state load "build/controls.state"
+pad 0 press left
+wait xram:$0292 $88 30
+pad 0 release left
+run 3
+mark
+run 10
+expect-same
+
+# gamepad d-pad right
+state load "build/controls.state"
+pad 0 press right
+wait xram:$0292 $A0 30
+pad 0 release right
+run 3
+mark
+run 10
+expect-same
+
+# gamepad 2 left stick left
+state load "build/controls.state"
+pad 1 stick -128 0 0 0
+wait xram:$0292 $88 30
+pad 1 stick 0 0 0 0
+run 3
+mark
+run 10
+expect-same
+
+# gamepad 2 left stick right
+state load "build/controls.state"
+pad 1 stick 127 0 0 0
+wait xram:$0292 $A0 30
+pad 1 stick 0 0 0 0
+run 3
+mark
+run 10
+expect-same
+
+# space launches
+state load "build/controls.state"
+press space
+wait "launch, 4 balls left" 5
+release space
+
+# enter launches
+state load "build/controls.state"
+press enter
+wait "launch, 4 balls left" 5
+release enter
+
+# kp0 launches
+state load "build/controls.state"
+press kp0
+wait "launch, 4 balls left" 5
+release kp0
+
+# kpenter launches
+state load "build/controls.state"
+press kpenter
+wait "launch, 4 balls left" 5
+release kpenter
+
+# gamepad 1 button a launches
+state load "build/controls.state"
+pad 0 press a
+wait "launch, 4 balls left" 5
+pad 0 release a
+
+# gamepad 1 button b launches
+state load "build/controls.state"
+pad 0 press b
+wait "launch, 4 balls left" 5
+pad 0 release b
+
+# gamepad 1 button x launches
+state load "build/controls.state"
+pad 0 press x
+wait "launch, 4 balls left" 5
+pad 0 release x
+
+# gamepad 2 button y launches
+state load "build/controls.state"
+pad 1 press y
+wait "launch, 4 balls left" 5
+pad 1 release y
+
+# A held launch control launches only once.
+state load "build/controls.state"
+press space
+wait "launch, 4 balls left" 5
+run 120
+expect-not "launch, 3 balls left"
+release space
