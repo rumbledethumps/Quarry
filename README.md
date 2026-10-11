@@ -23,6 +23,9 @@ publish: quarry.zip
 | Move | A and D, Left and Right, keypad 4 and 6 | D-pad or left stick |
 | Launch | Space, Enter, keypad 0, keypad Enter | A, B, X or Y |
 
+The paddle floats on thrusters. The energy bar drains from the first
+launch, and when it is empty the paddle falls and the stage ends.
+
 ## Building
 
 Quarry is C, built with llvm-mos. The
@@ -44,14 +47,20 @@ and runs it in the emulator.
 
 ## Tests
 
-The emulator plays the game from a script. Run these from the project
-folder after a Debug build:
+The tests play the game in the emulator from Python scripts. Run them from
+the project folder after a Debug build:
 
 ```bash
-tools/rp6502-emu build/llvm-mos/debug/quarry.rp6502 --script tests/controls.txt --seed 1 --mute
+python3 tests/controls.py build/llvm-mos/debug/quarry.rp6502
+python3 tests/energy.py build/llvm-mos/debug/quarry.rp6502
 python3 tests/autoplay.py build/llvm-mos/debug/quarry.rp6502
 python3 tests/autoplay.py build/llvm-mos/debug/quarry.rp6502 --miss 5
 ```
 
-`controls.txt` works every key and gamepad control. `autoplay.py` plays
-stage 1 to the end, clearing it, or with `--miss 5` losing every ball.
+- `controls.py` works every key and gamepad control.
+- `energy.py` drains the energy bar and runs out of energy.
+- `autoplay.py` plays stage 1 to the end, clearing it, or with `--miss 5`
+  losing every ball. It also runs on a Release ROM.
+
+The tests find the game's variables by name in the ELF beside the ROM, so
+they need no addresses.

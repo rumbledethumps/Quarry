@@ -35,16 +35,16 @@ void video_init(void)
 
 /* Planes, back to front:
    0: background tiles, with the bricks over them.
-   1: the paddle and the ball.
-   2: panel and menu text, with the panel icons over it. */
+   1: the paddle, its flames and smoke, and the ball.
+   2: panel and menu text, with the energy bar and ball icons over it. */
 void video_start(void)
 {
     xreg_vga_canvas(CANVAS_320X240);
     xreg_vga_mode2(MODE2_4BPP | MODE2_16X16, XRAM_TILE_CONFIG, 0);
     xreg_vga_mode5(MODE5_CUSTOM, XRAM_BRICKS, BRICKS_MAX, 0);
-    xreg_vga_mode5(MODE5_CUSTOM, XRAM_ACTORS, ACTORS_MAX, 1);
+    xreg_vga_mode5(MODE5_CUSTOM, XRAM_ACTORS, sizeof(actors_t) / sizeof(mode5_csprite_t), 1);
     xreg_vga_mode1(MODE1_4BPP, XRAM_TEXT_CONFIG, 2);
-    xreg_vga_mode5(MODE5_CUSTOM, XRAM_BALL_ICONS, BALL_ICONS_MAX, 2);
+    xreg_vga_mode5(MODE5_CUSTOM, XRAM_HUD, sizeof(hud_t) / sizeof(mode5_csprite_t), 2);
 }
 
 /* A kind of rock for each cell, from a hash of the cell, so the rock has
@@ -99,7 +99,8 @@ void video_text_clear(void)
     xram0_set(XRAM_TEXT, 0, sizeof(((xram_layout_t *)0)->text));
 }
 
-void video_text(uint8_t col, uint8_t row, const char *s)
+/* Text in TEXT_COLOR, on bg. */
+void video_text(uint8_t col, uint8_t row, const char *s, uint8_t bg)
 {
     mode1_4bpp_data_t cells[TEXT_COLS];
     uint8_t n = 0;
@@ -107,7 +108,7 @@ void video_text(uint8_t col, uint8_t row, const char *s)
     while (s[n] && col + n < TEXT_COLS)
     {
         cells[n].glyph_code = s[n];
-        cells[n].bg_fg_index = MODE1_BG_FG(0, TEXT_COLOR);
+        cells[n].bg_fg_index = MODE1_BG_FG(bg, TEXT_COLOR);
         n++;
     }
     xram0_write(XRAM_TEXT + (row * TEXT_COLS + col) * sizeof(mode1_4bpp_data_t),

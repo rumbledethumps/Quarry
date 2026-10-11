@@ -9,6 +9,16 @@
 #define TUNE_BALLS 5          /* balls at the start of a stage */
 #define TUNE_BALL_SPEED 640   /* 2.5 px per step */
 
+/* Energy. A full bar holds this many steps of thrust, and it drains from
+   the first launch of a stage until the stage ends. */
+#define TUNE_ENERGY 14400     /* 4 minutes */
+#define TUNE_ENERGY_DRAIN 1   /* per step */
+#define TUNE_ENERGY_LOW 2880  /* the bar turns orange: the last 48 seconds */
+
+/* Out of energy: the flames sputter, then the paddle falls. */
+#define TUNE_SPUTTER_STEPS 45 /* how long the flames sputter */
+#define TUNE_FALL_GRAVITY 20  /* the falling paddle speeds up this much each step */
+
 /* Bricks */
 #define TUNE_BRICKS_Y 32      /* the top of the first row of bricks */
 

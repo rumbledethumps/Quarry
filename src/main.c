@@ -36,7 +36,7 @@ static void text_centered(uint8_t row, const char *s)
 {
     uint8_t center = (play_left + play_right) / 2 / 8;
 
-    video_text(center - strlen(s) / 2, row, s);
+    video_text(center - strlen(s) / 2, row, s, CLEAR);
 }
 
 static void stage_over(const char *message)
@@ -81,11 +81,18 @@ int main(void)
             case PLAY_OUT:
                 stage_over("OUT OF BALLS");
                 break;
+            case PLAY_NO_ENERGY:
+                stage_over("OUT OF ENERGY");
+                break;
             }
         }
-        else if (stage_over_wait)
-            stage_over_wait--;
-        else if (input_pressed & INPUT_LAUNCH)
-            stage_start();
+        else
+        {
+            play_idle();
+            if (stage_over_wait)
+                stage_over_wait--;
+            else if (input_pressed & INPUT_LAUNCH)
+                stage_start();
+        }
     }
 }

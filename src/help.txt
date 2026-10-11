@@ -1,3 +1,5 @@
 Quarry - an incremental brick breaker.
 Move: A/D, arrows, keypad 4/6, or a gamepad.
 Launch: Space, Enter, keypad 0 or Enter, or A/B/X/Y.
+The energy bar drains from the first launch. When it is empty,
+the paddle falls and the stage is over.

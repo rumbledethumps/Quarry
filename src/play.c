@@ -1,32 +1,31 @@
 #include "play.h"
 #include "bricks.h"
 #include "debug.h"
+#include "energy.h"
 #include "input.h"
+#include "paddle.h"
 #include "tuning.h"
 #include "video.h"
 #include "xram.h"
 
-/* Positions and speeds are in 1/256 pixel. */
-#define FIX(px) ((int32_t)(px) << 8)
-#define PX(fix) ((int16_t)((fix) >> 8))
-
 /* The ball is the size of its image. */
 #define BALL_SIZE 8
 
-/* The right panel is a framed box. The ball icons in it sit under the
-   energy bar to come. */
+/* The right panel is a framed box from the wall to the edge of the
+   screen, with the energy bar at the top and the ball icons under it, in
+   rows as wide as the bar. */
 #define PANEL_TOP_ROW 1
 #define PANEL_BOTTOM_ROW 28
+#define PANEL_LABEL_ROW 2
+#define ENERGY_Y 26
 #define ICONS_COLS 3
 #define ICONS_PITCH 10
-#define ICONS_Y 136
+#define ICONS_Y 92
 
 #define BALL_DOCKED 0 /* on the paddle, waiting for launch */
 #define BALL_FLYING 1
 #define BALL_GONE 2
 
-#define BALL_SPRITE XRAM_ACTORS
-#define PADDLE_SPRITE(i) (XRAM_ACTORS + (1 + (i)) * sizeof(mode5_csprite_t))
 #define ICON_SPRITE(i) (XRAM_BALL_ICONS + (i) * sizeof(mode5_csprite_t))
 
 #define ZONE_SPEED(unit) ((int16_t)((int32_t)TUNE_BALL_SPEED * (unit) / 256))
@@ -41,10 +40,6 @@ static const int16_t zone_vy[6] = {
     -ZONE_SPEED(TUNE_STEEP_Y), -ZONE_SPEED(TUNE_MIDDLE_Y), -ZONE_SPEED(TUNE_SHALLOW_Y),
 };
 
-_Static_assert(TUNE_PADDLE_WIDTH % 8 == 0 && TUNE_PADDLE_WIDTH >= 16 &&
-                   TUNE_PADDLE_WIDTH <= PADDLE_PIECES_MAX * 8,
-               "TUNE_PADDLE_WIDTH must be a multiple of 8 from 16 to 64.");
-
 int16_t play_left;
 int16_t play_right;
 
@@ -55,11 +50,6 @@ static int32_t ball_y;
 static int16_t ball_vx;
 static int16_t ball_vy;
 
-static int32_t paddle_x; /* the left edge of the paddle */
-static uint8_t paddle_width;
-static uint8_t paddle_moved;
-static uint8_t paddle_left; /* the paddle last moved left */
-
 static uint8_t icons_shown;
 static int16_t icons_x;
 
@@ -69,7 +59,7 @@ void play_init(void)
 
     for (i = 0; i < BALL_ICONS_MAX; i++)
         sprite_set(ICON_SPRITE(i), XRAM_BALL_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(8, 8));
-    sprite_set(BALL_SPRITE, XRAM_BALL_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(8, 8));
+    sprite_set(XRAM_BALL_SPRITE, XRAM_BALL_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(8, 8));
 }
 
 /* Shows one icon for each ball not yet launched. */
@@ -86,71 +76,34 @@ static void icons_draw(void)
         sprite_hide(ICON_SPRITE(--icons_shown));
 }
 
-/* The paddle is a left end, middle pieces, and a right end, 8 px each. */
-static void paddle_build(void)
-{
-    uint8_t i, pieces = paddle_width / 8;
-
-    for (i = 0; i < PADDLE_PIECES_MAX; i++)
-    {
-        uint8_t piece = i == 0 ? PADDLE_LEFT : i == pieces - 1 ? PADDLE_RIGHT : PADDLE_MIDDLE;
-        sprite_set(PADDLE_SPRITE(i), XRAM_PADDLE_IMAGES + piece * sizeof(piece_image_t),
-                   XRAM_PALETTE_MAIN, MODE5_SIZE(8, 8));
-    }
-    paddle_moved = 1;
-}
-
+/* The ball sits on the middle of the paddle, and goes where it goes, even
+   when it falls and tilts. */
 static void ball_dock(void)
 {
     ball_state = BALL_DOCKED;
     ball_x = paddle_x + FIX(paddle_width / 2 - BALL_SIZE / 2);
-    ball_y = FIX(TUNE_PADDLE_Y - BALL_SIZE);
+    ball_y = paddle_y + FIX(paddle_width / 16 * paddle_tilt() - BALL_SIZE);
 }
 
 void play_start(void)
 {
     int16_t panel_left = play_right + WALL_SIZE;
+    int16_t center = (panel_left + SCREEN_W) / 2;
+    int16_t bar_left = center - (ICONS_COLS * ICONS_PITCH - (ICONS_PITCH - 8)) / 2;
 
-    video_box(panel_left / 8 + 1, PANEL_TOP_ROW, SCREEN_W / 8 - 2, PANEL_BOTTOM_ROW);
+    video_box(panel_left / 8, PANEL_TOP_ROW, SCREEN_W / 8 - 1, PANEL_BOTTOM_ROW);
+    video_text(panel_left / 8 + 1, PANEL_LABEL_ROW, "ENERGY", BOX_FILL);
+    energy_start(bar_left, ENERGY_Y);
     balls = TUNE_BALLS;
-    icons_x = (panel_left + SCREEN_W) / 2 - (ICONS_COLS * ICONS_PITCH - (ICONS_PITCH - 8)) / 2;
+    icons_x = bar_left;
     icons_shown = 0;
     icons_draw();
-
-    paddle_width = TUNE_PADDLE_WIDTH;
-    paddle_x = FIX((play_left + play_right - paddle_width) / 2);
-    paddle_left = 0;
-    paddle_build();
+    paddle_start();
     ball_dock();
 }
 
-static void paddle_step(void)
-{
-    int32_t x = paddle_x;
-
-    switch (input_held & (INPUT_LEFT | INPUT_RIGHT))
-    {
-    case INPUT_LEFT:
-        x -= TUNE_PADDLE_SPEED;
-        paddle_left = 1;
-        break;
-    case INPUT_RIGHT:
-        x += TUNE_PADDLE_SPEED;
-        paddle_left = 0;
-        break;
-    }
-    if (x < FIX(play_left))
-        x = FIX(play_left);
-    if (x > FIX(play_right - paddle_width))
-        x = FIX(play_right - paddle_width);
-    if (x != paddle_x)
-    {
-        paddle_x = x;
-        paddle_moved = 1;
-    }
-}
-
-/* Launches the ball steeply, the way the paddle last moved. */
+/* Launches the ball steeply, the way the paddle last moved. The first
+   launch of a stage starts the energy draining. */
 static void ball_launch(void)
 {
     balls--;
@@ -158,6 +111,7 @@ static void ball_launch(void)
     ball_state = BALL_FLYING;
     ball_vx = zone_vx[paddle_left ? 2 : 3];
     ball_vy = zone_vy[3];
+    energy_draining = 1;
     DEBUG_LOG("launch, %u balls left\n", balls);
 }
 
@@ -230,11 +184,11 @@ static void ball_step(void)
             ball_y = FIX(bricks_hit_bottom) * 2 - ball_y;
         ball_vy = -ball_vy;
     }
-    else if (ball_vy > 0 &&
-             old <= FIX(TUNE_PADDLE_Y - BALL_SIZE) && ball_y > FIX(TUNE_PADDLE_Y - BALL_SIZE) &&
+    else if (ball_vy > 0 && paddle_state <= PADDLE_SPUTTER &&
+             old <= paddle_y - FIX(BALL_SIZE) && ball_y > paddle_y - FIX(BALL_SIZE) &&
              ball_x + FIX(BALL_SIZE) > paddle_x && ball_x < paddle_x + FIX(paddle_width))
     {
-        ball_y = FIX(TUNE_PADDLE_Y - BALL_SIZE) * 2 - ball_y;
+        ball_y = (paddle_y - FIX(BALL_SIZE)) * 2 - ball_y;
         paddle_bounce(PX(ball_x));
     }
     else
@@ -244,14 +198,20 @@ static void ball_step(void)
         ball_y = old;
 }
 
+/* When the energy runs out, the paddle sputters and falls, and the stage
+   ends when it is gone. A ball in flight plays on until then, but a lost
+   one is not replaced. */
 uint8_t play_step(void)
 {
-    paddle_step();
+    energy_step();
+    if (!energy && paddle_state == PADDLE_HOVER)
+        paddle_give_up();
+    paddle_step(1);
     switch (ball_state)
     {
     case BALL_DOCKED:
         ball_dock();
-        if (input_pressed & INPUT_LAUNCH)
+        if (paddle_state == PADDLE_HOVER && (input_pressed & INPUT_LAUNCH))
             ball_launch();
         break;
     case BALL_FLYING:
@@ -265,34 +225,40 @@ uint8_t play_step(void)
         if (PX(ball_y) >= SCREEN_H)
         {
             DEBUG_LOG("ball lost\n");
-            if (!balls)
+            if (paddle_state != PADDLE_HOVER)
+                ball_state = BALL_GONE;
+            else if (balls)
+                ball_dock();
+            else
             {
                 ball_state = BALL_GONE;
                 DEBUG_LOG("out of balls\n");
                 return PLAY_OUT;
             }
-            ball_dock();
         }
         break;
+    }
+    if (paddle_state == PADDLE_GONE)
+    {
+        ball_state = BALL_GONE;
+        return PLAY_NO_ENERGY;
     }
     return PLAY_ON;
 }
 
+/* After the stage ends, the flames still burn, and a falling paddle still
+   falls off the screen. */
+void play_idle(void)
+{
+    paddle_step(0);
+}
+
+/* The ball is drawn first, as early in the vertical blank as it can be. */
 void play_draw(void)
 {
-    if (paddle_moved)
-    {
-        uint8_t i, pieces = paddle_width / 8;
-        int16_t x = PX(paddle_x);
-        for (i = 0; i < PADDLE_PIECES_MAX; i++)
-            if (i < pieces)
-                sprite_move(PADDLE_SPRITE(i), x + i * 8, TUNE_PADDLE_Y);
-            else
-                sprite_hide(PADDLE_SPRITE(i));
-        paddle_moved = 0;
-    }
-    if (ball_state == BALL_GONE)
-        sprite_hide(BALL_SPRITE);
+    if (ball_state == BALL_GONE || PX(ball_y) >= SCREEN_H)
+        sprite_hide(XRAM_BALL_SPRITE);
     else
-        sprite_move(BALL_SPRITE, PX(ball_x), PX(ball_y));
+        sprite_move(XRAM_BALL_SPRITE, PX(ball_x), PX(ball_y));
+    paddle_draw();
 }

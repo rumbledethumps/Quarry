@@ -222,10 +222,10 @@ typedef struct
 #define TILE_MAP_COLS 21 /* one more than the canvas, to scroll the walls into place */
 #define TILE_MAP_ROWS 15
 
-#define BRICKS_MAX 48      /* plane 0 sprites */
+#define BRICKS_MAX 48
 #define PADDLE_PIECES_MAX 8
-#define ACTORS_MAX (1 + PADDLE_PIECES_MAX) /* plane 1: ball, paddle */
-#define BALL_ICONS_MAX 36  /* plane 2 sprites */
+#define ENERGY_SEGMENTS 12
+#define BALL_ICONS_MAX 36
 
 /* Background tiles, 16x16, in the order of art/tiles.png. Each wall tile
    is followed by the same tile with a rivet plate on its girder. */
@@ -244,16 +244,46 @@ typedef struct
 #define PADDLE_MIDDLE 1
 #define PADDLE_RIGHT 2
 
+/* Frames of the flame and smoke, in the order of art/flame.png and
+   art/smoke.png. */
+#define FLAME_FRAMES 3
+#define SMOKE_FRAMES 3
+
+/* Pieces of the energy bar, in the order of art/energy.png. */
+#define ENERGY_TOP 0
+#define ENERGY_FULL 1
+#define ENERGY_LOW 2
+#define ENERGY_EMPTY 3
+#define ENERGY_BOTTOM 4
+
 typedef MODE2_TILE(4, 16) tile_t;
 typedef MODE5_CUSTOM_IMAGE(4, 24, 8) brick_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 8, 8) piece_image_t;
+typedef MODE5_CUSTOM_IMAGE(4, 28, 4) energy_image_t;
 
 /* The palettes, in the order of the rows of art/palettes.png. */
 typedef struct
 {
     uint16_t main[16];
     uint16_t brick_white[16];
+    uint16_t fx[16]; /* flames, smoke and the energy bar */
 } palettes_t;
+
+/* Plane 1 sprites. */
+typedef struct
+{
+    mode5_csprite_t ball;
+    mode5_csprite_t paddle[PADDLE_PIECES_MAX];
+    mode5_csprite_t flames[2];
+    mode5_csprite_t smoke[2];
+} actors_t;
+
+/* Plane 2 sprites, over the panel text. */
+typedef struct
+{
+    mode5_csprite_t energy[1 + ENERGY_SEGMENTS + 1]; /* top, segments, bottom */
+    mode5_csprite_t ball_icons[BALL_ICONS_MAX];
+} hud_t;
 
 typedef struct
 {
@@ -262,14 +292,17 @@ typedef struct
     mode2_config_t tile_config;
     mode1_config_t text_config;
     palettes_t palettes;
-    mode5_csprite_t bricks[BRICKS_MAX];
-    mode5_csprite_t actors[ACTORS_MAX];
-    mode5_csprite_t ball_icons[BALL_ICONS_MAX];
+    mode5_csprite_t bricks[BRICKS_MAX]; /* plane 0 sprites */
+    actors_t actors;
+    hud_t hud;
     mode1_4bpp_data_t text[TEXT_ROWS][TEXT_COLS];
     tile_t tiles[TILES_COUNT];
     brick_image_t brick_image;
     piece_image_t ball_image;
     piece_image_t paddle_images[3];
+    piece_image_t flame_images[FLAME_FRAMES];
+    piece_image_t smoke_images[SMOKE_FRAMES];
+    energy_image_t energy_images[5];
     uint8_t tile_map[TILE_MAP_ROWS][TILE_MAP_COLS]; /* an odd size, so last */
 } xram_layout_t;
 
@@ -280,22 +313,32 @@ typedef struct
 #define XRAM_PALETTES offsetof(xram_layout_t, palettes)
 #define XRAM_PALETTE_MAIN offsetof(xram_layout_t, palettes.main)
 #define XRAM_PALETTE_BRICK_WHITE offsetof(xram_layout_t, palettes.brick_white)
+#define XRAM_PALETTE_FX offsetof(xram_layout_t, palettes.fx)
 #define XRAM_BRICKS offsetof(xram_layout_t, bricks)
 #define XRAM_ACTORS offsetof(xram_layout_t, actors)
-#define XRAM_BALL_ICONS offsetof(xram_layout_t, ball_icons)
+#define XRAM_BALL_SPRITE offsetof(xram_layout_t, actors.ball)
+#define XRAM_PADDLE_SPRITES offsetof(xram_layout_t, actors.paddle)
+#define XRAM_FLAME_SPRITES offsetof(xram_layout_t, actors.flames)
+#define XRAM_SMOKE_SPRITES offsetof(xram_layout_t, actors.smoke)
+#define XRAM_HUD offsetof(xram_layout_t, hud)
+#define XRAM_ENERGY_SPRITES offsetof(xram_layout_t, hud.energy)
+#define XRAM_BALL_ICONS offsetof(xram_layout_t, hud.ball_icons)
 #define XRAM_TILE_MAP offsetof(xram_layout_t, tile_map)
 #define XRAM_TEXT offsetof(xram_layout_t, text)
 #define XRAM_TILES offsetof(xram_layout_t, tiles)
 #define XRAM_BRICK_IMAGE offsetof(xram_layout_t, brick_image)
 #define XRAM_BALL_IMAGE offsetof(xram_layout_t, ball_image)
 #define XRAM_PADDLE_IMAGES offsetof(xram_layout_t, paddle_images)
+#define XRAM_FLAME_IMAGES offsetof(xram_layout_t, flame_images)
+#define XRAM_SMOKE_IMAGES offsetof(xram_layout_t, smoke_images)
+#define XRAM_ENERGY_IMAGES offsetof(xram_layout_t, energy_images)
 
 _Static_assert(sizeof(palettes_t) / sizeof(uint16_t) <= 512,
                "palettes_t holds more than 512 colors.");
 
 /* video_init() hides every sprite from XRAM_BRICKS up to XRAM_TEXT. */
-_Static_assert(XRAM_TEXT == XRAM_BRICKS +
-                   (BRICKS_MAX + ACTORS_MAX + BALL_ICONS_MAX) * sizeof(mode5_csprite_t),
+_Static_assert(XRAM_TEXT == XRAM_BRICKS + (BRICKS_MAX * sizeof(mode5_csprite_t) +
+                                           sizeof(actors_t) + sizeof(hud_t)),
                "The sprite lists must lie together, before the text.");
 
 #endif

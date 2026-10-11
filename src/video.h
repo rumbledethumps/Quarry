@@ -10,6 +10,7 @@
 #define TEXT_COLOR 9 /* cream */
 #define BOX_COLOR 7  /* pale steel, the frame of a box */
 #define BOX_FILL 1   /* the dark inside of a box */
+#define CLEAR 0      /* transparent */
 
 /* The walls are one background tile thick. */
 #define WALL_SIZE 16
@@ -21,7 +22,7 @@ void video_init(void);
 void video_start(void);
 void video_walls(int16_t left, int16_t right);
 void video_text_clear(void);
-void video_text(uint8_t col, uint8_t row, const char *s);
+void video_text(uint8_t col, uint8_t row, const char *s, uint8_t bg);
 void video_box(uint8_t left, uint8_t top, uint8_t right, uint8_t bottom);
 
 void sprite_set(unsigned sprite, unsigned image, unsigned palette, uint8_t width_height);
