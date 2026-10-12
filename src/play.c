@@ -5,6 +5,7 @@
 #include "input.h"
 #include "nuggets.h"
 #include "paddle.h"
+#include "sfx.h"
 #include "tuning.h"
 #include "video.h"
 #include "xram.h"
@@ -126,6 +127,7 @@ static void paddle_bounce(int16_t x)
         zone = 5;
     ball_vx = zone_vx[zone];
     ball_vy = zone_vy[zone];
+    sfx_play(SFX_PADDLE, x + BALL_SIZE / 2);
     DEBUG_LOG("paddle zone %u\n", zone);
 }
 
@@ -150,11 +152,13 @@ static void ball_step(void)
     {
         ball_x = FIX(play_left) * 2 - ball_x;
         ball_vx = -ball_vx;
+        sfx_play(SFX_WALL, play_left);
     }
     else if (ball_x > FIX(play_right - BALL_SIZE))
     {
         ball_x = FIX(play_right - BALL_SIZE) * 2 - ball_x;
         ball_vx = -ball_vx;
+        sfx_play(SFX_WALL, play_right);
     }
     else if (bricks_hit(PX(ball_x), PX(ball_y), ball_extent(ball_x), ball_extent(ball_y)))
     {
@@ -163,6 +167,7 @@ static void ball_step(void)
         else
             ball_x = FIX(bricks_hit_right) * 2 - ball_x;
         ball_vx = -ball_vx;
+        sfx_play(SFX_BRICK, PX(ball_x));
     }
     else
         old = ball_x;
@@ -176,6 +181,7 @@ static void ball_step(void)
     {
         ball_y = FIX(WALL_SIZE) * 2 - ball_y;
         ball_vy = -ball_vy;
+        sfx_play(SFX_WALL, PX(ball_x));
     }
     else if (bricks_hit(PX(ball_x), PX(ball_y), ball_extent(ball_x), ball_extent(ball_y)))
     {
@@ -184,6 +190,7 @@ static void ball_step(void)
         else
             ball_y = FIX(bricks_hit_bottom) * 2 - ball_y;
         ball_vy = -ball_vy;
+        sfx_play(SFX_BRICK, PX(ball_x));
     }
     else if (ball_vy > 0 && paddle_state <= PADDLE_SPUTTER &&
              old <= paddle_y - FIX(BALL_SIZE) && ball_y > paddle_y - FIX(BALL_SIZE) &&
@@ -227,6 +234,7 @@ uint8_t play_step(void)
         }
         if (PX(ball_y) >= SCREEN_H)
         {
+            sfx_play(SFX_LOST, PX(ball_x));
             DEBUG_LOG("ball lost\n");
             if (paddle_state != PADDLE_HOVER)
                 ball_state = BALL_GONE;

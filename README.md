@@ -53,6 +53,7 @@ because the game would not fit in the 6502's memory or keep up with 60
 steps a second otherwise. Debug only adds the debug information.
 
 - `src/tuning.h` holds every gameplay number.
+- `src/sfx.c` holds the sound effects, as notes for the PSG.
 - `src/xram.h` is the XRAM layout.
 - `art/` holds the art as indexed PNGs. `art/png2bin.py` converts them
   for the VGA when the project builds.
@@ -68,6 +69,7 @@ python3 tests/energy.py build/llvm-mos/debug/quarry.rp6502
 python3 tests/nuggets.py build/llvm-mos/debug/quarry.rp6502
 python3 tests/upgrades.py build/llvm-mos/debug/quarry.rp6502
 python3 tests/saves.py build/llvm-mos/debug/quarry.rp6502
+python3 tests/sound.py build/llvm-mos/debug/quarry.rp6502
 python3 tests/autoplay.py build/llvm-mos/debug/quarry.rp6502
 python3 tests/autoplay.py build/llvm-mos/debug/quarry.rp6502 --miss 5
 ```
@@ -77,6 +79,7 @@ python3 tests/autoplay.py build/llvm-mos/debug/quarry.rp6502 --miss 5
 - `nuggets.py` breaks bricks and follows their nuggets to the panel.
 - `upgrades.py` works the end-of-stage menu and buys upgrades.
 - `saves.py` works the title screen and the pause menu, and reads the save.
+- `sound.py` sets off every sound effect and reads the PSG's channels.
 - `autoplay.py` plays stage 1 to the end, clearing it, or with `--miss 5`
   losing every ball. It also runs on a Release ROM.
 

@@ -105,14 +105,14 @@ def main():
         worst = max(off_line(x0, y0, ICON_X, ICON_Y, x, y) for x, y in path)
         check(worst < 1, f'nugget {slot} flies a straight line, {worst:.2f} px off it at worst')
         print(f'nugget {slot}: {len(path)} steps from {x0},{y0}, {worst:.2f} px off the line')
+    game.run(2)
     landed = game.ram('nuggets', 2)
     check(landed == len(broken), f'each nugget that lands counts, {landed} of {len(broken)}')
     check(game.text(text, COUNT_COL, COUNT_ROW, 5) == f'{landed:<5}', 'the panel shows the count')
 
     # The count lasts into the next stage, and keeps counting there.
     game.wait('ball lost', 3000)
-    game.poke('balls', 0)
-    game.poke('ball_state', 1)
+    game.paused_poke([('balls', 0, 1), ('ball_state', 1, 1)])
     game.wait('out of balls', 600)
     before = game.ram('nuggets', 2)
     game.menu_choose('PLAY')

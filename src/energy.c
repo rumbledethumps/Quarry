@@ -1,5 +1,6 @@
 #include "energy.h"
 #include "debug.h"
+#include "sfx.h"
 #include "tuning.h"
 #include "video.h"
 #include "xram.h"
@@ -7,6 +8,9 @@
 #define BAR_SPRITE(i) (XRAM_ENERGY_SPRITES + (i) * sizeof(mode5_csprite_t))
 #define BAR_IMAGE(i) (XRAM_ENERGY_IMAGES + (i) * sizeof(energy_image_t))
 #define BAR_PIECE_H 4
+
+/* While the energy is low, a beep every LOW_BEEP_STEPS steps. */
+#define LOW_BEEP_STEPS 180
 
 /* The energy each segment of the bar stands for. */
 #define SEGMENT_ENERGY ((TUNE_ENERGY + ENERGY_SEGMENTS - 1) / ENERGY_SEGMENTS)
@@ -17,6 +21,7 @@ uint16_t energy;
 uint8_t energy_draining;
 
 static uint8_t lit_shown; /* segments lit on the bar */
+static uint8_t beep_steps;
 static uint8_t low_shown; /* the lit segments are orange */
 
 /* Lights a segment for each SEGMENT_ENERGY left, or part of it, from the
@@ -67,6 +72,15 @@ void energy_step(void)
     else
         energy = 0;
     if (energy <= TUNE_ENERGY_LOW && was > TUNE_ENERGY_LOW)
+    {
+        sfx_play(SFX_LOW, SFX_CENTER);
+        beep_steps = 0;
         DEBUG_LOG("energy low\n");
+    }
+    else if (energy <= TUNE_ENERGY_LOW && energy && ++beep_steps >= LOW_BEEP_STEPS)
+    {
+        sfx_play(SFX_LOW_BEEP, SFX_CENTER);
+        beep_steps = 0;
+    }
     bar_draw();
 }

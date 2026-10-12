@@ -1,6 +1,7 @@
 #include "menu.h"
 #include "debug.h"
 #include "input.h"
+#include "sfx.h"
 #include "video.h"
 #include <string.h>
 
@@ -110,6 +111,9 @@ uint8_t menu_step(void)
     else if (input_pressed & INPUT_CHOOSE)
         return picked + 1;
     if (picked != was)
+    {
+        sfx_play(SFX_MOVE, SFX_CENTER);
         items_draw();
+    }
     return MENU_NONE;
 }

@@ -61,6 +61,7 @@ target_sources(quarry PRIVATE
     src/paddle.c
     src/play.c
     src/save.c
+    src/sfx.c
     src/shop.c
     src/title.c
     src/upgrades.c

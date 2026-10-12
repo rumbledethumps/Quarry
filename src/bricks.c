@@ -1,6 +1,7 @@
 #include "bricks.h"
 #include "debug.h"
 #include "nuggets.h"
+#include "sfx.h"
 #include "video.h"
 #include "xram.h"
 
@@ -124,6 +125,8 @@ uint8_t bricks_hit(int16_t x, int16_t y, uint8_t w, uint8_t h)
         sprite_move(brick_sprite(i), brick_x[i], brick_y[i] - BREAK_OVER);
         DEBUG_LOG("brick %u, %u left\n", i, bricks_left);
     }
+    if (hits)
+        sfx_play(SFX_BREAK, bricks_hit_left + BRICK_W / 2);
     return hits;
 }
 

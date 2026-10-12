@@ -2,6 +2,7 @@
 #include "debug.h"
 #include "input.h"
 #include "play.h"
+#include "sfx.h"
 #include "tuning.h"
 #include "upgrades.h"
 #include "video.h"
@@ -79,6 +80,7 @@ void paddle_give_up(void)
 {
     paddle_state = PADDLE_SPUTTER;
     state_steps = 0;
+    sfx_play(SFX_SPUTTER, PX(paddle_x) + paddle_width / 2);
     DEBUG_LOG("out of energy\n");
 }
 
@@ -127,6 +129,7 @@ void paddle_step(uint8_t controls)
             fall_speed = 0;
             smoke_x = PX(paddle_x);
             smoke_y = PX(paddle_y) + 6;
+            sfx_play(SFX_FALL, smoke_x + paddle_width / 2);
             DEBUG_LOG("paddle falls\n");
         }
         break;

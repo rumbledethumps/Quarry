@@ -3,6 +3,7 @@
 #include "debug.h"
 #include "input.h"
 #include "nuggets.h"
+#include "sfx.h"
 #include "upgrades.h"
 #include "video.h"
 #include "xram.h"
@@ -230,7 +231,10 @@ uint8_t shop_step(void)
         else if (picked == PICK_BUY)
         {
             if (upgrades_buy(upgrade))
+            {
+                sfx_play(SFX_BUY, SFX_CENTER);
                 redraw();
+            }
         }
         else
         {
@@ -240,6 +244,7 @@ uint8_t shop_step(void)
     }
     if (picked != was)
     {
+        sfx_play(SFX_MOVE, SFX_CENTER);
         if (picked < UPGRADES && picked != upgrade)
         {
             upgrade = picked;

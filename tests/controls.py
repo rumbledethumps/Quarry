@@ -31,7 +31,7 @@ def main():
     # Enter held from boot, as when it loaded the game, does not choose on the
     # title screen.
     game.send('press enter')
-    game.until('game_state', STATE_TITLE, 120)
+    game.boot()
     game.run(30)
     game.send('release enter')
     game.run(5)

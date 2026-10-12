@@ -88,6 +88,43 @@ typedef struct
     gamepad_player_t player[GAMEPAD_PLAYERS];
 } gamepad_t; /* layout */
 
+/* Programmable Sound Generator, from the RIA datasheet. */
+
+#define PSG_CHANNELS 8
+
+#define PSG_WAVE_SINE 0x00
+#define PSG_WAVE_SQUARE 0x10
+#define PSG_WAVE_SAWTOOTH 0x20
+#define PSG_WAVE_TRIANGLE 0x30
+#define PSG_WAVE_NOISE 0x40
+
+#define PSG_GATE 0x01
+
+#define PSG_FREQ_HZ(hz) ((hz) * 3u)
+#define PSG_PAN(pan) ((uint8_t)((pan) * 2))
+
+#define xreg_ria_psg(...) xreg(0, 1, 0, __VA_ARGS__)
+
+typedef struct
+{
+    uint16_t freq;
+    uint8_t duty;
+    uint8_t attack;
+    uint8_t decay;
+    uint8_t release_wave;
+    uint8_t pan_gate;
+    uint8_t reserved;
+} psg_channel_t;
+
+typedef struct
+{
+    psg_channel_t channel[PSG_CHANNELS];
+} psg_t; /* layout */
+
+/* After the XRAM_ names: PSG_PAGE_CHECK(XRAM_PSG); */
+#define PSG_PAGE_CHECK(addr) \
+    _Static_assert((addr) % 256 + sizeof(psg_t) <= 256, #addr " crosses a page.")
+
 /* Canvas, from the VGA datasheet. */
 
 #define xreg_vga_canvas(...) xreg(1, 0, 0, __VA_ARGS__)
@@ -299,6 +336,7 @@ typedef struct
 {
     keyboard_t keyboard;
     gamepad_t gamepad;
+    psg_t psg;
     mode2_config_t tile_config;
     mode1_config_t text_config;
     palettes_t palettes;
@@ -321,6 +359,7 @@ typedef struct
 
 #define XRAM_KEYBOARD offsetof(xram_layout_t, keyboard)
 #define XRAM_GAMEPAD offsetof(xram_layout_t, gamepad)
+#define XRAM_PSG offsetof(xram_layout_t, psg)
 #define XRAM_TILE_CONFIG offsetof(xram_layout_t, tile_config)
 #define XRAM_TEXT_CONFIG offsetof(xram_layout_t, text_config)
 #define XRAM_PALETTES offsetof(xram_layout_t, palettes)
@@ -356,6 +395,8 @@ typedef struct
 
 _Static_assert(sizeof(palettes_t) / sizeof(uint16_t) <= 512,
                "palettes_t holds more than 512 colors.");
+
+PSG_PAGE_CHECK(XRAM_PSG);
 
 /* video_init() hides every sprite from XRAM_BRICKS up to XRAM_TEXT. */
 _Static_assert(XRAM_TEXT == XRAM_BRICKS + (BRICKS_MAX * sizeof(mode5_csprite_t) +

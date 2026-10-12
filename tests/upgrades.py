@@ -154,7 +154,7 @@ def main():
     # Clearing stage 1, the only stage, plays stage 1 again.
     game.tap('space')
     game.run(20)
-    game.poke('bricks_left', 0)
+    game.paused_poke([('bricks_left', 0, 1)])
     game.wait('stage cleared', 10)
     game.run(2)
     check(game.shows('STAGE CLEAR'), 'the menu shows STAGE CLEAR')

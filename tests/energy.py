@@ -81,7 +81,7 @@ def main():
     print(f'drained {drained} in 60 steps after the launch')
 
     low = tune['TUNE_ENERGY_LOW']
-    game.poke('energy', low + 20, 2)
+    game.paused_poke([('energy', low + 20, 2)])
     game.wait('energy low', 30)
     game.run(2)
     segments = bar(game, shot)
@@ -91,7 +91,7 @@ def main():
     print(f'low bar: {segments.count("low")} orange segments')
 
     # Out of energy: the flames sputter and the player loses control.
-    game.poke('energy', 30, 2)
+    game.paused_poke([('energy', 30, 2)])
     game.wait('out of energy', 40)
     check(game.ram('paddle_state') == 1, 'the paddle sputters')
     x = game.px('paddle_x')
@@ -132,8 +132,7 @@ def main():
 
     # Out of energy with the ball on the paddle: the ball goes down with it,
     # and launch does nothing.
-    game.poke('energy', 10, 2)
-    game.poke('energy_draining', 1)
+    game.paused_poke([('energy', 10, 2), ('energy_draining', 1, 1)])
     game.wait('out of energy', 20)
     game.send('press space')
     game.run(4)
@@ -154,10 +153,10 @@ def main():
     game.send('press space')
     game.wait('launch', 5)
     game.send('release space')
-    game.poke('energy', 5, 2)
+    game.paused_poke([('energy', 5, 2)])
     game.wait('paddle falls', tune['TUNE_SPUTTER_STEPS'] + 10)
     check(game.ram('ball_state') == 1, 'the ball is still in flight')
-    game.poke('bricks_left', 0)
+    game.paused_poke([('bricks_left', 0, 1)])
     game.wait('stage cleared', 5)
     game.wait('paddle gone', 120)
     game.run(2)

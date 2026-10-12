@@ -7,6 +7,7 @@
 #include "nuggets.h"
 #include "play.h"
 #include "save.h"
+#include "sfx.h"
 #include "shop.h"
 #include "title.h"
 #include "tuning.h"
@@ -168,6 +169,7 @@ int main(void)
     ria_attr_set(437, RIA_ATTR_CODE_PAGE);
     video_init();
     input_init();
+    sfx_init();
     save_load();
     title_show();
     video_start();
@@ -180,6 +182,7 @@ int main(void)
         else if (game_state != STATE_SHOP && paused_state != STATE_SHOP)
             play_draw();
         input_read();
+        sfx_step();
         if ((input_pressed & INPUT_PAUSE) && game_state <= STATE_SHOP)
         {
             pause_open();

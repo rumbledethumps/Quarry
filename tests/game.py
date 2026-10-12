@@ -68,17 +68,27 @@ class Game:
         self.rom = rom
         self.sym = symbols(rom)
         self.save_dir = save_dir or tempfile.mkdtemp()
+        self.booted = False
         self.proc = subprocess.Popen(
             [os.path.join(TOOLS, 'rp6502-emu'), rom, '--script', '-',
              '--seed', str(seed), '--mute', '--save-dir', self.save_dir],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1)
         self.send('reply')
 
+    def boot(self):
+        """Runs until the title screen is up. Before the game starts, RAM
+        holds whatever the emulator filled it with, which can read as the
+        title screen, so the game is given time to start first."""
+        self.run(10)
+        self.until('game_state', STATE_TITLE, 120)
+        self.run(2)
+        self.booted = True
+
     def new_game(self):
         """From the title screen with no save, where New Game is picked,
         start a new game."""
-        self.until('game_state', STATE_TITLE, 120)
-        self.run(2)
+        if not self.booted:
+            self.boot()
         self.tap('space')
         self.until('game_state', STATE_PLAY)
 
@@ -107,6 +117,16 @@ class Game:
     def poke(self, name, value, size=1):
         data = ' '.join(str((value >> (8 * i)) & 0xFF) for i in range(size))
         self.send(f'poke ram:{self.sym[name]} {data}')
+
+    def paused_poke(self, pokes):
+        """Pokes (name, value, size) into the game's RAM while play is paused,
+        so no step is under way to overwrite them. Pausing saves the game."""
+        self.tap('escape')
+        self.until('game_state', STATE_PAUSE, 10)
+        for name, value, size in pokes:
+            self.poke(name, value, size)
+        self.tap('escape')
+        check(self.ram('game_state') != STATE_PAUSE, 'play carries on after the poke')
 
     def px(self, name):
         """A position in 1/256 px, as whole pixels."""

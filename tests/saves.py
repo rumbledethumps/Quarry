@@ -66,8 +66,7 @@ def main():
     # A first run, with no save: Resume is grayed out and can't be picked,
     # and New Game starts at once.
     game = Game(rom, save_dir=folder)
-    game.until('game_state', STATE_TITLE, 120)
-    game.run(2)
+    game.boot()
     title = Title(game)
     check(title.resume_dim(), 'Resume is grayed out with no save')
     check(title.picked() == 'NEW GAME', 'New Game is picked')
@@ -129,8 +128,7 @@ def main():
     game.tap('space')
     game.until('game_state', STATE_PLAY, 60)
     check(read_save(folder) is not None, 'PLAY was still picked, and the stage starting saves')
-    game.poke('balls', 0)
-    game.poke('ball_state', 1)
+    game.paused_poke([('balls', 0, 1), ('ball_state', 1, 1)])
     game.wait('out of balls', 3000)
     game.menu_choose('UPGRADES')
     game.poke('nuggets', 20, 2)
@@ -167,8 +165,8 @@ def main():
     # Another run, as when the player comes back: Resume brings back the
     # nuggets and the upgrade.
     game = Game(rom, save_dir=folder)
-    game.until('game_state', STATE_TITLE, 120)
-    game.run(5)
+    game.boot()
+    game.run(3)
     title = Title(game)
     check(title.picked() == 'RESUME', 'Resume is picked when the player comes back')
     game.tap('space')
@@ -207,8 +205,7 @@ def main():
     bad = tempfile.mkdtemp()
     open(os.path.join(bad, SAVE), 'wb').write(b'NOPE, not a save')
     game = Game(rom, save_dir=bad)
-    game.until('game_state', STATE_TITLE, 120)
-    game.run(2)
+    game.boot()
     check(Title(game).resume_dim(), 'a bad save file is no save')
 
     # Exit leaves the game.

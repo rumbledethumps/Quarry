@@ -1,5 +1,6 @@
 #include "nuggets.h"
 #include "debug.h"
+#include "sfx.h"
 #include "tuning.h"
 #include "video.h"
 
@@ -144,6 +145,7 @@ void nuggets_step(void)
             if (f->x == f->to_x && f->y == f->to_y)
             {
                 nuggets_add(f->color);
+                sfx_play(SFX_NUGGET, ICON_X);
                 DEBUG_LOG("nugget landed, %u\n", nuggets[f->color]);
                 f->flying = 0;
                 sprite_hide(NUGGET_SPRITE(i));
