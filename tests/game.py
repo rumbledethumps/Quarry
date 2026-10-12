@@ -24,6 +24,7 @@ from png2bin import read_png  # noqa: E402
 
 TEXT_SEARCH = 8192  # XRAM bytes searched for text
 SPRITE = 10         # sizeof(mode5_csprite_t)
+TEXT_COLS = 40
 HIDDEN_Y = -64      # SPRITE_HIDDEN_Y
 
 
@@ -116,9 +117,28 @@ class Game:
         data = self.xram(addr, count * SPRITE)
         return [struct.unpack('<hhH', data[i:i + 6]) for i in range(0, len(data), SPRITE)]
 
+    def sizes(self, addr, count):
+        """The width_height byte of each of count sprites in a list from addr."""
+        data = self.xram(addr, count * SPRITE)
+        return [data[i + 8] for i in range(0, len(data), SPRITE)]
+
     def shown(self, addr, count):
         """How many of count sprites in a list from addr are on the screen."""
         return sum(y != HIDDEN_Y for _, y, _ in self.sprites(addr, count))
+
+    def text_at(self, label, col, row):
+        """The XRAM address of the text cells, from where label is drawn."""
+        data = self.xram(0, TEXT_SEARCH)
+        glyphs = label.encode()
+        for i in range(0, len(data) - 2 * len(glyphs), 2):
+            if data[i:i + 2 * len(glyphs):2] == glyphs:
+                return i - (row * TEXT_COLS + col) * 2
+        fail(f'{label!r} is not on the screen')
+
+    def text(self, base, col, row, count):
+        """count characters of text from col, row."""
+        data = self.xram(base + (row * TEXT_COLS + col) * 2, count * 2)
+        return data[::2].decode('ascii', 'replace').replace('\0', ' ')
 
     def shows(self, text):
         """Whether the text is anywhere on the text plane."""

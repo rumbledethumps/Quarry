@@ -24,7 +24,9 @@ publish: quarry.zip
 | Launch | Space, Enter, keypad 0, keypad Enter | A, B, X or Y |
 
 The paddle floats on thrusters. The energy bar drains from the first
-launch, and when it is empty the paddle falls and the stage ends.
+launch, and when it is empty the paddle falls and the stage ends. Each
+brick you break turns into a nugget that flies to the count in the left
+panel.
 
 ## Building
 
@@ -53,12 +55,14 @@ the project folder after a Debug build:
 ```bash
 python3 tests/controls.py build/llvm-mos/debug/quarry.rp6502
 python3 tests/energy.py build/llvm-mos/debug/quarry.rp6502
+python3 tests/nuggets.py build/llvm-mos/debug/quarry.rp6502
 python3 tests/autoplay.py build/llvm-mos/debug/quarry.rp6502
 python3 tests/autoplay.py build/llvm-mos/debug/quarry.rp6502 --miss 5
 ```
 
 - `controls.py` works every key and gamepad control.
 - `energy.py` drains the energy bar and runs out of energy.
+- `nuggets.py` breaks bricks and follows their nuggets to the panel.
 - `autoplay.py` plays stage 1 to the end, clearing it, or with `--miss 5`
   losing every ball. It also runs on a Release ROM.
 

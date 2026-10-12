@@ -3,6 +3,7 @@
 #include "debug.h"
 #include "energy.h"
 #include "input.h"
+#include "nuggets.h"
 #include "paddle.h"
 #include "tuning.h"
 #include "video.h"
@@ -207,6 +208,8 @@ uint8_t play_step(void)
     if (!energy && paddle_state == PADDLE_HOVER)
         paddle_give_up();
     paddle_step(1);
+    nuggets_step();
+    bricks_step();
     switch (ball_state)
     {
     case BALL_DOCKED:
@@ -246,11 +249,15 @@ uint8_t play_step(void)
     return PLAY_ON;
 }
 
-/* After the stage ends, the flames still burn, and a falling paddle still
-   falls off the screen. */
+/* After the stage ends, the flames still burn, a falling paddle still
+   falls off the screen, and the last nuggets still fly to the panel. The
+   nuggets step before the bricks, so a new one stays where its brick was
+   until the next step. */
 void play_idle(void)
 {
     paddle_step(0);
+    nuggets_step();
+    bricks_step();
 }
 
 /* The ball is drawn first, as early in the vertical blank as it can be. */
@@ -261,4 +268,5 @@ void play_draw(void)
     else
         sprite_move(XRAM_BALL_SPRITE, PX(ball_x), PX(ball_y));
     paddle_draw();
+    nuggets_draw();
 }

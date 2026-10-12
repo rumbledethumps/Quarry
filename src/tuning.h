@@ -22,6 +22,10 @@
 /* Bricks */
 #define TUNE_BRICKS_Y 32      /* the top of the first row of bricks */
 
+/* Nuggets fly from a broken brick to the left panel this many pixels a
+   step, along the longer of across and down. */
+#define TUNE_NUGGET_SPEED 4
+
 /* Paddle */
 #define TUNE_PADDLE_WIDTH 24  /* px, a multiple of 8 from 16 to 64 */
 #define TUNE_PADDLE_SPEED 512 /* 2 px per step */

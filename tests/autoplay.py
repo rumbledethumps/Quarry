@@ -6,8 +6,8 @@
 The bot reads the ball and the paddle sprites each step and steers the paddle under the ball with the arrow keys. With --miss N it lets
 the first N balls fall. Every step it checks that the ball stays inside the
 playfield and never moves more than 3 px a step. It stops at the end of the
-stage, reports how the stage ended, then presses Space and checks that the
-stage starts again.
+stage, reports how the stage ended, checks a nugget landed for each broken
+brick, then presses Space and checks that the stage starts again.
 
 Exits 0 when every check passes.
 """
@@ -123,7 +123,6 @@ def main():
                     if game.shows(m)), None)
     print(f'stage over after {step} steps: {message!r}, {left} bricks left, '
           f'{launches} launches, {hits} paddle hits, energy {game.ram("energy", 2)}')
-    check(game.shown(brick_sprites, BRICKS) == left, 'a sprite for each brick left')
     if left:
         check(message == 'OUT OF BALLS', 'out of balls is shown')
         check(launches == BALLS, 'the stage ends when the last ball is lost')
@@ -135,11 +134,14 @@ def main():
         game.run()
         images.add(game.sprites(flame_sprite, 1)[0][2])
     check(len(images) > 1, 'the flames still burn after the stage ends')
+    game.run(90)
+    check(game.shown(brick_sprites, BRICKS) == left, 'a sprite for each brick left')
+    counted = game.ram('nuggets', 2)
+    check(counted == BRICKS - left, f'a nugget for each broken brick, {counted} of {BRICKS - left}')
 
     # Launch starts the stage again, after a short wait.
     if held:
         game.send(f'release {held}')
-    game.run(70)
     game.send('press space')
     game.run(2)
     game.send('release space')
@@ -148,6 +150,7 @@ def main():
     check(game.ram('bricks_left') == BRICKS, 'the bricks come back')
     check(game.shown(brick_sprites, BRICKS) == BRICKS, 'the brick sprites come back')
     check(game.ram('balls') == BALLS, 'the balls come back')
+    check(game.ram('nuggets', 2) == counted, 'the nuggets are kept')
     check(game.shown(icon_sprites, BALLS + 1) == BALLS, 'the ball icons come back')
     check(game.ram('energy', 2) == full, 'the energy is full again')
     check(not game.shows('LAUNCH TO PLAY'), 'the message is cleared')

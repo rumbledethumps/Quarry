@@ -3,6 +3,7 @@
 #include "bricks.h"
 #include "debug.h"
 #include "input.h"
+#include "nuggets.h"
 #include "play.h"
 #include "tuning.h"
 #include "video.h"
@@ -27,6 +28,7 @@ static void stage_start(void)
     video_walls(play_left, play_right);
     video_text_clear();
     bricks_start(play_left, TUNE_BRICKS_Y);
+    nuggets_start(1, play_left - WALL_SIZE);
     play_start();
     stage_playing = 1;
     DEBUG_LOG("stage start\n");

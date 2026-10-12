@@ -6,6 +6,9 @@
 #define BRICK_W 24
 #define BRICK_H 8
 
+/* Colors of brick, each with its own palette and nugget. */
+#define BRICK_WHITE 0
+
 extern uint8_t bricks_cols; /* the width of the stage, in bricks */
 extern uint8_t bricks_left; /* bricks not yet broken */
 
@@ -19,5 +22,6 @@ void bricks_layout(void);
 void bricks_start(int16_t left, int16_t top);
 uint8_t bricks_hit(int16_t x, int16_t y, uint8_t w, uint8_t h);
 uint8_t bricks_touch(int16_t x, int16_t y, uint8_t w, uint8_t h);
+void bricks_step(void);
 
 #endif

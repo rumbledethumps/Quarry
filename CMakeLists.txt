@@ -22,6 +22,8 @@ endfunction()
 quarry_art(palettes.bin palette palettes.png)
 quarry_art(tiles.bin image tiles.png --tile 16x16)
 quarry_art(brick.bin image brick.png)
+quarry_art(break.bin image break.png --tile 24x16)
+quarry_art(nugget.bin image nugget.png)
 quarry_art(ball.bin image ball.png)
 quarry_art(paddle.bin image paddle.png --tile 8x8)
 quarry_art(flame.bin image flame.png --tile 8x8)
@@ -34,6 +36,8 @@ rp6502_asset(quarry help src/help.txt)
 rp6502_asset(quarry XRAM(XRAM_PALETTES) ${CMAKE_CURRENT_BINARY_DIR}/palettes.bin)
 rp6502_asset(quarry XRAM(XRAM_TILES) ${CMAKE_CURRENT_BINARY_DIR}/tiles.bin)
 rp6502_asset(quarry XRAM(XRAM_BRICK_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/brick.bin)
+rp6502_asset(quarry XRAM(XRAM_BREAK_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/break.bin)
+rp6502_asset(quarry XRAM(XRAM_NUGGET_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/nugget.bin)
 rp6502_asset(quarry XRAM(XRAM_BALL_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/ball.bin)
 rp6502_asset(quarry XRAM(XRAM_PADDLE_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/paddle.bin)
 rp6502_asset(quarry XRAM(XRAM_FLAME_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/flame.bin)
@@ -49,6 +53,7 @@ target_sources(quarry PRIVATE
     src/energy.c
     src/input.c
     src/main.c
+    src/nuggets.c
     src/paddle.c
     src/play.c
     src/video.c

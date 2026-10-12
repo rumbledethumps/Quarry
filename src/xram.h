@@ -223,9 +223,11 @@ typedef struct
 #define TILE_MAP_ROWS 15
 
 #define BRICKS_MAX 48
+#define BRICK_COLORS 1 /* white */
 #define PADDLE_PIECES_MAX 8
 #define ENERGY_SEGMENTS 12
 #define BALL_ICONS_MAX 36
+#define NUGGETS_MAX 16 /* in flight at once */
 
 /* Background tiles, 16x16, in the order of art/tiles.png. Each wall tile
    is followed by the same tile with a rivet plate on its girder. */
@@ -244,8 +246,9 @@ typedef struct
 #define PADDLE_MIDDLE 1
 #define PADDLE_RIGHT 2
 
-/* Frames of the flame and smoke, in the order of art/flame.png and
-   art/smoke.png. */
+/* Frames of the brick breaking, the flame and the smoke, in the order of
+   art/break.png, art/flame.png and art/smoke.png. */
+#define BREAK_FRAMES 2
 #define FLAME_FRAMES 3
 #define SMOKE_FRAMES 3
 
@@ -258,6 +261,7 @@ typedef struct
 
 typedef MODE2_TILE(4, 16) tile_t;
 typedef MODE5_CUSTOM_IMAGE(4, 24, 8) brick_image_t;
+typedef MODE5_CUSTOM_IMAGE(4, 24, 16) break_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 8, 8) piece_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 28, 4) energy_image_t;
 
@@ -265,8 +269,8 @@ typedef MODE5_CUSTOM_IMAGE(4, 28, 4) energy_image_t;
 typedef struct
 {
     uint16_t main[16];
-    uint16_t brick_white[16];
-    uint16_t fx[16]; /* flames, smoke and the energy bar */
+    uint16_t bricks[BRICK_COLORS][16]; /* bricks and nuggets, a palette a color */
+    uint16_t fx[16];                   /* flames, smoke and the energy bar */
 } palettes_t;
 
 /* Plane 1 sprites. */
@@ -283,6 +287,8 @@ typedef struct
 {
     mode5_csprite_t energy[1 + ENERGY_SEGMENTS + 1]; /* top, segments, bottom */
     mode5_csprite_t ball_icons[BALL_ICONS_MAX];
+    mode5_csprite_t nugget_icons[BRICK_COLORS];
+    mode5_csprite_t nuggets[NUGGETS_MAX]; /* in flight */
 } hud_t;
 
 typedef struct
@@ -298,6 +304,8 @@ typedef struct
     mode1_4bpp_data_t text[TEXT_ROWS][TEXT_COLS];
     tile_t tiles[TILES_COUNT];
     brick_image_t brick_image;
+    break_image_t break_images[BREAK_FRAMES];
+    piece_image_t nugget_image;
     piece_image_t ball_image;
     piece_image_t paddle_images[3];
     piece_image_t flame_images[FLAME_FRAMES];
@@ -312,7 +320,8 @@ typedef struct
 #define XRAM_TEXT_CONFIG offsetof(xram_layout_t, text_config)
 #define XRAM_PALETTES offsetof(xram_layout_t, palettes)
 #define XRAM_PALETTE_MAIN offsetof(xram_layout_t, palettes.main)
-#define XRAM_PALETTE_BRICK_WHITE offsetof(xram_layout_t, palettes.brick_white)
+#define XRAM_PALETTE_BRICKS offsetof(xram_layout_t, palettes.bricks)
+#define XRAM_PALETTE_BRICK(color) (XRAM_PALETTE_BRICKS + (color) * 16 * sizeof(uint16_t))
 #define XRAM_PALETTE_FX offsetof(xram_layout_t, palettes.fx)
 #define XRAM_BRICKS offsetof(xram_layout_t, bricks)
 #define XRAM_ACTORS offsetof(xram_layout_t, actors)
@@ -323,10 +332,14 @@ typedef struct
 #define XRAM_HUD offsetof(xram_layout_t, hud)
 #define XRAM_ENERGY_SPRITES offsetof(xram_layout_t, hud.energy)
 #define XRAM_BALL_ICONS offsetof(xram_layout_t, hud.ball_icons)
+#define XRAM_NUGGET_ICONS offsetof(xram_layout_t, hud.nugget_icons)
+#define XRAM_NUGGET_SPRITES offsetof(xram_layout_t, hud.nuggets)
 #define XRAM_TILE_MAP offsetof(xram_layout_t, tile_map)
 #define XRAM_TEXT offsetof(xram_layout_t, text)
 #define XRAM_TILES offsetof(xram_layout_t, tiles)
 #define XRAM_BRICK_IMAGE offsetof(xram_layout_t, brick_image)
+#define XRAM_BREAK_IMAGES offsetof(xram_layout_t, break_images)
+#define XRAM_NUGGET_IMAGE offsetof(xram_layout_t, nugget_image)
 #define XRAM_BALL_IMAGE offsetof(xram_layout_t, ball_image)
 #define XRAM_PADDLE_IMAGES offsetof(xram_layout_t, paddle_images)
 #define XRAM_FLAME_IMAGES offsetof(xram_layout_t, flame_images)
