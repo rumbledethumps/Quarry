@@ -50,7 +50,7 @@ def main():
     tune = tuning()
     shot = os.path.join(tempfile.mkdtemp(), 'shot.png')
     game = Game(rom)
-    game.wait('stage start', 60)
+    game.new_game()
     game.run(5)
 
     full = game.ram('energy', 2)

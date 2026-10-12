@@ -48,6 +48,7 @@ def main():
     args = parser.parse_args()
 
     game = Game(args.rom, args.seed)
+    game.new_game()
     game.run(10)
     ball_sprite = game.sprite_at(game.px('ball_x'), game.px('ball_y'))
     paddle_sprite = game.sprite_at(game.px('paddle_x'), game.px('paddle_y'))

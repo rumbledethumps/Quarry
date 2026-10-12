@@ -16,7 +16,7 @@ void input_init(void)
 
 /* Keyboard from the key bitmap, so held keys work, and every connected
    gamepad: the d-pad merged with the left stick, and A, B, X or Y to
-   launch and choose. Up launches too. */
+   launch and choose. Up launches too. Esc or Start pauses. */
 void input_read(void)
 {
     uint8_t keys[sizeof(keyboard_t)];
@@ -47,6 +47,8 @@ void input_read(void)
         held |= INPUT_LAUNCH | INPUT_CHOOSE;
     if (KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_0))
         held |= INPUT_LAUNCH;
+    if (KEYBOARD_PRESSED(keys, HID_KEY_ESCAPE))
+        held |= INPUT_PAUSE;
 
     xram0_read(&pads, XRAM_GAMEPAD, sizeof pads);
     for (i = 0; i < GAMEPAD_PLAYERS; i++)
@@ -67,6 +69,8 @@ void input_read(void)
         if (pad->btn0 & (GAMEPAD_BTN0_A | GAMEPAD_BTN0_B |
                          GAMEPAD_BTN0_X | GAMEPAD_BTN0_Y))
             held |= INPUT_LAUNCH | INPUT_CHOOSE;
+        if (pad->btn1 & GAMEPAD_BTN1_START)
+            held |= INPUT_PAUSE;
     }
 
     input_pressed = held & ~input_held;

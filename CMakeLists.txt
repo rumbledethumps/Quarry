@@ -29,6 +29,7 @@ quarry_art(paddle.bin image paddle.png --tile 8x8)
 quarry_art(flame.bin image flame.png --tile 8x8)
 quarry_art(smoke.bin image smoke.png --tile 8x8)
 quarry_art(energy.bin image energy.png --tile 28x4)
+quarry_art(logo.bin image logo.png --tile 64x64)
 
 add_executable(quarry)
 rp6502_map(quarry src/xram.h "XRAM_.*")
@@ -43,10 +44,12 @@ rp6502_asset(quarry XRAM(XRAM_PADDLE_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/paddle.
 rp6502_asset(quarry XRAM(XRAM_FLAME_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/flame.bin)
 rp6502_asset(quarry XRAM(XRAM_SMOKE_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/smoke.bin)
 rp6502_asset(quarry XRAM(XRAM_ENERGY_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/energy.bin)
+rp6502_asset(quarry XRAM(XRAM_LOGO_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/logo.bin)
 rp6502_executable(quarry DATA default RESET default)
 rp6502_web(quarry CONFIG [[
     title: 'Quarry',
-    footer: 'Left and right to move, up or Space to launch, with arrows, WASD or the keypad. In menus, up and down to pick and Space or Enter to choose. Gamepads work too.',
+    db: 'rumbledethumps-quarry',
+    footer: 'Left and right to move, up or Space to launch, with arrows, WASD or the keypad. In menus, up and down to pick and Space or Enter to choose. Esc to pause. Gamepads work too.',
 ]])
 target_sources(quarry PRIVATE
     src/bricks.c
@@ -57,7 +60,9 @@ target_sources(quarry PRIVATE
     src/nuggets.c
     src/paddle.c
     src/play.c
+    src/save.c
     src/shop.c
+    src/title.c
     src/upgrades.c
     src/video.c
 )

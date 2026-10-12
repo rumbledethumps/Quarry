@@ -21,6 +21,7 @@ void play_start(void);
 uint8_t play_step(void);
 void play_idle(void);
 void play_finish(void);
+uint8_t play_pending(uint8_t color);
 void play_draw(void);
 
 #endif

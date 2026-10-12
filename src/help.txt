@@ -1,7 +1,8 @@
 Quarry - an incremental brick breaker.
 Move: A/D, arrows, keypad 4/6, or a gamepad.
 Launch: Space, Enter, up, keypad 0, or A/B/X/Y.
+Pause: Esc or Start.
 The energy bar drains from the first launch. When it is empty,
 the paddle falls and the stage is over. Broken bricks turn into
 nuggets, counted in the left panel. Spend them on upgrades
-when the stage is over.
+when the stage is over. The game saves as you go.

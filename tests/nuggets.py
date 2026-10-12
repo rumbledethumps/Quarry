@@ -38,7 +38,7 @@ def main():
     rom = sys.argv[1]
     step = speed()
     game = Game(rom)
-    game.wait('stage start', 60)
+    game.new_game()
     game.run(5)
 
     text = game.text_at('ENERGY', 32, 2)

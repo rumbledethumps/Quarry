@@ -9,6 +9,7 @@
 #define INPUT_UP 0x08
 #define INPUT_DOWN 0x10
 #define INPUT_CHOOSE 0x20 /* in a menu */
+#define INPUT_PAUSE 0x40
 
 extern uint8_t input_held;    /* the INPUT_ bits held this step */
 extern uint8_t input_pressed; /* the INPUT_ bits held this step and not the last */

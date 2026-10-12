@@ -265,6 +265,7 @@ typedef MODE5_CUSTOM_IMAGE(4, 24, 8) brick_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 24, 16) break_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 8, 8) piece_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 28, 4) energy_image_t;
+typedef MODE5_CUSTOM_IMAGE(4, 64, 64) logo_image_t; /* a third of art/logo.png */
 
 /* The palettes, in the order of the rows of art/palettes.png. */
 typedef struct
@@ -272,6 +273,7 @@ typedef struct
     uint16_t main[16];
     uint16_t bricks[BRICK_COLORS][16]; /* bricks and nuggets, a palette a color */
     uint16_t fx[16];                   /* flames, smoke and the energy bar */
+    uint16_t logo[16];
 } palettes_t;
 
 /* Plane 1 sprites. */
@@ -313,6 +315,7 @@ typedef struct
     piece_image_t flame_images[FLAME_FRAMES];
     piece_image_t smoke_images[SMOKE_FRAMES];
     energy_image_t energy_images[5];
+    logo_image_t logo_images[3];
     uint8_t tile_map[TILE_MAP_ROWS][TILE_MAP_COLS]; /* an odd size, so last */
 } xram_layout_t;
 
@@ -325,6 +328,7 @@ typedef struct
 #define XRAM_PALETTE_BRICKS offsetof(xram_layout_t, palettes.bricks)
 #define XRAM_PALETTE_BRICK(color) (XRAM_PALETTE_BRICKS + (color) * 16 * sizeof(uint16_t))
 #define XRAM_PALETTE_FX offsetof(xram_layout_t, palettes.fx)
+#define XRAM_PALETTE_LOGO offsetof(xram_layout_t, palettes.logo)
 #define XRAM_BRICKS offsetof(xram_layout_t, bricks)
 #define XRAM_ACTORS offsetof(xram_layout_t, actors)
 #define XRAM_BALL_SPRITE offsetof(xram_layout_t, actors.ball)
@@ -348,6 +352,7 @@ typedef struct
 #define XRAM_FLAME_IMAGES offsetof(xram_layout_t, flame_images)
 #define XRAM_SMOKE_IMAGES offsetof(xram_layout_t, smoke_images)
 #define XRAM_ENERGY_IMAGES offsetof(xram_layout_t, energy_images)
+#define XRAM_LOGO_IMAGES offsetof(xram_layout_t, logo_images)
 
 _Static_assert(sizeof(palettes_t) / sizeof(uint16_t) <= 512,
                "palettes_t holds more than 512 colors.");

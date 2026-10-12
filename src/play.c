@@ -268,6 +268,12 @@ void play_finish(void)
     nuggets_land();
 }
 
+/* The nuggets of a color still to land: breaking, or in flight. */
+uint8_t play_pending(uint8_t color)
+{
+    return bricks_pending(color) + nuggets_flying(color);
+}
+
 /* The ball is drawn first, as early in the vertical blank as it can be. */
 void play_draw(void)
 {

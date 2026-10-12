@@ -1,70 +1,115 @@
 #include "menu.h"
 #include "debug.h"
 #include "input.h"
-#include "play.h"
 #include "video.h"
 #include <string.h>
 
-/* The end-of-stage menu is a box over the middle of the playfield: how the
-   stage ended, then UPGRADES and PLAY. The pick has a gold frame. */
-#define MENU_COLS 16
-#define MENU_TOP 11
+/* Each item is 3 rows, for the gold frame around the one picked. */
+#define ITEM_ROWS 3
 
-static const char *const items[2] = {"UPGRADES", "PLAY"};
-
-static uint8_t shown;
+static const menu_t *shown; /* NULL when no menu is shown */
 static uint8_t picked;
-static uint8_t waiting; /* steps before it takes a choice */
-static uint8_t center;  /* the column in the middle of the box */
+static uint8_t disabled_items; /* a bit for each item that can't be picked */
+static uint8_t waiting;        /* steps before it takes a choice */
+
+static uint8_t first_item_row(void)
+{
+    return shown->top + (shown->title ? 3 : 1);
+}
+
+static uint8_t bottom_row(void)
+{
+    return first_item_row() + shown->count * ITEM_ROWS;
+}
 
 static void item_draw(uint8_t i)
 {
-    uint8_t row = MENU_TOP + 3 + i * 3;
+    uint8_t row = first_item_row() + i * ITEM_ROWS;
+    const char *item = shown->items[i];
 
-    video_box(center - MENU_COLS / 2 + 2, row, center + MENU_COLS / 2 - 3, row + 2,
+    video_box(shown->center - MENU_COLS / 2 + 2, row, shown->center + MENU_COLS / 2 - 3, row + 2,
               i == picked ? PICK_COLOR : BOX_FILL);
-    video_text(center - strlen(items[i]) / 2, row + 1, items[i], TEXT_COLOR, BOX_FILL);
+    video_text(shown->center - strlen(item) / 2, row + 1, item,
+               disabled_items & (1 << i) ? DIM_COLOR : TEXT_COLOR, BOX_FILL);
 }
 
-/* Opens the menu with pick picked, MENU_UPGRADES or MENU_PLAY. It waits
-   wait steps before it takes a choice, so a press meant for the last ball
-   doesn't choose. */
-void menu_open(const char *title, uint8_t pick, uint8_t wait)
+static void items_draw(void)
 {
-    center = (play_left + play_right) / 16;
-    video_box(center - MENU_COLS / 2, MENU_TOP, center + MENU_COLS / 2 - 1, MENU_TOP + 9, BOX_COLOR);
-    video_text(center - strlen(title) / 2, MENU_TOP + 1, title, TEXT_COLOR, BOX_FILL);
-    picked = pick - MENU_UPGRADES;
-    item_draw(0);
-    item_draw(1);
-    waiting = wait;
-    shown = 1;
-    DEBUG_LOG("menu\n");
+    uint8_t i;
+
+    for (i = 0; i < shown->count; i++)
+        item_draw(i);
 }
 
-/* Erases the box, if it is shown, so play can go on under it. */
+/* Steps the pick by step, 1 or count - 1, past items that can't be picked. */
+static void pick_step(uint8_t step)
+{
+    uint8_t i;
+
+    for (i = 0; i < shown->count; i++)
+    {
+        picked = (picked + step) % shown->count;
+        if (!(disabled_items & (1 << picked)))
+            return;
+    }
+}
+
+/* Opens the menu with item pick picked, counting from 0, or the next one
+   that can be picked. disabled has a bit for each item that can't be. It
+   waits wait steps before it takes a choice, so a press meant for what came
+   before doesn't choose. */
+void menu_open(const menu_t *menu, uint8_t pick, uint8_t disabled, uint8_t wait)
+{
+    shown = menu;
+    disabled_items = disabled;
+    picked = pick;
+    if (disabled & (1 << pick))
+        pick_step(1);
+    video_box(menu->center - MENU_COLS / 2, menu->top, menu->center + MENU_COLS / 2 - 1, bottom_row(),
+              menu->frame);
+    if (menu->title)
+        video_text(menu->center - strlen(menu->title) / 2, menu->top + 1, menu->title, TEXT_COLOR,
+                   BOX_FILL);
+    items_draw();
+    waiting = wait;
+    DEBUG_LOG("menu %s\n", menu->items[0]);
+}
+
+/* Erases the box, if it is shown, so what is under it shows again. */
 void menu_close(void)
 {
     if (shown)
-        video_clear(center - MENU_COLS / 2, MENU_TOP, center + MENU_COLS / 2 - 1, MENU_TOP + 9);
+        video_clear(shown->center - MENU_COLS / 2, shown->top, shown->center + MENU_COLS / 2 - 1,
+                    bottom_row());
     shown = 0;
 }
 
-/* Up, down, left or right moves the pick, and choose returns it. */
+/* The item picked, counting from 0. */
+uint8_t menu_picked(void)
+{
+    return picked;
+}
+
+/* Up and left pick the item before, down and right the item after, and
+   choose returns the one picked, from 1. */
 uint8_t menu_step(void)
 {
+    uint8_t was = picked;
+
+    if (!shown)
+        return MENU_NONE;
     if (waiting)
     {
         waiting--;
         return MENU_NONE;
     }
-    if (input_pressed & (INPUT_UP | INPUT_DOWN | INPUT_LEFT | INPUT_RIGHT))
-    {
-        picked ^= 1;
-        item_draw(0);
-        item_draw(1);
-    }
-    if (input_pressed & INPUT_CHOOSE)
-        return MENU_UPGRADES + picked;
+    if (input_pressed & (INPUT_UP | INPUT_LEFT))
+        pick_step(shown->count - 1);
+    else if (input_pressed & (INPUT_DOWN | INPUT_RIGHT))
+        pick_step(1);
+    else if (input_pressed & INPUT_CHOOSE)
+        return picked + 1;
+    if (picked != was)
+        items_draw();
     return MENU_NONE;
 }

@@ -189,6 +189,15 @@ static void redraw(void)
     panel_draw();
 }
 
+/* Hides the pictures, which would show over a menu on top of the screen. */
+void shop_hide(void)
+{
+    uint8_t i;
+
+    for (i = 0; i < MENU_SPRITES; i++)
+        sprite_hide(SPRITE(i));
+}
+
 void shop_open(void)
 {
     video_hide_sprites();

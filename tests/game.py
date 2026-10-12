@@ -17,6 +17,7 @@ import struct
 import os
 import subprocess
 import sys
+import tempfile
 
 TOOLS = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'tools')
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'art'))
@@ -25,7 +26,8 @@ from png2bin import read_png  # noqa: E402
 TEXT_SEARCH = 8192  # XRAM bytes searched for text
 SPRITE = 10         # sizeof(mode5_csprite_t)
 TEXT_COLS = 40
-STATE_PLAY, STATE_MENU, STATE_SHOP = 1, 2, 3  # game_state, from src/main.c
+# game_state, from src/main.c
+STATE_PLAY, STATE_MENU, STATE_SHOP, STATE_TITLE, STATE_CONFIRM, STATE_PAUSE = 1, 2, 3, 4, 5, 6
 HIDDEN_Y = -64      # SPRITE_HIDDEN_Y
 
 
@@ -59,14 +61,26 @@ def symbols(rom):
 
 
 class Game:
-    def __init__(self, rom, seed=1):
+    """The game in the emulator, with its saves in save_dir, a new empty
+    folder unless one is given, so a test never touches the real saves."""
+
+    def __init__(self, rom, seed=1, save_dir=None):
         self.rom = rom
         self.sym = symbols(rom)
+        self.save_dir = save_dir or tempfile.mkdtemp()
         self.proc = subprocess.Popen(
             [os.path.join(TOOLS, 'rp6502-emu'), rom, '--script', '-',
-             '--seed', str(seed), '--mute'],
+             '--seed', str(seed), '--mute', '--save-dir', self.save_dir],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1)
         self.send('reply')
+
+    def new_game(self):
+        """From the title screen with no save, where New Game is picked,
+        start a new game."""
+        self.until('game_state', STATE_TITLE, 120)
+        self.run(2)
+        self.tap('space')
+        self.until('game_state', STATE_PLAY)
 
     def send(self, line):
         """One script command. A failed one ends the test."""

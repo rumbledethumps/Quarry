@@ -9,6 +9,7 @@
 #define HID_KEY_W 0x1A
 
 #define HID_KEY_ENTER 0x28
+#define HID_KEY_ESCAPE 0x29
 #define HID_KEY_SPACE 0x2C
 
 #define HID_KEY_ARROW_RIGHT 0x4F

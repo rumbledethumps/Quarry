@@ -63,6 +63,17 @@ void nuggets_land(void)
         }
 }
 
+/* How many nuggets of a color are in flight. */
+uint8_t nuggets_flying(uint8_t color)
+{
+    uint8_t i, n = 0;
+
+    for (i = 0; i < NUGGETS_MAX; i++)
+        if (flights[i].flying && flights[i].color == color)
+            n++;
+    return n;
+}
+
 /* Draws the panel with a line for each of the first colors, and lands any
    nugget still in flight. The panel ends at panel_right. */
 void nuggets_start(uint8_t colors, int16_t panel_right)

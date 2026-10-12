@@ -24,12 +24,17 @@ publish: quarry.zip
 | Launch | Space, Enter, keypad 0, keypad Enter, W, Up, keypad 8 | A, B, X or Y, or up |
 | Pick in a menu | W and S, Up and Down, keypad 8 and 2 | D-pad or left stick |
 | Choose | Space, Enter, keypad Enter | A, B, X or Y |
+| Pause | Esc | Start |
 
 The paddle floats on thrusters. The energy bar drains from the first
 launch, and when it is empty the paddle falls and the stage ends. Each
 brick you break turns into a nugget that flies to the count in the left
 panel. When the stage ends, spend the nuggets on Upgrades, a wider or a
 faster paddle, or Play again.
+
+The game saves when a stage starts or ends and when it pauses, in
+`SAVE:quarry.save`, and Resume on the title screen carries on from there.
+New Game starts over, and replaces the save.
 
 ## Building
 
@@ -62,6 +67,7 @@ python3 tests/controls.py build/llvm-mos/debug/quarry.rp6502
 python3 tests/energy.py build/llvm-mos/debug/quarry.rp6502
 python3 tests/nuggets.py build/llvm-mos/debug/quarry.rp6502
 python3 tests/upgrades.py build/llvm-mos/debug/quarry.rp6502
+python3 tests/saves.py build/llvm-mos/debug/quarry.rp6502
 python3 tests/autoplay.py build/llvm-mos/debug/quarry.rp6502
 python3 tests/autoplay.py build/llvm-mos/debug/quarry.rp6502 --miss 5
 ```
@@ -70,8 +76,9 @@ python3 tests/autoplay.py build/llvm-mos/debug/quarry.rp6502 --miss 5
 - `energy.py` drains the energy bar and runs out of energy.
 - `nuggets.py` breaks bricks and follows their nuggets to the panel.
 - `upgrades.py` works the end-of-stage menu and buys upgrades.
+- `saves.py` works the title screen and the pause menu, and reads the save.
 - `autoplay.py` plays stage 1 to the end, clearing it, or with `--miss 5`
   losing every ball. It also runs on a Release ROM.
 
 The tests find the game's variables by name in the ELF beside the ROM, so
-they need no addresses.
+they need no addresses, and each keeps its saves in a folder of its own.

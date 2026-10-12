@@ -13,7 +13,7 @@ import os
 import sys
 import tempfile
 
-from game import Game, check
+from game import STATE_PLAY, STATE_TITLE, Game, check
 
 MOVES = [('d', 'right'), ('a', 'left'), ('right', 'right'), ('left', 'left'),
          ('kp6', 'right'), ('kp4', 'left')]
@@ -28,9 +28,18 @@ def main():
     state = os.path.join(tempfile.mkdtemp(), 'controls.state')
     game = Game(rom)
 
-    # Enter held from boot, as when it loaded the game, does not launch.
+    # Enter held from boot, as when it loaded the game, does not choose on the
+    # title screen.
     game.send('press enter')
-    game.wait('stage start', 60)
+    game.until('game_state', STATE_TITLE, 120)
+    game.run(30)
+    game.send('release enter')
+    game.run(5)
+    check(game.ram('game_state') == STATE_TITLE, 'a key held from boot does not choose')
+
+    # Nor does a choose held into play launch.
+    game.send('press enter')
+    game.until('game_state', STATE_PLAY)
     game.run(30)
     game.send('release enter')
     game.run(5)

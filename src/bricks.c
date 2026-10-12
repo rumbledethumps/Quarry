@@ -158,3 +158,14 @@ void bricks_step(void)
         }
     }
 }
+
+/* How many bricks of a color are still breaking, their nuggets to come. */
+uint8_t bricks_pending(uint8_t color)
+{
+    uint8_t i, n = 0;
+
+    for (i = 0; i < brick_count; i++)
+        if (brick_breaking[i] && brick_color[i] == color)
+            n++;
+    return n;
+}
