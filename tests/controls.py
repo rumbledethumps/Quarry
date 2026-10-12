@@ -17,8 +17,8 @@ from game import Game, check
 
 MOVES = [('d', 'right'), ('a', 'left'), ('right', 'right'), ('left', 'left'),
          ('kp6', 'right'), ('kp4', 'left')]
-LAUNCH_KEYS = ['space', 'enter', 'kp0', 'kpenter']
-LAUNCH_BUTTONS = [(0, 'a'), (0, 'b'), (0, 'x'), (1, 'y')]
+LAUNCH_KEYS = ['space', 'enter', 'kp0', 'kpenter', 'w', 'up', 'kp8']
+LAUNCH_BUTTONS = [(0, 'a'), (0, 'b'), (0, 'x'), (1, 'y'), (0, 'up')]
 START_X = 148
 NUM_LOCK = 0x02  # in the first byte of the key bitmap, with NO_KEY 0x01
 
@@ -91,6 +91,11 @@ def main():
         game.wait('launch, 4 balls left', 5)
         game.send(f'pad {pad} release {button}')
         print(f'ok: gamepad {pad + 1} button {button} launches')
+    game.send(f'state load "{state}"')
+    game.send('pad 1 stick 0 -128 0 0')
+    game.wait('launch, 4 balls left', 5)
+    game.send('pad 1 stick 0 0 0 0')
+    print('ok: gamepad 2 left stick up launches')
 
     # A held launch control launches only once, even when the ball is back
     # on the paddle while it is still held.

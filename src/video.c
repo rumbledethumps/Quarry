@@ -8,10 +8,8 @@ void video_init(void)
 {
     mode2_config_t tile_config;
     mode1_config_t text_config;
-    unsigned sprite;
 
-    for (sprite = XRAM_BRICKS; sprite < XRAM_TEXT; sprite += sizeof(mode5_csprite_t))
-        sprite_set(sprite, XRAM_BALL_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(8, 8));
+    video_hide_sprites();
 
     xram0_set(XRAM_TILE_MAP, TILE_ROCK, sizeof(((xram_layout_t *)0)->tile_map));
     video_text_clear();
@@ -93,14 +91,51 @@ void video_walls(int16_t left, int16_t right)
     xram0_poke16(XRAM_TILE_CONFIG + offsetof(mode2_config_t, x_pos_px), scroll);
 }
 
+/* Rock all over, for a screen with no playfield. */
+void video_rock(void)
+{
+    uint8_t cells[TILE_MAP_COLS];
+    uint8_t col, row;
+
+    for (row = 0; row < TILE_MAP_ROWS; row++)
+    {
+        for (col = 0; col < TILE_MAP_COLS; col++)
+            cells[col] = rock_at(col, row);
+        xram0_write(XRAM_TILE_MAP + row * TILE_MAP_COLS, cells, TILE_MAP_COLS);
+    }
+    xram0_poke16(XRAM_TILE_CONFIG + offsetof(mode2_config_t, x_pos_px), -WALL_SIZE);
+}
+
+/* Every sprite of every plane, as a plain hidden sprite. Whatever shows a
+   sprite again sets it up first. */
+void video_hide_sprites(void)
+{
+    unsigned sprite;
+
+    for (sprite = XRAM_BRICKS; sprite < XRAM_TEXT; sprite += sizeof(mode5_csprite_t))
+        sprite_set(sprite, XRAM_BALL_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(8, 8));
+}
+
 /* Blank cells are glyph 0 with transparent colors. */
 void video_text_clear(void)
 {
     xram0_set(XRAM_TEXT, 0, sizeof(((xram_layout_t *)0)->text));
 }
 
-/* Text in TEXT_COLOR, on bg. */
-void video_text(uint8_t col, uint8_t row, const char *s, uint8_t bg)
+/* Blank cells from left, top to right, bottom. */
+void video_clear(uint8_t left, uint8_t top, uint8_t right, uint8_t bottom)
+{
+    uint8_t row;
+
+    if (right < left || right >= TEXT_COLS || bottom >= TEXT_ROWS)
+        return;
+    for (row = top; row <= bottom; row++)
+        xram0_set(XRAM_TEXT + (row * TEXT_COLS + left) * sizeof(mode1_4bpp_data_t), 0,
+                  (right - left + 1) * sizeof(mode1_4bpp_data_t));
+}
+
+/* Text in fg, on bg. */
+void video_text(uint8_t col, uint8_t row, const char *s, uint8_t fg, uint8_t bg)
 {
     mode1_4bpp_data_t cells[TEXT_COLS];
     uint8_t n = 0;
@@ -108,16 +143,40 @@ void video_text(uint8_t col, uint8_t row, const char *s, uint8_t bg)
     while (s[n] && col + n < TEXT_COLS)
     {
         cells[n].glyph_code = s[n];
-        cells[n].bg_fg_index = MODE1_BG_FG(bg, TEXT_COLOR);
+        cells[n].bg_fg_index = MODE1_BG_FG(bg, fg);
         n++;
     }
     xram0_write(XRAM_TEXT + (row * TEXT_COLS + col) * sizeof(mode1_4bpp_data_t),
                 cells, n * sizeof(mode1_4bpp_data_t));
 }
 
-/* Draws a dark box with a frame, in text cells from left, top to right,
-   bottom. The frame is the line-drawing glyphs of code page 437. */
-void video_box(uint8_t left, uint8_t top, uint8_t right, uint8_t bottom)
+/* A number, left aligned in width cells, spaces after it. */
+void video_number(uint8_t col, uint8_t row, uint16_t n, uint8_t width, uint8_t fg, uint8_t bg)
+{
+    char text[6];
+    uint8_t i, len = 0;
+
+    do
+    {
+        text[len++] = '0' + n % 10;
+        n /= 10;
+    } while (n);
+    for (i = 0; i < len / 2; i++)
+    {
+        char c = text[i];
+        text[i] = text[len - 1 - i];
+        text[len - 1 - i] = c;
+    }
+    while (len < width)
+        text[len++] = ' ';
+    text[len] = 0;
+    video_text(col, row, text, fg, bg);
+}
+
+/* Draws a dark box with a frame in color, in text cells from left, top to
+   right, bottom. The frame is the line-drawing glyphs of code page 437. A
+   frame in BOX_FILL can't be seen. */
+void video_box(uint8_t left, uint8_t top, uint8_t right, uint8_t bottom, uint8_t color)
 {
     mode1_4bpp_data_t cells[TEXT_COLS];
     uint8_t row, col, n = right - left + 1;
@@ -133,7 +192,7 @@ void video_box(uint8_t left, uint8_t top, uint8_t right, uint8_t bottom)
             cells[col].glyph_code = row == top      ? top_glyphs[end]
                                     : row == bottom ? bottom_glyphs[end]
                                                     : middle_glyphs[end];
-            cells[col].bg_fg_index = MODE1_BG_FG(BOX_FILL, BOX_COLOR);
+            cells[col].bg_fg_index = MODE1_BG_FG(BOX_FILL, color);
         }
         xram0_write(XRAM_TEXT + (row * TEXT_COLS + left) * sizeof(mode1_4bpp_data_t),
                     cells, n * sizeof(mode1_4bpp_data_t));

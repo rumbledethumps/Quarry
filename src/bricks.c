@@ -52,14 +52,25 @@ void bricks_layout(void)
     bricks_cols = STAGE1_COLS;
 }
 
-/* A brick still breaking from the last stage counts its nugget now. */
-void bricks_start(int16_t left, int16_t top)
+/* A brick still breaking counts its nugget now, and its sprite is hidden. */
+void bricks_finish(void)
 {
     uint8_t i;
 
     for (i = 0; i < brick_count; i++)
         if (brick_breaking[i])
+        {
+            brick_breaking[i] = 0;
+            sprite_hide(brick_sprite(i));
             nuggets_add(brick_color[i]);
+        }
+}
+
+void bricks_start(int16_t left, int16_t top)
+{
+    uint8_t i;
+
+    bricks_finish();
     bricks_left = 0;
     brick_count = STAGE1_COLS * STAGE1_ROWS;
     for (i = 0; i < brick_count; i++)

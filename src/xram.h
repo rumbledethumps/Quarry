@@ -228,6 +228,7 @@ typedef struct
 #define ENERGY_SEGMENTS 12
 #define BALL_ICONS_MAX 36
 #define NUGGETS_MAX 16 /* in flight at once */
+#define MENU_SPRITES 25
 
 /* Background tiles, 16x16, in the order of art/tiles.png. Each wall tile
    is followed by the same tile with a rivet plate on its girder. */
@@ -289,6 +290,7 @@ typedef struct
     mode5_csprite_t ball_icons[BALL_ICONS_MAX];
     mode5_csprite_t nugget_icons[BRICK_COLORS];
     mode5_csprite_t nuggets[NUGGETS_MAX]; /* in flight */
+    mode5_csprite_t menu[MENU_SPRITES];   /* the upgrade screen's pictures */
 } hud_t;
 
 typedef struct
@@ -334,6 +336,7 @@ typedef struct
 #define XRAM_BALL_ICONS offsetof(xram_layout_t, hud.ball_icons)
 #define XRAM_NUGGET_ICONS offsetof(xram_layout_t, hud.nugget_icons)
 #define XRAM_NUGGET_SPRITES offsetof(xram_layout_t, hud.nuggets)
+#define XRAM_MENU_SPRITES offsetof(xram_layout_t, hud.menu)
 #define XRAM_TILE_MAP offsetof(xram_layout_t, tile_map)
 #define XRAM_TEXT offsetof(xram_layout_t, text)
 #define XRAM_TILES offsetof(xram_layout_t, tiles)

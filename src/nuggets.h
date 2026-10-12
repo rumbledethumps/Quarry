@@ -11,6 +11,7 @@ extern uint16_t nuggets[BRICK_COLORS];
 void nuggets_start(uint8_t colors, int16_t panel_right);
 void nuggets_spawn(int16_t x, int16_t y, uint8_t color);
 void nuggets_add(uint8_t color);
+void nuggets_land(void);
 void nuggets_step(void);
 void nuggets_draw(void);
 

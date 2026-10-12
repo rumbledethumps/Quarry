@@ -37,25 +37,8 @@ static int16_t icon_y(uint8_t color)
 
 static void count_draw(uint8_t color)
 {
-    char text[COUNT_DIGITS + 1];
-    uint16_t n = nuggets[color];
-    uint8_t i, len = 0;
-
-    do
-    {
-        text[len++] = '0' + n % 10;
-        n /= 10;
-    } while (n && len < COUNT_DIGITS);
-    for (i = 0; i < len / 2; i++)
-    {
-        char c = text[i];
-        text[i] = text[len - 1 - i];
-        text[len - 1 - i] = c;
-    }
-    while (len < COUNT_DIGITS)
-        text[len++] = ' ';
-    text[len] = 0;
-    video_text(COUNT_COL, PANEL_TOP_ROW + 1 + color, text, BOX_FILL);
+    video_number(COUNT_COL, PANEL_TOP_ROW + 1 + color, nuggets[color], COUNT_DIGITS,
+                 TEXT_COLOR, BOX_FILL);
 }
 
 void nuggets_add(uint8_t color)
@@ -66,6 +49,20 @@ void nuggets_add(uint8_t color)
         count_draw(color);
 }
 
+/* Lands every nugget still in flight at once. */
+void nuggets_land(void)
+{
+    uint8_t i;
+
+    for (i = 0; i < NUGGETS_MAX; i++)
+        if (flights[i].flying)
+        {
+            flights[i].flying = 0;
+            sprite_hide(NUGGET_SPRITE(i));
+            nuggets_add(flights[i].color);
+        }
+}
+
 /* Draws the panel with a line for each of the first colors, and lands any
    nugget still in flight. The panel ends at panel_right. */
 void nuggets_start(uint8_t colors, int16_t panel_right)
@@ -73,13 +70,8 @@ void nuggets_start(uint8_t colors, int16_t panel_right)
     uint8_t i;
 
     lines = colors;
-    for (i = 0; i < NUGGETS_MAX; i++)
-        if (flights[i].flying)
-        {
-            nuggets_add(flights[i].color);
-            flights[i].flying = 0;
-        }
-    video_box(0, PANEL_TOP_ROW, panel_right / 8 - 1, PANEL_TOP_ROW + 1 + colors);
+    nuggets_land();
+    video_box(0, PANEL_TOP_ROW, panel_right / 8 - 1, PANEL_TOP_ROW + 1 + colors, BOX_COLOR);
     for (i = 0; i < BRICK_COLORS; i++)
     {
         sprite_set(ICON_SPRITE(i), XRAM_NUGGET_IMAGE, XRAM_PALETTE_BRICK(i), MODE5_SIZE(8, 8));

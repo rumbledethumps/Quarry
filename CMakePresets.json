@@ -16,22 +16,24 @@
         {
             "name": "llvm-mos/Debug",
             "displayName": "llvm-mos/Debug",
-            "description": "llvm-mos, with debug information",
+            "description": "llvm-mos, optimized for size, with debug information",
             "inherits": "base",
             "binaryDir": "${sourceDir}/build/llvm-mos/debug",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_C_FLAGS_DEBUG": "-g -Oz",
                 "LLVM_MOS_PLATFORM": "rp6502"
             }
         },
         {
             "name": "llvm-mos/Release",
             "displayName": "llvm-mos/Release",
-            "description": "llvm-mos, optimized",
+            "description": "llvm-mos, optimized for size",
             "inherits": "base",
             "binaryDir": "${sourceDir}/build/llvm-mos/release",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_C_FLAGS_RELEASE": "-Oz -DNDEBUG",
                 "LLVM_MOS_PLATFORM": "rp6502"
             }
         }

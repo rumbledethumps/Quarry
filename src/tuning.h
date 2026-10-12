@@ -27,9 +27,15 @@
 #define TUNE_NUGGET_SPEED 4
 
 /* Paddle */
-#define TUNE_PADDLE_WIDTH 24  /* px, a multiple of 8 from 16 to 64 */
-#define TUNE_PADDLE_SPEED 512 /* 2 px per step */
 #define TUNE_PADDLE_Y 208     /* hover height, the top of the paddle */
+
+/* Upgrades, paid in white nuggets. Each level of an upgrade has its
+   value, starting with the value before any upgrade, and each level after
+   the first has its cost. */
+#define TUNE_WIDTHS {24, 32, 40, 48, 56, 64} /* px, multiples of 8 from 16 to 64 */
+#define TUNE_WIDTH_COSTS {6, 10, 16, 24, 34}
+#define TUNE_SPEEDS {512, 576, 640, 704, 768} /* 2 to 3 px per step */
+#define TUNE_SPEED_COSTS {6, 10, 16, 24}
 
 /* The paddle is cut into six zones of equal width. The two in the center
    send the ball up steeply, the zones beside them at 45 degrees, and the

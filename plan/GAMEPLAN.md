@@ -130,14 +130,15 @@ Keyboard, read from the key bitmap so held keys work:
 
 - Left: A, Left arrow, keypad 4.
 - Right: D, Right arrow, keypad 6.
-- Launch: Space, Enter, keypad 0, keypad Enter.
+- Launch: Space, Enter, keypad 0, keypad Enter, and every up key: W, Up
+  arrow, keypad 8.
 - Menus: W/S, Up/Down arrows, keypad 8/2 to move; Space or Enter to choose.
 - Esc: pause.
 
 Gamepad, from any connected gamepad:
 
 - D-pad or left stick to move.
-- A, B, X or Y to launch and choose.
+- A, B, X or Y to launch and choose. Up on the D-pad or stick launches too.
 - Start: pause.
 
 No mouse for now. It can be added later.

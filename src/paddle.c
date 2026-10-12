@@ -3,6 +3,7 @@
 #include "input.h"
 #include "play.h"
 #include "tuning.h"
+#include "upgrades.h"
 #include "video.h"
 #include "xram.h"
 
@@ -31,16 +32,13 @@ static const uint8_t sputter_pattern[8] = {0xB2, 0x4C, 0x91, 0x0A, 0x48, 0x02, 0
 #define TILT_STEPS 6
 #define TILT_MAX 2
 
-_Static_assert(TUNE_PADDLE_WIDTH % 8 == 0 && TUNE_PADDLE_WIDTH >= 16 &&
-                   TUNE_PADDLE_WIDTH <= PADDLE_PIECES_MAX * 8,
-               "TUNE_PADDLE_WIDTH must be a multiple of 8 from 16 to 64.");
-
 uint8_t paddle_state;
 int32_t paddle_x;
 int32_t paddle_y;
 uint8_t paddle_width;
 uint8_t paddle_left;
 
+static uint16_t paddle_speed;
 static uint8_t paddle_moved; /* the pieces need drawing */
 static uint16_t state_steps; /* steps since paddle_state changed */
 static int16_t fall_speed;   /* 1/256 px per step */
@@ -48,14 +46,16 @@ static int16_t smoke_x;      /* where the paddle gave up, for the smoke */
 static int16_t smoke_y;
 
 /* The paddle is a left end, middle pieces, and a right end, 8 px each.
-   The end pieces have the nozzles, and a flame burns under each. */
+   The end pieces have the nozzles, and a flame burns under each. Its
+   width and speed come from the upgrades bought so far. */
 void paddle_start(void)
 {
     uint8_t i, pieces;
 
     paddle_state = PADDLE_HOVER;
     state_steps = 0;
-    paddle_width = TUNE_PADDLE_WIDTH;
+    paddle_width = upgrades_width();
+    paddle_speed = upgrades_speed();
     paddle_x = FIX((play_left + play_right - paddle_width) / 2);
     paddle_y = FIX(TUNE_PADDLE_Y);
     paddle_left = 0;
@@ -89,11 +89,11 @@ static void hover_step(void)
     switch (input_held & (INPUT_LEFT | INPUT_RIGHT))
     {
     case INPUT_LEFT:
-        x -= TUNE_PADDLE_SPEED;
+        x -= paddle_speed;
         paddle_left = 1;
         break;
     case INPUT_RIGHT:
-        x += TUNE_PADDLE_SPEED;
+        x += paddle_speed;
         paddle_left = 0;
         break;
     }

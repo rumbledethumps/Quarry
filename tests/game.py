@@ -25,6 +25,7 @@ from png2bin import read_png  # noqa: E402
 TEXT_SEARCH = 8192  # XRAM bytes searched for text
 SPRITE = 10         # sizeof(mode5_csprite_t)
 TEXT_COLS = 40
+STATE_PLAY, STATE_MENU, STATE_SHOP = 1, 2, 3  # game_state, from src/main.c
 HIDDEN_Y = -64      # SPRITE_HIDDEN_Y
 
 
@@ -154,6 +155,35 @@ class Game:
         self.send(f'shot "{os.path.abspath(path)}"')
         _, _, _, rows, _, _ = read_png(path)
         return rows
+
+    def tap(self, key, frames=4):
+        """Press a key, or a gamepad control such as 'pad 0 up', and let go."""
+        if key.startswith('pad '):
+            pad, button = key.split()[1:]
+            self.send(f'pad {pad} press {button}')
+            self.run(frames)
+            self.send(f'pad {pad} release {button}')
+        else:
+            self.send(f'press {key}')
+            self.run(frames)
+            self.send(f'release {key}')
+        self.run(frames)
+
+    def until(self, name, value, frames=120):
+        """Run until a byte of the game's RAM reads value."""
+        self.send(f'wait ram:{self.sym[name]} {value} {frames}')
+
+    def menu_choose(self, item, wait=True, picked='UPGRADES'):
+        """Choose PLAY or UPGRADES on the end-of-stage menu. After a stage it
+        opens with UPGRADES picked and waits a second before it takes a
+        choice. Back from the upgrade screen opens it with PLAY picked. Works
+        with a Release ROM too, which logs nothing."""
+        if wait:
+            self.run(70)
+        if item != picked:
+            self.tap('down')
+        self.tap('space')
+        self.until('game_state', STATE_PLAY if item == 'PLAY' else STATE_SHOP)
 
     def close(self):
         self.proc.stdin.close()

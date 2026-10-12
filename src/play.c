@@ -92,8 +92,8 @@ void play_start(void)
     int16_t center = (panel_left + SCREEN_W) / 2;
     int16_t bar_left = center - (ICONS_COLS * ICONS_PITCH - (ICONS_PITCH - 8)) / 2;
 
-    video_box(panel_left / 8, PANEL_TOP_ROW, SCREEN_W / 8 - 1, PANEL_BOTTOM_ROW);
-    video_text(panel_left / 8 + 1, PANEL_LABEL_ROW, "ENERGY", BOX_FILL);
+    video_box(panel_left / 8, PANEL_TOP_ROW, SCREEN_W / 8 - 1, PANEL_BOTTOM_ROW, BOX_COLOR);
+    video_text(panel_left / 8 + 1, PANEL_LABEL_ROW, "ENERGY", TEXT_COLOR, BOX_FILL);
     energy_start(bar_left, ENERGY_Y);
     balls = TUNE_BALLS;
     icons_x = bar_left;
@@ -258,6 +258,14 @@ void play_idle(void)
     paddle_step(0);
     nuggets_step();
     bricks_step();
+}
+
+/* Finishes every break and lands every nugget at once, so the counts are
+   whole. */
+void play_finish(void)
+{
+    bricks_finish();
+    nuggets_land();
 }
 
 /* The ball is drawn first, as early in the vertical blank as it can be. */

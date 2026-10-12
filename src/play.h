@@ -20,6 +20,7 @@ void play_init(void);
 void play_start(void);
 uint8_t play_step(void);
 void play_idle(void);
+void play_finish(void);
 void play_draw(void);
 
 #endif

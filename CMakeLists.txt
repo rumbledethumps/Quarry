@@ -46,15 +46,18 @@ rp6502_asset(quarry XRAM(XRAM_ENERGY_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/energy.
 rp6502_executable(quarry DATA default RESET default)
 rp6502_web(quarry CONFIG [[
     title: 'Quarry',
-    footer: 'A, D, arrows or keypad 4 and 6 to move. Space, Enter, keypad 0 or keypad Enter to launch. Gamepads work too.',
+    footer: 'Left and right to move, up or Space to launch, with arrows, WASD or the keypad. In menus, up and down to pick and Space or Enter to choose. Gamepads work too.',
 ]])
 target_sources(quarry PRIVATE
     src/bricks.c
     src/energy.c
     src/input.c
     src/main.c
+    src/menu.c
     src/nuggets.c
     src/paddle.c
     src/play.c
+    src/shop.c
+    src/upgrades.c
     src/video.c
 )

@@ -14,7 +14,7 @@ import re
 import sys
 import tempfile
 
-from game import Game, check
+from game import STATE_PLAY, Game, check
 
 # Where the bar is drawn, from src/play.c and src/energy.c.
 BAR_X, BAR_Y, SEGMENTS, PIECE_H = 270, 26, 12, 4
@@ -118,15 +118,12 @@ def main():
     check(game.px('paddle_y') > top + 4, 'the paddle falls')
     game.wait('paddle gone', 120)
     game.run(2)
-    check(game.ram('stage_playing') == 0, 'the stage ends')
+    check(game.ram('game_state') != STATE_PLAY, 'the stage ends')
     check(game.shows('OUT OF ENERGY'), 'out of energy is shown')
     print(f'puff of {puff} smoke pixels, then the paddle fell off the screen')
 
-    # Launch plays again, with a full bar.
-    game.run(70)
-    game.send('press space')
-    game.wait('stage start', 10)
-    game.send('release space')
+    # Play plays again, with a full bar.
+    game.menu_choose('PLAY')
     game.run(5)
     check(game.ram('energy', 2) == full, 'the energy is full again')
     check(game.ram('energy_draining') == 0, 'it waits for the first launch again')
@@ -152,10 +149,7 @@ def main():
     check(game.shows('OUT OF ENERGY'), 'out of energy is shown again')
 
     # The stage clears while the paddle falls: it still falls off the screen.
-    game.run(70)
-    game.send('press space')
-    game.wait('stage start', 10)
-    game.send('release space')
+    game.menu_choose('PLAY')
     game.run(5)
     game.send('press space')
     game.wait('launch', 5)

@@ -7,14 +7,15 @@ The bot reads the ball and the paddle sprites each step and steers the paddle un
 the first N balls fall. Every step it checks that the ball stays inside the
 playfield and never moves more than 3 px a step. It stops at the end of the
 stage, reports how the stage ended, checks a nugget landed for each broken
-brick, then presses Space and checks that the stage starts again.
+brick, then chooses Play on the end-of-stage menu and checks that the stage
+starts again.
 
 Exits 0 when every check passes.
 """
 
 import argparse
 
-from game import Game, check, fail
+from game import STATE_PLAY, Game, check, fail
 
 # Stage 1, from src/play.c, src/tuning.h and src/bricks.c.
 PLAY_LEFT, PLAY_RIGHT, PLAY_TOP = 88, 232, 16
@@ -64,7 +65,7 @@ def main():
     launches = hits = 0
     zone_aim = 0
     for step in range(args.frames):
-        if not game.ram('stage_playing'):
+        if game.ram('game_state') != STATE_PLAY:
             break
         state = game.ram('ball_state')
         x, y = game.sprite(ball_sprite)
@@ -128,7 +129,7 @@ def main():
         check(launches == BALLS, 'the stage ends when the last ball is lost')
     else:
         check(message == 'STAGE CLEAR', 'stage clear is shown')
-    check(game.shows('LAUNCH TO PLAY'), 'launch to play is shown')
+    check(game.shows('UPGRADES') and game.shows('PLAY'), 'the end-of-stage menu is shown')
     images = set()
     for _ in range(30):
         game.run()
@@ -139,21 +140,19 @@ def main():
     counted = game.ram('nuggets', 2)
     check(counted == BRICKS - left, f'a nugget for each broken brick, {counted} of {BRICKS - left}')
 
-    # Launch starts the stage again, after a short wait.
+    # Play starts the stage again.
     if held:
         game.send(f'release {held}')
-    game.send('press space')
-    game.run(2)
-    game.send('release space')
-    game.run(10)
-    check(game.ram('stage_playing') == 1, 'the stage starts again')
+    game.menu_choose('PLAY', wait=False)
+    game.run(5)
+    check(game.ram('game_state') == STATE_PLAY, 'the stage starts again')
     check(game.ram('bricks_left') == BRICKS, 'the bricks come back')
     check(game.shown(brick_sprites, BRICKS) == BRICKS, 'the brick sprites come back')
     check(game.ram('balls') == BALLS, 'the balls come back')
     check(game.ram('nuggets', 2) == counted, 'the nuggets are kept')
     check(game.shown(icon_sprites, BALLS + 1) == BALLS, 'the ball icons come back')
     check(game.ram('energy', 2) == full, 'the energy is full again')
-    check(not game.shows('LAUNCH TO PLAY'), 'the message is cleared')
+    check(not game.shows('UPGRADES'), 'the menu is gone')
     game.close()
     print('PASS')
 

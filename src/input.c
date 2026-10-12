@@ -11,11 +11,12 @@ void input_init(void)
 {
     xreg_ria_keyboard(XRAM_KEYBOARD);
     xreg_ria_gamepad(XRAM_GAMEPAD);
-    input_held = INPUT_LEFT | INPUT_RIGHT | INPUT_LAUNCH;
+    input_held = 0xFF;
 }
 
 /* Keyboard from the key bitmap, so held keys work, and every connected
-   gamepad: the d-pad merged with the left stick, and A, B, X or Y. */
+   gamepad: the d-pad merged with the left stick, and A, B, X or Y to
+   launch and choose. Up launches too. */
 void input_read(void)
 {
     uint8_t keys[sizeof(keyboard_t)];
@@ -32,10 +33,19 @@ void input_read(void)
         KEYBOARD_PRESSED(keys, HID_KEY_ARROW_RIGHT) ||
         KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_6))
         held |= INPUT_RIGHT;
+    if (KEYBOARD_PRESSED(keys, HID_KEY_W) ||
+        KEYBOARD_PRESSED(keys, HID_KEY_ARROW_UP) ||
+        KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_8))
+        held |= INPUT_UP | INPUT_LAUNCH;
+    if (KEYBOARD_PRESSED(keys, HID_KEY_S) ||
+        KEYBOARD_PRESSED(keys, HID_KEY_ARROW_DOWN) ||
+        KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_2))
+        held |= INPUT_DOWN;
     if (KEYBOARD_PRESSED(keys, HID_KEY_SPACE) ||
         KEYBOARD_PRESSED(keys, HID_KEY_ENTER) ||
-        KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_0) ||
         KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_ENTER))
+        held |= INPUT_LAUNCH | INPUT_CHOOSE;
+    if (KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_0))
         held |= INPUT_LAUNCH;
 
     xram0_read(&pads, XRAM_GAMEPAD, sizeof pads);
@@ -50,9 +60,13 @@ void input_read(void)
             held |= INPUT_LEFT;
         if (dirs & GAMEPAD_DPAD_RIGHT)
             held |= INPUT_RIGHT;
+        if (dirs & GAMEPAD_DPAD_UP)
+            held |= INPUT_UP | INPUT_LAUNCH;
+        if (dirs & GAMEPAD_DPAD_DOWN)
+            held |= INPUT_DOWN;
         if (pad->btn0 & (GAMEPAD_BTN0_A | GAMEPAD_BTN0_B |
                          GAMEPAD_BTN0_X | GAMEPAD_BTN0_Y))
-            held |= INPUT_LAUNCH;
+            held |= INPUT_LAUNCH | INPUT_CHOOSE;
     }
 
     input_pressed = held & ~input_held;
