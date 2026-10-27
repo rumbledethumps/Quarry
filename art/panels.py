@@ -14,8 +14,12 @@ hangers up to the rail. Its bottom half is its top half turned over.
 The contents of a panel, its plate and the glyphs on it, come from
 art/panel-font.png, in the order of FONT, then the short digits and the
 pips, and then the plate's four rounded corners. They come twice, lit and
-dim, so the panels to the sides can be dim. The frames come once, and stay
-lit.
+dim, so the panels to the sides can be dim. So does the inner ring of each
+frame, which holds the edge of the display, its pixels inside frame 1's
+black outline: dim, only they dim, so a dim display is dark right to the
+frame. The inner ring's plain steel is one cell along each edge, to keep
+it to few tiles; it hardly varies in frame 1. The outer ring comes once,
+and stays lit.
 
 out.bin is the palette, 256 colors as png2bin.py writes a palette row, then
 256 tiles of 64 bytes, then the tile map of every panel's frame, row by
@@ -60,6 +64,7 @@ LAYOUTS = [
 # every cell, as if cloned.
 PLAIN_COLS = (6, 7, 8, 9, 10, 11, 12, 13)
 PLAIN_ROWS = (4, 7, 8, 9, 10, 13)  # 9, 10 and 13 are 8, 7 and 4 turned over
+INNER_COL, INNER_ROW = 6, 7  # the inner ring's plain steel: the cells most like the others
 HANGER_COL = 9
 BOLT_COLS = (14, 15)
 BOLT_ROWS = (5, 6)
@@ -100,6 +105,27 @@ def cell(img, cx, cy):
     return [row[cx * 8:cx * 8 + 8] for row in img[cy * 8:cy * 8 + 8]]
 
 
+def display(src):
+    """Frame 1's display, what is inside its black outline, found from the
+    middle out: True there, None elsewhere, to build frames from as src."""
+    w, h = len(src[0]), len(src)
+    out, todo = blank(w, h), [(w // 2, h // 2)]
+    while todo:
+        x, y = todo.pop()
+        if not (0 <= x < w and 0 <= y < h) or out[y][x] or src[y][x] in (None, OUTLINE):
+            continue
+        out[y][x] = True
+        todo += [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+    if out[PAD][PAD]:
+        raise SystemExit('panels: the display of art/panel-frame.png leaks past its outline')
+    return out
+
+
+def inner(r, c, rows):
+    """Whether cell c of body row r is in the inner ring of a frame."""
+    return r in (1, rows - 2) and 1 <= c <= COLS - 2 or c in (1, COLS - 2) and 1 <= r <= rows - 2
+
+
 def frame_image(layout, src):
     """A panel's frame, with its hangers' row on top, as rows of colors;
     None outside it and on the plate."""
@@ -107,23 +133,23 @@ def frame_image(layout, src):
     src_rows = len(src) // 8
     img = blank(COLS * 8, (rows + 1) * 8)
 
-    def src_row(r, along, start):
-        """The source row of body row r, down a side."""
+    def src_row(r, along, start, ring):
+        """The source row of body row r, down a side, in the inner ring or not."""
         if r < 4:
             return r
         if r >= rows - 4:
             return src_rows - (rows - r)
         c = along[r - 4]
         if c == '.':
-            return PLAIN_ROWS[(r - 4 + start) % len(PLAIN_ROWS)]
+            return INNER_ROW if ring else PLAIN_ROWS[(r - 4 + start) % len(PLAIN_ROWS)]
         return {'B': BOLT_ROWS[0], 'b': BOLT_ROWS[1]}[c]
 
-    def src_col(c, along, start):
+    def src_col(c, along, start, ring):
         if c < 4 or c >= COLS - 4:
             return c
         ch = along[c - 4]
         if ch == '.':
-            return PLAIN_COLS[(c - 4 + start) % len(PLAIN_COLS)]
+            return INNER_COL if ring else PLAIN_COLS[(c - 4 + start) % len(PLAIN_COLS)]
         return {'H': HANGER_COL, 'B': BOLT_COLS[0], 'b': BOLT_COLS[1]}[ch]
 
     # Where each edge starts in its run of plain cells.
@@ -136,10 +162,10 @@ def frame_image(layout, src):
             if top or bottom:
                 edge = 'top' if top else 'bottom'
                 sr = r if top else src_rows - (rows - r)
-                sc = src_col(c, layout[edge], starts[edge])
+                sc = src_col(c, layout[edge], starts[edge], inner(r, c, rows))
             elif side:
                 edge = 'left' if c < 2 else 'right'
-                sr = src_row(r, layout[edge], starts[edge])
+                sr = src_row(r, layout[edge], starts[edge], inner(r, c, rows))
                 sc = c
             elif (c in (2, COLS - 3)) and r in (2, rows - 3):
                 sr, sc = (2 if r == 2 else src_rows - 3), c  # the plate's rounded corners
@@ -190,11 +216,13 @@ def main():
     for cx, cy in ((2, 2), (COLS - 3, 2), (2, src_rows - 3), (COLS - 3, src_rows - 3)):
         content.append(tuple(c for row in cell(src, cx, cy) for c in row))
     count = len(content)
-    dim = [tuple(tuple(round(v * DIM) for v in c) for c in t) for t in content]
+    darker = lambda c: tuple(round(v * DIM) for v in c)
 
     images = [frame_image(layout, src) for layout in LAYOUTS]
-    frames, maps = [], []
-    for layout, img in zip(LAYOUTS, images):
+    shown = display(src)
+    displays = [tiles_of(frame_image(layout, shown)) for layout in LAYOUTS]
+    rings, ring_displays, frames, maps = [], [], [], []
+    for layout, img, shows in zip(LAYOUTS, images, displays):
         grid = []
         for ty, row in enumerate(tiles_of(img)):
             line = []
@@ -206,6 +234,11 @@ def main():
                     line.append('clear')
                 elif t in content:
                     line.append(('content', content.index(t)))
+                elif ty and inner(ty - 1, tx, layout['rows']):
+                    if t not in rings:
+                        rings.append(t)
+                        ring_displays.append(shows[ty][tx])
+                    line.append(('ring', rings.index(t)))
                 else:
                     if t not in frames:
                         frames.append(t)
@@ -213,15 +246,21 @@ def main():
             grid.append(line)
         maps.append(grid)
 
-    # Tile 0 is clear, then the contents lit and dim, then the frames.
-    tiles = [tuple([None] * 64)] + content + dim + frames
+    # Tile 0 is clear, then the contents and the inner rings lit, then both
+    # dim, then the outer rings. The contents dim all over, the inner rings
+    # only in their display.
+    lit = content + rings
+    dim = [tuple(darker(c) for c in t) for t in content] + \
+          [tuple(darker(c) if d else c for c, d in zip(t, ds)) for t, ds in zip(rings, ring_displays)]
+    tiles = [tuple([None] * 64)] + lit + dim + frames
     if len(tiles) > 256:
-        raise SystemExit(f'panels: {len(tiles)} tiles, past 256: {len(frames)} of them frames')
+        raise SystemExit(f'panels: {len(tiles)} tiles, past 256: {len(rings)} inner ring tiles, twice, '
+                         f'and {len(frames)} outer')
     colors = sorted({c for t in tiles for c in t if c is not None})
     if len(colors) > 255:
         raise SystemExit(f'panels: {len(colors)} colors, past 255')
     index = {c: i + 1 for i, c in enumerate(colors)}
-    frame_first = 1 + 2 * count
+    frame_first = 1 + 2 * len(lit)
 
     data = bytearray()
     palette = [(0, 0, 0, 0)] + [c + (255,) for c in colors] + [(0, 0, 0, 0)] * (255 - len(colors))
@@ -233,7 +272,8 @@ def main():
         for grid in maps:
             for entry in (grid[row] if row < len(grid) else ['clear'] * COLS):
                 data.append(0 if entry == 'clear' else 1 if entry == 'plate' else
-                            1 + entry[1] if isinstance(entry, tuple) else frame_first + entry)
+                            1 + entry[1] if isinstance(entry, tuple) and entry[0] == 'content' else
+                            1 + count + entry[1] if isinstance(entry, tuple) else frame_first + entry)
     with open(args.output, 'wb') as f:
         f.write(data)
 
@@ -246,15 +286,15 @@ def main():
                 f'#define PANEL_TILE_SHORT {1 + len(FONT)} /* digits for a cost not yet paid */\n'
                 f'#define PANEL_TILE_PIP_ON {1 + len(FONT) + 10}\n'
                 f'#define PANEL_TILE_PIP_OFF {2 + len(FONT) + 10}\n'
-                f'#define PANEL_TILE_DIM {count} /* add to a lit tile of the contents */\n'
-                f'#define PANEL_TILE_FRAMES {frame_first} /* the first frame tile */\n'
+                f'#define PANEL_TILE_DIM {len(lit)} /* add to a lit tile of the contents or an inner ring */\n'
+                f'#define PANEL_TILE_FRAMES {frame_first} /* the first tile of the outer rings, which stay lit */\n'
                 f'#define PANEL_TILES {len(tiles)}\n'
                 f'#define PANEL_LAYOUTS {len(LAYOUTS)}\n'
                 f'#define PANEL_HEIGHTS {{{", ".join(str(l["rows"]) for l in LAYOUTS)}}}\n\n'
                 '#endif\n')
 
-    print(f'panels: {len(frames)} frame tiles, {2 * count} of contents, {len(tiles)} of 256; '
-          f'{len(colors)} colors')
+    print(f'panels: {2 * count} tiles of contents, {2 * len(rings)} of inner rings, {len(frames)} of outer, '
+          f'{len(tiles)} of 256; {len(colors)} colors')
     if args.preview:
         out = blank(COLS * 8 * len(images) + 4 * (len(images) - 1), ROWS * 8)
         for i, img in enumerate(images):

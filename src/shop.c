@@ -204,18 +204,19 @@ static void text_draw(uint8_t p, uint8_t row, const char *s)
     row_draw(p, row, tiles, n);
 }
 
-/* Lights or dims the whole inside of panel p: every tile of its contents
-   swaps for its lit or dim copy, and the frame stays as it is. */
+/* Lights or dims the display of panel p: every tile of its contents, and
+   of the inner ring of its frame, swaps for its lit or dim copy. The outer
+   ring of the frame stays as it is. */
 static void panel_light(uint8_t p, uint8_t on)
 {
-    uint8_t line[PANEL_INSIDE], row, i;
+    uint8_t line[PANEL_COLS - 2], row, i;
 
     panel_lit[p] = on;
-    for (row = TOP_ROW + PANEL_BORDER; row <= panel_heights[p] - PANEL_BORDER; row++)
+    for (row = TOP_ROW + 1; row < TOP_ROW + panel_heights[p] - 1; row++)
     {
-        unsigned at = XRAM_PANELS + row * PANEL_MAP_COLS + p * PANEL_PITCH + PANEL_BORDER;
+        unsigned at = XRAM_PANELS + row * PANEL_MAP_COLS + p * PANEL_PITCH + 1;
         xram0_read(line, at, sizeof line);
-        for (i = 0; i < PANEL_INSIDE; i++)
+        for (i = 0; i < sizeof line; i++)
         {
             uint8_t t = line[i];
             if (on && t > PANEL_TILE_DIM && t < PANEL_TILE_FRAMES)

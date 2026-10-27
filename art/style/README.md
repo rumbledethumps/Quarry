@@ -219,16 +219,22 @@ graphite steel with no yellow: there is nothing to be careful of here.
   each edge, as `LAYOUTS` says for each panel. The plain steel walks
   through frame 1's own plain cells in their order, each edge of each
   panel from a place of its own, so the grain of the steel never repeats
-  cell after cell as if cloned. The clamps stand a pixel proud, out into
+  cell after cell as if cloned. The inner ring's plain steel is one cell
+  repeated, the one most like the others, since it hardly varies in
+  frame 1 and its tiles come twice. The clamps stand a pixel proud, out into
   the gap. Panels of any height share the same tiles, each can have its
   own bolts, and heights step by two rows, a line of text. The build fails
   past 256 tiles, and says how many the frames take.
 - `art/panel-font.png`, from `art/panel_font.py`, is the font on the
   plates: chunky 6x7 capitals, cream fading toward the foot, with a shadow,
-  plus short digits in red for a cost not yet paid, and the pips. Only the
-  contents of a panel dim: the font, the plate and its corners come twice,
-  lit and dim, and the frames once.
-- The frames take 122 tiles and the contents 122, so 11 are left.
+  plus short digits in red for a cost not yet paid, and the pips.
+- A panel's display dims, and its steel doesn't: the font, the plate and
+  its corners come lit and dim, and so does the frame's inner ring, which
+  holds the display's bevel, but there only what is inside frame 1's black
+  outline dims. So an unlit display is dark right to the frame. The outer
+  ring comes once.
+- The contents take 122 tiles, the inner rings 66 and the outer rings 66,
+  so 1 is left: a new glyph, lit and dim, has to free two.
   Retro Diffusion can't make variants that join frame 1: at a low strength
   it copies it, at a high one it redraws its steel, and inpainting ignored
   its mask. New corners or edge pieces are drawn here, on frame 1's steel.
