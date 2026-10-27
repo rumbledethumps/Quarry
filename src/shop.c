@@ -2,6 +2,7 @@
 #include "bricks.h"
 #include "debug.h"
 #include "input.h"
+#include "machines.h"
 #include "menu.h"
 #include "nuggets.h"
 #include "paddle.h"
@@ -753,6 +754,7 @@ void shop_open(void)
     pictures_place();
     for (p = 0; p < LOCKS; p++)
         sprite_set(LOCK_SPRITE(p), XRAM_LOCK_IMAGE, XRAM_CART_PALETTE, MODE5_SIZE(16, 16));
+    machines_start();
     carts_draw();
     cursor_aim();
     for (p = 0; p < 4; p++)
@@ -773,6 +775,7 @@ void shop_open(void)
 void shop_draw(void)
 {
     shimmer();
+    machines_draw();
     if (flicker_steps < sizeof flicker)
     {
         uint8_t on = flicker_steps + 1 == sizeof flicker || flicker[flicker_steps] == '1';
@@ -805,6 +808,7 @@ uint8_t shop_step(void)
     uint8_t moved = 0, repeated, i;
 
     steps++;
+    machines_step();
 #ifndef NDEBUG
     cheats_step();
 #endif

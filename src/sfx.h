@@ -19,7 +19,8 @@
 #define SFX_RATTLE 12  /* the lock of a stage newly open shaking */
 #define SFX_SNAP 13    /* the lock breaking */
 #define SFX_UNLOCK 14  /* the stage's button lighting up */
-#define SFX_COUNT 15
+#define SFX_HISS 15    /* a puff of steam in the upgrade screen's backdrop */
+#define SFX_COUNT 16
 
 #define SFX_CENTER 160 /* a sound from the middle of the screen */
 

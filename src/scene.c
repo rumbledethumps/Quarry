@@ -66,29 +66,29 @@ static void load(const char *path, long offset, unsigned xaddr, unsigned count)
     close(fd);
 }
 
-/* A band of the backdrop on plane 0, on the scanlines from top to bottom,
-   the top of its map at y. */
-static void backdrop_band(unsigned config_at, unsigned palette, unsigned tiles, unsigned map, int16_t y,
-                          int16_t top, int16_t bottom)
+/* A band of the backdrop on plane 0, from scanline top, rows of tiles down,
+   at 2 or 4 bits a pixel. */
+static void backdrop_band(uint8_t band, uint8_t bpp, unsigned palette, unsigned tiles, unsigned map, int16_t top,
+                          uint8_t rows)
 {
     mode2_config_t config;
 
     memset(&config, 0, sizeof config);
-    config.y_pos_px = y;
+    config.y_pos_px = top;
     config.width_tiles = BACKDROP_COLS;
-    config.height_tiles = BACKDROP_ROWS;
+    config.height_tiles = rows;
     config.xram_data_ptr = map;
     config.xram_palette_ptr = palette;
     config.xram_tile_ptr = tiles;
-    xram0_write(config_at, &config, sizeof config);
-    xreg_vga_mode2(MODE2_4BPP | MODE2_16X16, config_at, 0, top, bottom);
+    xram0_write(XRAM_BACKDROP_CONFIG(band), &config, sizeof config);
+    xreg_vga_mode2((bpp == 2 ? MODE2_2BPP : MODE2_4BPP) | MODE2_16X16, XRAM_BACKDROP_CONFIG(band), 0, top,
+                   top + rows * 16);
 }
 
-/* The upgrade screen: the backdrop on plane 0, the ceiling's art from
-   CEILING_Y and the floor's down to FLOOR_Y, and on plane 1 the panels from
-   PANEL_Y and the carts from CART_Y, which the upgrade screen slides and
-   fills in: the panels' palette, tiles and the map of their frames, and the
-   carts' palette and tiles. */
+/* The upgrade screen: the backdrop on plane 0, in its three bands, and on
+   plane 1 the panels from PANEL_Y and the carts from CART_Y, which the
+   upgrade screen slides and fills in: the panels' palette, tiles and the
+   map of their frames, and the carts' palette and tiles. */
 void scene_menu(void)
 {
     mode2_config_t config;
@@ -96,10 +96,12 @@ void scene_menu(void)
     if (!scene_change(SCENE_MENU))
         return;
     load("ROM:backdrop", 0, XRAM_BACKDROP, XRAM_PICTURE(0) - XRAM_BACKDROP);
-    backdrop_band(XRAM_CEILING_CONFIG, XRAM_CEILING_PALETTE, XRAM_CEILING_TILES, XRAM_CEILING_MAP,
-                  CEILING_Y - 16, 0, BACKDROP_GAP);
-    backdrop_band(XRAM_FLOOR_CONFIG, XRAM_FLOOR_PALETTE, XRAM_FLOOR_TILES, XRAM_FLOOR_MAP,
-                  FLOOR_Y + BACKDROP_FLOOR_H + 16 - BACKDROP_ROWS * 16, BACKDROP_GAP, SCREEN_H);
+    backdrop_band(0, BACKDROP_TOP_BPP, XRAM_BAND_PALETTE(top), XRAM_BAND_TILES(top), XRAM_BAND_MAP(top),
+                  BACKDROP_TOP_Y, BACKDROP_TOP_ROWS);
+    backdrop_band(1, BACKDROP_MIDDLE_BPP, XRAM_BAND_PALETTE(middle), XRAM_BAND_TILES(middle),
+                  XRAM_BAND_MAP(middle), BACKDROP_MIDDLE_Y, BACKDROP_MIDDLE_ROWS);
+    backdrop_band(2, BACKDROP_BOTTOM_BPP, XRAM_BAND_PALETTE(bottom), XRAM_BAND_TILES(bottom),
+                  XRAM_BAND_MAP(bottom), BACKDROP_BOTTOM_Y, BACKDROP_BOTTOM_ROWS);
     load("ROM:panels", 0, XRAM_PANEL_PALETTE, XRAM_CART_PALETTE - XRAM_PANEL_PALETTE);
     memset(&config, 0, sizeof config);
     config.y_pos_px = PANEL_Y;

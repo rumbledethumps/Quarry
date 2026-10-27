@@ -78,15 +78,16 @@ add_custom_command(
     VERBATIM
 )
 
-# The backdrop of the upgrade screen, its ceiling and its floor, from
-# art/backdrop-ceiling.png and art/backdrop-floor.png, and backdrop.h, which
-# gives their sizes. art/backdrop.py also writes backdrop.png to look at.
+# The backdrop of the upgrade screen, from art/backdrop.png, in three bands,
+# and backdrop.h, which gives their sizes. art/backdrop.py also writes
+# backdrop.png to look at. It reads PANEL_Y in src/xram.h and the panels'
+# heights in art/panels.py.
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/backdrop.bin ${CMAKE_CURRENT_BINARY_DIR}/backdrop.h
     COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/art/backdrop.py ${CMAKE_CURRENT_BINARY_DIR}/backdrop.bin
         ${CMAKE_CURRENT_BINARY_DIR}/backdrop.h --preview ${CMAKE_CURRENT_BINARY_DIR}/backdrop.png
-    DEPENDS art/backdrop.py art/curtain.py art/rd2png.py art/backdrop-ceiling.png art/backdrop-floor.png
+    DEPENDS art/backdrop.py art/curtain.py art/panels.py art/rd2png.py art/backdrop.png src/xram.h
     VERBATIM
 )
 
@@ -149,6 +150,7 @@ rp6502_web(quarry CONFIG [[
     footer: 'Arrows, WASD or the keypad to move. Space, Enter or Ctrl is the button, which launches. In menus, up and down to pick and the button to choose. Esc or P for the menu. Gamepads work too: A, B, X or Y is the button, and Start or Select the menu.',
 ]])
 target_sources(quarry PRIVATE
+    src/machines.c
     src/bricks.c
     src/energy.c
     src/frame.c

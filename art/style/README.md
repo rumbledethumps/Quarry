@@ -241,31 +241,47 @@ graphite steel with no yellow: there is nothing to be careful of here.
 
 ### The Backdrop
 
-Behind the upgrade screen is a workshop: a ceiling of steel trusses across
-the top, and a floor of machinery along the foot, behind the carts, with
-plain dark wall between them, behind the panels. They are two bands of
-4-bit 16x16 tiles on plane 0, each with its own 15 colors, and each can
-move on its own, since they meet in the wall. `art/backdrop.py` darkens
-them, a little cool, so the panels and the carts stand out in front, and
-repeats each band's outer row of tiles past its edge, so either can move
-a row.
+Behind the upgrade screen is a workshop wall: a steel truss across the
+top, plain dark wall and a few gray pipes in the middle, and machinery
+along the floor, behind the carts. It is one picture, `art/backdrop.png`,
+in three bands of 16x16 tiles on plane 0, each with a palette of its own:
 
-- `art/backdrop-ceiling.png` and `art/backdrop-floor.png` are 320 wide,
-  from `rd_pro__default` with a 64x64 crop of `ref/sled-kit.png` as the
-  reference, 256x48 and 256x96, three at a time. The ceiling: "Looking
-  straight at the ceiling of a mining machine workshop, side view, filling
-  the whole frame edge to edge: a heavy steel I-beam girder running the
-  whole width, riveted brackets hanging from it, bundles of pipes and cable
-  conduits along it, a couple of caged work lamps, a small pressure gauge",
-  and the floor: "Looking straight at the floor level of a mining machine
-  workshop, side view, machinery filling the whole frame edge to edge:
-  large interlocking cogwheels, a hydraulic piston beside a small steam
-  vent, an ore crusher with a hopper, pipes with valve wheels, riveted
-  steel floor plates along the bottom edge", each then "heavy modern
-  mining machinery of graphite steel with only small touches of
-  safety-yellow paint, bolted plates, scuffed edges but clean and well
-  maintained, slightly futuristic, light from the upper left, the whole
-  scene dark and muted like a backdrop behind gameplay".
+- The top, 32 px, the truss, in 15 colors. This is where the rail and the
+  panels' hangers go, so its colors are free for them.
+- The middle, behind the panels, in 4 grays at 2 bits a pixel, the nearest
+  of the top's and the bottom's colors, so the bands join without a seam.
+  It shows only between the panels and beside the first and the last, so
+  it needs no color: nothing red or yellow belongs up there. The cells
+  always behind the middle panel while the panels are still are one plain
+  tile.
+- The bottom, from 128, the machinery, in 15 colors, with the red valve
+  wheel and the yellow paint and hazard stripes, and the track.
+
+`art/backdrop.py` darkens it, a little cool, so the panels and the carts
+stand out in front. The two cogs at the left of the floor turn all the
+time, and now and then the vent by the piston puffs steam, with a hiss:
+the builder draws the cogs anew over the art's own, in four frames a tooth
+apart, and cuts the steam drawn in the art into five frames that grow from
+the vent and thin out. Both are plane 0 sprites over the bottom band.
+
+- The picture came from `rd_pro__default`, 256x240, three at a time, with
+  the strips of an earlier try as references, and this prompt: "Looking
+  straight at the back wall of a mining machine workshop, side view,
+  filling the frame edge to edge. Across the very top, a steel truss
+  girder under the ceiling. The whole middle of the wall is plain and
+  quiet: flat dark graphite steel wall panels with faint seams, and a few
+  plain gray vertical pipes and steel columns running straight down from
+  the girder to the machines below, with no valves, no gauges, no lights,
+  no color and nothing interesting. All the machinery is low, in the
+  bottom third, along the floor: big interlocking cogwheels, a hydraulic
+  piston beside a small steam vent, a squat ore crusher, pipes with red
+  valve wheels, safety-yellow paint and black and yellow hazard chevrons,
+  and riveted steel floor plates along the bottom edge. Heavy modern
+  mining machinery of graphite steel, bolted plates, scuffed edges but
+  clean and well maintained, slightly futuristic, light from the upper
+  left, the whole scene dark and muted like a backdrop behind gameplay".
+  Without "plain and quiet" and the machinery kept low, the color lands in
+  the middle, where it never shows.
 - Retro Diffusion makes 256 wide at most, and its `tile_x` doesn't wrap
   cleanly, so the last 64 columns are outpainted: the right 192 columns,
   expanded 64 to the right, which fits its 256 window.
