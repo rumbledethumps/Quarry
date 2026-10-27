@@ -106,7 +106,7 @@ rp6502_executable(quarry DATA default RESET default)
 rp6502_web(quarry CONFIG [[
     title: 'Quarry',
     db: 'rumbledethumps-quarry',
-    footer: 'Arrows, WASD or the keypad to move. Space, Enter or Ctrl is the button, and up launches too. In menus, up and down to pick and the button to choose. Esc for the menu. Gamepads work too: any face button, and Start or Select for the menu.',
+    footer: 'Arrows, WASD or the keypad to move. Space, Enter or Ctrl is the button, and up launches too. In menus, up and down to pick and the button to choose. Esc for the menu. Gamepads work too: A, B, X or Y is the button, and Start or Select the menu.',
 ]])
 target_sources(quarry PRIVATE
     src/bricks.c

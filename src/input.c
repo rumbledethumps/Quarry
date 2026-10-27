@@ -53,7 +53,8 @@ void input_init(void)
 /* One stick and one button. Keyboard from the key bitmap, so held keys
    work: arrows, WASD or the keypad to move, and Space, Enter or Ctrl for
    the button. Every connected gamepad: the d-pad merged with the left
-   stick, and any face button. Up launches too. Esc, Start or Select is the
+   stick, and A, B, X or Y, which every pad has where you expect them,
+   for the button. Up launches too. Esc, Start or Select is the
    menu. The arrow keys with Shift are the SHIFT_ keys instead. */
 void input_read(void)
 {
@@ -113,8 +114,8 @@ void input_read(void)
             held |= INPUT_UP | INPUT_LAUNCH;
         if (dirs & GAMEPAD_DPAD_DOWN)
             held |= INPUT_DOWN;
-        if (pad->btn0 & (GAMEPAD_BTN0_A | GAMEPAD_BTN0_B | GAMEPAD_BTN0_C |
-                         GAMEPAD_BTN0_X | GAMEPAD_BTN0_Y | GAMEPAD_BTN0_Z))
+        if (pad->btn0 & (GAMEPAD_BTN0_A | GAMEPAD_BTN0_B |
+                         GAMEPAD_BTN0_X | GAMEPAD_BTN0_Y))
             held |= INPUT_LAUNCH | INPUT_CHOOSE;
         if (pad->btn1 & (GAMEPAD_BTN1_START | GAMEPAD_BTN1_SELECT))
             held |= INPUT_PAUSE;

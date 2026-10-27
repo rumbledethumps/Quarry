@@ -23,8 +23,7 @@ publish: quarry.zip
 | Menu | Esc | Start or Select |
 
 The game plays with one stick and one button. The button is Space, Enter,
-keypad Enter or Ctrl on the keyboard, and any face button on a gamepad:
-A, B, C, X, Y or Z. Menus don't wrap around, and a menu that goes up and
+keypad Enter or Ctrl on the keyboard, and A, B, X or Y on a gamepad. Menus don't wrap around, and a menu that goes up and
 down ignores left and right.
 
 Shift and the arrow keys are for testing, and holding them repeats. On
