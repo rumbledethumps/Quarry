@@ -43,19 +43,26 @@ BAND = 16             # a frame's depth, with PAD
 # its text, and what is along each
 # edge between its corners: across the top and the bottom, a character a
 # cell for cells 4 to 15, and down the sides for rows 4 to rows - 5. A dot
-# is plain steel, B b a pair of bolts, and H, along the top, a hanger. The
+# is plain steel, B b a pair of bolts, and H, along the top, a hanger, and
+# start is where the panel's edges start in the runs of plain steel. The
 # corners, with their clamps, are frame 1's own: four cells along each edge
 # from each corner.
 LAYOUTS = [
-    dict(rows=18, top='H..Bb......H', bottom='..Bb....Bb..', left='..Bb..Bb..', right='Bb......Bb'),
-    dict(rows=18, top='H......Bb..H', bottom='Bb........Bb', left='....Bb....', right='Bb......Bb'),
-    dict(rows=16, top='H......Bb..H', bottom='....Bb......', left='Bb......', right='...Bb...'),
-    dict(rows=14, top='H..........H', bottom='..Bb..Bb....', left='..Bb..', right='Bb....'),
+    dict(rows=18, start=0, top='H..Bb......H', bottom='..Bb....Bb..', left='..Bb..Bb..', right='Bb......Bb'),
+    dict(rows=18, start=5, top='H......Bb..H', bottom='Bb........Bb', left='....Bb....', right='Bb......Bb'),
+    dict(rows=16, start=2, top='H......Bb..H', bottom='....Bb......', left='Bb......', right='...Bb...'),
+    dict(rows=14, start=7, top='H..........H', bottom='..Bb..Bb....', left='..Bb..', right='Bb....'),
 ]
 
 # The cells of art/panel-frame.png that plain steel and bolts come from.
-PLAIN_COL, BOLT_COLS = 9, (14, 15)
-PLAIN_ROW, BOLT_ROWS = 8, (5, 6)
+# Plain steel walks through frame 1's own plain cells in their order, each
+# edge of each panel from a place of its own, so its grain doesn't repeat
+# every cell, as if cloned.
+PLAIN_COLS = (6, 7, 8, 9, 10, 11, 12, 13)
+PLAIN_ROWS = (4, 7, 8, 9, 10, 13)  # 9, 10 and 13 are 8, 7 and 4 turned over
+HANGER_COL = 9
+BOLT_COLS = (14, 15)
+BOLT_ROWS = (5, 6)
 
 # Frame 1's clamps, which stand a pixel proud of its edges: the pixels each
 # spans along the top edge and down the sides, in its top half.
@@ -100,28 +107,39 @@ def frame_image(layout, src):
     src_rows = len(src) // 8
     img = blank(COLS * 8, (rows + 1) * 8)
 
-    def src_row(r, along):
+    def src_row(r, along, start):
         """The source row of body row r, down a side."""
         if r < 4:
             return r
         if r >= rows - 4:
             return src_rows - (rows - r)
-        return {'.': PLAIN_ROW, 'B': BOLT_ROWS[0], 'b': BOLT_ROWS[1]}[along[r - 4]]
+        c = along[r - 4]
+        if c == '.':
+            return PLAIN_ROWS[(r - 4 + start) % len(PLAIN_ROWS)]
+        return {'B': BOLT_ROWS[0], 'b': BOLT_ROWS[1]}[c]
 
-    def src_col(c, along):
+    def src_col(c, along, start):
         if c < 4 or c >= COLS - 4:
             return c
-        return {'.': PLAIN_COL, 'H': PLAIN_COL, 'B': BOLT_COLS[0], 'b': BOLT_COLS[1]}[along[c - 4]]
+        ch = along[c - 4]
+        if ch == '.':
+            return PLAIN_COLS[(c - 4 + start) % len(PLAIN_COLS)]
+        return {'H': HANGER_COL, 'B': BOLT_COLS[0], 'b': BOLT_COLS[1]}[ch]
+
+    # Where each edge starts in its run of plain cells.
+    starts = {edge: (layout['start'] + 3 * i) for i, edge in enumerate(('top', 'bottom', 'left', 'right'))}
 
     for r in range(rows):
         for c in range(COLS):
             top, bottom = r < 2, r >= rows - 2
             side = c < 2 or c >= COLS - 2
             if top or bottom:
+                edge = 'top' if top else 'bottom'
                 sr = r if top else src_rows - (rows - r)
-                sc = src_col(c, layout['top' if top else 'bottom'])
+                sc = src_col(c, layout[edge], starts[edge])
             elif side:
-                sr = src_row(r, layout['left' if c < 2 else 'right'])
+                edge = 'left' if c < 2 else 'right'
+                sr = src_row(r, layout[edge], starts[edge])
                 sc = c
             elif (c in (2, COLS - 3)) and r in (2, rows - 3):
                 sr, sc = (2 if r == 2 else src_rows - 3), c  # the plate's rounded corners

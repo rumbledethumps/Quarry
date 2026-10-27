@@ -216,16 +216,22 @@ graphite steel with no yellow: there is nothing to be careful of here.
   short, so the build uses its top half turned over for the bottom.
 - `art/panels.py` builds each panel's frame from its cells: the corners,
   with their clamps, as they are, and plain steel, bolts and hangers along
-  each edge, as `LAYOUTS` says for each panel. Panels of any height share
-  the same tiles, and each can have its own bolts. The build fails past
-  256 tiles, and says how many the frames take.
+  each edge, as `LAYOUTS` says for each panel. The plain steel walks
+  through frame 1's own plain cells in their order, each edge of each
+  panel from a place of its own, so the grain of the steel never repeats
+  cell after cell as if cloned. The clamps stand a pixel proud, out into
+  the gap. Panels of any height share the same tiles, each can have its
+  own bolts, and heights step by two rows, a line of text. The build fails
+  past 256 tiles, and says how many the frames take.
 - `art/panel-font.png`, from `art/panel_font.py`, is the font on the
   plates: chunky 6x7 capitals, cream fading toward the foot, with a shadow,
   plus short digits in red for a cost not yet paid, and the pips. Only the
   contents of a panel dim: the font, the plate and its corners come twice,
   lit and dim, and the frames once.
-- Alternate corners and edges cost 4 tiles a corner and 2 to 4 an edge
-  piece. About 60 tiles are left for them.
+- The frames take 122 tiles and the contents 122, so 11 are left.
+  Retro Diffusion can't make variants that join frame 1: at a low strength
+  it copies it, at a high one it redraws its steel, and inpainting ignored
+  its mask. New corners or edge pieces are drawn here, on frame 1's steel.
 
 ## Rules for both
 
