@@ -312,7 +312,19 @@ typedef struct
 #define PANEL_PITCH PANEL_COLS
 #define PANEL_MAP_COLS (PANELS * PANEL_PITCH)
 #define PANEL_ROWS 19
-#define PANEL_Y 32 /* the top of the hangers */
+#define PANEL_Y 16 /* the top of the hangers */
+
+/* The stage select is a train of mine carts along the bottom: a map of
+   4-bit tiles on plane 1 too, on the scanlines under the panels, which
+   slides on its own. Each cart is CART_COLS cells with its coupling, and
+   CART_ROWS down. art/carts.py makes the tiles and their palette, and
+   writes build/carts.h. */
+#define CARTS_MAX 10
+#define CART_COLS 5
+#define CART_ROWS 4
+#define CART_MAP_COLS (CARTS_MAX * CART_COLS)
+#define CART_Y 178 /* the top of the carts' cells: their wheels sit on the track's top line */
+#define CART_TILES_MAX 64
 
 /* Background tiles of the title and the upgrade screens, 16x16, in the
    order of art/tiles.png. The wall tiles are no longer drawn. */
@@ -379,6 +391,7 @@ typedef struct
 
 typedef MODE2_TILE(4, 16) tile_t;
 typedef MODE2_TILE(8, 8) panel_tile_t;
+typedef MODE2_TILE(4, 8) cart_tile_t;
 typedef MODE5_CUSTOM_IMAGE(4, 24, 8) brick_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 24, 16) break_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 8, 8) piece_image_t;
@@ -452,6 +465,9 @@ typedef struct
     uint16_t panel_palette[256]; /* these three, as ROM:panels holds them */
     panel_tile_t panel_tiles[256];
     uint8_t panels[PANEL_ROWS][PANEL_MAP_COLS];
+    uint16_t cart_palette[16]; /* these two, as ROM:carts holds them */
+    cart_tile_t cart_tiles[CART_TILES_MAX];
+    uint8_t cart_map[CART_ROWS][CART_MAP_COLS];
     uint8_t tile_map[TILE_MAP_ROWS][TILE_MAP_COLS]; /* an odd size, so last */
 } menu_art_t;
 
@@ -474,6 +490,7 @@ typedef struct
     mode3_config_t texture_config;
     mode1_config_t text_config;
     mode2_config_t panel_config;
+    mode2_config_t cart_config;
     palettes_t palettes;
     scenery_t scenery;
     mode5_csprite_t bricks[BRICKS_MAX];
@@ -510,6 +527,7 @@ typedef struct
 #define XRAM_TEXTURE_CONFIG offsetof(xram_layout_t, texture_config)
 #define XRAM_TEXT_CONFIG offsetof(xram_layout_t, text_config)
 #define XRAM_PANEL_CONFIG offsetof(xram_layout_t, panel_config)
+#define XRAM_CART_CONFIG offsetof(xram_layout_t, cart_config)
 #define XRAM_PALETTES offsetof(xram_layout_t, palettes)
 #define XRAM_PALETTE_MAIN offsetof(xram_layout_t, palettes.main)
 #define XRAM_PALETTE_BRICKS offsetof(xram_layout_t, palettes.bricks)
@@ -568,6 +586,9 @@ typedef struct
 #define XRAM_PANEL_PALETTE offsetof(xram_layout_t, art.menu.panel_palette)
 #define XRAM_PANEL_TILES offsetof(xram_layout_t, art.menu.panel_tiles)
 #define XRAM_PANELS offsetof(xram_layout_t, art.menu.panels)
+#define XRAM_CART_PALETTE offsetof(xram_layout_t, art.menu.cart_palette)
+#define XRAM_CART_TILES offsetof(xram_layout_t, art.menu.cart_tiles)
+#define XRAM_CART_MAP offsetof(xram_layout_t, art.menu.cart_map)
 #define XRAM_TEXTURE offsetof(xram_layout_t, art.cave.texture)
 #define XRAM_CURTAINS offsetof(xram_layout_t, art.cave.curtains)
 #define XRAM_STAGE_SLED offsetof(xram_layout_t, art.cave.sled_images)

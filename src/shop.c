@@ -11,25 +11,28 @@
 #include "upgrades.h"
 #include "video.h"
 #include "xram.h"
+#include <carts.h>
 #include <panels.h>
 #include <string.h>
 
 /* The upgrade screen, a working mock with stand-in art. Panels hang from
    a rail across the top, one for each upgrade, and slide along it, so the
    one picked is always in the middle, lit, flickering on as it comes,
-   with the others dim to its sides. The stages are a row of buttons along the bottom. Up and down
-   move the holographic cursor between the rail and the buttons, and left
-   and right move the pick. The button buys the upgrade picked, or asks
-   to begin the stage picked. Esc asks to go back to the title. A stage
-   newly open is still locked when the screen opens: its lock shakes and
-   breaks, and its button lights.
+   with the others dim to its sides. The stages are a train of mine carts
+   along the bottom, which slides the same way. Up and down move the
+   holographic cursor between the panels and the carts, and left and right
+   move the pick. The button buys the upgrade picked, or asks to begin the
+   stage picked. Esc asks to go back to the title. A stage newly open is
+   still locked when the screen opens: the padlock on its cart shakes and
+   breaks, and its number lights.
 
-   The panels are 8-bit tiles on plane 1, which slides across, and their
-   pictures are plane 2 sprites that move with them. Only their contents
-   dim: the frames stay lit. The counts down the
-   left stay in front of them. shop_step() works out where everything goes,
-   and shop_draw() moves it there at the start of the next frame, so
-   nothing moves while the frame is drawn. */
+   The panels are 8-bit tiles on plane 1, and the carts 4-bit tiles on its
+   scanlines below them, each sliding on its own, and the panels' pictures
+   are plane 2 sprites that move with them. Only the panels' contents dim:
+   the frames stay lit. The counts down the left stay in front of them.
+   shop_step() works out where everything goes, and shop_draw() moves it
+   there at the start of the next frame, so nothing moves while the frame
+   is drawn. */
 
 #define SPRITE(i) (XRAM_MENU_SPRITES + (i) * sizeof(mode5_csprite_t))
 
@@ -85,15 +88,22 @@ static const char *const panel_titles[PANELS] = {"WIDER SLED", "FASTER SLED", "M
    or dim each step, then lit. */
 static const char flicker[] = "110001000011";
 
-/* The stage buttons, along the bottom, between two lines of track, in
-   text cells of code page 437. */
-#define TRACK_TOP 24
-#define BUTTON_ROW 26
-#define TRACK_BOTTOM 28
-#define BUTTONS 9
-#define BUTTON_COL 2
-#define BUTTON_COLS 4
-#define LOCK '\xB2'
+/* The stages are a train of mine carts along the bottom, the one picked
+   in the middle, its number lit. A cart is 4 cells across, with its
+   coupling after it: a heap of ore for a stage cleared, the rim, the body
+   with the number plate in its middle two cells, and the wheels. Its top
+   two rows come with the heap and without. The track
+   under them is text cells of code page 437, for now. */
+#define CART_W 32
+#define CART_STEP (CART_COLS * 8)
+#define CART_LEFT ((SCREEN_W - CART_W) / 2)
+#define CART_TOP 10 /* the rim, under any heap */
+#define PLATE_ROW 2
+#define TRACK_ROW ((CART_Y + CART_ROWS * 8) / 8)
+#define RAIL_ROW 1
+
+_Static_assert(STAGES <= CARTS_MAX, "CARTS_MAX in xram.h is too few for the stages.");
+_Static_assert(CART_TILES <= CART_TILES_MAX, "CART_TILES_MAX in xram.h is too few.");
 
 /* What the cursor is on. */
 #define ON_RAIL 0
@@ -113,6 +123,8 @@ static uint8_t panel_picked; /* the panel in the middle */
 static uint8_t cursor_on;     /* ON_RAIL or ON_STAGES */
 static uint8_t asking;
 static int16_t panel_scroll; /* how far the panels have slid, in px */
+static int16_t cart_scroll;  /* how far the carts have slid, in px */
+static int16_t drawn_cart_scroll;
 static int16_t cursor[4], cursor_to[4]; /* left, top, right, bottom */
 static uint8_t steps;
 static uint8_t panel_lit[PANELS]; /* whether each panel's contents are lit */
@@ -128,7 +140,7 @@ static uint8_t picture_shown[PANELS * PANEL_SPRITES];
 
 static uint8_t unlocking; /* the stage being unlocked, or 0 */
 static uint8_t unlock_steps;
-static int16_t half_x[2], half_y[2], half_dx[2], half_dy[2]; /* in 1/16 px */
+static int16_t half_x[2], half_y[2], half_dx[2], half_dy[2]; /* in 1/16 px, from the cart */
 static uint8_t lock_dirty;
 
 static char *put_text(char *at, const char *s)
@@ -367,17 +379,6 @@ static void pictures_move(void)
     drawn_scroll = panel_scroll;
 }
 
-/* The first stage of the row of buttons, which keeps the one picked in
-   view. */
-static uint8_t first_button(void)
-{
-    uint8_t first = stage_picked > BUTTONS / 2 ? stage_picked - BUTTONS / 2 : 1;
-
-    if (STAGES <= BUTTONS)
-        return 1;
-    return first > STAGES - BUTTONS + 1 ? STAGES - BUTTONS + 1 : first;
-}
-
 /* The stages shown open: all that are, but one being unlocked until its
    lock breaks. */
 static uint8_t shown_open(void)
@@ -385,36 +386,61 @@ static uint8_t shown_open(void)
     return unlocking > stages_shown ? unlocking - 1 : save_stages_open();
 }
 
-/* A button for each stage in view, lit for the one picked, a lock for each
-   that isn't open yet, and an arrow at an end with more past it. */
-static void stages_draw(void)
+/* The left edge of stage s's cart, as the train slides. */
+static int16_t cart_x(uint8_t s)
 {
-    static const char line[] = "\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4"
-                               "\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4";
-    uint8_t first = first_button(), open = shown_open(), i;
-
-    video_text(1, TRACK_TOP, line, BOX_COLOR, CLEAR);
-    video_text(1, TRACK_BOTTOM, line, BOX_COLOR, CLEAR);
-    for (i = 0; i < BUTTONS && first + i <= STAGES; i++)
-    {
-        uint8_t s = first + i;
-        char button[] = "[00]";
-        if (s <= open)
-        {
-            button[1] = '0' + s / 10;
-            button[2] = '0' + s % 10;
-        }
-        else
-            button[1] = button[2] = LOCK;
-        video_text(BUTTON_COL + i * BUTTON_COLS, BUTTON_ROW, button,
-                   s > open ? DIM_COLOR : s == stage_picked ? PICK_COLOR : BOX_COLOR, BOX_FILL);
-    }
-    video_text(0, BUTTON_ROW, first > 1 ? "\x11" : " ", BOX_COLOR, CLEAR);
-    video_text(TEXT_COLS - 1, BUTTON_ROW, first + BUTTONS <= STAGES ? "\x10" : " ", BOX_COLOR, CLEAR);
+    return CART_LEFT + (s - 1) * CART_STEP - cart_scroll;
 }
 
-/* Where the cursor goes: around the panel in the middle, or the stage
-   button picked, a few pixels out. */
+/* Every stage's cart: a heap on each one cleared, its number on its plate,
+   lit on the one picked, or a padlock on each that isn't open yet. */
+static void carts_draw(void)
+{
+    uint8_t open = shown_open(), s, r, c;
+
+    for (s = 1; s <= STAGES; s++)
+    {
+        uint8_t cells[CART_ROWS][CART_COLS], t = CART_TILE_BODY;
+        for (r = 0; r < CART_ROWS; r++)
+            for (c = 0; c < CART_COLS; c++)
+                cells[r][c] = 0;
+        for (r = 1; r < CART_ROWS; r++)
+            for (c = 0; c < 4; c++)
+                if (r != PLATE_ROW || c == 0 || c == 3)
+                    cells[r][c] = t++;
+        if (s <= stages_cleared && s <= open)
+            for (c = 0; c < 4; c++)
+            {
+                cells[0][c] = CART_TILE_HEAP + c;
+                cells[1][c] = CART_TILE_HEAP + 4 + c;
+            }
+        if (s > open)
+        {
+            cells[PLATE_ROW][1] = CART_TILE_LOCK;
+            cells[PLATE_ROW][2] = CART_TILE_LOCK + 1;
+        }
+        else
+        {
+            uint8_t digits = s == stage_picked ? CART_TILE_DIGIT : CART_TILE_DIM;
+            cells[PLATE_ROW][1] = digits + s / 10;
+            cells[PLATE_ROW][2] = digits + s % 10;
+        }
+        if (s < STAGES)
+            cells[CART_ROWS - 1][4] = CART_TILE_COUPLING;
+        for (r = 0; r < CART_ROWS; r++)
+            xram0_write(XRAM_CART_MAP + r * CART_MAP_COLS + (s - 1) * CART_COLS, cells[r], CART_COLS);
+    }
+}
+
+/* The carts, slid to cart_scroll. */
+static void carts_move(void)
+{
+    xram0_poke16(XRAM_CART_CONFIG + offsetof(mode2_config_t, x_pos_px), CART_LEFT - cart_scroll);
+    drawn_cart_scroll = cart_scroll;
+}
+
+/* Where the cursor goes: around the panel in the middle, or the cart in
+   the middle, a few pixels out. */
 static void cursor_aim(void)
 {
     if (cursor_on == ON_RAIL)
@@ -426,11 +452,10 @@ static void cursor_aim(void)
     }
     else
     {
-        uint8_t col = BUTTON_COL + (stage_picked - first_button()) * BUTTON_COLS;
-        cursor_to[0] = col * 8 - 3;
-        cursor_to[1] = BUTTON_ROW * 8 - 3;
-        cursor_to[2] = (col + BUTTON_COLS) * 8 + 3;
-        cursor_to[3] = (BUTTON_ROW + 1) * 8 + 3;
+        cursor_to[0] = CART_LEFT - 3;
+        cursor_to[1] = CART_Y + CART_TOP - 3;
+        cursor_to[2] = CART_LEFT + CART_W + 3;
+        cursor_to[3] = CART_Y + CART_ROWS * 8 + 3;
     }
 }
 
@@ -481,17 +506,17 @@ static void shimmer(void)
     xram0_poke16(XRAM_PALETTE_HOLO + 3 * sizeof(uint16_t), middle[phase]);
 }
 
-/* The lock over the button of the stage being unlocked, in two halves. */
+/* The lock over the plate of the cart being unlocked, in two halves. */
 static void lock_start(void)
 {
-    uint8_t col = BUTTON_COL + (unlocking - first_button()) * BUTTON_COLS + 1, i;
+    uint8_t i;
 
     for (i = 0; i < 2; i++)
     {
         sprite_set(LOCK_SPRITE(i), XRAM_LOCK_IMAGES + i * sizeof(lock_image_t), XRAM_PALETTE_SLED,
                    MODE5_SIZE(8, 16));
-        half_x[i] = (col + i) * 8 * 16;
-        half_y[i] = (BUTTON_ROW * 8 - 4) * 16;
+        half_x[i] = (8 + i * 8) * 16;
+        half_y[i] = (CART_Y + PLATE_ROW * 8 - 4) * 16;
         half_dx[i] = i ? HALF_DX : -HALF_DX;
         half_dy[i] = HALF_DY;
     }
@@ -510,7 +535,7 @@ static void lock_move(void)
         shake = unlock_steps / 2 & 1 ? amount : -amount;
     }
     for (i = 0; i < 2; i++)
-        sprite_move(LOCK_SPRITE(i), half_x[i] / 16 + shake, half_y[i] / 16);
+        sprite_move(LOCK_SPRITE(i), cart_x(unlocking) + half_x[i] / 16 + shake, half_y[i] / 16);
 }
 
 /* Ends an unlock at once, the stage shown open. */
@@ -521,7 +546,7 @@ static void unlock_finish(void)
     stages_shown = unlocking;
     unlocking = 0;
     lock_dirty = 0;
-    stages_draw();
+    carts_draw();
 }
 
 /* A step of the unlock: the shake rattles, the break snaps and shows the
@@ -533,15 +558,15 @@ static void unlock_step(void)
 
     lock_dirty = 1;
     if (t >= UNLOCK_WAIT && t < UNLOCK_WAIT + UNLOCK_SHAKE && (t - UNLOCK_WAIT) % 6 == 0)
-        sfx_play(SFX_RATTLE, half_x[0] / 16);
+        sfx_play(SFX_RATTLE, cart_x(unlocking));
     if (t == UNLOCK_WAIT + UNLOCK_SHAKE)
     {
-        sfx_play(SFX_SNAP, half_x[0] / 16);
+        sfx_play(SFX_SNAP, cart_x(unlocking));
         stages_shown = unlocking;
-        stages_draw();
+        carts_draw();
     }
     if (t == UNLOCK_WAIT + UNLOCK_SHAKE + UNLOCK_CHIME)
-        sfx_play(SFX_UNLOCK, half_x[0] / 16);
+        sfx_play(SFX_UNLOCK, cart_x(unlocking));
     if (t > UNLOCK_WAIT + UNLOCK_SHAKE)
         for (i = 0; i < 2; i++)
         {
@@ -601,7 +626,7 @@ static void cheats_step(void)
     }
     else
         return;
-    stages_draw();
+    carts_draw();
     cursor_aim();
     DEBUG_LOG("cheat: %u stages cleared\n", stages_cleared);
 }
@@ -646,20 +671,21 @@ void shop_open(void)
     scene_menu();
     video_rock();
     video_text_clear();
-    video_text(17, 1, "QUARRY", PICK_COLOR, CLEAR);
     {
         char rail[TEXT_COLS + 1];
         uint8_t i;
         for (i = 0; i < TEXT_COLS; i++)
             rail[i] = '\xCD';
         rail[TEXT_COLS] = 0;
-        video_text(0, 3, rail, BOX_COLOR, CLEAR);
+        video_text(0, RAIL_ROW, rail, BOX_COLOR, CLEAR);
+        video_text(0, TRACK_ROW, rail, BOX_COLOR, CLEAR);
     }
     nuggets_start(1);
     cursor_on = ON_RAIL;
     asking = ASK_NONE;
     unlocking = save_stages_open() > stages_shown ? save_stages_open() : 0;
     panel_scroll = panel_picked * PANEL_STEP;
+    cart_scroll = (stage_picked - 1) * CART_STEP;
     /* The map comes lit. Every panel dims, and the one picked flickers on. */
     for (p = 0; p < PANELS; p++)
     {
@@ -669,13 +695,14 @@ void shop_open(void)
     }
     flicker_steps = 0;
     pictures_place();
-    stages_draw();
+    carts_draw();
     cursor_aim();
     for (p = 0; p < 4; p++)
         cursor[p] = cursor_to[p];
     cursor_set();
     cursor_move();
     pictures_dirty = cursor_dirty = 0;
+    carts_move();
     if (unlocking)
         lock_start();
     save_write();
@@ -704,6 +731,8 @@ void shop_draw(void)
         pictures_place();
     else if (panel_scroll != drawn_scroll)
         pictures_move();
+    if (cart_scroll != drawn_cart_scroll)
+        carts_move();
     if (cursor_dirty)
         cursor_move();
     if (lock_dirty)
@@ -776,7 +805,7 @@ uint8_t shop_step(void)
         else if (cursor_on == ON_STAGES && (right ? stage_picked < save_stages_open() : stage_picked > 1))
         {
             stage_picked += right ? 1 : -1;
-            stages_draw();
+            carts_draw();
             moved = 1;
         }
     }
@@ -802,6 +831,7 @@ uint8_t shop_step(void)
         cursor_aim();
     }
     panel_scroll = ease(panel_scroll, panel_picked * PANEL_STEP);
+    cart_scroll = ease(cart_scroll, (stage_picked - 1) * CART_STEP);
     for (i = 0; i < 4; i++)
         if (cursor[i] != cursor_to[i])
         {

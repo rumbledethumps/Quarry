@@ -233,6 +233,21 @@ graphite steel with no yellow: there is nothing to be careful of here.
   it copies it, at a high one it redraws its steel, and inpainting ignored
   its mask. New corners or edge pieces are drawn here, on frame 1's steel.
 
+### The Mine Carts
+
+The stage select is a train of mine carts on a track along the foot of the
+upgrade screen, the picked one in the middle. `art/carts.py` draws them
+for now, in frame 1's steel, in a 4-bit tile layer of 16 colors: each cart
+is 4 cells by 4, with its coupling in a fifth. The stage's number is on a
+plate in the cart's middle two cells, lit on the cart picked, and a locked
+stage shows a padlock there.
+
+- The number sits in the middle of the cart, across and down, never a
+  pixel off. The cart stands low in its cells for it, its rim on the
+  third line of its second row, with the wheels at the foot on the track.
+- A stage cleared carries a small heap of ore, half a row high, down onto
+  the rim. A cart's top two rows come with the heap and without.
+
 ## Rules for both
 
 - The light comes from the upper left.

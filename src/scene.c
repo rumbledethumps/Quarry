@@ -65,10 +65,10 @@ static void load(const char *path, long offset, unsigned xaddr, unsigned count)
     close(fd);
 }
 
-/* The upgrade screen: rock tiles on plane 0, and the panels on plane 1 from
-   PANEL_Y, which the upgrade screen scrolls: their palette, their tiles
-   and the map of their frames, with plain plates for the upgrade screen
-   to fill in. */
+/* The upgrade screen: rock tiles on plane 0, and on plane 1 the panels
+   from PANEL_Y and the carts from CART_Y, which the upgrade screen slides
+   and fills in: the panels' palette, tiles and the map of their frames, and
+   the carts' palette and tiles. */
 void scene_menu(void)
 {
     mode2_config_t config;
@@ -88,6 +88,16 @@ void scene_menu(void)
     config.xram_tile_ptr = XRAM_PANEL_TILES;
     xram0_write(XRAM_PANEL_CONFIG, &config, sizeof config);
     xreg_vga_mode2(MODE2_8BPP | MODE2_8X8, XRAM_PANEL_CONFIG, 1, PANEL_Y, PANEL_Y + PANEL_ROWS * 8);
+    load("ROM:carts", 0, XRAM_CART_PALETTE, XRAM_CART_MAP - XRAM_CART_PALETTE);
+    xram0_set(XRAM_CART_MAP, 0, sizeof(((xram_layout_t *)0)->art.menu.cart_map));
+    config.y_pos_px = CART_Y;
+    config.width_tiles = CART_MAP_COLS;
+    config.height_tiles = CART_ROWS;
+    config.xram_data_ptr = XRAM_CART_MAP;
+    config.xram_palette_ptr = XRAM_CART_PALETTE;
+    config.xram_tile_ptr = XRAM_CART_TILES;
+    xram0_write(XRAM_CART_CONFIG, &config, sizeof config);
+    xreg_vga_mode2(MODE2_4BPP | MODE2_8X8, XRAM_CART_CONFIG, 1, CART_Y, CART_Y + CART_ROWS * 8);
 }
 
 /* The curtain set: its palette, the colors it gives the texture, and its

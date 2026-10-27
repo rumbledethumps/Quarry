@@ -80,6 +80,17 @@ add_custom_command(
     VERBATIM
 )
 
+# The mine carts of the stage select, from art/carts.py, and carts.h, which
+# gives their tile numbers.
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/carts.bin ${CMAKE_CURRENT_BINARY_DIR}/carts.h
+    COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/art/carts.py ${CMAKE_CURRENT_BINARY_DIR}/carts.bin
+        ${CMAKE_CURRENT_BINARY_DIR}/carts.h --preview ${CMAKE_CURRENT_BINARY_DIR}/carts.png
+    DEPENDS art/carts.py art/panel_font.py art/panels.py art/rd2png.py
+    VERBATIM
+)
+
 # A sled for each width of src/tuning.h, drawn by art/sled.py, which also
 # writes them to look at in sleds/ in the build folder.
 add_custom_command(
@@ -115,6 +126,7 @@ rp6502_asset(quarry tiles ${CMAKE_CURRENT_BINARY_DIR}/tiles.bin)
 rp6502_asset(quarry logo ${CMAKE_CURRENT_BINARY_DIR}/logo.bin)
 rp6502_asset(quarry sleds ${CMAKE_CURRENT_BINARY_DIR}/sleds.bin)
 rp6502_asset(quarry panels ${CMAKE_CURRENT_BINARY_DIR}/panels.bin)
+rp6502_asset(quarry carts ${CMAKE_CURRENT_BINARY_DIR}/carts.bin)
 foreach(texture IN LISTS QUARRY_TEXTURES)
     rp6502_asset(quarry ${texture} ${CMAKE_CURRENT_BINARY_DIR}/${texture}.bin)
 endforeach()
@@ -145,6 +157,7 @@ target_sources(quarry PRIVATE
     src/upgrades.c
     src/video.c
     ${CMAKE_CURRENT_BINARY_DIR}/panels.h
+    ${CMAKE_CURRENT_BINARY_DIR}/carts.h
 )
 target_include_directories(quarry PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
