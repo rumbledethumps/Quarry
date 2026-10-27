@@ -15,10 +15,12 @@ sprite images: CURTAIN_COLS across and CURTAIN_ROWS down, row by row, each
 image packed as png2bin.py packs one. CURTAIN_W and the sizes are those of
 src/xram.h. Only the Python standard library is used.
 
-The texture's colors take the hue of the darker half of the rock, at the
-four faint levels of TEXTURE_LUMA, so the floor of the playfield matches
-the walls around it. A color has 5 bits a channel, so each level is
-nudged, if it must be, to stay brighter than the one under it.
+The texture's colors are near grays at the four faint levels of
+TEXTURE_LUMA, so the floor of the playfield matches the walls around it.
+A color has 5 bits a channel, and at these levels one step of one channel
+is a strong tint, so each color is a gray, or a gray a step warmer in the
+rock's strongest channel, or in its two strongest: dark grays and browns,
+never green or purple.
 """
 
 import argparse
@@ -46,21 +48,19 @@ def rgb555(r5, g5, b5):
 def texture_colors(counts):
     """The 4 colors of the texture, as 5-bit channels, from the colors of
     the rock and how many pixels each has."""
-    by_luma = sorted(counts.items(), key=lambda ck: luma(ck[0]))
-    half, seen, total = sum(counts.values()) // 2, 0, [0, 0, 0]
-    for color, n in by_luma:
-        if seen >= half:
-            break
-        total = [t + c * n for t, c in zip(total, color)]
-        seen += n
-    hue = [t / max(total) for t in total]
+    total = [sum(c[i] * n for c, n in counts.items()) for i in range(3)]
+    order = sorted(range(3), key=lambda i: -total[i])  # the rock's channels, strongest first
+    candidates = []
+    for gray in range(8):
+        for steps in range(3):
+            c5 = [gray] * 3
+            for i in order[:steps]:
+                c5[i] += 1
+            candidates.append(c5)
     levels = []
     for target in TEXTURE_LUMA:
-        scale = target / luma(hue)
-        c5 = [min(31, round(h * scale / 8)) for h in hue]
-        while levels and luma(c5) <= luma(levels[-1]):
-            c5[hue.index(max(hue))] += 1
-        levels.append(c5)
+        above = [c for c in candidates if not levels or luma(c) > luma(levels[-1])]
+        levels.append(min(above, key=lambda c: abs(luma(c) * 8 - target)))
     return levels
 
 
