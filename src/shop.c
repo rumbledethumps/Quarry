@@ -21,8 +21,8 @@
    with the others dim to its sides. The stages are a train of mine carts
    along the bottom, which slides the same way. Up and down move the
    holographic cursor between the panels and the carts, and left and right
-   move the pick. The button buys the upgrade picked, or asks to begin the
-   stage picked. Esc asks to go back to the title. A stage newly open is
+   move the pick, repeating while held. The button buys the upgrade picked,
+   again and again while held, or asks to begin the stage picked. Esc asks to go back to the title. A stage newly open is
    still locked when the screen opens: the padlock on its cart shakes and
    breaks, and its number lights.
 
@@ -669,6 +669,7 @@ static void ask(uint8_t what)
         begin_title[14] = stage_picked >= 10 ? '?' : 0;
     }
     asking = what;
+    input_repeat_stop();
     sprites_hide();
     menu_open(what == ASK_BEGIN ? &begin_menu : &title_menu, 0, 0, 0);
     DEBUG_LOG("asked %s\n", what == ASK_BEGIN ? "begin" : "title");
@@ -686,6 +687,7 @@ void shop_open(void)
     uint8_t p;
 
     video_hide_sprites();
+    input_repeat_stop();
     scene_menu();
     video_rock();
     video_text_clear();
@@ -764,7 +766,7 @@ void shop_draw(void)
    back to the title, and SHOP_STAY until then. */
 uint8_t shop_step(void)
 {
-    uint8_t moved = 0, i;
+    uint8_t moved = 0, repeated, i;
 
     steps++;
 #ifndef NDEBUG
@@ -796,6 +798,7 @@ uint8_t shop_step(void)
             }
         return SHOP_STAY;
     }
+    repeated = input_repeat();
     if (input_pressed & INPUT_PAUSE)
     {
         ask(ASK_TITLE);
@@ -811,9 +814,9 @@ uint8_t shop_step(void)
         cursor_on = ON_STAGES;
         moved = 1;
     }
-    else if (input_pressed & (INPUT_LEFT | INPUT_RIGHT))
+    else if (repeated & (INPUT_LEFT | INPUT_RIGHT))
     {
-        uint8_t right = input_pressed & INPUT_RIGHT;
+        uint8_t right = repeated & INPUT_RIGHT;
         if (cursor_on == ON_RAIL && (right ? panel_picked + 1 < PANELS : panel_picked > 0))
         {
             panel_light(panel_picked, 0);
@@ -829,7 +832,7 @@ uint8_t shop_step(void)
             moved = 1;
         }
     }
-    else if (input_pressed & INPUT_CHOOSE)
+    else if ((cursor_on == ON_RAIL ? repeated : input_pressed) & INPUT_CHOOSE)
     {
         if (cursor_on == ON_STAGES)
             ask(ASK_BEGIN);

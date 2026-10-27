@@ -6,13 +6,14 @@ uint8_t input_held;
 uint8_t input_pressed;
 uint8_t shift_pressed;
 
-/* A held Shift key repeats after SHIFT_DELAY steps, then every
-   SHIFT_REPEAT. */
-#define SHIFT_DELAY 20
-#define SHIFT_REPEAT 6
+/* A held key repeats after REPEAT_DELAY steps, then every REPEAT_STEPS. */
+#define REPEAT_DELAY 20
+#define REPEAT_STEPS 6
 
 static uint8_t shift_held;
 static uint8_t shift_steps;
+static uint8_t repeat_keys; /* the INPUT_ bits of the last press input_repeat() saw */
+static uint8_t repeat_steps;
 
 static void shift_read(const uint8_t *keys)
 {
@@ -31,10 +32,10 @@ static void shift_read(const uint8_t *keys)
         shift_pressed = held & ~shift_held;
         shift_steps = 0;
     }
-    else if (held && ++shift_steps >= SHIFT_DELAY)
+    else if (held && ++shift_steps >= REPEAT_DELAY)
     {
         shift_pressed = held;
-        shift_steps = SHIFT_DELAY - SHIFT_REPEAT;
+        shift_steps = REPEAT_DELAY - REPEAT_STEPS;
     }
     else
         shift_pressed = 0;
@@ -125,4 +126,33 @@ void input_read(void)
 
     input_pressed = held & ~input_held;
     input_held = held;
+}
+
+/* The INPUT_ bits pressed this step, or those of the last press it saw
+   again, once they have been held REPEAT_DELAY steps and then every
+   REPEAT_STEPS, for a screen that calls it each step it takes input. */
+uint8_t input_repeat(void)
+{
+    if (input_pressed)
+    {
+        repeat_keys = input_pressed;
+        repeat_steps = 0;
+        return input_pressed;
+    }
+    if (!repeat_keys || (input_held & repeat_keys) != repeat_keys)
+    {
+        repeat_keys = 0;
+        return 0;
+    }
+    if (++repeat_steps < REPEAT_DELAY)
+        return 0;
+    repeat_steps = REPEAT_DELAY - REPEAT_STEPS;
+    return repeat_keys;
+}
+
+/* Forgets the last press, so a key held into another screen or question
+   doesn't repeat there. */
+void input_repeat_stop(void)
+{
+    repeat_keys = 0;
 }

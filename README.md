@@ -45,7 +45,7 @@ the main menu. Esc in a stage pauses it, with Restart too.
 
 The upgrade screen is coming together. Panels hang from a rail, one for
 each upgrade, and slide left and right; the one in the middle flickers on,
-and the button buys it. The panels have their final frames and a stand-in
+and the button buys it. Left, right and the button repeat while held. The panels have their final frames and a stand-in
 font; the background and the pictures are still stand-ins. Down goes to the row of stages, where the button
 begins the stage picked. A stage newly open is still locked the first time
 the screen shows it: the lock shakes, breaks, and its button lights. Stages 2 to 10 are stand-ins: stage 1 a column

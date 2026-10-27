@@ -138,6 +138,15 @@ def main():
         game.tap('left')
     settle()
     check(game.ram('panel_picked') == 0 and game.ram('panel_scroll', 2) == 0, 'and left at the first')
+    game.cmd('press right')
+    game.run(sym['REPEAT_DELAY'] + 2)
+    game.cmd('release right')
+    check(game.ram('panel_picked') == 2, 'held, right repeats')
+    game.cmd('press left')
+    game.run(sym['REPEAT_DELAY'] + 2)
+    game.cmd('release left')
+    settle()
+    check(game.ram('panel_picked') == 0, 'and so does left')
     print('ok: the panels slide')
 
     # The cheats of a debug build: on the rail, Shift and right or left raise
@@ -149,26 +158,32 @@ def main():
     game.tap('left')
     check(game.ram('upgrade_levels') == 0, 'Shift and left lowers it')
     game.cmd('press right')
-    game.run(sym['SHIFT_DELAY'] + 2 * sym['SHIFT_REPEAT'] + 2)
+    game.run(sym['REPEAT_DELAY'] + 2 * sym['REPEAT_STEPS'] + 2)
     game.cmd('release right')
     check(game.ram('upgrade_levels') >= 3, 'held, it repeats')
     game.cmd('press left')
-    game.run(sym['SHIFT_DELAY'] + sym['SHIFT_REPEAT'] * sym['UPGRADE_LEVELS_MAX'])
+    game.run(sym['REPEAT_DELAY'] + sym['REPEAT_STEPS'] * sym['UPGRADE_LEVELS_MAX'])
     game.cmd('release left')
     game.cmd('release lshift')
     game.run(2)
     check(game.ram('upgrade_levels') == 0, 'and back down to none')
     print('ok: the upgrade cheats')
 
-    # With nuggets: every level of width, each at its cost, then MAX. The
-    # count shows what is left.
+    # With nuggets: a level of width at its cost, then, with the button
+    # held, every other level, then MAX. The count shows what is left.
     have = 200
     game.poke('nuggets', have, 2)
-    for level, cost in enumerate(tune['TUNE_WIDTH_COSTS'], 1):
-        game.tap('space')
-        game.wait(f'bought width {level}', 10)
-        have -= cost
-        check(game.ram('nuggets', 2) == have, f'width {level} costs {cost}')
+    game.tap('space')
+    game.wait('bought width 1', 10)
+    have -= tune['TUNE_WIDTH_COSTS'][0]
+    check(game.ram('nuggets', 2) == have, f'width 1 costs {tune["TUNE_WIDTH_COSTS"][0]}')
+    game.cmd('press space')
+    game.run(sym['REPEAT_DELAY'] + sym['REPEAT_STEPS'] * len(tune['TUNE_WIDTH_COSTS']))
+    game.cmd('release space')
+    game.wait(f'bought width {len(tune["TUNE_WIDTH_COSTS"])}', 10)
+    have -= sum(tune['TUNE_WIDTH_COSTS'][1:])
+    check(game.ram('upgrade_levels') == len(tune['TUNE_WIDTH_COSTS']) and game.ram('nuggets', 2) == have,
+          'held, the button buys every level, each at its cost')
     check(game.count('XRAM_NUGGET_DIGITS', sym['COUNT_DIGITS']) == have, 'the count shows what is left')
     game.tap('space')
     game.cmd('expect-not "bought"')

@@ -21,11 +21,13 @@ extern uint8_t input_pressed; /* the INPUT_ bits held this step and not the last
 #define SHIFT_UP 0x04
 #define SHIFT_DOWN 0x08
 
-/* The SHIFT_ bits pressed this step, then again every SHIFT_REPEAT steps
-   while they are held. */
+/* The SHIFT_ bits pressed this step, then again every so often while they
+   are held. */
 extern uint8_t shift_pressed;
 
 void input_init(void);
 void input_read(void);
+uint8_t input_repeat(void);
+void input_repeat_stop(void);
 
 #endif
