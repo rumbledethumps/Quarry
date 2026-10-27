@@ -7,11 +7,12 @@
 void video_init(void)
 {
     mode2_config_t tile_config;
+    mode3_config_t texture_config;
     mode1_config_t text_config;
 
     video_hide_sprites();
 
-    xram0_set(XRAM_TILE_MAP, TILE_ROCK, sizeof(((xram_layout_t *)0)->tile_map));
+    xram0_set(XRAM_TILE_MAP, TILE_ROCK, sizeof(((xram_layout_t *)0)->art.menu.tile_map));
     video_text_clear();
 
     memset(&tile_config, 0, sizeof tile_config);
@@ -21,6 +22,15 @@ void video_init(void)
     tile_config.xram_palette_ptr = XRAM_PALETTE_MAIN;
     tile_config.xram_tile_ptr = XRAM_TILES;
     xram0_write(XRAM_TILE_CONFIG, &tile_config, sizeof tile_config);
+
+    memset(&texture_config, 0, sizeof texture_config);
+    texture_config.x_wrap = true;
+    texture_config.y_wrap = true;
+    texture_config.width_px = TEXTURE_W;
+    texture_config.height_px = TEXTURE_H;
+    texture_config.xram_data_ptr = XRAM_TEXTURE;
+    texture_config.xram_palette_ptr = XRAM_PALETTE_TEXTURE;
+    xram0_write(XRAM_TEXTURE_CONFIG, &texture_config, sizeof texture_config);
 
     memset(&text_config, 0, sizeof text_config);
     text_config.width_chars = TEXT_COLS;
@@ -32,14 +42,17 @@ void video_init(void)
 }
 
 /* Planes, back to front:
-   0: background tiles, with the bricks over them.
+   0: the rock tiles of the upgrade screen, or the texture of the title and
+      a stage, which each screen programs itself, with the scenery and the
+      bricks over it.
    1: the paddle, its flames and smoke, and the ball.
-   2: panel and menu text, with the energy bar and ball icons over it. */
+   2: menu text, with the gauge, the counts and the upgrade screen's
+      pictures over it. */
 void video_start(void)
 {
     xreg_vga_canvas(CANVAS_320X240);
-    xreg_vga_mode2(MODE2_4BPP | MODE2_16X16, XRAM_TILE_CONFIG, 0);
-    xreg_vga_mode5(MODE5_CUSTOM, XRAM_BRICKS, BRICKS_MAX, 0);
+    xreg_vga_mode5(MODE5_CUSTOM, XRAM_SCENERY,
+                   sizeof(scenery_t) / sizeof(mode5_csprite_t) + BRICKS_MAX, 0);
     xreg_vga_mode5(MODE5_CUSTOM, XRAM_ACTORS, sizeof(actors_t) / sizeof(mode5_csprite_t), 1);
     xreg_vga_mode1(MODE1_4BPP, XRAM_TEXT_CONFIG, 2);
     xreg_vga_mode5(MODE5_CUSTOM, XRAM_HUD, sizeof(hud_t) / sizeof(mode5_csprite_t), 2);
@@ -57,40 +70,6 @@ static uint8_t rock_at(uint8_t col, uint8_t row)
     return TILE_ROCK + h % TILE_ROCKS;
 }
 
-/* Draws the walls around a playfield with these inner edges, which must
-   be a whole number of tiles apart. The tile map scrolls left by up to a
-   tile, so the tiles line up with the walls. The top wall is the first row
-   of tiles, and the side walls run to the bottom of the screen, which is
-   open. Every other wall tile has a rivet plate. Outside the walls is
-   rock. */
-void video_walls(int16_t left, int16_t right)
-{
-    uint8_t cells[TILE_MAP_COLS];
-    int16_t scroll = (left & (WALL_SIZE - 1)) - WALL_SIZE;
-    uint8_t col, row;
-
-    for (row = 0; row < TILE_MAP_ROWS; row++)
-    {
-        for (col = 0; col < TILE_MAP_COLS; col++)
-        {
-            int16_t x = scroll + col * WALL_SIZE;
-            uint8_t plate = (row + col) & 1;
-            uint8_t tile;
-            if (x == left - WALL_SIZE)
-                tile = row ? TILE_WALL_LEFT + plate : TILE_CORNER_LEFT;
-            else if (x == right)
-                tile = row ? TILE_WALL_RIGHT + plate : TILE_CORNER_RIGHT;
-            else if (x >= left && x < right)
-                tile = row ? TILE_FLOOR : TILE_WALL_TOP + plate;
-            else
-                tile = rock_at(col, row);
-            cells[col] = tile;
-        }
-        xram0_write(XRAM_TILE_MAP + row * TILE_MAP_COLS, cells, TILE_MAP_COLS);
-    }
-    xram0_poke16(XRAM_TILE_CONFIG + offsetof(mode2_config_t, x_pos_px), scroll);
-}
-
 /* Rock all over, for a screen with no playfield. */
 void video_rock(void)
 {
@@ -103,7 +82,7 @@ void video_rock(void)
             cells[col] = rock_at(col, row);
         xram0_write(XRAM_TILE_MAP + row * TILE_MAP_COLS, cells, TILE_MAP_COLS);
     }
-    xram0_poke16(XRAM_TILE_CONFIG + offsetof(mode2_config_t, x_pos_px), -WALL_SIZE);
+    xram0_poke16(XRAM_TILE_CONFIG + offsetof(mode2_config_t, x_pos_px), -16); /* a tile */
 }
 
 /* Every sprite of every plane, as a plain hidden sprite. Whatever shows a
@@ -112,7 +91,7 @@ void video_hide_sprites(void)
 {
     unsigned sprite;
 
-    for (sprite = XRAM_BRICKS; sprite < XRAM_TEXT; sprite += sizeof(mode5_csprite_t))
+    for (sprite = XRAM_SCENERY; sprite < XRAM_TEXT; sprite += sizeof(mode5_csprite_t))
         sprite_set(sprite, XRAM_BALL_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(8, 8));
 }
 
@@ -209,7 +188,7 @@ void sprite_set(unsigned sprite, unsigned image, unsigned palette, uint8_t width
     s.xram_sprite_ptr = image;
     s.palette_ptr = palette;
     s.width_height = width_height;
-    s.options = MODE5_4BPP;
+    s.attributes = MODE5_4BPP;
     xram0_write(sprite, &s, sizeof s);
 }
 
@@ -225,4 +204,33 @@ void sprite_move(unsigned sprite, int16_t x, int16_t y)
 void sprite_hide(unsigned sprite)
 {
     xram0_poke16(sprite + offsetof(mode5_csprite_t, y_pos_px), SPRITE_HIDDEN_Y);
+}
+
+/* Mirrors a sprite left to right. */
+void sprite_flip(unsigned sprite)
+{
+    xram0_poke8(sprite + offsetof(mode5_csprite_t, attributes), MODE5_4BPP | MODE5_HFLIP);
+}
+
+/* A count in outlined digits, from the count sprites from first, with its
+   top left at x, y. Each digit's outline overlaps the last one's, and the
+   sprites it doesn't need are hidden. */
+void video_count(unsigned first, uint8_t sprites, int16_t x, int16_t y, uint16_t n)
+{
+    uint8_t digits[5];
+    uint8_t len = 0, i;
+
+    do
+    {
+        digits[len++] = n % 10;
+        n /= 10;
+    } while (n && len < sizeof digits);
+    for (i = 0; i < sprites; i++)
+    {
+        unsigned sprite = first + i * sizeof(mode5_csprite_t);
+        sprite_set(sprite, XRAM_DIGIT_IMAGES + (i < len ? digits[len - 1 - i] : 0) * sizeof(digit_image_t),
+                   XRAM_PALETTE_SLED, MODE5_SIZE(8, 12));
+        if (i < len)
+            sprite_move(sprite, x + i * DIGIT_ADVANCE, y);
+    }
 }

@@ -4,17 +4,13 @@ An incremental brick breaker for the Picocomputer 6502. Play a stage,
 collect nuggets from the bricks you break, spend them in an upgrade tree,
 and play again.
 
-Quarry is an early prototype, built a milestone at a time from
-[plan/GAMEPLAN.md](plan/GAMEPLAN.md). Its sprites and tiles are drawn
-from the concept art in [plan/](plan/).
-
 <!-- rp6502
 preset: llvm-mos/Release
 publish: quarry.zip
 -->
-[![Quarry](https://rumbledethumps.github.io/quarry/quarry/screenshot.png)](https://rumbledethumps.github.io/quarry/quarry/)
+[![Quarry](https://rumbledethumps.github.io/Quarry/quarry/screenshot.png)](https://rumbledethumps.github.io/Quarry/quarry/)
 
-[Play it in your browser](https://rumbledethumps.github.io/quarry/quarry/).
+[Play it in your browser](https://rumbledethumps.github.io/Quarry/quarry/).
 
 ## Controls
 
@@ -25,6 +21,12 @@ publish: quarry.zip
 | Pick in a menu | W and S, Up and Down, keypad 8 and 2 | D-pad or left stick |
 | Choose | Space, Enter, keypad Enter | A, B, X or Y |
 | Pause | Esc | Start |
+
+Shift and the arrow keys are for testing, and holding them repeats. On
+the title screen, Shift and Left or Right switch the curtains. A Debug
+build has cheats too: in play, Shift and Right adds a ball, Shift and Left
+takes one away, and Shift and Up or Down adds or takes away a segment of
+energy.
 
 The paddle floats on thrusters. The energy bar drains from the first
 launch, and when it is empty the paddle falls and the stage ends. Each
@@ -47,7 +49,7 @@ cmake --preset llvm-mos/Debug
 cmake --build --preset llvm-mos/Debug
 ```
 
-The ROM is `build/llvm-mos/debug/quarry.rp6502`. In VS Code, F5 builds it
+The ROM is `build/llvm-mos/debug/quarry/quarry.rp6502`. In VS Code, F5 builds it
 and runs it in the emulator. Both presets optimize for size with `-Oz`,
 because the game would not fit in the 6502's memory or keep up with 60
 steps a second otherwise. Debug only adds the debug information.
@@ -60,28 +62,33 @@ steps a second otherwise. Debug only adds the debug information.
 
 ## Tests
 
-The tests play the game in the emulator from Python scripts. Run them from
-the project folder after a Debug build:
+The tests play the game in the emulator from Python scripts in `tests/`.
+`CMakeLists.txt` adds each one with `rp6502_test()`, and ctest builds the
+project and then runs them, or the Testing view in VS Code does:
 
 ```bash
-python3 tests/controls.py build/llvm-mos/debug/quarry.rp6502
-python3 tests/energy.py build/llvm-mos/debug/quarry.rp6502
-python3 tests/nuggets.py build/llvm-mos/debug/quarry.rp6502
-python3 tests/upgrades.py build/llvm-mos/debug/quarry.rp6502
-python3 tests/saves.py build/llvm-mos/debug/quarry.rp6502
-python3 tests/sound.py build/llvm-mos/debug/quarry.rp6502
-python3 tests/autoplay.py build/llvm-mos/debug/quarry.rp6502
-python3 tests/autoplay.py build/llvm-mos/debug/quarry.rp6502 --miss 5
+ctest --test-dir build/llvm-mos/debug
+ctest --test-dir build/llvm-mos/debug -R energy --output-on-failure
 ```
 
-- `controls.py` works every key and gamepad control.
-- `energy.py` drains the energy bar and runs out of energy.
-- `nuggets.py` breaks bricks and follows their nuggets to the panel.
-- `upgrades.py` works the end-of-stage menu and buys upgrades.
-- `saves.py` works the title screen and the pause menu, and reads the save.
-- `sound.py` sets off every sound effect and reads the PSG's channels.
-- `autoplay.py` plays stage 1 to the end, clearing it, or with `--miss 5`
-  losing every ball. It also runs on a Release ROM.
+- `controls` works every key and gamepad control.
+- `energy` drains the energy bar and runs out of energy.
+- `nuggets` breaks bricks and follows their nuggets to the panel.
+- `upgrades` works the end-of-stage menu and buys upgrades.
+- `saves` works the title screen and the pause menu, and reads the save.
+- `sound` sets off every sound effect and reads the PSG's channels.
+- `autoplay` plays stage 1 until it ends, and `autoplay-miss` loses every
+  ball.
 
-The tests find the game's variables by name in the ELF beside the ROM, so
-they need no addresses, and each keeps its saves in a folder of its own.
+The tests other than the two autoplay ones wait for the events that a
+Debug ROM logs, so a Release build has only the autoplay tests:
+
+```bash
+ctest --test-dir build/llvm-mos/release
+```
+
+The tests read the game's variables, XRAM addresses, and tuning numbers by
+name from `quarry.sym`, the symbol table that the build writes beside the
+ROM, so they hold no addresses and no copies of the game's numbers. Each
+test keeps its saves in a folder of its own, such as
+`build/llvm-mos/debug/test/saves/save/`.

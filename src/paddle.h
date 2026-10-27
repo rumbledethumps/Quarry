@@ -21,4 +21,8 @@ void paddle_step(uint8_t controls);
 uint8_t paddle_tilt(void);
 void paddle_draw(void);
 
+#define SLED_NONE 0xFF
+void sled_show(unsigned sprites, uint8_t count, int16_t x, int16_t y, uint8_t level,
+               uint8_t flames);
+
 #endif

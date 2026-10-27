@@ -11,9 +11,9 @@
 
 /* Energy. A full bar holds this many steps of thrust, and it drains from
    the first launch of a stage until the stage ends. */
-#define TUNE_ENERGY 14400     /* 4 minutes */
+#define TUNE_ENERGY 1440      /* 24 seconds */
 #define TUNE_ENERGY_DRAIN 1   /* per step */
-#define TUNE_ENERGY_LOW 2880  /* the bar turns orange: the last 48 seconds */
+#define TUNE_ENERGY_LOW 288   /* the bar turns orange: the last 4.8 seconds */
 
 /* Out of energy: the flames sputter, then the paddle falls. */
 #define TUNE_SPUTTER_STEPS 45 /* how long the flames sputter */
@@ -31,9 +31,11 @@
 
 /* Upgrades, paid in white nuggets. Each level of an upgrade has its
    value, starting with the value before any upgrade, and each level after
-   the first has its cost. */
-#define TUNE_WIDTHS {24, 32, 40, 48, 56, 64} /* px, multiples of 8 from 16 to 64 */
-#define TUNE_WIDTH_COSTS {6, 10, 16, 24, 34}
+   the first has its cost. The build draws a sled for each width, with
+   its jets. */
+#define TUNE_WIDTHS {20, 23, 26, 29, 32, 35, 38, 41, 44, 47, 50} /* px, 64 at most */
+#define TUNE_WIDTH_COSTS {3, 4, 5, 6, 7, 9, 11, 13, 15, 17}
+#define TUNE_JETS {1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3} /* under the sled of each width, 3 at most */
 #define TUNE_SPEEDS {512, 576, 640, 704, 768} /* 2 to 3 px per step */
 #define TUNE_SPEED_COSTS {6, 10, 16, 24}
 

@@ -10,12 +10,9 @@ Exits 0 when every check passes.
 """
 
 import struct
-import sys
 
-from game import STATE_MENU, STATE_SHOP, Game, check
+from game import Game, check
 
-PSG = 72  # XRAM_PSG, after the keyboard (32 bytes) and the gamepads (40)
-CHANNELS = 8
 SQUARE, SAWTOOTH, TRIANGLE, NOISE = 0x10, 0x20, 0x30, 0x40
 # The effects, from src/sfx.h, and the first note of a few of them, from
 # src/sfx.c: Hz * 3 and the wave.
@@ -39,14 +36,14 @@ NOTES = {
 
 def channels(game):
     """Each channel as (freq, wave, gate)."""
-    data = game.xram(PSG, CHANNELS * 8)
+    data = game.xram('XRAM_PSG', game.sym['PSG_CHANNELS'] * 8)
     return [(struct.unpack('<H', data[i:i + 2])[0], data[i + 5] & 0xF0, data[i + 6] & 1)
             for i in range(0, len(data), 8)]
 
 
 def played(game, sound, frames=60):
     """Waits for the effect, then checks its notes are set on the PSG."""
-    game.wait(f'sfx {sound}\\r', frames)  # the line's end, so 1 is not 11
+    game.wait(f'sfx {sound}\\n', frames)  # the line's end, so 1 is not 11
     if sound in NOTES:
         game.run(1)  # a taken channel starts a step late
         wave, low, high = NOTES[sound]
@@ -55,15 +52,12 @@ def played(game, sound, frames=60):
 
 
 def main():
-    rom = sys.argv[1]
-    game = Game(rom)
+    game = Game()
+    sym = game.sym
+    CHANNELS = sym['PSG_CHANNELS']
     game.boot()
     check(all(c == (0, 0, 0) for c in channels(game)), 'the PSG starts quiet, at XRAM_PSG')
 
-    # A menu move clicks.
-    game.tap('up')
-    played(game, MOVE, 5)
-    game.tap('down')
     game.new_game()
     game.run(5)
 
@@ -78,7 +72,7 @@ def main():
     # The ball off a wall and off the paddle, set up while paused.
     px = game.px('paddle_x')
     width = game.ram('paddle_width')
-    game.paused_poke([('ball_x', (88 + 1) << 8, 4), ('ball_y', 150 << 8, 4),
+    game.paused_poke([('ball_x', (game.ram('play_left', 2) + 1) << 8, 4), ('ball_y', 150 << 8, 4),
                        ('ball_vx', -600 & 0xFFFF, 2), ('ball_vy', 300, 2)])
     played(game, WALL, 10)
     game.paused_poke([('ball_x', (px + width // 2 - 4) << 8, 4), ('ball_y', 190 << 8, 4),
@@ -100,7 +94,7 @@ def main():
     print(f'ok: lost ball, sliding from {first} to {later}')
 
     # Low energy beeps, then beeps again while it stays low.
-    game.paused_poke([('energy', 2880 + 10, 2)])
+    game.paused_poke([('energy', sym['TUNE_ENERGY_LOW'] + 10, 2)])
     played(game, LOW, 30)
     played(game, LOW_BEEP, 200)
     print('ok: low energy, and beeps while low')
@@ -109,7 +103,7 @@ def main():
     game.paused_poke([('energy', 5, 2)])
     played(game, SPUTTER, 20)
     played(game, FALL, 60)
-    game.until('game_state', STATE_MENU, 200)
+    game.until('game_state', 'STATE_MENU', 200)
     print('ok: sputter and fall')
 
     # On the end-of-stage menu, moves click, and a purchase plays four notes,
@@ -119,13 +113,13 @@ def main():
     played(game, MOVE, 5)
     game.tap('up')
     game.menu_choose('UPGRADES', wait=False)
-    game.send('expect "upgrades"')  # past every click before the upgrade screen
+    game.cmd('expect "upgrades"')  # past every click before the upgrade screen
     game.poke('nuggets', 50, 2)
     game.tap('enter')  # WIDTH, to BUY
     played(game, MOVE, 5)
-    game.send('press enter')
+    game.cmd('press enter')
     played(game, BUY, 10)
-    game.send('release enter')
+    game.cmd('release enter')
     notes = [[] for _ in range(CHANNELS)]
     gates = [[] for _ in range(CHANNELS)]
     for _ in range(24):
@@ -142,7 +136,7 @@ def main():
     check(gates[buy[0]].count(1) >= 3, f'and lets go between them: {gates[buy[0]]}')
     game.run(60)
     check(all(g == 0 for _, _, g in channels(game)), 'every channel lets go when its effect ends')
-    check(game.ram('game_state') == STATE_SHOP, 'still on the upgrade screen')
+    check(game.ram('game_state') == sym['STATE_SHOP'], 'still on the upgrade screen')
     game.close()
     print('ok: menu moves and the purchase')
     print('PASS')

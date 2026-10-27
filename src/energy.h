@@ -8,5 +8,6 @@ extern uint8_t energy_draining; /* set at the first launch of a stage */
 
 void energy_start(int16_t x, int16_t y);
 void energy_step(void);
+void energy_cheat(int8_t segments);
 
 #endif

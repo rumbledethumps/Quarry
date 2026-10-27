@@ -1,16 +1,18 @@
 #include <rp6502.h>
-#include <stdlib.h>
 #include "bricks.h"
 #include "debug.h"
+#include "frame.h"
 #include "input.h"
 #include "menu.h"
 #include "nuggets.h"
 #include "play.h"
 #include "save.h"
+#include "scene.h"
 #include "sfx.h"
 #include "shop.h"
 #include "title.h"
 #include "tuning.h"
+#include "upgrades.h"
 #include "video.h"
 
 /* Steps after a stage ends before the menu takes a choice, so a press
@@ -33,17 +35,17 @@ static const char *const end_items[] = {"UPGRADES", "PLAY"};
 static const char *const pause_items[] = {"CONTINUE", "EXIT"};
 #define PAUSE_CONTINUE 1
 #define PAUSE_EXIT 2
-static const char *const title_items[] = {"RESUME", "NEW GAME", "EXIT"};
+static const char *const title_items[] = {"RESUME", "NEW GAME"};
 #define TITLE_RESUME 1
 #define TITLE_NEW_GAME 2
-#define TITLE_EXIT 3
 static const char *const confirm_items[] = {"YES", "NO"};
 #define CONFIRM_YES 1
 #define CONFIRM_NO 2
 
+/* The question to start over takes the title menu's place. */
 static const menu_t pause_menu = {20, 11, BOX_COLOR, "PAUSED", pause_items, 2};
-static const menu_t title_menu = {20, 12, BOX_FILL, 0, title_items, 3};
-static const menu_t confirm_menu = {20, 12, BOX_COLOR, "START OVER?", confirm_items, 2};
+static const menu_t title_menu = {20, 11, BOX_FILL, 0, title_items, 2};
+static const menu_t confirm_menu = {20, 11, BOX_COLOR, "START OVER?", confirm_items, 2};
 static menu_t end_menu = {20, 11, BOX_COLOR, 0, end_items, 2};
 
 static uint8_t game_state;
@@ -52,23 +54,24 @@ static uint8_t paused_pick;  /* the pick of the end-of-stage menu under it */
 static uint8_t stage = 1;
 static uint8_t stage_set; /* the playfield shows a stage ready to play */
 
-/* Lays out the stage, centers the playfield between the panels, and sets
-   up the paddle and every ball, ready to play. It starts from no sprites,
-   so nothing is left of another screen. */
+/* Lays out the stage, centers the playfield with its frame and curtains,
+   and sets up the paddle and every ball, ready to play. It starts from no
+   sprites and the stage's own art, so nothing is left of another screen. */
 static void stage_setup(void)
 {
     int16_t width;
 
     video_hide_sprites();
+    scene_stage(upgrade_levels[UPGRADE_WIDTH]);
     play_init();
     bricks_layout();
-    width = bricks_cols * BRICK_W;
+    width = bricks_cols * BRICK_W + 2 * bricks_margin;
     play_left = (SCREEN_W - width) / 2;
     play_right = play_left + width;
-    video_walls(play_left, play_right);
+    frame_start(play_left, play_right);
     video_text_clear();
-    bricks_start(play_left, TUNE_BRICKS_Y);
-    nuggets_start(1, play_left - WALL_SIZE);
+    bricks_start(play_left + bricks_margin, TUNE_BRICKS_Y);
+    nuggets_start(1);
     play_start();
     stage_set = 1;
 }
@@ -107,7 +110,7 @@ static void stage_end(uint8_t how)
 /* Resume is grayed out until there is a save. */
 static void title_show(void)
 {
-    title_open();
+    title_open(&title_menu);
     menu_open(&title_menu, save_exists ? TITLE_RESUME - 1 : TITLE_NEW_GAME - 1,
               save_exists ? 0 : 1 << (TITLE_RESUME - 1), 0);
     game_state = STATE_TITLE;
@@ -171,15 +174,14 @@ int main(void)
     input_init();
     sfx_init();
     save_load();
-    title_show();
     video_start();
+    title_show();
 
     for (;;)
     {
         wait_vsync();
-        if (game_state == STATE_TITLE || game_state == STATE_CONFIRM)
-            title_draw();
-        else if (game_state != STATE_SHOP && paused_state != STATE_SHOP)
+        if (game_state != STATE_TITLE && game_state != STATE_CONFIRM && game_state != STATE_SHOP &&
+            paused_state != STATE_SHOP)
             play_draw();
         input_read();
         sfx_step();
@@ -256,12 +258,9 @@ int main(void)
                     game_start();
                 }
                 break;
-            case TITLE_EXIT:
-                exit(0);
             }
             break;
         case STATE_CONFIRM:
-            title_step();
             switch (menu_step())
             {
             case CONFIRM_YES:

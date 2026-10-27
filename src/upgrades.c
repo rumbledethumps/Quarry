@@ -3,27 +3,33 @@
 #include "debug.h"
 #include "nuggets.h"
 #include "tuning.h"
+#include "xram.h"
 
 static const uint8_t widths[] = TUNE_WIDTHS;
 static const uint16_t width_costs[] = TUNE_WIDTH_COSTS;
 static const uint16_t speeds[] = TUNE_SPEEDS;
 static const uint16_t speed_costs[] = TUNE_SPEED_COSTS;
+static const uint8_t jets[] = TUNE_JETS;
 
-_Static_assert(sizeof width_costs / sizeof *width_costs == sizeof widths / sizeof *widths - 1,
+/* The levels after the first, one for each cost. */
+#define WIDTH_LEVELS (sizeof width_costs / sizeof *width_costs)
+#define SPEED_LEVELS (sizeof speed_costs / sizeof *speed_costs)
+
+_Static_assert(WIDTH_LEVELS == sizeof widths / sizeof *widths - 1,
                "TUNE_WIDTH_COSTS needs a cost for each width after the first.");
-_Static_assert(sizeof speed_costs / sizeof *speed_costs == sizeof speeds / sizeof *speeds - 1,
+_Static_assert(SPEED_LEVELS == sizeof speeds / sizeof *speeds - 1,
                "TUNE_SPEED_COSTS needs a cost for each speed after the first.");
-_Static_assert(sizeof width_costs / sizeof *width_costs <= UPGRADE_LEVELS_MAX &&
-                   sizeof speed_costs / sizeof *speed_costs <= 5,
-               "Too many levels: 6 widths and 5 speeds after the first at most.");
+_Static_assert(WIDTH_LEVELS <= UPGRADE_LEVELS_MAX && SPEED_LEVELS <= 5,
+               "Too many levels: 10 widths and 5 speeds after the first at most.");
+_Static_assert(sizeof jets == sizeof widths, "TUNE_JETS needs the jets of each width.");
+_Static_assert(sizeof widths <= SLEDS, "SLEDS in xram.h needs a sled for each width.");
 
 uint8_t upgrade_levels[UPGRADES];
 
 /* The highest level of an upgrade. */
 uint8_t upgrades_max(uint8_t upgrade)
 {
-    return upgrade == UPGRADE_WIDTH ? sizeof width_costs / sizeof *width_costs
-                                    : sizeof speed_costs / sizeof *speed_costs;
+    return upgrade == UPGRADE_WIDTH ? WIDTH_LEVELS : SPEED_LEVELS;
 }
 
 /* The cost of the next level, in white nuggets. 0 at the highest level. */
@@ -58,6 +64,11 @@ uint8_t upgrades_width(void)
 uint8_t upgrades_width_at(uint8_t level)
 {
     return widths[level];
+}
+
+uint8_t upgrades_jets_at(uint8_t level)
+{
+    return jets[level];
 }
 
 uint16_t upgrades_speed(void)

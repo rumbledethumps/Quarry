@@ -13,21 +13,24 @@
 #define BREAK_STEPS 4
 #define BREAK_OVER 4
 
-/* Stage 1, white only. W is a white brick and . is no brick. */
-#define STAGE1_COLS 6
-#define STAGE1_ROWS 5
+/* Stage 1, white only, with half a brick of space at each wall. W is a
+   white brick and . is no brick. */
+#define STAGE1_COLS 4
+#define STAGE1_ROWS 4
+#define STAGE1_MARGIN (BRICK_W / 2)
 static const char stage1[] =
-    "WWWWWW"
-    "WWWWWW"
-    "WWWWWW"
-    "WWWWWW"
-    "WWWWWW";
+    "WWWW"
+    "WWWW"
+    "WWWW"
+    "WWWW";
 
 _Static_assert(STAGE1_COLS * STAGE1_ROWS <= BRICKS_MAX, "Stage 1 has too many bricks.");
 _Static_assert(sizeof stage1 - 1 == STAGE1_COLS * STAGE1_ROWS, "Stage 1 layout is the wrong size.");
-_Static_assert(STAGE1_COLS * BRICK_W % WALL_SIZE == 0, "The walls must be a whole number of tiles apart.");
+_Static_assert((STAGE1_COLS * BRICK_W + 2 * STAGE1_MARGIN) % 8 == 0,
+               "The frame needs a playfield a multiple of 8 wide.");
 
 uint8_t bricks_cols;
+uint8_t bricks_margin;
 uint8_t bricks_left;
 int16_t bricks_hit_left;
 int16_t bricks_hit_right;
@@ -47,10 +50,11 @@ static unsigned brick_sprite(uint8_t i)
     return XRAM_BRICKS + i * sizeof(mode5_csprite_t);
 }
 
-/* Sets the size of the stage, before the walls are drawn around it. */
+/* Sets the size of the stage, before the frame goes up around it. */
 void bricks_layout(void)
 {
     bricks_cols = STAGE1_COLS;
+    bricks_margin = STAGE1_MARGIN;
 }
 
 /* A brick still breaking counts its nugget now, and its sprite is hidden. */

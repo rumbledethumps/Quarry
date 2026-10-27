@@ -4,6 +4,42 @@
 
 uint8_t input_held;
 uint8_t input_pressed;
+uint8_t shift_pressed;
+
+/* A held Shift key repeats after SHIFT_DELAY steps, then every
+   SHIFT_REPEAT. */
+#define SHIFT_DELAY 20
+#define SHIFT_REPEAT 6
+
+static uint8_t shift_held;
+static uint8_t shift_steps;
+
+static void shift_read(const uint8_t *keys)
+{
+    uint8_t held = 0;
+
+    if (KEYBOARD_PRESSED(keys, HID_KEY_ARROW_RIGHT))
+        held |= SHIFT_RIGHT;
+    if (KEYBOARD_PRESSED(keys, HID_KEY_ARROW_LEFT))
+        held |= SHIFT_LEFT;
+    if (KEYBOARD_PRESSED(keys, HID_KEY_ARROW_UP))
+        held |= SHIFT_UP;
+    if (KEYBOARD_PRESSED(keys, HID_KEY_ARROW_DOWN))
+        held |= SHIFT_DOWN;
+    if (held != shift_held)
+    {
+        shift_pressed = held & ~shift_held;
+        shift_steps = 0;
+    }
+    else if (held && ++shift_steps >= SHIFT_DELAY)
+    {
+        shift_pressed = held;
+        shift_steps = SHIFT_DELAY - SHIFT_REPEAT;
+    }
+    else
+        shift_pressed = 0;
+    shift_held = held;
+}
 
 /* Everything counts as held to begin with, so a key that is already down
    when the game starts, such as the Enter that loaded it, is not a press. */
@@ -16,29 +52,37 @@ void input_init(void)
 
 /* Keyboard from the key bitmap, so held keys work, and every connected
    gamepad: the d-pad merged with the left stick, and A, B, X or Y to
-   launch and choose. Up launches too. Esc or Start pauses. */
+   launch and choose. Up launches too. Esc or Start pauses. The arrow
+   keys with Shift are the SHIFT_ keys instead. */
 void input_read(void)
 {
     uint8_t keys[sizeof(keyboard_t)];
     gamepad_t pads;
     uint8_t held = 0;
+    uint8_t arrows;
     uint8_t i;
 
     xram0_read(keys, XRAM_KEYBOARD, sizeof keys);
+    arrows = !KEYBOARD_PRESSED(keys, HID_KEY_SHIFT_LEFT) &&
+             !KEYBOARD_PRESSED(keys, HID_KEY_SHIFT_RIGHT);
+    if (arrows)
+        shift_held = shift_pressed = 0;
+    else
+        shift_read(keys);
     if (KEYBOARD_PRESSED(keys, HID_KEY_A) ||
-        KEYBOARD_PRESSED(keys, HID_KEY_ARROW_LEFT) ||
+        (arrows && KEYBOARD_PRESSED(keys, HID_KEY_ARROW_LEFT)) ||
         KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_4))
         held |= INPUT_LEFT;
     if (KEYBOARD_PRESSED(keys, HID_KEY_D) ||
-        KEYBOARD_PRESSED(keys, HID_KEY_ARROW_RIGHT) ||
+        (arrows && KEYBOARD_PRESSED(keys, HID_KEY_ARROW_RIGHT)) ||
         KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_6))
         held |= INPUT_RIGHT;
     if (KEYBOARD_PRESSED(keys, HID_KEY_W) ||
-        KEYBOARD_PRESSED(keys, HID_KEY_ARROW_UP) ||
+        (arrows && KEYBOARD_PRESSED(keys, HID_KEY_ARROW_UP)) ||
         KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_8))
         held |= INPUT_UP | INPUT_LAUNCH;
     if (KEYBOARD_PRESSED(keys, HID_KEY_S) ||
-        KEYBOARD_PRESSED(keys, HID_KEY_ARROW_DOWN) ||
+        (arrows && KEYBOARD_PRESSED(keys, HID_KEY_ARROW_DOWN)) ||
         KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_2))
         held |= INPUT_DOWN;
     if (KEYBOARD_PRESSED(keys, HID_KEY_SPACE) ||

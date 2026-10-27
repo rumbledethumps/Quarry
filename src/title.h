@@ -1,8 +1,9 @@
 #ifndef TITLE_H
 #define TITLE_H
 
-void title_open(void);
+#include "menu.h"
+
+void title_open(const menu_t *menu);
 void title_step(void);
-void title_draw(void);
 
 #endif

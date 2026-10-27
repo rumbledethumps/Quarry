@@ -8,11 +8,7 @@ to buy with. Reads the menus from the text cells in XRAM. Exits 0 when
 every check passes.
 """
 
-import os
-import re
-import sys
-
-from game import STATE_MENU, STATE_PLAY, STATE_SHOP, Game, check
+from game import Game, check
 
 # The menu over the playfield, from src/menu.c: the frame of UPGRADES, then
 # of PLAY. A picked frame is gold on the box fill.
@@ -23,26 +19,26 @@ SPEED_COST_CELL = (26, 12)     # the cost in the SPEED box, from src/shop.c
 DIM, BRIGHT = 0x14, 0x19       # MODE1_BG_FG(BOX_FILL, DIM_COLOR or TEXT_COLOR)
 
 
-def tuning():
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src', 'tuning.h')
-    text = open(path).read()
-    table = lambda name: [int(n) for n in re.search(
-        rf'#define {name} \{{([^}}]*)\}}', text).group(1).split(',')]
-    return {name: table(name) for name in
-            ['TUNE_WIDTHS', 'TUNE_WIDTH_COSTS', 'TUNE_SPEEDS', 'TUNE_SPEED_COSTS']}
+def tuning(game):
+    """The upgrade tables of src/upgrades.c, from RAM."""
+    width_levels, speed_levels = game.sym['WIDTH_LEVELS'], game.sym['SPEED_LEVELS']
+    table = lambda name, count, size: [game.ram(f'{name}+{i * size}', size) for i in range(count)]
+    return {'TUNE_WIDTHS': table('widths', width_levels + 1, 1),
+            'TUNE_WIDTH_COSTS': table('width_costs', width_levels, 2),
+            'TUNE_SPEEDS': table('speeds', speed_levels + 1, 2),
+            'TUNE_SPEED_COSTS': table('speed_costs', speed_levels, 2)}
 
 
 def main():
-    rom = sys.argv[1]
-    tune = tuning()
-    game = Game(rom)
-    game.send('pad 0 connect')
+    game = Game()
+    tune = tuning(game)
+    bricks = game.sym['STAGE1_COLS'] * game.sym['STAGE1_ROWS']
+    game.cmd('pad 0 connect')
     game.new_game()
     game.run(5)
-    text = game.text_at('ENERGY', 32, 2)
 
     def color(cell):
-        return game.xram(text + (cell[1] * 40 + cell[0]) * 2 + 1, 1)[0]
+        return game.color(*cell)
 
     def picked():
         up, play = color(UPGRADES_FRAME), color(PLAY_FRAME)
@@ -55,37 +51,40 @@ def main():
     game.poke('balls', 0)
     game.wait('out of balls', 3000)
     game.run(2)
-    check(game.ram('game_state') == STATE_MENU, 'the menu opens when the stage ends')
+    check(game.ram('game_state') == game.sym['STATE_MENU'], 'the menu opens when the stage ends')
     check(game.shows('OUT OF BALLS') and game.shows('UPGRADES') and game.shows('PLAY'),
           'the menu shows how the stage ended, UPGRADES and PLAY')
     check(picked() == 'UPGRADES', 'UPGRADES is picked')
     game.tap('space')
     game.run(10)
-    check(game.ram('game_state') == STATE_MENU, 'a choice right away is not taken')
+    check(game.ram('game_state') == game.sym['STATE_MENU'], 'a choice right away is not taken')
     game.run(60)
 
-    # Every menu key moves the pick, and keypad 0, which only launches,
-    # does not choose.
-    for key in ['down', 'up', 's', 'w', 'kp2', 'kp8', 'right', 'left', 'd', 'a',
-                'pad 0 down', 'pad 0 up']:
+    # Every up and down key moves the pick, no left or right key does, and
+    # keypad 0, which only launches, does not choose.
+    for key in ['down', 'up', 's', 'w', 'kp2', 'kp8', 'pad 0 down', 'pad 0 up']:
         was = picked()
         game.tap(key)
         check(picked() != was, f'{key} moves the pick')
-    print('ok: every menu key moves the pick')
+    for key in ['right', 'left', 'd', 'a', 'kp6', 'kp4', 'pad 0 right', 'pad 0 left']:
+        was = picked()
+        game.tap(key)
+        check(picked() == was, f'{key} does not move the pick')
+    print('ok: up and down move the pick, and left and right do not')
     game.tap('kp0')
-    check(game.ram('game_state') == STATE_MENU, 'keypad 0 does not choose')
+    check(game.ram('game_state') == game.sym['STATE_MENU'], 'keypad 0 does not choose')
 
     # Upgrades, with no nuggets: nothing to buy.
     game.poke('nuggets', 0, 2)
     game.menu_choose('UPGRADES', wait=False)
     game.run(5)
-    check(game.ram('game_state') == STATE_SHOP, 'UPGRADES opens the upgrade screen')
+    check(game.ram('game_state') == game.sym['STATE_SHOP'], 'UPGRADES opens the upgrade screen')
     for word in ['UPGRADES', 'WIDTH', 'SPEED', 'WIDER PADDLE', 'BUY', 'BACK']:
         check(game.shows(word), f'the upgrade screen shows {word}')
-    check(game.text(text, *COUNT_CELL, 5) == '0    ', 'it shows 0 nuggets')
+    check(game.text(*COUNT_CELL, 5) == '0    ', 'it shows 0 nuggets')
     game.tap('enter')  # WIDTH, to BUY
     game.tap('enter')  # BUY
-    game.send('expect-not "bought"')
+    game.cmd('expect-not "bought"')
     check(game.ram('upgrade_levels', 2) == 0, 'no upgrade without the nuggets')
     check(game.shows('NOT ENOUGH NUGGETS'), 'it says there are not nuggets enough')
 
@@ -109,9 +108,9 @@ def main():
         game.wait(f'bought width {level}', 10)
         have -= cost
         check(game.ram('nuggets', 2) == have, f'width {level} costs {cost}')
-        check(game.text(text, *COUNT_CELL, 5) == f'{have:<5}', 'the count shows what is left')
+        check(game.text(*COUNT_CELL, 5) == f'{have:<5}', 'the count shows what is left')
     game.tap('enter')
-    game.send('expect-not "bought"')
+    game.cmd('expect-not "bought"')
     check(game.ram('nuggets', 2) == have, 'nothing more to buy at the top level')
     check(game.shows('MAX'), 'the top level shows MAX')
     print(f'ok: bought every width')
@@ -130,25 +129,30 @@ def main():
 
     # The next stage is set up behind the menu, with the paddle upgraded,
     # and PLAY picked.
-    check(game.ram('game_state') == STATE_MENU, 'BACK goes back to the menu')
+    check(game.ram('game_state') == game.sym['STATE_MENU'], 'BACK goes back to the menu')
     check(picked() == 'PLAY', 'PLAY is picked')
     width, speed = tune['TUNE_WIDTHS'][-1], tune['TUNE_SPEEDS'][1]
     check(game.ram('paddle_width') == width, f'the paddle is {width} px wide now')
     check(game.ram('paddle_speed', 2) == speed, f'and moves {speed} a step')
-    pieces = game.sprite_at(game.px('paddle_x'), game.px('paddle_y'))
-    check(game.shown(pieces, 8) == width // 8, 'every piece of the wider paddle shows')
-    check(game.ram('bricks_left') == 30 and game.ram('balls') == 5, 'a fresh stage')
+    size = (8 // 4 - 1) << 4 | ((width + 3) // 4 - 1)  # MODE5_SIZE(SLED_IMAGE_W(width), 8)
+    check(game.sizes('XRAM_SLED_SPRITE', 1)[0] == size, f'the sled shows {width} px wide')
+    jets = game.ram(f'jets+{len(tune["TUNE_WIDTH_COSTS"])}')
+    check(game.shown('XRAM_JET_SPRITES', game.sym['JETS_MAX']) == jets, f'with its {jets} jets')
+    check(game.ram('bricks_left') == bricks and game.ram('balls') == game.sym['TUNE_BALLS'],
+          'a fresh stage')
     game.menu_choose('PLAY', wait=False, picked='PLAY')
-    check(game.ram('game_state') == STATE_PLAY, 'PLAY plays')
+    check(game.ram('game_state') == game.sym['STATE_PLAY'], 'PLAY plays')
     check(not game.shows('UPGRADES') and not game.shows('OUT OF BALLS'), 'the menu is gone')
     check(game.ram('nuggets', 2) == have, 'the nuggets left are kept')
+    # Short of the wall: the steps it takes from the middle of the playfield.
     x = game.px('paddle_x')
-    game.send('press left')
-    game.run(20)
-    game.send('release left')
+    steps = min(20, (x - game.ram('play_left', 2)) * 256 // speed)
+    game.cmd('press left')
+    game.run(steps)
+    game.cmd('release left')
     moved = x - game.px('paddle_x')
-    check(abs(moved - 19 * speed / 256) <= speed / 256 + 1,
-          f'the paddle moves at its new speed, {moved} px in 20 steps')
+    check(abs(moved - (steps - 1) * speed / 256) <= speed / 256 + 1,
+          f'the paddle moves at its new speed, {moved} px in {steps} steps')
     print(f'ok: a {width} px paddle moving {speed / 256} px a step')
 
     # Clearing stage 1, the only stage, plays stage 1 again.
@@ -160,7 +164,7 @@ def main():
     check(game.shows('STAGE CLEAR'), 'the menu shows STAGE CLEAR')
     game.menu_choose('PLAY')
     game.run(5)
-    check(game.ram('game_state') == STATE_PLAY and game.ram('bricks_left') == 30,
+    check(game.ram('game_state') == game.sym['STATE_PLAY'] and game.ram('bricks_left') == bricks,
           'Play starts stage 1 again, the only stage')
     game.close()
     print('PASS')
