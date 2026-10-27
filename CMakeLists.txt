@@ -20,7 +20,6 @@ function(quarry_art output mode png)
 endfunction()
 
 quarry_art(palettes.bin palette palettes.png)
-quarry_art(tiles.bin image tiles.png --tile 16x16)
 quarry_art(brick.bin image brick.png)
 quarry_art(break.bin image break.png --tile 24x16)
 quarry_art(nugget.bin image nugget.png)
@@ -79,6 +78,18 @@ add_custom_command(
     VERBATIM
 )
 
+# The backdrop of the upgrade screen, its ceiling and its floor, from
+# art/backdrop-ceiling.png and art/backdrop-floor.png, and backdrop.h, which
+# gives their sizes. art/backdrop.py also writes backdrop.png to look at.
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/backdrop.bin ${CMAKE_CURRENT_BINARY_DIR}/backdrop.h
+    COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/art/backdrop.py ${CMAKE_CURRENT_BINARY_DIR}/backdrop.bin
+        ${CMAKE_CURRENT_BINARY_DIR}/backdrop.h --preview ${CMAKE_CURRENT_BINARY_DIR}/backdrop.png
+    DEPENDS art/backdrop.py art/curtain.py art/rd2png.py art/backdrop-ceiling.png art/backdrop-floor.png
+    VERBATIM
+)
+
 # The mine carts of the stage select and the padlock of a locked stage,
 # from art/carts.py, and carts.h, which gives their tile numbers.
 add_custom_command(
@@ -120,7 +131,7 @@ rp6502_asset(quarry XRAM(XRAM_MACHINE_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/machine
 rp6502_asset(quarry XRAM(XRAM_COIN_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/coin.bin)
 rp6502_asset(quarry XRAM(XRAM_CURSOR_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/cursor.bin)
 # The art of each screen, which the screen loads when it starts.
-rp6502_asset(quarry tiles ${CMAKE_CURRENT_BINARY_DIR}/tiles.bin)
+rp6502_asset(quarry backdrop ${CMAKE_CURRENT_BINARY_DIR}/backdrop.bin)
 rp6502_asset(quarry logo ${CMAKE_CURRENT_BINARY_DIR}/logo.bin)
 rp6502_asset(quarry sleds ${CMAKE_CURRENT_BINARY_DIR}/sleds.bin)
 rp6502_asset(quarry panels ${CMAKE_CURRENT_BINARY_DIR}/panels.bin)
@@ -154,6 +165,7 @@ target_sources(quarry PRIVATE
     src/title.c
     src/upgrades.c
     src/video.c
+    ${CMAKE_CURRENT_BINARY_DIR}/backdrop.h
     ${CMAKE_CURRENT_BINARY_DIR}/panels.h
     ${CMAKE_CURRENT_BINARY_DIR}/carts.h
 )

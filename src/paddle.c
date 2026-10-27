@@ -63,11 +63,11 @@ static uint8_t jet_x(uint8_t width, uint8_t jets, uint8_t i)
 /* The width of a sled's image and sprite, a multiple of 4. */
 #define SLED_IMAGE_W(width) (((width) + 3) & ~3)
 
-/* The image of the sled of a level of the width upgrade, width px wide,
-   level or tilted, as art/sled.py lays it out. */
-static unsigned sled_image(uint8_t level, uint8_t width, uint8_t tilt)
+/* The image of the stage's sled, width px wide, level or tilted, as
+   art/sled.py lays it out. */
+static unsigned sled_image(uint8_t width, uint8_t tilt)
 {
-    unsigned image = scene_sled(level);
+    unsigned image = XRAM_STAGE_SLED;
 
     if (tilt)
         image += SLED_IMAGE_W(width) * (8 + (tilt - 1) * SLED_TILT_ROWS) / 2;
@@ -81,11 +81,13 @@ static void jet_set(unsigned sprite, uint8_t frame, uint8_t flip)
                 flip ? MODE5_4BPP | MODE5_HFLIP : MODE5_4BPP);
 }
 
-/* The sled of a level of the width upgrade with its top left at x, y, from
-   count sprites at sprites: the sled, then its jets, with a medium flame,
-   or the nozzles alone without flames. The sprites it doesn't need are
-   hidden, and all of them with level SLED_NONE. */
-void sled_show(unsigned sprites, uint8_t count, int16_t x, int16_t y, uint8_t level, uint8_t look)
+/* The sled of a level of the width upgrade, its flat image at image, with
+   its top left at x, y, from count sprites at sprites: the sled, then its
+   jets, with a medium flame, or the nozzles alone without flames. The
+   sprites it doesn't need are hidden, and all of them with level
+   SLED_NONE. */
+void sled_show(unsigned sprites, uint8_t count, int16_t x, int16_t y, uint8_t level, uint8_t look,
+               unsigned image)
 {
     uint8_t i, width = 0, n = 0, scale = look & SLED_DOUBLE ? 2 : 1;
     uint8_t doubling = look & SLED_DOUBLE ? MODE5_HDOUBLE | MODE5_VDOUBLE : 0;
@@ -95,7 +97,7 @@ void sled_show(unsigned sprites, uint8_t count, int16_t x, int16_t y, uint8_t le
     {
         width = upgrades_width_at(level);
         n = upgrades_jets_at(level);
-        sprite_set(sprites, sled_image(level, width, 0), palette, MODE5_SIZE(SLED_IMAGE_W(width), 8));
+        sprite_set(sprites, image, palette, MODE5_SIZE(SLED_IMAGE_W(width), 8));
         sprite_attributes(sprites, doubling);
         sprite_move(sprites, x, y);
     }
@@ -134,7 +136,7 @@ void paddle_start(void)
     sled_level = upgrade_levels[UPGRADE_WIDTH];
     sled_tilt = 0;
     sled_jets = upgrades_jets_at(sled_level);
-    sprite_set(XRAM_SLED_SPRITE, sled_image(sled_level, paddle_width, 0), XRAM_PALETTE_SLED,
+    sprite_set(XRAM_SLED_SPRITE, sled_image(paddle_width, 0), XRAM_PALETTE_SLED,
                MODE5_SIZE(SLED_IMAGE_W(paddle_width), 8));
     for (i = 0; i < JETS_MAX; i++)
         sprite_set(JET_SPRITE(i), JET_IMAGE(JET_NOZZLE), XRAM_PALETTE_SLED, MODE5_SIZE(8, 12));
@@ -280,7 +282,7 @@ void paddle_draw(void)
         {
             sled_tilt = tilt;
             xram0_poke16(XRAM_SLED_SPRITE + offsetof(mode5_csprite_t, xram_sprite_ptr),
-                         sled_image(sled_level, paddle_width, tilt));
+                         sled_image(paddle_width, tilt));
             xram0_poke8(XRAM_SLED_SPRITE + offsetof(mode5_csprite_t, width_height),
                         MODE5_SIZE(SLED_IMAGE_W(paddle_width), tilt ? SLED_TILT_ROWS : 8));
         }

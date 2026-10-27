@@ -143,6 +143,12 @@ static int16_t drawn_scroll;
 static int16_t picture_x[PANELS * PANEL_SPRITES]; /* from the panel's left */
 static uint8_t picture_shown[PANELS * PANEL_SPRITES];
 
+/* The pictures of the panels within two of the one picked are in slots of
+   XRAM, panel p's in slot p % PICTURE_SLOTS: those that show, and the next
+   one each way, which loads before it slides into view. */
+static uint8_t slot_panel[PICTURE_SLOTS]; /* whose picture each slot holds, or PANELS */
+static uint8_t slot_level[PICTURE_SLOTS]; /* and at which level */
+
 static uint8_t unlocking; /* the stage being unlocked, or 0 */
 static uint8_t unlock_steps;
 static int16_t half_x[2], half_y[2], half_dx[2], half_dy[2]; /* in 1/16 px, from the cart */
@@ -303,6 +309,31 @@ static int16_t panel_x(uint8_t p)
     return PANEL_LEFT + p * PANEL_STEP - panel_scroll;
 }
 
+/* Whether panel p's picture is in its slot. The width and speed panels'
+   pictures are the sled of the width bought. */
+static uint8_t picture_ready(uint8_t p)
+{
+    uint8_t slot = p % PICTURE_SLOTS;
+
+    return slot_panel[slot] == p && slot_level[slot] == upgrade_levels[UPGRADE_WIDTH];
+}
+
+/* Loads the pictures of the panels within two of the one picked that
+   aren't in their slots yet. */
+static void pictures_load(void)
+{
+    uint8_t p = panel_picked > 2 ? panel_picked - 2 : 0;
+
+    for (; p <= panel_picked + 2 && p < PANELS; p++)
+        if ((p == UPGRADE_WIDTH || p == UPGRADE_SPEED) && !picture_ready(p))
+        {
+            uint8_t slot = p % PICTURE_SLOTS;
+            scene_picture_sled(slot, upgrade_levels[UPGRADE_WIDTH]);
+            slot_panel[slot] = p;
+            slot_level[slot] = upgrade_levels[UPGRADE_WIDTH];
+        }
+}
+
 /* A panel's picture and cost icons, where it is now. The pictures are
    stand-ins, doubled: the sled for width, the sled with its flames lit
    for speed, the energy gauge, and a brick. */
@@ -317,8 +348,9 @@ static void pictures_draw(uint8_t p)
     {
         uint8_t level = upgrade_levels[UPGRADE_WIDTH];
         uint8_t w = upgrades_width_at(level) * 2;
-        sled_show(PANEL_SPRITE(p, 0), PICTURE_SPRITES, x + (PANEL_COLS * 8 - w) / 2, top + 7, level,
-                  SLED_DOUBLE | dim | (p == UPGRADE_SPEED ? SLED_FLAMES : 0));
+        if (picture_ready(p))
+            sled_show(PANEL_SPRITE(p, 0), PICTURE_SPRITES, x + (PANEL_COLS * 8 - w) / 2, top + 7, level,
+                      SLED_DOUBLE | dim | (p == UPGRADE_SPEED ? SLED_FLAMES : 0), XRAM_PICTURE(p % PICTURE_SLOTS));
     }
     else if (p == 2)
     {
@@ -620,6 +652,7 @@ static void cheats_step(void)
         if (u >= UPGRADES || (up ? upgrade_levels[u] >= upgrades_max(u) : !upgrade_levels[u]))
             return;
         upgrade_levels[u] += up ? 1 : -1;
+        pictures_load();
         for (i = 0; i < UPGRADES; i++)
             panel_draw(i);
         pictures_dirty = 1;
@@ -690,7 +723,6 @@ void shop_open(void)
     video_hide_sprites();
     input_repeat_stop();
     scene_menu();
-    video_rock();
     video_text_clear();
     {
         char rail[TEXT_COLS + 1];
@@ -715,6 +747,9 @@ void shop_open(void)
         panel_light(p, 0);
     }
     flicker_steps = 0;
+    for (p = 0; p < PICTURE_SLOTS; p++)
+        slot_panel[p] = PANELS;
+    pictures_load();
     pictures_place();
     for (p = 0; p < LOCKS; p++)
         sprite_set(LOCK_SPRITE(p), XRAM_LOCK_IMAGE, XRAM_CART_PALETTE, MODE5_SIZE(16, 16));
@@ -822,6 +857,7 @@ uint8_t shop_step(void)
         {
             panel_light(panel_picked, 0);
             panel_picked += right ? 1 : -1;
+            pictures_load();
             flicker_steps = 0;
             pictures_dirty = 1;
             moved = 1;
@@ -843,6 +879,7 @@ uint8_t shop_step(void)
             for (i = 0; i < UPGRADES; i++)
                 panel_draw(i);
             nuggets_start(1);
+            pictures_load();
             pictures_dirty = 1;
             save_write();
         }

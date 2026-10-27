@@ -239,6 +239,37 @@ graphite steel with no yellow: there is nothing to be careful of here.
   it copies it, at a high one it redraws its steel, and inpainting ignored
   its mask. New corners or edge pieces are drawn here, on frame 1's steel.
 
+### The Backdrop
+
+Behind the upgrade screen is a workshop: a ceiling of steel trusses across
+the top, and a floor of machinery along the foot, behind the carts, with
+plain dark wall between them, behind the panels. They are two bands of
+4-bit 16x16 tiles on plane 0, each with its own 15 colors, and each can
+move on its own, since they meet in the wall. `art/backdrop.py` darkens
+them, a little cool, so the panels and the carts stand out in front, and
+repeats each band's outer row of tiles past its edge, so either can move
+a row.
+
+- `art/backdrop-ceiling.png` and `art/backdrop-floor.png` are 320 wide,
+  from `rd_pro__default` with a 64x64 crop of `ref/sled-kit.png` as the
+  reference, 256x48 and 256x96, three at a time. The ceiling: "Looking
+  straight at the ceiling of a mining machine workshop, side view, filling
+  the whole frame edge to edge: a heavy steel I-beam girder running the
+  whole width, riveted brackets hanging from it, bundles of pipes and cable
+  conduits along it, a couple of caged work lamps, a small pressure gauge",
+  and the floor: "Looking straight at the floor level of a mining machine
+  workshop, side view, machinery filling the whole frame edge to edge:
+  large interlocking cogwheels, a hydraulic piston beside a small steam
+  vent, an ore crusher with a hopper, pipes with valve wheels, riveted
+  steel floor plates along the bottom edge", each then "heavy modern
+  mining machinery of graphite steel with only small touches of
+  safety-yellow paint, bolted plates, scuffed edges but clean and well
+  maintained, slightly futuristic, light from the upper left, the whole
+  scene dark and muted like a backdrop behind gameplay".
+- Retro Diffusion makes 256 wide at most, and its `tile_x` doesn't wrap
+  cleanly, so the last 64 columns are outpainted: the right 192 columns,
+  expanded 64 to the right, which fits its 256 window.
+
 ### The Mine Carts
 
 The stage select is a train of mine carts on a track along the foot of the

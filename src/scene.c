@@ -9,8 +9,9 @@
 #include <unistd.h>
 
 /* Each screen has art of its own in XRAM_ART, read from the ROM's assets
-   when the screen starts. The upgrade screen has the rock tiles and every
-   sled. The title has a texture, a curtain set and the logo, and a stage a
+   when the screen starts. The upgrade screen has its backdrop, its panels
+   and carts, and slots for the pictures of the panels near the middle,
+   which load as the panels come near. The title has a texture, a curtain set and the logo, and a stage a
    texture, a curtain set and its own sled. The texture and the curtain set
    are picked at random only when the screen changes, so a stage played
    again, or the next one, keeps its rock, and nobody sees it change. */
@@ -65,20 +66,41 @@ static void load(const char *path, long offset, unsigned xaddr, unsigned count)
     close(fd);
 }
 
-/* The upgrade screen: rock tiles on plane 0, and on plane 1 the panels
-   from PANEL_Y and the carts from CART_Y, which the upgrade screen slides
-   and fills in: the panels' palette, tiles and the map of their frames, and
-   the carts' palette and tiles. */
+/* A band of the backdrop on plane 0, on the scanlines from top to bottom,
+   the top of its map at y. */
+static void backdrop_band(unsigned config_at, unsigned palette, unsigned tiles, unsigned map, int16_t y,
+                          int16_t top, int16_t bottom)
+{
+    mode2_config_t config;
+
+    memset(&config, 0, sizeof config);
+    config.y_pos_px = y;
+    config.width_tiles = BACKDROP_COLS;
+    config.height_tiles = BACKDROP_ROWS;
+    config.xram_data_ptr = map;
+    config.xram_palette_ptr = palette;
+    config.xram_tile_ptr = tiles;
+    xram0_write(config_at, &config, sizeof config);
+    xreg_vga_mode2(MODE2_4BPP | MODE2_16X16, config_at, 0, top, bottom);
+}
+
+/* The upgrade screen: the backdrop on plane 0, the ceiling's art from
+   CEILING_Y and the floor's down to FLOOR_Y, and on plane 1 the panels from
+   PANEL_Y and the carts from CART_Y, which the upgrade screen slides and
+   fills in: the panels' palette, tiles and the map of their frames, and the
+   carts' palette and tiles. */
 void scene_menu(void)
 {
     mode2_config_t config;
 
     if (!scene_change(SCENE_MENU))
         return;
-    load("ROM:tiles", 0, XRAM_TILES, sizeof(((xram_layout_t *)0)->art.menu.tiles));
-    load("ROM:sleds", 0, XRAM_SLED_IMAGES, sizeof(((xram_layout_t *)0)->art.menu.sled_images));
-    xreg_vga_mode2(MODE2_4BPP | MODE2_16X16, XRAM_TILE_CONFIG, 0);
-    load("ROM:panels", 0, XRAM_PANEL_PALETTE, XRAM_TILE_MAP - XRAM_PANEL_PALETTE);
+    load("ROM:backdrop", 0, XRAM_BACKDROP, XRAM_PICTURE(0) - XRAM_BACKDROP);
+    backdrop_band(XRAM_CEILING_CONFIG, XRAM_CEILING_PALETTE, XRAM_CEILING_TILES, XRAM_CEILING_MAP,
+                  CEILING_Y - 16, 0, BACKDROP_GAP);
+    backdrop_band(XRAM_FLOOR_CONFIG, XRAM_FLOOR_PALETTE, XRAM_FLOOR_TILES, XRAM_FLOOR_MAP,
+                  FLOOR_Y + BACKDROP_FLOOR_H + 16 - BACKDROP_ROWS * 16, BACKDROP_GAP, SCREEN_H);
+    load("ROM:panels", 0, XRAM_PANEL_PALETTE, XRAM_CART_PALETTE - XRAM_PANEL_PALETTE);
     memset(&config, 0, sizeof config);
     config.y_pos_px = PANEL_Y;
     config.width_tiles = PANEL_MAP_COLS;
@@ -158,8 +180,9 @@ void scene_curtains(int8_t step)
     curtains_load();
 }
 
-/* The images of the sled of a level of the width upgrade, on this screen. */
-unsigned scene_sled(uint8_t level)
+/* The flat sled of a level of the width upgrade into a slot of the upgrade
+   screen's pictures. */
+void scene_picture_sled(uint8_t slot, uint8_t level)
 {
-    return scene == SCENE_STAGE ? XRAM_STAGE_SLED : XRAM_SLED_IMAGES + level * SLED_SLOT;
+    load("ROM:sleds", (long)level * SLED_SLOT, XRAM_PICTURE(slot), PICTURE_BYTES);
 }

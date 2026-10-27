@@ -3,6 +3,7 @@
 #ifndef XRAM_H
 #define XRAM_H
 
+#include <backdrop.h>
 #include <rp6502.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -289,8 +290,6 @@ typedef struct
 
 #define TEXT_COLS 40
 #define TEXT_ROWS 30
-#define TILE_MAP_COLS 21 /* one more than the canvas, to scroll the tiles */
-#define TILE_MAP_ROWS 15
 
 #define BRICKS_MAX 48
 #define BRICK_COLORS 1 /* white */
@@ -329,11 +328,19 @@ typedef struct
 #define CART_Y 194
 #define CART_TILES_MAX 64
 
-/* Background tiles of the title and the upgrade screens, 16x16, in the
-   order of art/tiles.png. The wall tiles are no longer drawn. */
-#define TILE_ROCK 9 /* the first of TILE_ROCKS kinds of rock */
-#define TILE_ROCKS 8
-#define TILES_COUNT (TILE_ROCK + TILE_ROCKS)
+/* The backdrop of the upgrade screen, from art/backdrop.py, on plane 0:
+   the ceiling in a band of 16x16 tiles across the top, and the floor in
+   another along the foot, each with its own palette, tiles and map. The
+   bands meet at BACKDROP_GAP, in the plain wall between them, so each can
+   move on its own. */
+#define BACKDROP_GAP 128
+#define CEILING_Y 0  /* the top of the ceiling's art */
+#define FLOOR_Y 144  /* and of the floor's, which runs to the foot of the screen */
+
+/* The pictures of the panels nearest the middle, each PICTURE_BYTES, the
+   biggest a picture can be: for now, a flat sled. */
+#define PICTURE_SLOTS 5
+#define PICTURE_BYTES (SLED_WIDTH_MAX * 8 / 2)
 
 /* The texture behind a stage's playfield, from art/texture.py: a bitmap at
    2 bits a pixel that wraps. */
@@ -392,7 +399,7 @@ typedef struct
 #define ENERGY_EMPTY 3
 #define ENERGY_BOTTOM 4
 
-typedef MODE2_TILE(4, 16) tile_t;
+typedef MODE2_TILE(4, 16) backdrop_tile_t;
 typedef MODE2_TILE(8, 8) panel_tile_t;
 typedef MODE2_TILE(4, 8) cart_tile_t;
 typedef MODE5_CUSTOM_IMAGE(4, 24, 8) brick_image_t;
@@ -461,11 +468,21 @@ typedef struct
     mode5_csprite_t menu[MENU_SPRITES];   /* the upgrade screen's pictures */
 } hud_t;
 
+/* A band of the backdrop, as ROM:backdrop holds it. */
+#define BACKDROP_BAND(count)                       \
+    struct                                         \
+    {                                              \
+        uint16_t palette[16];                      \
+        backdrop_tile_t tiles[count];              \
+        uint8_t map[BACKDROP_ROWS][BACKDROP_COLS]; \
+    }
+
 /* The art of the upgrade screen. */
 typedef struct
 {
-    tile_t tiles[TILES_COUNT];
-    uint8_t sled_images[SLEDS][SLED_SLOT];
+    BACKDROP_BAND(BACKDROP_CEILING_TILES) ceiling; /* these two, as ROM:backdrop holds them */
+    BACKDROP_BAND(BACKDROP_FLOOR_TILES) floor;
+    uint8_t pictures[PICTURE_SLOTS][PICTURE_BYTES];
     uint16_t panel_palette[256]; /* these three, as ROM:panels holds them */
     panel_tile_t panel_tiles[256];
     uint8_t panels[PANEL_ROWS][PANEL_MAP_COLS];
@@ -474,7 +491,6 @@ typedef struct
     half_lock_image_t lock_halves[2];
     cart_tile_t cart_tiles[CART_TILES_MAX];
     uint8_t cart_map[CART_ROWS][CART_MAP_COLS];
-    uint8_t tile_map[TILE_MAP_ROWS][TILE_MAP_COLS]; /* an odd size, so last */
 } menu_art_t;
 
 /* The art of the title and of a stage: the texture and a curtain set, then
@@ -492,7 +508,8 @@ typedef struct
     keyboard_t keyboard;
     gamepad_t gamepad;
     psg_t psg;
-    mode2_config_t tile_config;
+    mode2_config_t ceiling_config;
+    mode2_config_t floor_config;
     mode3_config_t texture_config;
     mode1_config_t text_config;
     mode2_config_t panel_config;
@@ -528,7 +545,8 @@ typedef struct
 #define XRAM_KEYBOARD offsetof(xram_layout_t, keyboard)
 #define XRAM_GAMEPAD offsetof(xram_layout_t, gamepad)
 #define XRAM_PSG offsetof(xram_layout_t, psg)
-#define XRAM_TILE_CONFIG offsetof(xram_layout_t, tile_config)
+#define XRAM_CEILING_CONFIG offsetof(xram_layout_t, ceiling_config)
+#define XRAM_FLOOR_CONFIG offsetof(xram_layout_t, floor_config)
 #define XRAM_TEXTURE_CONFIG offsetof(xram_layout_t, texture_config)
 #define XRAM_TEXT_CONFIG offsetof(xram_layout_t, text_config)
 #define XRAM_PANEL_CONFIG offsetof(xram_layout_t, panel_config)
@@ -584,9 +602,14 @@ typedef struct
 #define XRAM_BRACE_IMAGE offsetof(xram_layout_t, brace_image)
 #define XRAM_MACHINE_IMAGE offsetof(xram_layout_t, machine_image)
 #define XRAM_ART offsetof(xram_layout_t, art)
-#define XRAM_TILES offsetof(xram_layout_t, art.menu.tiles)
-#define XRAM_SLED_IMAGES offsetof(xram_layout_t, art.menu.sled_images)
-#define XRAM_TILE_MAP offsetof(xram_layout_t, art.menu.tile_map)
+#define XRAM_BACKDROP offsetof(xram_layout_t, art.menu.ceiling)
+#define XRAM_CEILING_PALETTE offsetof(xram_layout_t, art.menu.ceiling.palette)
+#define XRAM_CEILING_TILES offsetof(xram_layout_t, art.menu.ceiling.tiles)
+#define XRAM_CEILING_MAP offsetof(xram_layout_t, art.menu.ceiling.map)
+#define XRAM_FLOOR_PALETTE offsetof(xram_layout_t, art.menu.floor.palette)
+#define XRAM_FLOOR_TILES offsetof(xram_layout_t, art.menu.floor.tiles)
+#define XRAM_FLOOR_MAP offsetof(xram_layout_t, art.menu.floor.map)
+#define XRAM_PICTURE(slot) (offsetof(xram_layout_t, art.menu.pictures) + (slot) * PICTURE_BYTES)
 #define XRAM_PANEL_PALETTE offsetof(xram_layout_t, art.menu.panel_palette)
 #define XRAM_PANEL_TILES offsetof(xram_layout_t, art.menu.panel_tiles)
 #define XRAM_PANELS offsetof(xram_layout_t, art.menu.panels)

@@ -22,11 +22,13 @@ uint8_t paddle_tilt(void);
 void paddle_draw(void);
 
 /* A picture of the sled of a level, and its jets, for the upgrade screen:
-   with flames, doubled, or in the shade palette, as look says. */
+   with flames, doubled, or in the shade palette, as look says, from the
+   sled's flat image at image. */
 #define SLED_NONE 0xFF
 #define SLED_FLAMES 0x01
 #define SLED_DOUBLE 0x02
 #define SLED_DIM 0x04
-void sled_show(unsigned sprites, uint8_t count, int16_t x, int16_t y, uint8_t level, uint8_t look);
+void sled_show(unsigned sprites, uint8_t count, int16_t x, int16_t y, uint8_t level, uint8_t look,
+               unsigned image);
 
 #endif

@@ -6,22 +6,12 @@
    but what the game sets up is drawn when the modes are programmed. */
 void video_init(void)
 {
-    mode2_config_t tile_config;
     mode3_config_t texture_config;
     mode1_config_t text_config;
 
     video_hide_sprites();
 
-    xram0_set(XRAM_TILE_MAP, TILE_ROCK, sizeof(((xram_layout_t *)0)->art.menu.tile_map));
     video_text_clear();
-
-    memset(&tile_config, 0, sizeof tile_config);
-    tile_config.width_tiles = TILE_MAP_COLS;
-    tile_config.height_tiles = TILE_MAP_ROWS;
-    tile_config.xram_data_ptr = XRAM_TILE_MAP;
-    tile_config.xram_palette_ptr = XRAM_PALETTE_MAIN;
-    tile_config.xram_tile_ptr = XRAM_TILES;
-    xram0_write(XRAM_TILE_CONFIG, &tile_config, sizeof tile_config);
 
     memset(&texture_config, 0, sizeof texture_config);
     texture_config.x_wrap = true;
@@ -42,10 +32,11 @@ void video_init(void)
 }
 
 /* Planes, back to front:
-   0: the rock tiles of the upgrade screen, or the texture of the title and
+   0: the backdrop of the upgrade screen, or the texture of the title and
       a stage, which each screen programs itself, with the scenery and the
       bricks over it.
-   1: the paddle, its flames and smoke, and the ball.
+   1: the upgrade screen's panels and carts, and the paddle, its flames
+      and smoke, and the ball.
    2: menu text, with the gauge, the counts and the upgrade screen's
       pictures over it. */
 void video_start(void)
@@ -56,33 +47,6 @@ void video_start(void)
     xreg_vga_mode5(MODE5_CUSTOM, XRAM_ACTORS, sizeof(actors_t) / sizeof(mode5_csprite_t), 1);
     xreg_vga_mode1(MODE1_4BPP, XRAM_TEXT_CONFIG, 2);
     xreg_vga_mode5(MODE5_CUSTOM, XRAM_HUD, sizeof(hud_t) / sizeof(mode5_csprite_t), 2);
-}
-
-/* A kind of rock for each cell, from a hash of the cell, so the rock has
-   no pattern that repeats across or down. */
-static uint8_t rock_at(uint8_t col, uint8_t row)
-{
-    uint8_t h = col * 151 + row * 101;
-
-    h ^= h >> 3;
-    h *= 37;
-    h ^= h >> 2;
-    return TILE_ROCK + h % TILE_ROCKS;
-}
-
-/* Rock all over, for a screen with no playfield. */
-void video_rock(void)
-{
-    uint8_t cells[TILE_MAP_COLS];
-    uint8_t col, row;
-
-    for (row = 0; row < TILE_MAP_ROWS; row++)
-    {
-        for (col = 0; col < TILE_MAP_COLS; col++)
-            cells[col] = rock_at(col, row);
-        xram0_write(XRAM_TILE_MAP + row * TILE_MAP_COLS, cells, TILE_MAP_COLS);
-    }
-    xram0_poke16(XRAM_TILE_CONFIG + offsetof(mode2_config_t, x_pos_px), -16); /* a tile */
 }
 
 /* Every sprite of every plane, as a plain hidden sprite. Whatever shows a
