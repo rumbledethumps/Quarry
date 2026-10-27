@@ -282,10 +282,11 @@ typedef struct
 #define TILE_ROCKS 8
 #define TILES_COUNT (TILE_ROCK + TILE_ROCKS)
 
-/* The sleds, from art/sleds/, one for each width of TUNE_WIDTHS. A sled's
-   images are the sled level, 8 rows, then tilted 1 and 2 px in 8 to the
-   right as it falls, SLED_TILT_ROWS each, all its width wide. Each sled
-   has a slot of SLED_SLOT bytes, which CMakeLists.txt gives too. */
+/* The sleds that art/sled.py draws, one for each width of TUNE_WIDTHS, up
+   to SLEDS. A sled's images are the sled level, 8 rows, then tilted 1 and
+   2 px in 8 to the right as it falls, SLED_TILT_ROWS each, all its width
+   rounded up to 4 wide. Each sled has a slot of SLED_SLOT bytes, which
+   art/sled.py gives too. */
 #define SLEDS 11
 #define SLED_WIDTH_MAX 64
 #define SLED_TILT_ROWS 24

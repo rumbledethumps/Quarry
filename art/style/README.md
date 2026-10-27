@@ -97,16 +97,18 @@ so it must be unmistakable:
   nozzle for each jet, with a slim flame no wider than the nozzle's mouth,
   6 rows at its longest.
 
-The sled grows 4 px with each width upgrade, from 24 px to 64 px. It
-starts with one jet, gets a second at 36 px and a third at 52 px, from
-`TUNE_WIDTHS` and `TUNE_JETS` in `src/tuning.h`. The game is a power trip:
-the widest sled is easy to play, even on the widest playfield.
+The sled grows with each width upgrade, by the widths of `TUNE_WIDTHS`
+in `src/tuning.h`. It starts with one jet and gains up to three, by
+`TUNE_JETS`. The game is a power trip: the widest sled is easy to play,
+even on the widest playfield.
 
-Each width has a picture of its own in `art/sleds/`, so each sled can
-have details of its own, such as its scuffs, and a lamp between each two
-jets. `art/sled.py` draws them all from the tuning. Run it after a change
-to the widths or the jets, then touch up any sled by hand. A picture holds
-the sled level, then tilted twice for its fall.
+Each width has a picture of its own, so each sled can have details of its
+own, such as its scuffs, and a lamp between each two jets. The build draws
+them with `art/sled.py` from the tuning, so a change to the widths or the
+jets needs only a rebuild, and writes them to `sleds/` in the build folder
+to look at. A picture holds the sled level, then tilted twice for its
+fall. Once the widths settle, the pictures can move into `art/` to be
+touched up by hand.
 
 The jets are sprites of their own, a nozzle and its flame, in
 `art/jet.png`, so they can swivel. A jet leans a little to push the sled
@@ -169,7 +171,7 @@ Today `palettes_t` has `main`, `bricks[BRICK_COLORS]`, `fx`, `logo`, and
 | ball, ball sprite of the count | 8x8 |
 | digit | 8x8 tile, a 7x8 digit with its outline |
 | texture tiles | small tiles at 2 bits a pixel |
-| sled | 24 to 64 wide, 8 tall, then its two tilts, 24 tall each |
+| sled | the widths of `TUNE_WIDTHS`, up to 64, rounded up to 4 for the sprite; 8 tall, then its two tilts, 24 tall each |
 | jet | 7 frames, 8x12: the nozzle alone, 3 flames, 3 swiveled flames |
 | smoke | 3 frames, 8x8 |
 | energy gauge | a narrow vertical bar, width to decide |

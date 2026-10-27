@@ -131,7 +131,7 @@ def main():
     width, speed = tune['TUNE_WIDTHS'][-1], tune['TUNE_SPEEDS'][1]
     check(game.ram('paddle_width') == width, f'the paddle is {width} px wide now')
     check(game.ram('paddle_speed', 2) == speed, f'and moves {speed} a step')
-    size = (8 // 4 - 1) << 4 | (width // 4 - 1)  # MODE5_SIZE(width, 8)
+    size = (8 // 4 - 1) << 4 | ((width + 3) // 4 - 1)  # MODE5_SIZE(SLED_IMAGE_W(width), 8)
     check(game.sizes('XRAM_SLED_SPRITE', 1)[0] == size, f'the sled shows {width} px wide')
     jets = game.ram(f'jets+{len(tune["TUNE_WIDTH_COSTS"])}')
     check(game.shown('XRAM_JET_SPRITES', game.sym['JETS_MAX']) == jets, f'with its {jets} jets')

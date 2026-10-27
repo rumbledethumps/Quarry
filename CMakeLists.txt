@@ -30,15 +30,13 @@ quarry_art(smoke.bin image smoke.png --tile 8x8)
 quarry_art(energy.bin image energy.png --tile 28x4)
 quarry_art(logo.bin image logo.png --tile 64x64)
 
-# Every sled of art/sleds/, from the narrowest, each in a slot of SLED_SLOT
-# bytes of src/xram.h.
-file(GLOB QUARRY_SLEDS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/art/sleds/sled-*.png)
+# A sled for each width of src/tuning.h, drawn by art/sled.py, which also
+# writes them to look at in sleds/ in the build folder.
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/sleds.bin
     COMMAND ${Python3_EXECUTABLE}
-        ${CMAKE_CURRENT_SOURCE_DIR}/art/png2bin.py image --slot 1792
-        ${QUARRY_SLEDS} ${CMAKE_CURRENT_BINARY_DIR}/sleds.bin
-    DEPENDS art/png2bin.py ${QUARRY_SLEDS}
+        ${CMAKE_CURRENT_SOURCE_DIR}/art/sled.py ${CMAKE_CURRENT_BINARY_DIR}/sleds.bin
+    DEPENDS art/sled.py art/rd2png.py art/png2bin.py art/palettes.png src/tuning.h
     VERBATIM
 )
 

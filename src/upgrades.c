@@ -22,7 +22,7 @@ _Static_assert(SPEED_LEVELS == sizeof speeds / sizeof *speeds - 1,
 _Static_assert(WIDTH_LEVELS <= UPGRADE_LEVELS_MAX && SPEED_LEVELS <= 5,
                "Too many levels: 10 widths and 5 speeds after the first at most.");
 _Static_assert(sizeof jets == sizeof widths, "TUNE_JETS needs the jets of each width.");
-_Static_assert(sizeof widths == SLEDS, "SLEDS in xram.h needs a sled for each width.");
+_Static_assert(sizeof widths <= SLEDS, "SLEDS in xram.h needs a sled for each width.");
 
 uint8_t upgrade_levels[UPGRADES];
 

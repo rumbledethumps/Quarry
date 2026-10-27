@@ -31,9 +31,9 @@
 
 /* Upgrades, paid in white nuggets. Each level of an upgrade has its
    value, starting with the value before any upgrade, and each level after
-   the first has its cost. art/sled.py draws a sled for each width, with
-   its jets, into art/sleds/, so run it after a change to either. */
-#define TUNE_WIDTHS {24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64} /* px, multiples of 4, 64 at most */
+   the first has its cost. The build draws a sled for each width, with
+   its jets. */
+#define TUNE_WIDTHS {20, 23, 26, 29, 32, 35, 38, 41, 44, 47, 50} /* px, 64 at most */
 #define TUNE_WIDTH_COSTS {3, 4, 5, 6, 7, 9, 11, 13, 15, 17}
 #define TUNE_JETS {1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3} /* under the sled of each width, 3 at most */
 #define TUNE_SPEEDS {512, 576, 640, 704, 768} /* 2 to 3 px per step */
