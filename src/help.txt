@@ -1,5 +1,5 @@
 Quarry - an incremental brick breaker.
 Move: arrows, WASD, or a gamepad.
-Button: Space, Enter, Ctrl, or A/B/X/Y. Up launches too.
+Button: Space, Enter, Ctrl, or A/B/X/Y.
 Menus: up and down to pick, the button to choose.
 Menu: Esc, P, or Start/Select.

@@ -17,13 +17,15 @@ publish: quarry.zip
 | Action | Keyboard | Gamepad |
 | --- | --- | --- |
 | Move | A and D, Left and Right, keypad 4 and 6 | D-pad or left stick |
-| Launch | the button, keypad 0, W, Up, keypad 8 | the button, or up |
+| Launch | the button, keypad 0 | the button |
 | Pick in a menu | W and S, Up and Down, keypad 8 and 2 | D-pad or left stick |
 | Choose | the button | the button |
 | Menu | Esc, P, Pause | Start or Select |
 
-The game plays with one stick and one button. The button is Space, Enter,
-keypad Enter or Ctrl on the keyboard, and A, B, X or Y on a gamepad. Menus don't wrap around, and a menu that goes up and
+The game plays with one stick and one button, and so with one hand: the
+arrows and Ctrl, or WASD and Space. The button is Space, Enter, keypad
+Enter or Ctrl on the keyboard, and A, B, X or Y on a gamepad. Up never
+launches. Menus don't wrap around, and a menu that goes up and
 down ignores left and right.
 
 Shift and the arrow keys are for testing, and holding them repeats. On

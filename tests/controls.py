@@ -17,8 +17,8 @@ from game import Game, check
 
 MOVES = [('d', 'right'), ('a', 'left'), ('right', 'right'), ('left', 'left'),
          ('kp6', 'right'), ('kp4', 'left')]
-LAUNCH_KEYS = ['space', 'enter', 'lctrl', 'rctrl', 'kp0', 'kpenter', 'w', 'up', 'kp8']
-LAUNCH_BUTTONS = [(0, 'a'), (0, 'b'), (0, 'x'), (1, 'y'), (0, 'up')]
+LAUNCH_KEYS = ['space', 'enter', 'lctrl', 'rctrl', 'kp0', 'kpenter']
+LAUNCH_BUTTONS = [(0, 'a'), (0, 'b'), (0, 'x'), (1, 'y')]
 
 
 def main():
@@ -100,11 +100,16 @@ def main():
         game.wait('launch, 4 balls left', 5)
         game.cmd(f'pad {pad} release {button}')
         print(f'ok: gamepad {pad + 1} button {button} launches')
-    game.cmd(f'state load "{state}"')
-    game.cmd('pad 1 stick 0 -128 0 0')
-    game.wait('launch, 4 balls left', 5)
-    game.cmd('pad 1 stick 0 0 0 0')
-    print('ok: gamepad 2 left stick up launches')
+    # Up doesn't launch, from a key or a gamepad.
+    for press, release in [('press w', 'release w'), ('press up', 'release up'),
+                           ('press kp8', 'release kp8'), ('pad 0 press up', 'pad 0 release up'),
+                           ('pad 1 stick 0 -128 0 0', 'pad 1 stick 0 0 0 0')]:
+        game.cmd(f'state load "{state}"')
+        game.cmd(press)
+        game.run(10)
+        game.cmd('expect-not "launch"')
+        game.cmd(release)
+    print('ok: up does not launch')
 
     # A held launch control launches only once, even when the ball is back
     # on the paddle while it is still held.

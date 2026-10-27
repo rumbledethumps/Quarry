@@ -54,7 +54,7 @@ void input_init(void)
    work: arrows, WASD or the keypad to move, and Space, Enter or Ctrl for
    the button. Every connected gamepad: the d-pad merged with the left
    stick, and A, B, X or Y, which every pad has where you expect them,
-   for the button. Up launches too. Esc, P or Pause, or Start or
+   for the button, which launches. Esc, P or Pause, or Start or
    Select, is the menu. The arrow keys with Shift are the SHIFT_ keys instead. */
 void input_read(void)
 {
@@ -82,7 +82,7 @@ void input_read(void)
     if (KEYBOARD_PRESSED(keys, HID_KEY_W) ||
         (arrows && KEYBOARD_PRESSED(keys, HID_KEY_ARROW_UP)) ||
         KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_8))
-        held |= INPUT_UP | INPUT_LAUNCH;
+        held |= INPUT_UP;
     if (KEYBOARD_PRESSED(keys, HID_KEY_S) ||
         (arrows && KEYBOARD_PRESSED(keys, HID_KEY_ARROW_DOWN)) ||
         KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_2))
@@ -113,7 +113,7 @@ void input_read(void)
         if (dirs & GAMEPAD_DPAD_RIGHT)
             held |= INPUT_RIGHT;
         if (dirs & GAMEPAD_DPAD_UP)
-            held |= INPUT_UP | INPUT_LAUNCH;
+            held |= INPUT_UP;
         if (dirs & GAMEPAD_DPAD_DOWN)
             held |= INPUT_DOWN;
         if (pad->btn0 & (GAMEPAD_BTN0_A | GAMEPAD_BTN0_B |
