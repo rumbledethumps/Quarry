@@ -76,7 +76,11 @@ def main():
     low = sym['TUNE_ENERGY_LOW']
     game.paused_poke([('energy', low + 20, 2)])
     game.wait('energy low', 30)
-    game.run(2)
+    lamp_color = sym['XRAM_PALETTE_SHADE'] + 2 * sym['LAMP_COLOR']
+    lamp = lambda: int.from_bytes(game.xram(lamp_color, 2), 'little')
+    check(lamp() == sym['LAMP_ON'], "the machine's lamp lights with the warning")
+    game.run(sym['LAMP_STEPS'])
+    check(lamp() == sym['LAMP_OFF'], 'and goes out after it')
     segments = bar(game, shot)
     lit = -(-low // -(-full // bar_segments))
     check(segments == ['empty'] * (bar_segments - lit) + ['low'] * lit,

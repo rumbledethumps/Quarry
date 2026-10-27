@@ -135,6 +135,12 @@ typedef struct
 #define CANVAS_640X480 3
 #define CANVAS_640X360 4
 
+/* Colors, from the VGA datasheet. */
+
+#define COLOR_FROM_RGBA(r, g, b, alpha)                             \
+    ((((unsigned)(b) >> 3) << 11) | (((unsigned)(g) >> 3) << 6) | \
+     (((unsigned)(alpha) >> 7) << 5) | ((unsigned)(r) >> 3))
+
 /* Mode 1: Character, from the VGA datasheet. */
 
 #define xreg_vga_mode1(...) xreg(1, 0, 1, 1, __VA_ARGS__)
@@ -382,7 +388,7 @@ typedef struct
     uint16_t sled[16];    /* the sleds, their jets, the frame, and the digits */
     uint16_t texture[16]; /* the first 4, behind the playfield */
     uint16_t curtain[16]; /* loaded with each curtain set */
-    uint16_t shade[16];   /* the sled row, darker, for the braces and the machine */
+    uint16_t shade[16];   /* the sled row at half, for the braces and the machine */
 } palettes_t;
 
 /* Plane 0 sprites, in front of the texture and behind the bricks, back to

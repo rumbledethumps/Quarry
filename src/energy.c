@@ -1,5 +1,6 @@
 #include "energy.h"
 #include "debug.h"
+#include "frame.h"
 #include "sfx.h"
 #include "tuning.h"
 #include "video.h"
@@ -9,8 +10,11 @@
 #define BAR_IMAGE(i) (XRAM_ENERGY_IMAGES + (i) * sizeof(energy_image_t))
 #define BAR_PIECE_H 8
 
-/* While the energy is low, a beep every LOW_BEEP_STEPS steps. */
+/* While the energy is low, a beep every LOW_BEEP_STEPS steps, and the
+   machine's lamp lights with each for LAMP_STEPS, so the machine reads as
+   what powers the paddle. */
 #define LOW_BEEP_STEPS 180
+#define LAMP_STEPS 12
 
 /* The energy each segment of the bar stands for. */
 #define SEGMENT_ENERGY ((TUNE_ENERGY + ENERGY_SEGMENTS - 1) / ENERGY_SEGMENTS)
@@ -22,6 +26,7 @@ uint8_t energy_draining;
 
 static uint8_t lit_shown; /* segments lit on the bar */
 static uint8_t beep_steps;
+static uint8_t lamp_steps;
 static uint8_t low_shown; /* the lit segments are orange */
 
 /* Lights a segment for each SEGMENT_ENERGY left, or part of it, from the
@@ -70,13 +75,24 @@ void energy_start(int16_t x, int16_t y)
     }
     lit_shown = 0;
     low_shown = 0;
+    lamp_steps = 0;
     bar_draw();
+}
+
+static void beep(uint8_t sound)
+{
+    sfx_play(sound, SFX_CENTER);
+    beep_steps = 0;
+    lamp_steps = LAMP_STEPS;
+    frame_lamp(1);
 }
 
 void energy_step(void)
 {
     uint16_t was = energy;
 
+    if (lamp_steps && !--lamp_steps)
+        frame_lamp(0);
     if (!energy_draining || !energy)
         return;
     if (energy > TUNE_ENERGY_DRAIN)
@@ -85,14 +101,10 @@ void energy_step(void)
         energy = 0;
     if (energy <= TUNE_ENERGY_LOW && was > TUNE_ENERGY_LOW)
     {
-        sfx_play(SFX_LOW, SFX_CENTER);
-        beep_steps = 0;
+        beep(SFX_LOW);
         DEBUG_LOG("energy low\n");
     }
     else if (energy <= TUNE_ENERGY_LOW && energy && ++beep_steps >= LOW_BEEP_STEPS)
-    {
-        sfx_play(SFX_LOW_BEEP, SFX_CENTER);
-        beep_steps = 0;
-    }
+        beep(SFX_LOW_BEEP);
     bar_draw();
 }

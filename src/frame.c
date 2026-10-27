@@ -20,8 +20,12 @@ static const uint8_t curtain_cols[] = {64, 36};
 static const uint8_t curtain_rows[] = {64, 64, 64, 48};
 #define CURTAIN_UNDER 6
 
-/* The machine hangs this far down the right wall. */
+/* The machine hangs this far down the right wall. Its lamp is the red of
+   the shade palette, which the game lights. */
 #define MACHINE_Y 140
+#define LAMP_COLOR 7
+#define LAMP_OFF COLOR_FROM_RGBA(92, 32, 13, 255) /* the red of the shade row */
+#define LAMP_ON COLOR_FROM_RGBA(255, 64, 32, 255)
 
 _Static_assert(sizeof curtain_cols * sizeof curtain_rows == CURTAIN_TILES, "CURTAIN_TILES is wrong.");
 
@@ -90,4 +94,11 @@ void frame_start(int16_t left, int16_t right)
     }
     piece(SCENERY(caps, 0), XRAM_CAP_IMAGE, XRAM_PALETTE_SLED, MODE5_SIZE(POST_W, BEAM_H), outer, 0, 0);
     piece(SCENERY(caps, 1), XRAM_CAP_IMAGE, XRAM_PALETTE_SLED, MODE5_SIZE(POST_W, BEAM_H), right, 0, 1);
+    frame_lamp(0);
+}
+
+/* Lights the machine's lamp, or puts it out. */
+void frame_lamp(uint8_t on)
+{
+    xram0_poke16(XRAM_PALETTE_SHADE + LAMP_COLOR * sizeof(uint16_t), on ? LAMP_ON : LAMP_OFF);
 }

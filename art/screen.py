@@ -108,7 +108,8 @@ def machine():
         for x in range(5, 13):
             rows[y][x] = OUT if y in (29, 33) or x in (5, 12) else G0
     rows[31][7], rows[31][8] = ORANGE, Y4  # a readout
-    rows[30][17], rows[30][18], rows[31][17], rows[31][18] = ORANGE, ORANGE, ORANGE, Y4  # a lamp
+    for y in (30, 31):
+        rows[y][17] = rows[y][18] = RED  # the lamp, which the game lights
     for py in (6, 30):
         for y in range(py, py + 4):
             rows[y][0], rows[y][1] = OUT, G2  # brackets against the wall
