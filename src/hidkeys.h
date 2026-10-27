@@ -5,12 +5,15 @@
 
 #define HID_KEY_A 0x04
 #define HID_KEY_D 0x07
+#define HID_KEY_P 0x13
 #define HID_KEY_S 0x16
 #define HID_KEY_W 0x1A
 
 #define HID_KEY_ENTER 0x28
 #define HID_KEY_ESCAPE 0x29
 #define HID_KEY_SPACE 0x2C
+
+#define HID_KEY_PAUSE 0x48
 
 #define HID_KEY_ARROW_RIGHT 0x4F
 #define HID_KEY_ARROW_LEFT 0x50

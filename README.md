@@ -20,7 +20,7 @@ publish: quarry.zip
 | Launch | the button, keypad 0, W, Up, keypad 8 | the button, or up |
 | Pick in a menu | W and S, Up and Down, keypad 8 and 2 | D-pad or left stick |
 | Choose | the button | the button |
-| Menu | Esc | Start or Select |
+| Menu | Esc, P, Pause | Start or Select |
 
 The game plays with one stick and one button. The button is Space, Enter,
 keypad Enter or Ctrl on the keyboard, and A, B, X or Y on a gamepad. Menus don't wrap around, and a menu that goes up and

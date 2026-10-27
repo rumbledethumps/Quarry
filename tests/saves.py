@@ -99,11 +99,12 @@ def main():
     game.until('game_state', 'STATE_PAUSE', 10)
     game.tap('space')  # Continue
     game.until('game_state', 'STATE_PLAY', 10)
-    game.tap('pad 0 select')
-    game.until('game_state', 'STATE_PAUSE', 10)
-    game.tap('space')
-    game.until('game_state', 'STATE_PLAY', 10)
-    print(f'ok: paused with {broken} nuggets saved, and carried on, and Select pauses too')
+    for control in ['pad 0 select', 'p', 'pause']:
+        game.tap(control)
+        game.until('game_state', 'STATE_PAUSE', 10)
+        game.tap('space')
+        game.until('game_state', 'STATE_PLAY', 10)
+    print(f'ok: paused with {broken} nuggets saved, and carried on, and Select, P and Pause pause too')
 
     # The stage ends, and that saves too.
     os.remove(os.path.join(folder, SAVE))
