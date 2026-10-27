@@ -19,7 +19,9 @@
    sides. The stages are a row of buttons along the bottom. Up and down
    move the holographic cursor between the rail and the buttons, and left
    and right move the pick. The button buys the upgrade picked, or asks
-   to begin the stage picked. Esc asks to go back to the title.
+   to begin the stage picked. Esc asks to go back to the title. A stage
+   newly open is still locked when the screen opens: its lock shakes and
+   breaks, and its button lights.
 
    The panels are text cells on plane 1, which slides across, and their
    pictures are plane 2 sprites that move with them. The counts down the
@@ -30,13 +32,26 @@
 #define SPRITE(i) (XRAM_MENU_SPRITES + (i) * sizeof(mode5_csprite_t))
 
 /* Each panel has PANEL_SPRITES sprites: its picture, then an icon for
-   each of up to 4 currencies of its cost. The cursor's 4 corners follow. */
+   each of up to 4 currencies of its cost. The cursor's 4 corners follow,
+   then the two halves of a lock. */
 #define PANEL_SPRITES 8
 #define PICTURE_SPRITES 4
 #define PANEL_SPRITE(p, i) SPRITE((p) * PANEL_SPRITES + (i))
 #define CURSOR_SPRITE(i) SPRITE(PANELS * PANEL_SPRITES + (i))
+#define LOCK_SPRITE(i) SPRITE(PANELS * PANEL_SPRITES + 4 + (i))
 
-_Static_assert(PANELS * PANEL_SPRITES + 4 <= MENU_SPRITES, "MENU_SPRITES is too few.");
+_Static_assert(PANELS * PANEL_SPRITES + 4 + 2 <= MENU_SPRITES, "MENU_SPRITES is too few.");
+
+/* The unlock of a stage newly open: a wait, the lock shaking harder and
+   harder, then it breaks, and its halves fly apart and fall away. Their
+   speeds are in 1/16 px a step. */
+#define UNLOCK_WAIT 20
+#define UNLOCK_SHAKE 60
+#define UNLOCK_FALL 45
+#define UNLOCK_CHIME 8 /* steps after it breaks */
+#define HALF_DX 24
+#define HALF_DY -40
+#define HALF_GRAVITY 4
 
 /* Where the panels are. The one picked is centered, PANEL_COLS cells
    wide, and the others are side by side with it. A frame is
@@ -116,6 +131,11 @@ static uint8_t cursor_dirty;
 static int16_t drawn_scroll;
 static int16_t picture_x[PANELS * PANEL_SPRITES]; /* from the panel's left */
 static uint8_t picture_shown[PANELS * PANEL_SPRITES];
+
+static uint8_t unlocking; /* the stage being unlocked, or 0 */
+static uint8_t unlock_steps;
+static int16_t half_x[2], half_y[2], half_dx[2], half_dy[2]; /* in 1/16 px */
+static uint8_t lock_dirty;
 
 static char *put_text(char *at, const char *s)
 {
@@ -353,13 +373,20 @@ static uint8_t first_button(void)
     return first > STAGES - BUTTONS + 1 ? STAGES - BUTTONS + 1 : first;
 }
 
+/* The stages shown open: all that are, but one being unlocked until its
+   lock breaks. */
+static uint8_t shown_open(void)
+{
+    return unlocking > stages_shown ? unlocking - 1 : save_stages_open();
+}
+
 /* A button for each stage in view, lit for the one picked, a lock for each
    that isn't open yet, and an arrow at an end with more past it. */
 static void stages_draw(void)
 {
     static const char line[] = "\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4"
                                "\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4";
-    uint8_t first = first_button(), open = save_stages_open(), i;
+    uint8_t first = first_button(), open = shown_open(), i;
 
     video_text(1, TRACK_TOP, line, BOX_COLOR, CLEAR);
     video_text(1, TRACK_BOTTOM, line, BOX_COLOR, CLEAR);
@@ -375,7 +402,7 @@ static void stages_draw(void)
         else
             button[1] = button[2] = LOCK;
         video_text(BUTTON_COL + i * BUTTON_COLS, BUTTON_ROW, button,
-                   s == stage_picked ? PICK_COLOR : s <= open ? BOX_COLOR : DIM_COLOR, BOX_FILL);
+                   s > open ? DIM_COLOR : s == stage_picked ? PICK_COLOR : BOX_COLOR, BOX_FILL);
     }
     video_text(0, BUTTON_ROW, first > 1 ? "\x11" : " ", BOX_COLOR, CLEAR);
     video_text(TEXT_COLS - 1, BUTTON_ROW, first + BUTTONS <= STAGES ? "\x10" : " ", BOX_COLOR, CLEAR);
@@ -449,6 +476,74 @@ static void shimmer(void)
     xram0_poke16(XRAM_PALETTE_HOLO + 3 * sizeof(uint16_t), middle[phase]);
 }
 
+/* The lock over the button of the stage being unlocked, in two halves. */
+static void lock_start(void)
+{
+    uint8_t col = BUTTON_COL + (unlocking - first_button()) * BUTTON_COLS + 1, i;
+
+    for (i = 0; i < 2; i++)
+    {
+        sprite_set(LOCK_SPRITE(i), XRAM_LOCK_IMAGES + i * sizeof(lock_image_t), XRAM_PALETTE_SLED,
+                   MODE5_SIZE(8, 16));
+        half_x[i] = (col + i) * 8 * 16;
+        half_y[i] = (BUTTON_ROW * 8 - 4) * 16;
+        half_dx[i] = i ? HALF_DX : -HALF_DX;
+        half_dy[i] = HALF_DY;
+    }
+    unlock_steps = 0;
+    lock_dirty = 1;
+}
+
+static void lock_move(void)
+{
+    int8_t shake = 0;
+    uint8_t i;
+
+    if (unlock_steps >= UNLOCK_WAIT && unlock_steps < UNLOCK_WAIT + UNLOCK_SHAKE)
+    {
+        uint8_t amount = 1 + (unlock_steps - UNLOCK_WAIT) * 3 / UNLOCK_SHAKE;
+        shake = unlock_steps / 2 & 1 ? amount : -amount;
+    }
+    for (i = 0; i < 2; i++)
+        sprite_move(LOCK_SPRITE(i), half_x[i] / 16 + shake, half_y[i] / 16);
+}
+
+/* A step of the unlock: the shake rattles, the break snaps and shows the
+   button lit, the halves fall, and a chime plays. At the end the screen
+   has shown the stage open, and the game saves. */
+static void unlock_step(void)
+{
+    uint8_t t = unlock_steps++, i;
+
+    lock_dirty = 1;
+    if (t >= UNLOCK_WAIT && t < UNLOCK_WAIT + UNLOCK_SHAKE && (t - UNLOCK_WAIT) % 6 == 0)
+        sfx_play(SFX_RATTLE, half_x[0] / 16);
+    if (t == UNLOCK_WAIT + UNLOCK_SHAKE)
+    {
+        sfx_play(SFX_SNAP, half_x[0] / 16);
+        stages_shown = unlocking;
+        stages_draw();
+    }
+    if (t == UNLOCK_WAIT + UNLOCK_SHAKE + UNLOCK_CHIME)
+        sfx_play(SFX_UNLOCK, half_x[0] / 16);
+    if (t > UNLOCK_WAIT + UNLOCK_SHAKE)
+        for (i = 0; i < 2; i++)
+        {
+            half_x[i] += half_dx[i];
+            half_y[i] += half_dy[i];
+            half_dy[i] += HALF_GRAVITY;
+        }
+    if (t == UNLOCK_WAIT + UNLOCK_SHAKE + UNLOCK_FALL)
+    {
+        sprite_hide(LOCK_SPRITE(0));
+        sprite_hide(LOCK_SPRITE(1));
+        unlocking = 0;
+        lock_dirty = 0;
+        save_write();
+        DEBUG_LOG("unlocked %u\n", stages_shown);
+    }
+}
+
 static void sprites_hide(void)
 {
     uint8_t i;
@@ -500,6 +595,7 @@ void shop_open(void)
     nuggets_start(1);
     cursor_on = ON_RAIL;
     asking = ASK_NONE;
+    unlocking = save_stages_open() > stages_shown ? save_stages_open() : 0;
     panel_scroll = panel_picked * PANEL_STEP;
     for (p = 0; p < PANELS; p++)
         panel_draw(p);
@@ -511,6 +607,8 @@ void shop_open(void)
     cursor_set();
     cursor_move();
     pictures_dirty = cursor_dirty = 0;
+    if (unlocking)
+        lock_start();
     save_write();
     DEBUG_LOG("upgrades\n");
 }
@@ -529,7 +627,9 @@ void shop_draw(void)
         pictures_move();
     if (cursor_dirty)
         cursor_move();
-    pictures_dirty = cursor_dirty = 0;
+    if (lock_dirty)
+        lock_move();
+    pictures_dirty = cursor_dirty = lock_dirty = 0;
 }
 
 /* Returns SHOP_BEGIN when the stage picked is to begin, SHOP_TITLE to go
@@ -539,6 +639,11 @@ uint8_t shop_step(void)
     uint8_t moved = 0, i;
 
     steps++;
+    if (unlocking)
+    {
+        unlock_step();
+        return SHOP_STAY;
+    }
     if (asking)
     {
         if (input_pressed & INPUT_PAUSE)

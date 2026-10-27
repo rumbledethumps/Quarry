@@ -388,6 +388,7 @@ typedef MODE5_CUSTOM_IMAGE(4, 64, BEAM_H) beam_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, POST_W, BEAM_H) cap_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, BRACE_SIZE, BRACE_SIZE) brace_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, MACHINE_W, MACHINE_H) machine_image_t;
+typedef MODE5_CUSTOM_IMAGE(4, 8, 16) lock_image_t; /* half of the lock */
 
 /* The palettes, in the order of the rows of art/palettes.png. */
 typedef struct
@@ -480,6 +481,7 @@ typedef struct
     piece_image_t ball_image;
     piece_image_t coin_image;
     piece_image_t cursor_image;
+    lock_image_t lock_images[2];
     jet_image_t jet_images[JET_FRAMES];
     piece_image_t smoke_images[SMOKE_FRAMES];
     energy_image_t energy_images[5];
@@ -544,6 +546,7 @@ typedef struct
 #define XRAM_BALL_IMAGE offsetof(xram_layout_t, ball_image)
 #define XRAM_COIN_IMAGE offsetof(xram_layout_t, coin_image)
 #define XRAM_CURSOR_IMAGE offsetof(xram_layout_t, cursor_image)
+#define XRAM_LOCK_IMAGES offsetof(xram_layout_t, lock_images)
 #define XRAM_JET_IMAGES offsetof(xram_layout_t, jet_images)
 #define XRAM_SMOKE_IMAGES offsetof(xram_layout_t, smoke_images)
 #define XRAM_ENERGY_IMAGES offsetof(xram_layout_t, energy_images)

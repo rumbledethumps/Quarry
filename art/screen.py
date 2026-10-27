@@ -4,8 +4,8 @@
   screen.py
 
 Writes art/post.png, art/beam.png, art/cap.png, art/brace.png,
-art/machine.png, art/digits.png, art/energy.png, art/coin.png and
-art/cursor.png. Run it after a change
+art/machine.png, art/digits.png, art/energy.png, art/coin.png,
+art/cursor.png and art/lock.png. Run it after a change
 to the drawing here, then touch up any of them by hand.
 
 The frame is a post on each side of the playfield and the cap beam across
@@ -15,9 +15,10 @@ side, and the right side shows it with MODE5_HFLIP. The braces and the
 machine stand behind the ball. The digits are 6x8 with a 1 px outline, in
 8x12 sprites. The energy gauge is a placeholder until its redesign.
 
-The frame, the machine, the digits and the coin use the sled row of
-art/palettes.png, the gauge the fx row, and the cursor the holo row. The
-coin is a placeholder: a plain gold disc. The cursor is one corner of the
+The frame, the machine, the digits, the coin and the lock use the sled row
+of art/palettes.png, the gauge the fx row, and the cursor the holo row.
+The coin is a placeholder: a plain gold disc. So is the lock over a stage
+not yet open: a padlock in two halves, 8x16 each, so it can break in two. The cursor is one corner of the
 holographic outline of the upgrade screen, and MODE5_HFLIP and MODE5_VFLIP
 turn it for the other three.
 """
@@ -187,6 +188,29 @@ def coin():
     return [[colors[c] for c in line] for line in shape]
 
 
+def lock():
+    """The placeholder padlock, 16x16 as two halves side by side: a steel
+    shackle over a gold body with a keyhole."""
+    shape = ['.....######.....',
+             '....#sSSSSs#....',
+             '...#sS####Ss#...',
+             '...#s#....#s#...',
+             '...#s#....#s#...',
+             '...#s#....#s#...',
+             '.##############.',
+             '.#hhhhhhhhhhhh#.',
+             '.#hffffffffffr#.',
+             '.#ffffff##fffr#.',
+             '.#ffffff##fffr#.',
+             '.#fffffff#fffr#.',
+             '.#fffffff#fffr#.',
+             '.#rrrrrrrrrrrr#.',
+             '.##############.',
+             '................']
+    colors = {'.': 0, '#': OUT, 's': G2, 'S': G3, 'h': Y4, 'f': Y3, 'r': Y1}
+    return [[colors[c] for c in line] for line in shape]
+
+
 def cursor():
     """The top left corner of the cursor, 8x8, in the holo row: a bright
     bracket whose arms fade out."""
@@ -212,7 +236,7 @@ def main():
         ('post', post(), sled), ('beam', beam(), sled), ('cap', cap(), sled),
         ('brace', brace(), sled), ('machine', machine(), sled),
         ('digits', strip([digit(c) for c in '0123456789']), sled), ('energy', gauge(), fx),
-        ('coin', coin(), sled), ('cursor', cursor(), holo),
+        ('coin', coin(), sled), ('cursor', cursor(), holo), ('lock', lock(), sled),
     ):
         write_png(os.path.join(HERE, f'{name}.png'), len(rows[0]), len(rows), 3, rows, colors)
 

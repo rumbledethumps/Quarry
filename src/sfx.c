@@ -61,10 +61,23 @@ static const note_t buy_notes[] = {
     END,
 };
 static const note_t move_notes[] = {NOTE(1568, 0, 1, SQUARE, 0, 0x60, 0xF1), END};
+static const note_t rattle_notes[] = {NOTE(2093, 0, 1, SQUARE, 0, 0x70, 0xF1), END};
+static const note_t snap_notes[] = {
+    NOTE(3000, -60, 4, NOISE, 2, 0x20, 0xF3),
+    NOTE(262, 0, 3, SQUARE, 3, 0x40, 0xF4),
+    END,
+};
+static const note_t unlock_notes[] = {
+    NOTE(1319, 0, 3, TRIANGLE, 1, 0x20, 0x20),
+    NOTE(1760, 0, 3, TRIANGLE, 1, 0x20, 0x20),
+    NOTE(2637, 0, 10, TRIANGLE, 5, 0x20, 0xF6),
+    END,
+};
 
 static const note_t *const sounds[SFX_COUNT] = {
     paddle_notes, wall_notes, brick_notes, break_notes, nugget_notes, lost_notes,
     low_notes, low_beep_notes, sputter_notes, fall_notes, buy_notes, move_notes,
+    rattle_notes, snap_notes, unlock_notes,
 };
 
 typedef struct

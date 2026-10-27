@@ -15,7 +15,7 @@ import struct
 from game import Game, check, rom, save_dir
 
 SAVE = 'quarry.save'
-TAG = b'QRY2'
+TAG = b'QRY3'
 TITLE_ITEMS = ['RESUME', 'NEW GAME']
 PICKED = 0x1E  # MODE1_BG_FG(BOX_FILL, PICK_COLOR)
 DIM = 0x14     # MODE1_BG_FG(BOX_FILL, DIM_COLOR)
@@ -23,14 +23,14 @@ DIM = 0x14     # MODE1_BG_FG(BOX_FILL, DIM_COLOR)
 
 def read_save(folder):
     """The save as (nuggets, coins, upgrade levels, stages cleared, stage
-    picked), or None."""
+    picked, stages shown open), or None."""
     path = os.path.join(folder, SAVE)
     if not os.path.exists(path):
         return None
     data = open(path, 'rb').read()
-    check(len(data) == 12 and data[:4] == TAG, f'the save is a good one: {data!r}')
-    nuggets, coins, width, speed, cleared, picked = struct.unpack('<HHBBBB', data[4:])
-    return nuggets, coins, (width, speed), cleared, picked
+    check(len(data) == 13 and data[:4] == TAG, f'the save is a good one: {data!r}')
+    nuggets, coins, width, speed, cleared, picked, shown = struct.unpack('<HHBBBBB', data[4:])
+    return nuggets, coins, (width, speed), cleared, picked, shown
 
 
 class Title:
@@ -71,7 +71,7 @@ def main():
     check(title.picked() == 'NEW GAME', 'up from New Game stays, as Resume cannot be picked')
     check(read_save(folder) is None, 'no save yet')
     game.new_game()
-    check(read_save(folder) == (0, 0, (0, 0), 0, 1), 'a stage starting saves a new game')
+    check(read_save(folder) == (0, 0, (0, 0), 0, 1, 1), 'a stage starting saves a new game')
     print('ok: a new game, saved when the stage starts')
 
     # Pausing saves the nuggets, with those still on their way, and holds
@@ -223,7 +223,7 @@ def main():
     game.tap('space')
     game.until('game_state', 'STATE_PLAY', 60)
     game.run(2)
-    check(read_save(folder) == (0, 0, (0, 0), 0, 1), 'Yes replaces the save with a new game')
+    check(read_save(folder) == (0, 0, (0, 0), 0, 1, 1), 'Yes replaces the save with a new game')
     check(game.ram('nuggets', 2) == 0 and game.ram('paddle_width') == game.ram('widths'),
           'and starts over')
     print('ok: New Game asked first, and No kept the save')

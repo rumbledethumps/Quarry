@@ -8,7 +8,7 @@ to buy with. Reads the menus from the text cells in XRAM, and the panels
 from their own text cells. Exits 0 when every check passes.
 """
 
-from game import Game, check
+from game import SPRITE, Game, check
 
 END_ITEMS = ['UPGRADES', 'REPLAY', 'MAIN MENU']
 PICKED = 0x1E  # MODE1_BG_FG(BOX_FILL, PICK_COLOR), the frame of the item picked
@@ -209,6 +209,10 @@ def main():
     game.menu_choose('UPGRADES')
     game.run(5)
     check(game.ram('stage_picked') == 2, 'the upgrade screen picks stage 2, just opened')
+    lock = sym['XRAM_MENU_SPRITES'] + (sym['PANELS'] * sym['PANEL_SPRITES'] + 4) * SPRITE
+    check(game.ram('unlocking') == 2 and game.shown(lock, 2) == 2, 'and its lock shows, to break')
+    game.wait('unlocked 2', 200)
+    check(game.ram('stages_shown') == 2 and game.ram('unlocking') == 0, 'the lock breaks, and stage 2 shows open')
     game.tap('down')
     game.tap('space')
     check(game.shows('BEGIN LEVEL 2?'), 'and asks to begin stage 2')
