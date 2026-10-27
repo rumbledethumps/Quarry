@@ -18,5 +18,6 @@ uint8_t upgrades_width(void);
 uint8_t upgrades_width_at(uint8_t level);
 uint8_t upgrades_jets_at(uint8_t level);
 uint16_t upgrades_speed(void);
+uint16_t upgrades_speed_at(uint8_t level);
 
 #endif

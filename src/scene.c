@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <rp6502.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 /* Each screen has art of its own in XRAM_ART, read from the ROM's assets
@@ -29,6 +30,18 @@ _Static_assert(CURTAIN_SETS <= 9 && TEXTURES <= 9, "An asset's name has one digi
 static uint8_t scene;
 static uint8_t curtain_set; /* the one shown, from 0 */
 
+/* A new screen starts on a blank canvas, so nothing is left of the last
+   one, such as the upgrade screen's panels on plane 1. Returns whether
+   the screen changed. */
+static uint8_t scene_change(uint8_t to)
+{
+    if (scene == to)
+        return 0;
+    scene = to;
+    video_start();
+    return 1;
+}
+
 /* Reads count bytes of a ROM asset, from offset, into XRAM at xaddr. */
 static void load(const char *path, long offset, unsigned xaddr, unsigned count)
 {
@@ -52,15 +65,27 @@ static void load(const char *path, long offset, unsigned xaddr, unsigned count)
     close(fd);
 }
 
-/* The upgrade screen: rock tiles on plane 0. */
+/* The upgrade screen: rock tiles on plane 0, and the panels, blank, on
+   plane 1 from PANEL_Y, which the upgrade screen scrolls. */
 void scene_menu(void)
 {
-    if (scene == SCENE_MENU)
+    mode1_config_t config;
+
+    if (!scene_change(SCENE_MENU))
         return;
-    scene = SCENE_MENU;
     load("ROM:tiles", 0, XRAM_TILES, sizeof(((xram_layout_t *)0)->art.menu.tiles));
     load("ROM:sleds", 0, XRAM_SLED_IMAGES, sizeof(((xram_layout_t *)0)->art.menu.sled_images));
     xreg_vga_mode2(MODE2_4BPP | MODE2_16X16, XRAM_TILE_CONFIG, 0);
+    xram0_set(XRAM_PANELS, 0, sizeof(((xram_layout_t *)0)->art.menu.panels));
+    memset(&config, 0, sizeof config);
+    config.y_pos_px = PANEL_Y;
+    config.width_chars = PANEL_MAP_COLS;
+    config.height_chars = PANEL_ROWS;
+    config.xram_data_ptr = XRAM_PANELS;
+    config.xram_palette_ptr = XRAM_PALETTE_MAIN;
+    config.xram_font_ptr = 0xFFFF;
+    xram0_write(XRAM_PANEL_CONFIG, &config, sizeof config);
+    xreg_vga_mode1(MODE1_4BPP, XRAM_PANEL_CONFIG, 1, PANEL_Y, PANEL_Y + PANEL_ROWS * 8);
 }
 
 /* The curtain set: its palette, the colors it gives the texture, and its
@@ -99,9 +124,8 @@ static void cave(void)
 /* The title: a cave, if it comes from another screen, and the logo. */
 void scene_title(void)
 {
-    if (scene != SCENE_TITLE)
+    if (scene_change(SCENE_TITLE))
         cave();
-    scene = SCENE_TITLE;
     load("ROM:logo", 0, XRAM_LOGO_IMAGES, sizeof(((xram_layout_t *)0)->art.cave.logo_images));
 }
 
@@ -109,9 +133,8 @@ void scene_title(void)
    level of the width upgrade. */
 void scene_stage(uint8_t sled_level)
 {
-    if (scene != SCENE_STAGE)
+    if (scene_change(SCENE_STAGE))
         cave();
-    scene = SCENE_STAGE;
     load("ROM:sleds", (long)sled_level * SLED_SLOT, XRAM_STAGE_SLED, SLED_SLOT);
 }
 

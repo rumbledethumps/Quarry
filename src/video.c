@@ -209,7 +209,14 @@ void sprite_hide(unsigned sprite)
 /* Mirrors a sprite left to right. */
 void sprite_flip(unsigned sprite)
 {
-    xram0_poke8(sprite + offsetof(mode5_csprite_t, attributes), MODE5_4BPP | MODE5_HFLIP);
+    sprite_attributes(sprite, MODE5_HFLIP);
+}
+
+/* A 4-bit sprite's flips and doubling: MODE5_HFLIP, MODE5_VFLIP,
+   MODE5_HDOUBLE and MODE5_VDOUBLE. */
+void sprite_attributes(unsigned sprite, uint8_t attributes)
+{
+    xram0_poke8(sprite + offsetof(mode5_csprite_t, attributes), MODE5_4BPP | attributes);
 }
 
 /* A count in outlined digits, from the count sprites from first, with its

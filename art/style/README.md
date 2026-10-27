@@ -228,14 +228,15 @@ darkest first. Each class of art gets a row of its own:
 | bricks | one per ore: the brick, its break frames, its nugget, and its nugget sprite |
 | fx | the smoke and the energy gauge |
 | logo | the title logo |
-| sled | the sleds, their jets and flames, the frame, the braces, the machine, and the digits |
+| sled | the sleds, their jets and flames, the frame, the braces, the machine, the digits, and the coin |
 | texture | the texture behind the playfield, its first 4 colors, loaded with each curtain set |
 | curtain | the curtain set of the stage, loaded with it |
 | shade | the sled row at 60%, for the braces and the machine behind the ball |
+| holo | the holographic cursor of the upgrade screen, whose colors shimmer |
 
 A jet's nozzle and its flame are one sprite, so the flames share the sled
 row. Every curtain set brings its own palette into the one curtain row.
-That is 7 rows and the ores, so 25 rows are left for ores.
+That is 8 rows and the ores, so 24 rows are left for ores.
 
 ## Sizes
 

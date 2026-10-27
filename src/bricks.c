@@ -13,20 +13,16 @@
 #define BREAK_STEPS 4
 #define BREAK_OVER 4
 
-/* Stage 1, white only, with half a brick of space at each wall. W is a
-   white brick and . is no brick. */
+/* Stage 1 is 4 by 4 white bricks, with half a brick of space at each
+   wall. Until the stages are designed, each one after it is a column
+   wider, up to STAGE_COLS_MAX. */
 #define STAGE1_COLS 4
 #define STAGE1_ROWS 4
 #define STAGE1_MARGIN (BRICK_W / 2)
-static const char stage1[] =
-    "WWWW"
-    "WWWW"
-    "WWWW"
-    "WWWW";
+#define STAGE_COLS_MAX 10
 
-_Static_assert(STAGE1_COLS * STAGE1_ROWS <= BRICKS_MAX, "Stage 1 has too many bricks.");
-_Static_assert(sizeof stage1 - 1 == STAGE1_COLS * STAGE1_ROWS, "Stage 1 layout is the wrong size.");
-_Static_assert((STAGE1_COLS * BRICK_W + 2 * STAGE1_MARGIN) % 8 == 0,
+_Static_assert(STAGE_COLS_MAX * STAGE1_ROWS <= BRICKS_MAX, "A stage has too many bricks.");
+_Static_assert(BRICK_W % 8 == 0 && 2 * STAGE1_MARGIN == BRICK_W,
                "The frame needs a playfield a multiple of 8 wide.");
 
 uint8_t bricks_cols;
@@ -50,10 +46,10 @@ static unsigned brick_sprite(uint8_t i)
     return XRAM_BRICKS + i * sizeof(mode5_csprite_t);
 }
 
-/* Sets the size of the stage, before the frame goes up around it. */
-void bricks_layout(void)
+/* Sets the size of a stage, from 1, before the frame goes up around it. */
+void bricks_layout(uint8_t stage)
 {
-    bricks_cols = STAGE1_COLS;
+    bricks_cols = STAGE1_COLS + stage - 1 < STAGE_COLS_MAX ? STAGE1_COLS + stage - 1 : STAGE_COLS_MAX;
     bricks_margin = STAGE1_MARGIN;
 }
 
@@ -77,12 +73,12 @@ void bricks_start(int16_t left, int16_t top)
 
     bricks_finish();
     bricks_left = 0;
-    brick_count = STAGE1_COLS * STAGE1_ROWS;
+    brick_count = bricks_cols * STAGE1_ROWS;
     for (i = 0; i < brick_count; i++)
     {
-        brick_x[i] = left + (i % STAGE1_COLS) * BRICK_W;
-        brick_y[i] = top + (i / STAGE1_COLS) * BRICK_H;
-        brick_alive[i] = stage1[i] != '.';
+        brick_x[i] = left + (i % bricks_cols) * BRICK_W;
+        brick_y[i] = top + (i / bricks_cols) * BRICK_H;
+        brick_alive[i] = 1;
         brick_color[i] = BRICK_WHITE;
         brick_breaking[i] = 0;
         sprite_set(brick_sprite(i), XRAM_BRICK_IMAGE, XRAM_PALETTE_BRICK(brick_color[i]),

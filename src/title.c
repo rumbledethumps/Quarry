@@ -26,7 +26,7 @@
    bought, out of all of them. */
 static uint8_t progress(void)
 {
-    uint16_t done = stages_unlocked - 1, all = STAGES - 1;
+    uint16_t done = stages_cleared, all = STAGES;
     uint8_t u;
 
     for (u = 0; u < UPGRADES; u++)

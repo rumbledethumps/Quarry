@@ -8,22 +8,32 @@
 #include <string.h>
 #include <unistd.h>
 
-/* One save, one file: the nugget counts of each color, the upgrade levels
-   and the stages unlocked. It starts with a tag that names its layout, so
-   a save of another layout is not read as this one. */
+/* One save, one file: the nugget counts of each color, the coins, the
+   upgrade levels, the stages cleared and the stage picked to play. It
+   starts with a tag that names its layout, so a save of another layout is
+   not read as this one. */
 #define SAVE_PATH "SAVE:quarry.save"
-#define SAVE_TAG "QRY1"
+#define SAVE_TAG "QRY2"
 
 typedef struct
 {
     char tag[4];
     uint16_t nuggets[BRICK_COLORS];
+    uint16_t coins;
     uint8_t upgrades[UPGRADES];
-    uint8_t stages_unlocked;
+    uint8_t stages_cleared;
+    uint8_t stage_picked;
 } save_t;
 
 uint8_t save_exists;
-uint8_t stages_unlocked = 1;
+uint8_t stages_cleared;
+uint8_t stage_picked = 1;
+
+/* The stages that can be played: every one cleared, and the next. */
+uint8_t save_stages_open(void)
+{
+    return stages_cleared < STAGES ? stages_cleared + 1 : STAGES;
+}
 
 /* Reads the save into the game. Returns whether there was a good one; a
    missing, short or strange file is no save, and changes nothing. */
@@ -38,15 +48,17 @@ uint8_t save_load(void)
         return 0;
     n = read(fd, &s, sizeof s);
     close(fd);
-    if (n != sizeof s || memcmp(s.tag, SAVE_TAG, sizeof s.tag) ||
-        s.stages_unlocked < 1 || s.stages_unlocked > STAGES)
+    if (n != sizeof s || memcmp(s.tag, SAVE_TAG, sizeof s.tag) || s.stages_cleared > STAGES ||
+        s.stage_picked < 1 || s.stage_picked > STAGES || s.stage_picked > s.stages_cleared + 1)
         return 0;
     for (i = 0; i < UPGRADES; i++)
         if (s.upgrades[i] > upgrades_max(i))
             return 0;
     memcpy(nuggets, s.nuggets, sizeof nuggets);
+    coins = s.coins;
     memcpy(upgrade_levels, s.upgrades, sizeof upgrade_levels);
-    stages_unlocked = s.stages_unlocked;
+    stages_cleared = s.stages_cleared;
+    stage_picked = s.stage_picked;
     save_exists = 1;
     DEBUG_LOG("loaded\n");
     return 1;
@@ -66,8 +78,10 @@ void save_write(void)
         uint16_t pending = play_pending(i);
         s.nuggets[i] = nuggets[i] > 0xFFFF - pending ? 0xFFFF : nuggets[i] + pending;
     }
+    s.coins = coins;
     memcpy(s.upgrades, upgrade_levels, sizeof s.upgrades);
-    s.stages_unlocked = stages_unlocked;
+    s.stages_cleared = stages_cleared;
+    s.stage_picked = stage_picked;
     fd = open(SAVE_PATH, O_WRONLY | O_CREAT | O_TRUNC);
     if (fd < 0)
     {
@@ -81,12 +95,14 @@ void save_write(void)
     DEBUG_LOG("saved\n");
 }
 
-/* Starts over: no nuggets, no upgrades, only stage 1, and replaces the
-   save with that. */
+/* Starts over: no nuggets, no coins, no upgrades, no stage cleared, and
+   stage 1 picked, and replaces the save with that. */
 void save_new_game(void)
 {
     memset(nuggets, 0, sizeof nuggets);
+    coins = 0;
     memset(upgrade_levels, 0, sizeof upgrade_levels);
-    stages_unlocked = 1;
+    stages_cleared = 0;
+    stage_picked = 1;
     save_write();
 }

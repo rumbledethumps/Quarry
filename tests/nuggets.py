@@ -27,7 +27,8 @@ def main():
     game = Game()
     sym = game.sym
     step = sym['TUNE_NUGGET_SPEED']
-    BRICKS_Y, ICON_X, ICON_Y = sym['TUNE_BRICKS_Y'], sym['ICON_X'], sym['ICON_TOP']
+    # The white nugget's line is under the coins' line.
+    BRICKS_Y, ICON_X, ICON_Y = sym['TUNE_BRICKS_Y'], sym['ICON_X'], sym['ICON_TOP'] + sym['LINE_H']
     count = lambda: game.count('XRAM_NUGGET_DIGITS', sym['COUNT_DIGITS'])
     BRICKS = sym['STAGE1_COLS'] * sym['STAGE1_ROWS']
     HIDDEN_Y = sym['SPRITE_HIDDEN_Y']
@@ -35,7 +36,8 @@ def main():
     game.new_game()
     game.run(5)
 
-    check(game.sprite('XRAM_NUGGET_ICONS') == (ICON_X, ICON_Y), 'the nugget icon is at the top left')
+    check(game.sprite('XRAM_COIN_ICON') == (ICON_X, sym['ICON_TOP']), 'the coin icon is at the top left')
+    check(game.sprite('XRAM_NUGGET_ICONS') == (ICON_X, ICON_Y), 'the nugget icon is under it')
     flights = sym['XRAM_NUGGET_SPRITES']
     bricks = sym['XRAM_BRICKS']
     check(game.ram('nuggets', 2) == 0, 'no nuggets at the start')
@@ -108,7 +110,7 @@ def main():
     game.paused_poke([('balls', 0, 1), ('ball_state', 1, 1)])
     game.wait('out of balls', 600)
     before = game.ram('nuggets', 2)
-    game.menu_choose('PLAY')
+    game.menu_choose('REPLAY')
     game.run(5)
     check(game.ram('nuggets', 2) == before, 'the count lasts into the next stage')
     check(count() == before, 'the count shows it')

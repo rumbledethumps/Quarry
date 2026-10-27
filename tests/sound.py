@@ -106,8 +106,8 @@ def main():
     game.until('game_state', 'STATE_MENU', 200)
     print('ok: sputter and fall')
 
-    # On the end-of-stage menu, moves click, and a purchase plays four notes,
-    # letting go between them.
+    # On the menu when a stage ends and on the upgrade screen, moves click,
+    # and a purchase plays four notes, letting go between them.
     game.run(70)
     game.tap('down')
     played(game, MOVE, 5)
@@ -115,8 +115,10 @@ def main():
     game.menu_choose('UPGRADES', wait=False)
     game.cmd('expect "upgrades"')  # past every click before the upgrade screen
     game.poke('nuggets', 50, 2)
-    game.tap('enter')  # WIDTH, to BUY
+    game.tap('right')
     played(game, MOVE, 5)
+    game.tap('left')
+    game.run(20)
     game.cmd('press enter')
     played(game, BUY, 10)
     game.cmd('release enter')

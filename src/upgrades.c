@@ -75,3 +75,8 @@ uint16_t upgrades_speed(void)
 {
     return speeds[upgrade_levels[UPGRADE_SPEED]];
 }
+
+uint16_t upgrades_speed_at(uint8_t level)
+{
+    return speeds[level];
+}

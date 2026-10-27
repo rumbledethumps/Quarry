@@ -85,17 +85,18 @@ static void jet_set(unsigned sprite, uint8_t frame, uint8_t flip)
    count sprites at sprites: the sled, then its jets, with a medium flame,
    or the nozzles alone without flames. The sprites it doesn't need are
    hidden, and all of them with level SLED_NONE. */
-void sled_show(unsigned sprites, uint8_t count, int16_t x, int16_t y, uint8_t level,
-               uint8_t flames)
+void sled_show(unsigned sprites, uint8_t count, int16_t x, int16_t y, uint8_t level, uint8_t look)
 {
-    uint8_t i, width = 0, n = 0;
+    uint8_t i, width = 0, n = 0, scale = look & SLED_DOUBLE ? 2 : 1;
+    uint8_t doubling = look & SLED_DOUBLE ? MODE5_HDOUBLE | MODE5_VDOUBLE : 0;
+    unsigned palette = look & SLED_DIM ? XRAM_PALETTE_SHADE : XRAM_PALETTE_SLED;
 
     if (level != SLED_NONE)
     {
         width = upgrades_width_at(level);
         n = upgrades_jets_at(level);
-        sprite_set(sprites, sled_image(level, width, 0), XRAM_PALETTE_SLED,
-                   MODE5_SIZE(SLED_IMAGE_W(width), 8));
+        sprite_set(sprites, sled_image(level, width, 0), palette, MODE5_SIZE(SLED_IMAGE_W(width), 8));
+        sprite_attributes(sprites, doubling);
         sprite_move(sprites, x, y);
     }
     else
@@ -105,9 +106,10 @@ void sled_show(unsigned sprites, uint8_t count, int16_t x, int16_t y, uint8_t le
         unsigned jet = sprites + (i + 1) * sizeof(mode5_csprite_t);
         if (i < n)
         {
-            sprite_set(jet, JET_IMAGE(flames ? JET_FLAME + 1 : JET_NOZZLE), XRAM_PALETTE_SLED,
+            sprite_set(jet, JET_IMAGE(look & SLED_FLAMES ? JET_FLAME + 1 : JET_NOZZLE), palette,
                        MODE5_SIZE(8, 12));
-            sprite_move(jet, x + jet_x(width, n, i) - 4, y + JET_TOP);
+            sprite_attributes(jet, doubling);
+            sprite_move(jet, x + (jet_x(width, n, i) - 4) * scale, y + JET_TOP * scale);
         }
         else
             sprite_hide(jet);

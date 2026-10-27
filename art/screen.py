@@ -4,7 +4,8 @@
   screen.py
 
 Writes art/post.png, art/beam.png, art/cap.png, art/brace.png,
-art/machine.png, art/digits.png and art/energy.png. Run it after a change
+art/machine.png, art/digits.png, art/energy.png, art/coin.png and
+art/cursor.png. Run it after a change
 to the drawing here, then touch up any of them by hand.
 
 The frame is a post on each side of the playfield and the cap beam across
@@ -14,8 +15,11 @@ side, and the right side shows it with MODE5_HFLIP. The braces and the
 machine stand behind the ball. The digits are 6x8 with a 1 px outline, in
 8x12 sprites. The energy gauge is a placeholder until its redesign.
 
-The frame, the machine and the digits use the sled row of art/palettes.png,
-and the gauge the fx row.
+The frame, the machine, the digits and the coin use the sled row of
+art/palettes.png, the gauge the fx row, and the cursor the holo row. The
+coin is a placeholder: a plain gold disc. The cursor is one corner of the
+holographic outline of the upgrade screen, and MODE5_HFLIP and MODE5_VFLIP
+turn it for the other three.
 """
 
 import os
@@ -23,7 +27,7 @@ import os
 from rd2png import rgba, write_png
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SLED_ROW, FX_ROW = 4, 2
+SLED_ROW, FX_ROW, HOLO_ROW = 4, 2, 8
 
 # The sled row, by index.
 OUT, G0, TAIL, G1, Y1, G2, RED, G3, ORANGE, Y2, Y3, Y4, Y5, CREAM = range(1, 15)
@@ -168,17 +172,47 @@ def gauge():
     return [[c for piece in pieces for c in piece[y]] for y in range(8)]
 
 
+def coin():
+    """The placeholder coin, 8x8: a gold disc with a dark outline, lit from
+    the upper left."""
+    shape = ['..####..',
+             '.#hhhh#.',
+             '#hHffff#',
+             '#hffffr#',
+             '#hffffr#',
+             '#hffffr#',
+             '.#rrrr#.',
+             '..####..']
+    colors = {'.': 0, '#': OUT, 'h': Y4, 'H': Y5, 'f': Y3, 'r': Y1}
+    return [[colors[c] for c in line] for line in shape]
+
+
+def cursor():
+    """The top left corner of the cursor, 8x8, in the holo row: a bright
+    bracket whose arms fade out."""
+    shape = ['44444321',
+             '4333210.',
+             '43......',
+             '42......',
+             '31......',
+             '21......',
+             '1.......',
+             '........']
+    return [[0 if c == '.' else int(c) for c in line] for line in shape]
+
+
 def strip(frames):
     return [[c for frame in frames for c in frame[y]] for y in range(len(frames[0]))]
 
 
 def main():
     _, _, palettes = rgba(os.path.join(HERE, 'palettes.png'))
-    sled, fx = palettes[SLED_ROW], palettes[FX_ROW]
+    sled, fx, holo = palettes[SLED_ROW], palettes[FX_ROW], palettes[HOLO_ROW]
     for name, rows, colors in (
         ('post', post(), sled), ('beam', beam(), sled), ('cap', cap(), sled),
         ('brace', brace(), sled), ('machine', machine(), sled),
         ('digits', strip([digit(c) for c in '0123456789']), sled), ('energy', gauge(), fx),
+        ('coin', coin(), sled), ('cursor', cursor(), holo),
     ):
         write_png(os.path.join(HERE, f'{name}.png'), len(rows[0]), len(rows), 3, rows, colors)
 

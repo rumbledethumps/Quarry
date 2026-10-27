@@ -15,7 +15,7 @@ typedef struct
     uint8_t count;
 } menu_t;
 
-#define MENU_COLS 16
+#define MENU_COLS 18
 
 /* What menu_step() returns: no choice yet, or 1 for the first item. */
 #define MENU_NONE 0

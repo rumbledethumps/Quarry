@@ -7,8 +7,8 @@
 #define ICON_SPRITE(c) (XRAM_NUGGET_ICONS + (c) * sizeof(mode5_csprite_t))
 #define NUGGET_SPRITE(i) (XRAM_NUGGET_SPRITES + (i) * sizeof(mode5_csprite_t))
 
-/* The counts are at the top left, a line for each color reached: the
-   nugget, then its count in outlined digits. */
+/* The counts are at the top left: the coins, then a line for each color
+   reached, each its icon and its count in outlined digits. */
 #define ICON_X 4
 #define ICON_TOP 5
 #define LINE_H 12
@@ -27,18 +27,32 @@ typedef struct
 } flight_t;
 
 uint16_t nuggets[BRICK_COLORS];
+uint16_t coins;
 
 static flight_t flights[NUGGETS_MAX];
 static uint8_t lines; /* colors shown in the counts */
 
 static int16_t icon_y(uint8_t color)
 {
-    return ICON_TOP + color * LINE_H;
+    return ICON_TOP + (color + 1) * LINE_H;
 }
 
 static void count_draw(uint8_t color)
 {
     video_count(DIGITS(color), COUNT_DIGITS, ICON_X + 9, icon_y(color) - 1, nuggets[color]);
+}
+
+static void coins_draw(void)
+{
+    video_count(XRAM_COIN_DIGITS, COUNT_DIGITS, ICON_X + 9, ICON_TOP - 1, coins);
+}
+
+/* A coin, for the first clear of a stage. */
+void coins_add(void)
+{
+    if (coins < 0xFFFF)
+        coins++;
+    coins_draw();
 }
 
 void nuggets_add(uint8_t color)
@@ -74,14 +88,17 @@ uint8_t nuggets_flying(uint8_t color)
     return n;
 }
 
-/* Shows a line for each of the first colors, and lands any nugget still
-   in flight. */
+/* Shows the coins and a line for each of the first colors, and lands any
+   nugget still in flight. */
 void nuggets_start(uint8_t colors)
 {
     uint8_t i;
 
     lines = colors;
     nuggets_land();
+    sprite_set(XRAM_COIN_ICON, XRAM_COIN_IMAGE, XRAM_PALETTE_SLED, MODE5_SIZE(8, 8));
+    sprite_move(XRAM_COIN_ICON, ICON_X, ICON_TOP);
+    coins_draw();
     for (i = 0; i < BRICK_COLORS; i++)
     {
         sprite_set(ICON_SPRITE(i), XRAM_NUGGET_IMAGE, XRAM_PALETTE_BRICK(i), MODE5_SIZE(8, 8));

@@ -34,6 +34,7 @@ void sprite_set(unsigned sprite, unsigned image, unsigned palette, uint8_t width
 void sprite_move(unsigned sprite, int16_t x, int16_t y);
 void sprite_hide(unsigned sprite);
 void sprite_flip(unsigned sprite);
+void sprite_attributes(unsigned sprite, uint8_t attributes);
 void video_count(unsigned first, uint8_t sprites, int16_t x, int16_t y, uint16_t n);
 
 #endif

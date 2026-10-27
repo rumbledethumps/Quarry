@@ -116,11 +116,11 @@ def main():
     game.wait('paddle gone', 120)
     game.run(2)
     check(game.ram('game_state') != sym['STATE_PLAY'], 'the stage ends')
-    check(game.shows('OUT OF ENERGY'), 'out of energy is shown')
+    check(game.shows('CHOOSE'), 'the menu is shown')
     print(f'puff of {puff} smoke pixels, then the paddle fell off the screen')
 
-    # Play plays again, with a full bar.
-    game.menu_choose('PLAY')
+    # Replay plays again, with a full bar.
+    game.menu_choose('REPLAY')
     game.run(5)
     check(game.ram('energy', 2) == full, 'the energy is full again')
     check(game.ram('energy_draining') == 0, 'it waits for the first launch again')
@@ -142,10 +142,10 @@ def main():
     check(game.sprite(ball)[1] == middle - 8, 'the ball rides the middle of the tilted paddle')
     game.wait('paddle gone', 120)
     game.run(2)
-    check(game.shows('OUT OF ENERGY'), 'out of energy is shown again')
+    check(game.shows('CHOOSE'), 'the menu is shown again')
 
     # The stage clears while the paddle falls: it still falls off the screen.
-    game.menu_choose('PLAY')
+    game.menu_choose('REPLAY')
     game.run(5)
     game.cmd('press space')
     game.wait('launch', 5)
@@ -158,7 +158,7 @@ def main():
     game.wait('paddle gone', 120)
     game.run(2)
     check(game.shown(pieces, 1) == 0, 'the paddle fell off after the stage cleared')
-    check(game.shows('STAGE CLEAR'), 'stage clear is shown')
+    check(game.shows('CHOOSE'), 'the menu is shown')
     print('cleared while falling: the paddle still fell off the screen')
     game.close()
     print('PASS')

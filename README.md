@@ -34,13 +34,21 @@ energy.
 
 The paddle floats on thrusters. The energy bar drains from the first
 launch, and when it is empty the paddle falls and the stage ends. Each
-brick you break turns into a nugget that flies to the count in the left
-panel. When the stage ends, spend the nuggets on Upgrades, a wider or a
-faster paddle, or Play again.
+brick you break turns into a nugget that flies to the counts at the top
+left. The first clear of a stage earns a coin, and opens the next stage.
+When a stage ends, go to the upgrade screen, replay the stage, or go to
+the main menu. Esc in a stage pauses it, with Restart too.
 
-The game saves when a stage starts or ends and when it pauses, in
-`SAVE:quarry.save`, and Resume on the title screen carries on from there.
-New Game starts over, and replaces the save.
+The upgrade screen is a working mock with stand-in art. Panels hang from a
+rail, one for each upgrade, and slide left and right; the button buys the
+one in the middle. Down goes to the row of stages, where the button
+begins the stage picked. Stages 2 to 10 are stand-ins: stage 1 a column
+wider each time.
+
+The game saves when a stage starts or ends, when it pauses, and when an
+upgrade is bought, in `SAVE:quarry.save`. Resume on the title screen opens
+the upgrade screen from there. New Game starts over at stage 1, and
+replaces the save.
 
 ## Building
 
@@ -78,7 +86,7 @@ ctest --test-dir build/llvm-mos/debug -R energy --output-on-failure
 - `controls` works every key and gamepad control.
 - `energy` drains the energy bar and runs out of energy.
 - `nuggets` breaks bricks and follows their nuggets to the panel.
-- `upgrades` works the end-of-stage menu and buys upgrades.
+- `upgrades` works the menu when a stage ends and the upgrade screen, and earns a coin.
 - `saves` works the title screen and the pause menu, and reads the save.
 - `sound` sets off every sound effect and reads the PSG's channels.
 - `autoplay` plays stage 1 until it ends, and `autoplay-miss` loses every

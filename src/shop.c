@@ -2,72 +2,169 @@
 #include "bricks.h"
 #include "debug.h"
 #include "input.h"
+#include "menu.h"
 #include "nuggets.h"
 #include "paddle.h"
+#include "save.h"
+#include "scene.h"
 #include "sfx.h"
 #include "upgrades.h"
 #include "video.h"
-#include "scene.h"
 #include "xram.h"
+#include <string.h>
 
-/* The upgrade screen, after the concept. Rock all around, the nugget count
-   at the top, then UPGRADES, a box for each upgrade, and a panel under
-   them that tells of the upgrade picked last, with BUY and BACK. It is
-   all text cells, but for the nugget icons and the sleds. */
+/* The upgrade screen, a working mock with stand-in art. Panels hang from
+   a rail across the top, one for each upgrade, and slide along it, so the
+   one picked is always in the middle, lit, with the others dim to its
+   sides. The stages are a row of buttons along the bottom. Up and down
+   move the holographic cursor between the rail and the buttons, and left
+   and right move the pick. The button buys the upgrade picked, or asks
+   to begin the stage picked. Esc asks to go back to the title.
+
+   The panels are text cells on plane 1, which slides across, and their
+   pictures are plane 2 sprites that move with them. The counts down the
+   left stay in front of them. shop_step() works out where everything goes,
+   and shop_draw() moves it there at the start of the next frame, so
+   nothing moves while the frame is drawn. */
 
 #define SPRITE(i) (XRAM_MENU_SPRITES + (i) * sizeof(mode5_csprite_t))
-#define COUNT_ICON 0 /* the sprites, in the order of the menu list */
-#define COST_ICON 1  /* one for each upgrade */
-#define NODE_SLED 3  /* a sled and its jet for each upgrade */
-#define NOW_SLED 7   /* a sled and its jets */
-#define NEXT_SLED (NOW_SLED + 1 + JETS_MAX)
 
-_Static_assert(NEXT_SLED + 1 + JETS_MAX <= MENU_SPRITES, "MENU_SPRITES is too few.");
+/* Each panel has PANEL_SPRITES sprites: its picture, then an icon for
+   each of up to 4 currencies of its cost. The cursor's 4 corners follow. */
+#define PANEL_SPRITES 8
+#define PICTURE_SPRITES 4
+#define PANEL_SPRITE(p, i) SPRITE((p) * PANEL_SPRITES + (i))
+#define CURSOR_SPRITE(i) SPRITE(PANELS * PANEL_SPRITES + (i))
 
-/* Where things are, in text cells. */
-#define BAR_LEFT 13
-#define BAR_RIGHT 26
-#define TITLE_ROW 4
-#define NODE_TOP 6
-#define NODE_BOTTOM 13
-#define NODE_COLS 12
-#define PANEL_LEFT 3
-#define PANEL_RIGHT 36
-#define PANEL_TOP 16
-#define PANEL_BOTTOM 28
-#define NOW_COL 5
-#define ARROW_COL 14
-#define NEXT_COL 16
-#define PREVIEW_ROW 22
-#define HINT_ROW 25
-#define BUTTON_LEFT 27
-#define BUTTON_RIGHT 34
-#define BUY_TOP 18
-#define BACK_TOP 22
+_Static_assert(PANELS * PANEL_SPRITES + 4 <= MENU_SPRITES, "MENU_SPRITES is too few.");
 
-_Static_assert(UPGRADE_LEVELS_MAX <= NODE_COLS - 2, "The boxes have no room for the pips.");
+/* Where the panels are. The one picked is centered, PANEL_COLS cells
+   wide, and the others are side by side with it. A frame is
+   PANEL_BORDER cells thick all around, for the art to show, which leaves
+   PANEL_INSIDE cells across inside. The rows of the panel cells: the
+   hangers, the top of the frame, the picture, the title, the pips, what
+   the next level does, and two lines of cost. Each panel's frame ends at
+   its own row. */
+#define PANEL_LEFT ((SCREEN_W - PANEL_COLS * 8) / 2)
+#define PANEL_STEP (PANEL_PITCH * 8)
+#define PANEL_BORDER 2
+#define PANEL_INSIDE (PANEL_COLS - 2 * PANEL_BORDER)
+#define TOP_ROW 1
+#define PICTURE_ROW 3 /* 6 rows, 48 px */
+#define PICTURE_H 48
+#define TITLE_ROW 9
+#define PIPS_ROW 10
+#define EFFECT_ROW 12
+#define COST_ROW 14
+static const uint8_t panel_bottoms[PANELS] = {18, 17, 15, 14}; /* the last row of each frame */
+
+/* The first panels are the upgrades; the rest are stand-ins. */
+static const char *const panel_titles[PANELS] = {"WIDER SLED", "FASTER SLED", "MORE ENERGY",
+                                                 "SPECIAL BRICKS"};
+
+/* Colors of the main palette, lit and dim. */
+#define LIT_FILL 3
+#define LIT_FRAME 7
+#define LIT_TEXT 9
+#define LIT_PIP 14
+#define DIM_FILL 2
+#define DIM_FRAME 4
+#define DIM_TEXT 5
+#define DIM_PIP 13
+#define LIT_PIP_OFF 5
+#define DIM_PIP_OFF 3
 
 /* Glyphs of code page 437. */
-#define LEFT_ARROWHEAD "\x11"
-#define RIGHT_ARROWHEAD "\x10"
-#define ARROW "\x1A"
-#define PIP_ON '\xFE'
-#define PIP_OFF '\xFA'
+#define ARROW "\x10"
+#define PIP '\xFE'
+#define HANGER '\xBA'
+#define LOCK '\xB2'
 
-/* What can be picked, in the order that up and down step through. */
-#define PICK_BUY UPGRADES
-#define PICK_BACK (UPGRADES + 1)
-#define PICKS (UPGRADES + 2)
+/* The stage buttons, along the bottom, between two lines of track. */
+#define TRACK_TOP 24
+#define BUTTON_ROW 26
+#define TRACK_BOTTOM 28
+#define BUTTONS 9
+#define BUTTON_COL 2
+#define BUTTON_COLS 4
 
-static const char chevrons[] = "\xAF\xAF\xAF\xAF\xAF\xAF";
-static const char line[] = "\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4";
+/* What the cursor is on. */
+#define ON_RAIL 0
+#define ON_STAGES 1
 
-static const uint8_t node_left[UPGRADES] = {8, 21};
-static const char *const names[UPGRADES] = {"WIDTH", "SPEED"};
-static const char *const titles[UPGRADES] = {"WIDER PADDLE", "FASTER PADDLE"};
+/* What is being asked, if anything. */
+#define ASK_NONE 0
+#define ASK_BEGIN 1
+#define ASK_TITLE 2
 
-static uint8_t picked;
-static uint8_t upgrade; /* the upgrade picked last, which BUY buys */
+static const char *const yes_no[] = {"YES", "NO"};
+static char begin_title[] = "BEGIN LEVEL 00?";
+static const menu_t begin_menu = {20, 11, BOX_COLOR, begin_title, yes_no, 2};
+static const menu_t title_menu = {20, 11, BOX_COLOR, "RETURN TO TITLE?", yes_no, 2};
+
+static uint8_t panel_picked; /* the panel in the middle */
+static uint8_t cursor_on;     /* ON_RAIL or ON_STAGES */
+static uint8_t asking;
+static int16_t panel_scroll; /* how far the panels have slid, in px */
+static int16_t cursor[4], cursor_to[4]; /* left, top, right, bottom */
+static uint8_t steps;
+
+/* What shop_draw() has to do: draw the pictures again, from scratch, or
+   move them and the panels to scroll, and move the cursor. */
+static uint8_t pictures_dirty;
+static uint8_t cursor_dirty;
+static int16_t drawn_scroll;
+static int16_t picture_x[PANELS * PANEL_SPRITES]; /* from the panel's left */
+static uint8_t picture_shown[PANELS * PANEL_SPRITES];
+
+static char *put_text(char *at, const char *s)
+{
+    while (*s)
+        *at++ = *s++;
+    return at;
+}
+
+static char *put_number(char *at, uint16_t n)
+{
+    char digits[5];
+    uint8_t len = 0;
+
+    do
+    {
+        digits[len++] = '0' + n % 10;
+        n /= 10;
+    } while (n);
+    while (len)
+        *at++ = digits[--len];
+    return at;
+}
+
+/* n cells of panel text from col, row, from s and then spaces. */
+static void cells(uint8_t col, uint8_t row, const char *s, uint8_t n, uint8_t fg, uint8_t bg)
+{
+    mode1_4bpp_data_t line[PANEL_COLS];
+    uint8_t i;
+
+    for (i = 0; i < n; i++)
+    {
+        line[i].glyph_code = s && *s ? *s++ : ' ';
+        line[i].bg_fg_index = MODE1_BG_FG(bg, fg);
+    }
+    xram0_write(XRAM_PANELS + (row * PANEL_MAP_COLS + col) * sizeof(mode1_4bpp_data_t), line,
+                n * sizeof(mode1_4bpp_data_t));
+}
+
+static uint8_t lit(uint8_t p)
+{
+    return p == panel_picked;
+}
+
+/* Text centered across the inside of panel p. */
+static void centered(uint8_t p, uint8_t row, const char *s, uint8_t len, uint8_t fg)
+{
+    cells(p * PANEL_PITCH + PANEL_BORDER + (PANEL_INSIDE - len) / 2, row, s, len, fg,
+          lit(p) ? LIT_FILL : DIM_FILL);
+}
 
 static uint8_t can_buy(uint8_t u)
 {
@@ -76,175 +173,454 @@ static uint8_t can_buy(uint8_t u)
     return cost && nuggets[BRICK_WHITE] >= cost;
 }
 
-static void nugget_at(uint8_t sprite, uint8_t col, uint8_t row)
+/* What the next level does, as the numbers now and then, with the units. */
+static void effect_draw(uint8_t p, uint8_t fg)
 {
-    sprite_set(SPRITE(sprite), XRAM_NUGGET_IMAGE, XRAM_PALETTE_BRICK(BRICK_WHITE), MODE5_SIZE(8, 8));
-    sprite_move(SPRITE(sprite), col * 8, row * 8);
-}
+    char text[PANEL_INSIDE + 1];
+    char *at = text;
+    uint8_t level = upgrade_levels[p], max = level >= upgrades_max(p);
+    const char *units = p == UPGRADE_WIDTH ? " PX" : " PX/S";
+    /* A speed is in 1/256 px a step, at 60 steps a second. */
+#define VALUE(l) (p == UPGRADE_WIDTH ? upgrades_width_at(l) : (uint16_t)(upgrades_speed_at(l) * 60u / 256))
 
-static void count_draw(void)
-{
-    video_box(BAR_LEFT, 0, BAR_RIGHT, 2, BOX_COLOR);
-    nugget_at(COUNT_ICON, BAR_LEFT + 4, 1);
-    video_number(BAR_LEFT + 6, 1, nuggets[BRICK_WHITE], 5, TEXT_COLOR, BOX_FILL);
-}
-
-/* The box of an upgrade: its name, a picture, a pip for each level, filled
-   for each bought, and the cost of the next. The one BUY buys has a gold
-   frame. */
-static void node_draw(uint8_t u)
-{
-    uint8_t left = node_left[u], max = upgrades_max(u), i;
-    uint16_t cost = upgrades_cost(u);
-    char pips[UPGRADE_LEVELS_MAX + 1];
-
-    video_box(left, NODE_TOP, left + NODE_COLS - 1, NODE_BOTTOM, u == upgrade ? PICK_COLOR : BOX_COLOR);
-    video_text(left + 3, NODE_TOP + 1, names[u], TEXT_COLOR, BOX_FILL);
-    sled_show(SPRITE(NODE_SLED + u * 2), 2, (left + 4) * 8, (NODE_TOP + 3) * 8, 0, 0);
-    if (u == UPGRADE_WIDTH)
+    at = put_number(at, VALUE(level));
+    if (!max)
     {
-        video_text(left + 2, NODE_TOP + 3, LEFT_ARROWHEAD, TEXT_COLOR, BOX_FILL);
-        video_text(left + 8, NODE_TOP + 3, RIGHT_ARROWHEAD, TEXT_COLOR, BOX_FILL);
+        at = put_text(at, " " ARROW " ");
+        at = put_number(at, VALUE(level + 1));
+    }
+    at = put_text(at, units);
+    *at = 0;
+    centered(p, EFFECT_ROW, text, at - text, fg);
+#undef VALUE
+}
+
+/* A panel: its frame and fill, hanging from the rail, its title, a pip
+   for each level, filled for each bought, what the next level does, and
+   its cost, or MAX. A stand-in says it is coming. The frame is a stand-in
+   too: a double line around the outside, on clear, so there is a gap to
+   the next panel, and a blank ring inside it, where its own font will
+   draw the art. */
+static void panel_draw(uint8_t p)
+{
+    uint8_t left = p * PANEL_PITCH, bottom = panel_bottoms[p], row;
+    uint8_t fill = lit(p) ? LIT_FILL : DIM_FILL, frame = lit(p) ? LIT_FRAME : DIM_FRAME;
+    uint8_t text = lit(p) ? LIT_TEXT : DIM_TEXT;
+    static const char hanger[] = {HANGER, 0};
+    char line[PANEL_COLS];
+
+    cells(left + 4, 0, hanger, 1, frame, CLEAR);
+    cells(left + PANEL_COLS - 5, 0, hanger, 1, frame, CLEAR);
+    for (row = TOP_ROW; row <= bottom; row++)
+    {
+        uint8_t i;
+        char edge = row == TOP_ROW || row == bottom ? '\xCD' : ' ';
+        for (i = 1; i + 1 < PANEL_COLS; i++)
+            line[i] = edge;
+        line[0] = row == TOP_ROW ? '\xC9' : row == bottom ? '\xC8' : '\xBA';
+        line[PANEL_COLS - 1] = row == TOP_ROW ? '\xBB' : row == bottom ? '\xBC' : '\xBA';
+        if (row == TOP_ROW || row == bottom)
+            cells(left, row, line, PANEL_COLS, frame, CLEAR);
+        else
+        {
+            cells(left, row, line, 1, frame, CLEAR);
+            cells(left + 1, row, line + 1, PANEL_COLS - 2, frame, fill);
+            cells(left + PANEL_COLS - 1, row, line + PANEL_COLS - 1, 1, frame, CLEAR);
+        }
+    }
+    centered(p, TITLE_ROW, panel_titles[p], strlen(panel_titles[p]), text);
+    if (p >= UPGRADES)
+    {
+        centered(p, PIPS_ROW + 1, "COMING SOON", 11, text);
+        return;
+    }
+    {
+        uint8_t max = upgrades_max(p), level = upgrade_levels[p];
+        uint8_t col = left + PANEL_BORDER + (PANEL_INSIDE - max) / 2, i;
+        for (i = 0; i < max; i++)
+            line[i] = PIP;
+        if (level)
+            cells(col, PIPS_ROW, line, level, lit(p) ? LIT_PIP : DIM_PIP, fill);
+        if (level < max)
+            cells(col + level, PIPS_ROW, line, max - level, lit(p) ? LIT_PIP_OFF : DIM_PIP_OFF, fill);
+    }
+    effect_draw(p, text);
+    if (upgrades_cost(p))
+    {
+        char number[6];
+        *put_number(number, upgrades_cost(p)) = 0;
+        cells(left + PANEL_BORDER + PANEL_INSIDE / 2 - 1, COST_ROW, number, 5,
+              can_buy(p) ? text : DIM_TEXT, fill);
     }
     else
-        video_text(left + 7, NODE_TOP + 3, chevrons + 4, TEXT_COLOR, BOX_FILL);
-    for (i = 0; i < max; i++)
-        pips[i] = i < upgrade_levels[u] ? PIP_ON : PIP_OFF;
-    pips[max] = 0;
-    video_text(left + (NODE_COLS - max) / 2, NODE_TOP + 5, pips, PICK_COLOR, BOX_FILL);
-    if (cost)
+        centered(p, COST_ROW, "MAX", 3, text);
+}
+
+/* The left edge of panel p, as it slides. */
+static int16_t panel_x(uint8_t p)
+{
+    return PANEL_LEFT + p * PANEL_STEP - panel_scroll;
+}
+
+/* A panel's picture and cost icons, where it is now. The pictures are
+   stand-ins, doubled: the sled for width, the sled with its flames lit
+   for speed, the energy gauge, and a brick. */
+static void pictures_draw(uint8_t p)
+{
+    int16_t x = panel_x(p), top = PANEL_Y + PICTURE_ROW * 8;
+    uint8_t dim = lit(p) ? 0 : SLED_DIM, i;
+
+    for (i = 0; i < PANEL_SPRITES; i++)
+        sprite_hide(PANEL_SPRITE(p, i));
+    if (p == UPGRADE_WIDTH || p == UPGRADE_SPEED)
     {
-        nugget_at(COST_ICON + u, left + 3, NODE_TOP + 6);
-        video_number(left + 5, NODE_TOP + 6, cost, 3, can_buy(u) ? TEXT_COLOR : DIM_COLOR, BOX_FILL);
+        uint8_t level = upgrade_levels[UPGRADE_WIDTH];
+        uint8_t w = upgrades_width_at(level) * 2;
+        sled_show(PANEL_SPRITE(p, 0), PICTURE_SPRITES, x + (PANEL_COLS * 8 - w) / 2, top + 7, level,
+                  SLED_DOUBLE | dim | (p == UPGRADE_SPEED ? SLED_FLAMES : 0));
+    }
+    else if (p == 2)
+    {
+        static const uint8_t pieces[] = {ENERGY_TOP, ENERGY_FULL, ENERGY_BOTTOM};
+        for (i = 0; i < sizeof pieces; i++)
+        {
+            sprite_set(PANEL_SPRITE(p, i), XRAM_ENERGY_IMAGES + pieces[i] * sizeof(energy_image_t),
+                       XRAM_PALETTE_FX, MODE5_SIZE(8, 8));
+            sprite_attributes(PANEL_SPRITE(p, i), MODE5_HDOUBLE | MODE5_VDOUBLE);
+            sprite_move(PANEL_SPRITE(p, i), x + PANEL_COLS * 4 - 8, top + i * 16);
+        }
     }
     else
     {
-        sprite_hide(SPRITE(COST_ICON + u));
-        video_text(left + 4, NODE_TOP + 6, "MAX", TEXT_COLOR, BOX_FILL);
+        sprite_set(PANEL_SPRITE(p, 0), XRAM_BRICK_IMAGE, XRAM_PALETTE_BRICK(BRICK_WHITE),
+                   MODE5_SIZE(BRICK_W, BRICK_H));
+        sprite_attributes(PANEL_SPRITE(p, 0), MODE5_HDOUBLE | MODE5_VDOUBLE);
+        sprite_move(PANEL_SPRITE(p, 0), x + PANEL_COLS * 4 - BRICK_W, top + (PICTURE_H - 2 * BRICK_H) / 2);
+    }
+    if (p < UPGRADES && upgrades_cost(p))
+    {
+        sprite_set(PANEL_SPRITE(p, PICTURE_SPRITES), XRAM_NUGGET_IMAGE, XRAM_PALETTE_BRICK(BRICK_WHITE),
+                   MODE5_SIZE(8, 8));
+        sprite_move(PANEL_SPRITE(p, PICTURE_SPRITES), x + (PANEL_BORDER + PANEL_INSIDE / 2 - 3) * 8,
+                    PANEL_Y + COST_ROW * 8);
     }
 }
 
-static void button_draw(uint8_t pick)
+/* Every panel's pictures, drawn from scratch where the panels are now,
+   and where each sprite is in its panel, to move it with the panel. */
+static void pictures_place(void)
 {
-    uint8_t top = pick == PICK_BUY ? BUY_TOP : BACK_TOP;
-    uint8_t fg = pick == PICK_BUY && !can_buy(upgrade) ? DIM_COLOR : TEXT_COLOR;
+    uint8_t p, i;
 
-    video_box(BUTTON_LEFT, top, BUTTON_RIGHT, top + 2, picked == pick ? PICK_COLOR : BOX_FILL);
-    video_text(BUTTON_LEFT + 2, top + 1, pick == PICK_BUY ? " BUY" : "BACK", fg, BOX_FILL);
+    xram0_poke16(XRAM_PANEL_CONFIG + offsetof(mode1_config_t, x_pos_px), PANEL_LEFT - panel_scroll);
+    for (p = 0; p < PANELS; p++)
+    {
+        pictures_draw(p);
+        for (i = 0; i < PANEL_SPRITES; i++)
+        {
+            int16_t pos[2];
+            uint8_t n = p * PANEL_SPRITES + i;
+            xram0_read(pos, PANEL_SPRITE(p, i), sizeof pos);
+            picture_x[n] = pos[0] - panel_x(p);
+            picture_shown[n] = pos[1] != SPRITE_HIDDEN_Y;
+        }
+    }
+    drawn_scroll = panel_scroll;
 }
 
-/* The panel: what the upgrade does, now and with the next level, a word
-   if there are not nuggets enough, then BUY and BACK. */
-static void panel_draw(void)
+/* The panels, and every picture shown on them, moved to scroll. */
+static void pictures_move(void)
 {
-    uint8_t level = upgrade_levels[upgrade];
-    uint8_t max = level >= upgrades_max(upgrade);
+    uint8_t p, i;
 
-    video_box(PANEL_LEFT, PANEL_TOP, PANEL_RIGHT, PANEL_BOTTOM, BOX_COLOR);
-    video_text(NOW_COL, PANEL_TOP + 2, titles[upgrade], TEXT_COLOR, BOX_FILL);
-    video_text(NOW_COL, PANEL_TOP + 3, line, BOX_COLOR, BOX_FILL);
-    if (upgrade == UPGRADE_WIDTH)
+    xram0_poke16(XRAM_PANEL_CONFIG + offsetof(mode1_config_t, x_pos_px), PANEL_LEFT - panel_scroll);
+    for (p = 0; p < PANELS; p++)
+        for (i = 0; i < PANEL_SPRITES; i++)
+            if (picture_shown[p * PANEL_SPRITES + i])
+                xram0_poke16(PANEL_SPRITE(p, i) + offsetof(mode5_csprite_t, x_pos_px),
+                             panel_x(p) + picture_x[p * PANEL_SPRITES + i]);
+    drawn_scroll = panel_scroll;
+}
+
+/* The first stage of the row of buttons, which keeps the one picked in
+   view. */
+static uint8_t first_button(void)
+{
+    uint8_t first = stage_picked > BUTTONS / 2 ? stage_picked - BUTTONS / 2 : 1;
+
+    if (STAGES <= BUTTONS)
+        return 1;
+    return first > STAGES - BUTTONS + 1 ? STAGES - BUTTONS + 1 : first;
+}
+
+/* A button for each stage in view, lit for the one picked, a lock for each
+   that isn't open yet, and an arrow at an end with more past it. */
+static void stages_draw(void)
+{
+    static const char line[] = "\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4"
+                               "\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4";
+    uint8_t first = first_button(), open = save_stages_open(), i;
+
+    video_text(1, TRACK_TOP, line, BOX_COLOR, CLEAR);
+    video_text(1, TRACK_BOTTOM, line, BOX_COLOR, CLEAR);
+    for (i = 0; i < BUTTONS && first + i <= STAGES; i++)
     {
-        sled_show(SPRITE(NOW_SLED), 1 + JETS_MAX, NOW_COL * 8, PREVIEW_ROW * 8, level, 1);
-        sled_show(SPRITE(NEXT_SLED), 1 + JETS_MAX, NEXT_COL * 8, PREVIEW_ROW * 8,
-                  max ? SLED_NONE : level + 1, 1);
+        uint8_t s = first + i;
+        char button[] = "[00]";
+        if (s <= open)
+        {
+            button[1] = '0' + s / 10;
+            button[2] = '0' + s % 10;
+        }
+        else
+            button[1] = button[2] = LOCK;
+        video_text(BUTTON_COL + i * BUTTON_COLS, BUTTON_ROW, button,
+                   s == stage_picked ? PICK_COLOR : s <= open ? BOX_COLOR : DIM_COLOR, BOX_FILL);
+    }
+    video_text(0, BUTTON_ROW, first > 1 ? "\x11" : " ", BOX_COLOR, CLEAR);
+    video_text(TEXT_COLS - 1, BUTTON_ROW, first + BUTTONS <= STAGES ? "\x10" : " ", BOX_COLOR, CLEAR);
+}
+
+/* Where the cursor goes: around the panel in the middle, or the stage
+   button picked, a few pixels out. */
+static void cursor_aim(void)
+{
+    if (cursor_on == ON_RAIL)
+    {
+        cursor_to[0] = PANEL_LEFT - 3;
+        cursor_to[1] = PANEL_Y + TOP_ROW * 8 - 3;
+        cursor_to[2] = PANEL_LEFT + PANEL_COLS * 8 + 3;
+        cursor_to[3] = PANEL_Y + (panel_bottoms[panel_picked] + 1) * 8 + 3;
     }
     else
     {
-        sled_show(SPRITE(NOW_SLED), 1 + JETS_MAX, 0, 0, SLED_NONE, 0);
-        sled_show(SPRITE(NEXT_SLED), 1 + JETS_MAX, 0, 0, SLED_NONE, 0);
-        video_text(NOW_COL, PREVIEW_ROW, chevrons + 5 - level, TEXT_COLOR, BOX_FILL);
-        if (!max)
-            video_text(NEXT_COL, PREVIEW_ROW, chevrons + 4 - level, TEXT_COLOR, BOX_FILL);
+        uint8_t col = BUTTON_COL + (stage_picked - first_button()) * BUTTON_COLS;
+        cursor_to[0] = col * 8 - 3;
+        cursor_to[1] = BUTTON_ROW * 8 - 3;
+        cursor_to[2] = (col + BUTTON_COLS) * 8 + 3;
+        cursor_to[3] = (BUTTON_ROW + 1) * 8 + 3;
     }
-    if (max)
-        video_text(ARROW_COL, PREVIEW_ROW, "MAX", TEXT_COLOR, BOX_FILL);
-    else
-    {
-        video_text(ARROW_COL, PREVIEW_ROW, ARROW, TEXT_COLOR, BOX_FILL);
-        if (!can_buy(upgrade))
-            video_text(NOW_COL, HINT_ROW, "NOT ENOUGH NUGGETS", DIM_COLOR, BOX_FILL);
-    }
-    button_draw(PICK_BUY);
-    button_draw(PICK_BACK);
 }
 
-static void redraw(void)
+/* Steps a value a quarter of the way to where it is going, at least a
+   pixel, so it slides fast and settles slowly. */
+static int16_t ease(int16_t now, int16_t to)
 {
-    count_draw();
-    node_draw(UPGRADE_WIDTH);
-    node_draw(UPGRADE_SPEED);
-    panel_draw();
+    int16_t step = (to - now) / 4;
+
+    if (!step)
+        step = to > now ? 1 : to < now ? -1 : 0;
+    return now + step;
 }
 
-/* Hides the pictures, which would show over a menu on top of the screen. */
-void shop_hide(void)
+/* The cursor's corners: one image, flipped for each corner. */
+static void cursor_set(void)
+{
+    static const uint8_t flips[] = {0, MODE5_HFLIP, MODE5_VFLIP, MODE5_HFLIP | MODE5_VFLIP};
+    uint8_t i;
+
+    for (i = 0; i < 4; i++)
+    {
+        sprite_set(CURSOR_SPRITE(i), XRAM_CURSOR_IMAGE, XRAM_PALETTE_HOLO, MODE5_SIZE(8, 8));
+        sprite_attributes(CURSOR_SPRITE(i), flips[i]);
+    }
+}
+
+static void cursor_move(void)
 {
     uint8_t i;
 
-    for (i = 0; i < MENU_SPRITES; i++)
+    for (i = 0; i < 4; i++)
+        sprite_move(CURSOR_SPRITE(i), i & 1 ? cursor[2] - 8 : cursor[0], i & 2 ? cursor[3] - 8 : cursor[1]);
+}
+
+/* The cursor shimmers: its two brightest colors pulse. */
+static void shimmer(void)
+{
+    static const uint16_t bright[] = {
+        COLOR_FROM_RGBA(200, 251, 255, 255), COLOR_FROM_RGBA(150, 240, 255, 255),
+        COLOR_FROM_RGBA(110, 220, 245, 255), COLOR_FROM_RGBA(150, 240, 255, 255)};
+    static const uint16_t middle[] = {
+        COLOR_FROM_RGBA(79, 216, 240, 255), COLOR_FROM_RGBA(60, 190, 220, 255),
+        COLOR_FROM_RGBA(40, 160, 200, 255), COLOR_FROM_RGBA(60, 190, 220, 255)};
+    uint8_t phase = steps / 6 % 4;
+
+    xram0_poke16(XRAM_PALETTE_HOLO + 4 * sizeof(uint16_t), bright[phase]);
+    xram0_poke16(XRAM_PALETTE_HOLO + 3 * sizeof(uint16_t), middle[phase]);
+}
+
+static void sprites_hide(void)
+{
+    uint8_t i;
+
+    for (i = 0; i < PANELS * PANEL_SPRITES + 4; i++)
         sprite_hide(SPRITE(i));
+}
+
+/* A question over the screen. The pictures and the cursor would show over
+   its box, so they hide until it goes. */
+static void ask(uint8_t what)
+{
+    if (what == ASK_BEGIN)
+    {
+        begin_title[12] = stage_picked >= 10 ? '0' + stage_picked / 10 : '0' + stage_picked % 10;
+        begin_title[13] = stage_picked >= 10 ? '0' + stage_picked % 10 : '?';
+        begin_title[14] = stage_picked >= 10 ? '?' : 0;
+    }
+    asking = what;
+    sprites_hide();
+    menu_open(what == ASK_BEGIN ? &begin_menu : &title_menu, 0, 0, 0);
+    DEBUG_LOG("asked %s\n", what == ASK_BEGIN ? "begin" : "title");
+}
+
+static void unask(void)
+{
+    menu_close();
+    asking = ASK_NONE;
+    pictures_dirty = cursor_dirty = 1;
 }
 
 void shop_open(void)
 {
+    uint8_t p;
+
     video_hide_sprites();
     scene_menu();
     video_rock();
     video_text_clear();
-    video_text(NOW_COL + 4, TITLE_ROW, line + 10, BOX_COLOR, BOX_FILL);
-    video_text(16, TITLE_ROW, "UPGRADES", TEXT_COLOR, BOX_FILL);
-    video_text(25, TITLE_ROW, line + 10, BOX_COLOR, BOX_FILL);
-    picked = UPGRADE_WIDTH;
-    upgrade = UPGRADE_WIDTH;
-    redraw();
+    video_text(17, 1, "QUARRY", PICK_COLOR, CLEAR);
+    {
+        char rail[TEXT_COLS + 1];
+        uint8_t i;
+        for (i = 0; i < TEXT_COLS; i++)
+            rail[i] = '\xCD';
+        rail[TEXT_COLS] = 0;
+        video_text(0, 3, rail, BOX_COLOR, CLEAR);
+    }
+    nuggets_start(1);
+    cursor_on = ON_RAIL;
+    asking = ASK_NONE;
+    panel_scroll = panel_picked * PANEL_STEP;
+    for (p = 0; p < PANELS; p++)
+        panel_draw(p);
+    pictures_place();
+    stages_draw();
+    cursor_aim();
+    for (p = 0; p < 4; p++)
+        cursor[p] = cursor_to[p];
+    cursor_set();
+    cursor_move();
+    pictures_dirty = cursor_dirty = 0;
+    save_write();
     DEBUG_LOG("upgrades\n");
 }
 
-/* Up and left step back through WIDTH, SPEED, BUY and BACK, and down and
-   right step on. Choose on an upgrade goes to BUY. Returns 1 when BACK is
-   chosen. */
+/* At the start of a frame: the cursor shimmers, and the panels, their
+   pictures and the cursor move to where shop_step() put them. While a
+   question is up, the pictures and the cursor stay hidden. */
+void shop_draw(void)
+{
+    shimmer();
+    if (asking)
+        return;
+    if (pictures_dirty)
+        pictures_place();
+    else if (panel_scroll != drawn_scroll)
+        pictures_move();
+    if (cursor_dirty)
+        cursor_move();
+    pictures_dirty = cursor_dirty = 0;
+}
+
+/* Returns SHOP_BEGIN when the stage picked is to begin, SHOP_TITLE to go
+   back to the title, and SHOP_STAY until then. */
 uint8_t shop_step(void)
 {
-    uint8_t was = picked;
+    uint8_t moved = 0, i;
 
-    if (input_pressed & (INPUT_UP | INPUT_LEFT))
-        picked = (picked + PICKS - 1) % PICKS;
-    else if (input_pressed & (INPUT_DOWN | INPUT_RIGHT))
-        picked = (picked + 1) % PICKS;
+    steps++;
+    if (asking)
+    {
+        if (input_pressed & INPUT_PAUSE)
+            unask();
+        else
+            switch (menu_step())
+            {
+            case 1: /* YES */
+                menu_close();
+                if (asking == ASK_TITLE)
+                {
+                    save_write();
+                    return SHOP_TITLE;
+                }
+                return SHOP_BEGIN;
+            case 2:
+                unask();
+                break;
+            }
+        return SHOP_STAY;
+    }
+    if (input_pressed & INPUT_PAUSE)
+    {
+        ask(ASK_TITLE);
+        return SHOP_STAY;
+    }
+    if (input_pressed & INPUT_UP && cursor_on != ON_RAIL)
+    {
+        cursor_on = ON_RAIL;
+        moved = 1;
+    }
+    else if (input_pressed & INPUT_DOWN && cursor_on != ON_STAGES)
+    {
+        cursor_on = ON_STAGES;
+        moved = 1;
+    }
+    else if (input_pressed & (INPUT_LEFT | INPUT_RIGHT))
+    {
+        uint8_t right = input_pressed & INPUT_RIGHT;
+        if (cursor_on == ON_RAIL && (right ? panel_picked + 1 < PANELS : panel_picked > 0))
+        {
+            uint8_t was = panel_picked;
+            panel_picked += right ? 1 : -1;
+            panel_draw(was);
+            panel_draw(panel_picked);
+            pictures_dirty = 1;
+            moved = 1;
+        }
+        else if (cursor_on == ON_STAGES && (right ? stage_picked < save_stages_open() : stage_picked > 1))
+        {
+            stage_picked += right ? 1 : -1;
+            stages_draw();
+            moved = 1;
+        }
+    }
     else if (input_pressed & INPUT_CHOOSE)
     {
-        if (picked < UPGRADES)
-            picked = PICK_BUY;
-        else if (picked == PICK_BUY)
+        if (cursor_on == ON_STAGES)
+            ask(ASK_BEGIN);
+        else if (panel_picked < UPGRADES && upgrades_buy(panel_picked))
         {
-            if (upgrades_buy(upgrade))
-            {
-                sfx_play(SFX_BUY, SFX_CENTER);
-                redraw();
-            }
+            sfx_play(SFX_BUY, SFX_CENTER);
+            for (i = 0; i < UPGRADES; i++)
+                panel_draw(i);
+            nuggets_start(1);
+            pictures_dirty = 1;
+            save_write();
         }
-        else
-        {
-            DEBUG_LOG("upgrades closed\n");
-            return 1;
-        }
+        if (asking)
+            return SHOP_STAY;
     }
-    if (picked != was)
+    if (moved)
     {
         sfx_play(SFX_MOVE, SFX_CENTER);
-        if (picked < UPGRADES && picked != upgrade)
-        {
-            upgrade = picked;
-            node_draw(UPGRADE_WIDTH);
-            node_draw(UPGRADE_SPEED);
-            panel_draw();
-        }
-        else
-        {
-            button_draw(PICK_BUY);
-            button_draw(PICK_BACK);
-        }
+        cursor_aim();
     }
-    return 0;
+    panel_scroll = ease(panel_scroll, panel_picked * PANEL_STEP);
+    for (i = 0; i < 4; i++)
+        if (cursor[i] != cursor_to[i])
+        {
+            cursor[i] = ease(cursor[i], cursor_to[i]);
+            cursor_dirty = 1;
+        }
+    return SHOP_STAY;
 }

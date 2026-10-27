@@ -15,21 +15,22 @@ import struct
 from game import Game, check, rom, save_dir
 
 SAVE = 'quarry.save'
-TAG = b'QRY1'
+TAG = b'QRY2'
 TITLE_ITEMS = ['RESUME', 'NEW GAME']
 PICKED = 0x1E  # MODE1_BG_FG(BOX_FILL, PICK_COLOR)
 DIM = 0x14     # MODE1_BG_FG(BOX_FILL, DIM_COLOR)
 
 
 def read_save(folder):
-    """The save as (nuggets, upgrade levels, stages unlocked), or None."""
+    """The save as (nuggets, coins, upgrade levels, stages cleared, stage
+    picked), or None."""
     path = os.path.join(folder, SAVE)
     if not os.path.exists(path):
         return None
     data = open(path, 'rb').read()
-    check(len(data) == 9 and data[:4] == TAG, f'the save is a good one: {data!r}')
-    nuggets, width, speed, stages = struct.unpack('<HBBB', data[4:])
-    return nuggets, (width, speed), stages
+    check(len(data) == 12 and data[:4] == TAG, f'the save is a good one: {data!r}')
+    nuggets, coins, width, speed, cleared, picked = struct.unpack('<HHBBBB', data[4:])
+    return nuggets, coins, (width, speed), cleared, picked
 
 
 class Title:
@@ -70,7 +71,7 @@ def main():
     check(title.picked() == 'NEW GAME', 'up from New Game stays, as Resume cannot be picked')
     check(read_save(folder) is None, 'no save yet')
     game.new_game()
-    check(read_save(folder) == (0, (0, 0), 1), 'a stage starting saves a new game')
+    check(read_save(folder) == (0, 0, (0, 0), 0, 1), 'a stage starting saves a new game')
     print('ok: a new game, saved when the stage starts')
 
     # Pausing saves the nuggets, with those still on their way, and holds
@@ -81,7 +82,8 @@ def main():
     game.tap('escape')
     game.until('game_state', 'STATE_PAUSE', 10)
     game.run(2)
-    check(game.shows('PAUSED') and game.shows('CONTINUE') and game.shows('EXIT'), 'the pause menu')
+    check(all(game.shows(w) for w in ['PAUSED', 'RESUME', 'UPGRADES', 'RESTART', 'MAIN MENU']),
+          'the pause menu')
     broken = game.sym['STAGE1_COLS'] * game.sym['STAGE1_ROWS'] - game.ram('bricks_left')
     saved = read_save(folder)
     check(saved and saved[0] == broken, f'pausing saves a nugget for each broken brick, {saved} for {broken}')
@@ -97,7 +99,7 @@ def main():
     game.cmd('pad 0 connect')
     game.tap('pad 0 start')
     game.until('game_state', 'STATE_PAUSE', 10)
-    game.tap('space')  # Continue
+    game.tap('space')  # Resume
     game.until('game_state', 'STATE_PLAY', 10)
     for control in ['pad 0 select', 'p', 'pause']:
         game.tap(control)
@@ -114,51 +116,47 @@ def main():
     broken = game.sym['STAGE1_COLS'] * game.sym['STAGE1_ROWS'] - game.ram('bricks_left')
     check(read_save(folder) and read_save(folder)[0] == broken, f'a stage ending saves, {broken} nuggets')
 
-    # Pausing over the end-of-stage menu and the upgrade screen puts each
-    # back, as it was.
+    # Esc does nothing on the menu when a stage ends. Replay plays the stage
+    # again, which saves, with its curtains and texture as they were.
     game.run(70)
-    game.tap('down')  # PLAY
     game.tap('escape')
-    game.until('game_state', 'STATE_PAUSE', 10)
-    game.tap('escape')
-    game.until('game_state', 'STATE_MENU', 10)
-    check(game.shows('UPGRADES') and not game.shows('PAUSED'), 'the end-of-stage menu is back')
+    game.run(5)
+    check(game.ram('game_state') == game.sym['STATE_MENU'] and not game.shows('PAUSED'),
+          'Esc does nothing on the menu')
     os.remove(os.path.join(folder, SAVE))
     cave = game.ram('curtain_set'), game.xram('XRAM_TEXTURE_CONFIG', 8)
-    game.tap('space')
-    game.until('game_state', 'STATE_PLAY', 60)
-    check(read_save(folder) is not None, 'PLAY was still picked, and the stage starting saves')
+    game.menu_choose('REPLAY', wait=False)
+    check(read_save(folder) is not None, 'the stage starting saves')
     check((game.ram('curtain_set'), game.xram('XRAM_TEXTURE_CONFIG', 8)) == cave,
           'the stage played again keeps its curtains and its texture')
+
+    # Restart from the pause menu starts the stage over, and keeps them too.
+    game.paused_poke([('bricks_left', 3, 1)])
+    game.tap('escape')
+    game.until('game_state', 'STATE_PAUSE', 10)
+    game.tap('down')
+    game.tap('down')  # RESTART
+    game.tap('space')
+    game.until('game_state', 'STATE_PLAY', 30)
+    check(game.ram('bricks_left') == game.sym['STAGE1_COLS'] * game.sym['STAGE1_ROWS'],
+          'Restart starts the stage over')
+    check((game.ram('curtain_set'), game.xram('XRAM_TEXTURE_CONFIG', 8)) == cave,
+          'with its curtains and texture')
+    print('ok: Replay and Restart')
+
+    # A purchase on the upgrade screen saves. Esc there asks to go back to
+    # the title, where Resume can be picked now.
     game.paused_poke([('balls', 0, 1), ('ball_state', 1, 1)])
     game.wait('out of balls', 3000)
     game.menu_choose('UPGRADES')
     game.poke('nuggets', 20, 2)
     left = 20 - game.ram('width_costs', 2)  # after the first width
-    game.tap('enter')  # WIDTH, to BUY
-    game.tap('enter')  # BUY
+    game.tap('enter')
     game.wait('bought width 1', 10)
+    check(read_save(folder)[:3] == (left, 0, (1, 0)), 'buying saves the upgrade bought')
     game.tap('escape')
-    game.until('game_state', 'STATE_PAUSE', 30)
-    game.run(2)
-    check(read_save(folder)[:2] == (left, (1, 0)), 'pausing saves the upgrade bought')
-    rows = game.screen(os.path.join(folder, 'shot.png'))
-    box = [rows[y][x] for y in range(11 * 8 + 4, 21 * 8 - 4) for x in range(12 * 8 + 4, 28 * 8 - 4)]
-    nugget = (0xd0, 0xd0, 0xd8)  # the light face of a white nugget, in palettes.bricks
-    check(not any(all(abs(a - b) < 24 for a, b in zip(p, nugget)) for p in box),
-          'no picture of the upgrade screen shows in the pause menu')
-    game.tap('escape')
-    game.until('game_state', 'STATE_SHOP', 30)
-    game.run(5)
-    check(game.shows('WIDER PADDLE') and not game.shows('PAUSED'), 'the upgrade screen is back')
-    print('ok: paused over the end-of-stage menu and the upgrade screen')
-
-    # Exit from the pause menu goes to the title screen, where Resume can be
-    # picked now.
-    game.tap('escape')
-    game.until('game_state', 'STATE_PAUSE', 30)
-    game.tap('down')
-    game.tap('space')
+    check(game.shows('RETURN TO TITLE?'), 'Esc asks to go back to the title')
+    game.tap('space')  # YES
     game.until('game_state', 'STATE_TITLE', 60)
     game.run(5)
     title = Title(game)
@@ -193,17 +191,23 @@ def main():
     check(title.picked() == 'RESUME', 'with Shift, down does not move the menu')
     print(f'ok: left and right leave the menu, and Shift switches the {sets} curtain sets')
     game.tap('space')
-    game.until('game_state', 'STATE_PLAY', 120)
+    game.until('game_state', 'STATE_SHOP', 120)
+    check(game.ram('nuggets', 2) == left, 'Resume opens the upgrade screen with the nuggets')
+    check(game.ram('upgrade_levels') == 1, 'and the upgrade')
+    game.tap('down')
+    game.tap('space')
+    game.tap('space')  # YES, begin the stage
+    game.until('game_state', 'STATE_PLAY', 60)
     game.run(2)
-    check(game.ram('nuggets', 2) == left, 'Resume brings back the nuggets')
-    check(game.ram('upgrade_levels') == 1 and game.ram('paddle_width') == game.ram('widths+1'),
-          'and the upgrade, on the paddle')
+    check(game.ram('paddle_width') == game.ram('widths+1'), 'the stage has the upgrade, on the paddle')
     print(f'ok: came back, and Resume brought back {left} nuggets and a wider paddle')
 
-    # New Game over a save asks first. No leaves the save, Yes starts over.
+    # Main Menu from the pause menu goes to the title. New Game over a save
+    # asks first. No leaves the save, Yes starts over.
     game.tap('escape')
     game.until('game_state', 'STATE_PAUSE', 10)
-    game.tap('down')
+    for _ in range(3):
+        game.tap('down')  # MAIN MENU
     game.tap('space')
     game.until('game_state', 'STATE_TITLE', 60)
     game.tap('down')   # NEW GAME
@@ -212,14 +216,14 @@ def main():
     check(game.shows('START OVER?'), 'it asks to start over')
     game.tap('space')  # NO, picked first
     game.until('game_state', 'STATE_TITLE', 10)
-    check(read_save(folder)[:2] == (left, (1, 0)), 'No leaves the save')
+    check(read_save(folder)[:3] == (left, 0, (1, 0)), 'No leaves the save')
     game.tap('space')  # NEW GAME, picked after No
     game.until('game_state', 'STATE_CONFIRM', 10)
     game.tap('up')     # YES
     game.tap('space')
     game.until('game_state', 'STATE_PLAY', 60)
     game.run(2)
-    check(read_save(folder) == (0, (0, 0), 1), 'Yes replaces the save with a new game')
+    check(read_save(folder) == (0, 0, (0, 0), 0, 1), 'Yes replaces the save with a new game')
     check(game.ram('nuggets', 2) == 0 and game.ram('paddle_width') == game.ram('widths'),
           'and starts over')
     print('ok: New Game asked first, and No kept the save')

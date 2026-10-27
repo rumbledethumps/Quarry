@@ -114,20 +114,15 @@ def main():
     else:
         fail(f'the stage did not end in {args.frames} steps')
 
-    left = game.ram('bricks_left')
-    message = next((m for m in ('STAGE CLEAR', 'OUT OF BALLS', 'OUT OF ENERGY')
-                    if game.shows(m)), None)
-    print(f'stage over after {step} steps: {message!r}, {left} bricks left, '
-          f'{launches} launches, {hits} paddle hits, energy {game.ram("energy", 2)}')
-    if message == 'OUT OF ENERGY':
-        check(left and game.ram('energy', 2) == 0, 'the stage ends when the energy runs out')
-    elif left:
-        check(message == 'OUT OF BALLS', 'out of balls is shown')
+    left, energy = game.ram('bricks_left'), game.ram('energy', 2)
+    how = 'cleared' if not left else 'out of energy' if not energy else 'out of balls'
+    print(f'stage over after {step} steps: {how}, {left} bricks left, '
+          f'{launches} launches, {hits} paddle hits, energy {energy}')
+    if how == 'out of balls':
         check(launches == balls, 'the stage ends when the last ball is lost')
-    else:
-        check(message == 'STAGE CLEAR', 'stage clear is shown')
-    check(game.shows('UPGRADES') and game.shows('PLAY'), 'the end-of-stage menu is shown')
-    if message != 'OUT OF ENERGY':
+    check(game.shows('CHOOSE') and game.shows('UPGRADES') and game.shows('REPLAY'),
+          'the menu is shown when the stage ends')
+    if how != 'out of energy':
         images = set()
         for _ in range(30):
             game.run()
@@ -138,10 +133,10 @@ def main():
     counted = game.ram('nuggets', 2)
     check(counted == bricks - left, f'a nugget for each broken brick, {counted} of {bricks - left}')
 
-    # Play starts the stage again.
+    # Replay starts the stage again.
     if held:
         game.cmd(f'release {held}')
-    game.menu_choose('PLAY', wait=False)
+    game.menu_choose('REPLAY', wait=False)
     game.run(5)
     check(game.ram('game_state') == sym['STATE_PLAY'], 'the stage starts again')
     check(game.ram('bricks_left') == bricks, 'the bricks come back')
