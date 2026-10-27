@@ -10,22 +10,13 @@ from stage to stage. Exits 0 when every check passes.
 """
 
 import os
-import re
-import sys
 import tempfile
 
-from game import Game, check
+from game import SPRITE, Game, check
 
-PLAY_LEFT, BRICKS_Y, BRICKS = 88, 32, 30
-ICON_X, ICON_Y = 12, 16     # the white line of the panel, from src/nuggets.c
-COUNT_COL, COUNT_ROW = 3, 2
-BRICK_SIZE, BREAK_SIZE = 0x15, 0x35  # MODE5_SIZE(24, 8), MODE5_SIZE(24, 16)
-HIDDEN_Y = -64
-
-
-def speed():
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src', 'tuning.h')
-    return int(re.search(r'#define TUNE_NUGGET_SPEED (\d+)', open(path).read()).group(1))
+ICON_Y = 16  # the white line of the panel, from src/nuggets.c
+COUNT_ROW = 2
+BREAK_SIZE = 0x35  # MODE5_SIZE(24, 16)
 
 
 def off_line(x0, y0, x1, y1, x, y):
@@ -35,32 +26,36 @@ def off_line(x0, y0, x1, y1, x, y):
 
 
 def main():
-    rom = sys.argv[1]
-    step = speed()
-    game = Game(rom)
+    game = Game()
+    sym = game.sym
+    step = sym['TUNE_NUGGET_SPEED']
+    BRICKS_Y, ICON_X, COUNT_COL = sym['TUNE_BRICKS_Y'], sym['ICON_X'], sym['COUNT_COL']
+    BRICKS = sym['STAGE1_COLS'] * sym['STAGE1_ROWS']
+    HIDDEN_Y = sym['SPRITE_HIDDEN_Y']
+    NUGGETS = sym['NUGGETS_MAX']  # in flight at once
     game.new_game()
     game.run(5)
 
-    text = game.text_at('ENERGY', 32, 2)
-    icon = game.sprite_at(ICON_X, ICON_Y)
-    flights = icon + 10  # the nuggets in flight follow the one icon
-    bricks = game.sprite_at(PLAY_LEFT, BRICKS_Y)
+    check(game.text(32, 2, 6) == 'ENERGY', 'the right panel is up')
+    check(game.sprite('XRAM_NUGGET_ICONS') == (ICON_X, ICON_Y), 'the nugget icon is in the panel')
+    flights = sym['XRAM_NUGGET_SPRITES']
+    bricks = sym['XRAM_BRICKS']
     check(game.ram('nuggets', 2) == 0, 'no nuggets at the start')
-    check(game.text(text, COUNT_COL, COUNT_ROW, 5) == '0    ', 'the panel shows 0')
+    check(game.text(COUNT_COL, COUNT_ROW, 5) == '0    ', 'the panel shows 0')
 
     # A brick breaks: its sprite shows two break frames, then it is gone and
     # a nugget flies from where it was.
-    game.send('press space')
+    game.cmd('press space')
     game.wait('launch', 5)
-    game.send('release space')
+    game.cmd('release space')
     game.wait('brick', 300)
     game.run(1)
     sizes = game.sizes(bricks, BRICKS)
     broken = [i for i, s in enumerate(sizes) if s == BREAK_SIZE]
     check(broken, 'a broken brick shows its break')
-    first = bricks + broken[0] * 10
+    first = bricks + broken[0] * SPRITE
     bx = game.sprites(first, 1)[0][0]
-    middles = [game.sprites(bricks + i * 10, 1)[0][0] + 8 for i in broken]
+    middles = [game.sprites(bricks + i * SPRITE, 1)[0][0] + 8 for i in broken]
     by = game.sprites(first, 1)[0][1] + 4
     shot = os.path.join(tempfile.mkdtemp(), 'shot.png')
     images, paths, lit = [], {}, []
@@ -69,7 +64,7 @@ def main():
         x, y, image = game.sprites(first, 1)[0]
         if y != HIDDEN_Y and image not in images:
             images.append(image)
-        flying = [(slot, nx, ny) for slot, (nx, ny, _) in enumerate(game.sprites(flights, 16))
+        flying = [(slot, nx, ny) for slot, (nx, ny, _) in enumerate(game.sprites(flights, NUGGETS))
                   if ny != HIDDEN_Y]
         for slot, nx, ny in flying:
             paths.setdefault(slot, []).append((nx, ny))
@@ -108,7 +103,7 @@ def main():
     game.run(2)
     landed = game.ram('nuggets', 2)
     check(landed == len(broken), f'each nugget that lands counts, {landed} of {len(broken)}')
-    check(game.text(text, COUNT_COL, COUNT_ROW, 5) == f'{landed:<5}', 'the panel shows the count')
+    check(game.text(COUNT_COL, COUNT_ROW, 5) == f'{landed:<5}', 'the panel shows the count')
 
     # The count lasts into the next stage, and keeps counting there.
     game.wait('ball lost', 3000)
@@ -118,15 +113,15 @@ def main():
     game.menu_choose('PLAY')
     game.run(5)
     check(game.ram('nuggets', 2) == before, 'the count lasts into the next stage')
-    check(game.text(text, COUNT_COL, COUNT_ROW, 5) == f'{before:<5}', 'the panel shows it')
-    game.send('press space')
+    check(game.text(COUNT_COL, COUNT_ROW, 5) == f'{before:<5}', 'the panel shows it')
+    game.cmd('press space')
     game.wait('launch', 5)
-    game.send('release space')
+    game.cmd('release space')
     game.wait('nugget landed', 600)
     game.run(1)
     after = game.ram('nuggets', 2)
     check(after > before, 'and keeps counting')
-    check(game.text(text, COUNT_COL, COUNT_ROW, 5) == f'{after:<5}', 'the panel shows the new count')
+    check(game.text(COUNT_COL, COUNT_ROW, 5) == f'{after:<5}', 'the panel shows the new count')
     print(f'counted {before} in the first stage, {after} after a nugget in the next')
     game.close()
     print('PASS')

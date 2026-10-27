@@ -209,7 +209,7 @@ void sprite_set(unsigned sprite, unsigned image, unsigned palette, uint8_t width
     s.xram_sprite_ptr = image;
     s.palette_ptr = palette;
     s.width_height = width_height;
-    s.options = MODE5_4BPP;
+    s.attributes = MODE5_4BPP;
     xram0_write(sprite, &s, sizeof s);
 }
 

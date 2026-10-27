@@ -242,6 +242,9 @@ typedef struct
         } rows[height];                              \
     }
 
+#define MODE5_PALETTE_CHECK(type) \
+    _Static_assert(sizeof(type) / sizeof(uint16_t) <= 512, #type " holds more than 512 colors.")
+
 typedef struct
 {
     int16_t x_pos_px;
@@ -249,7 +252,7 @@ typedef struct
     uint16_t xram_sprite_ptr;
     uint16_t palette_ptr;
     uint8_t width_height;
-    uint8_t options;
+    uint8_t attributes;
 } mode5_csprite_t; /* layout */
 
 /* Quarry. */
@@ -393,8 +396,7 @@ typedef struct
 #define XRAM_ENERGY_IMAGES offsetof(xram_layout_t, energy_images)
 #define XRAM_LOGO_IMAGES offsetof(xram_layout_t, logo_images)
 
-_Static_assert(sizeof(palettes_t) / sizeof(uint16_t) <= 512,
-               "palettes_t holds more than 512 colors.");
+MODE5_PALETTE_CHECK(palettes_t);
 
 PSG_PAGE_CHECK(XRAM_PSG);
 

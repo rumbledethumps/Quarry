@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.28)
 
 include(${CMAKE_CURRENT_LIST_DIR}/tools/rp6502.cmake)
 
@@ -32,7 +32,7 @@ quarry_art(energy.bin image energy.png --tile 28x4)
 quarry_art(logo.bin image logo.png --tile 64x64)
 
 add_executable(quarry)
-rp6502_map(quarry src/xram.h "XRAM_.*")
+rp6502_align(quarry "XRAM_.*")
 rp6502_asset(quarry help src/help.txt)
 rp6502_asset(quarry XRAM(XRAM_PALETTES) ${CMAKE_CURRENT_BINARY_DIR}/palettes.bin)
 rp6502_asset(quarry XRAM(XRAM_TILES) ${CMAKE_CURRENT_BINARY_DIR}/tiles.bin)
@@ -67,3 +67,18 @@ target_sources(quarry PRIVATE
     src/upgrades.c
     src/video.c
 )
+
+# The tests, which ctest runs in the emulator. Each one plays the ROM from a
+# Python script in tests/. Only autoplay runs on a Release ROM, because the
+# others wait for the events that a Debug ROM logs.
+set(QUARRY_ROM $<TARGET_PROPERTY:quarry,RP6502_ROM>)
+rp6502_test(NAME autoplay COMMAND tests/autoplay.py ${QUARRY_ROM})
+rp6502_test(NAME autoplay-miss COMMAND tests/autoplay.py --miss 5 ${QUARRY_ROM})
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    rp6502_test(NAME controls COMMAND tests/controls.py ${QUARRY_ROM})
+    rp6502_test(NAME energy COMMAND tests/energy.py ${QUARRY_ROM})
+    rp6502_test(NAME nuggets COMMAND tests/nuggets.py ${QUARRY_ROM})
+    rp6502_test(NAME upgrades COMMAND tests/upgrades.py ${QUARRY_ROM})
+    rp6502_test(NAME saves COMMAND tests/saves.py ${QUARRY_ROM})
+    rp6502_test(NAME sound COMMAND tests/sound.py ${QUARRY_ROM})
+endif()

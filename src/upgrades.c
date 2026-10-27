@@ -9,12 +9,15 @@ static const uint16_t width_costs[] = TUNE_WIDTH_COSTS;
 static const uint16_t speeds[] = TUNE_SPEEDS;
 static const uint16_t speed_costs[] = TUNE_SPEED_COSTS;
 
-_Static_assert(sizeof width_costs / sizeof *width_costs == sizeof widths / sizeof *widths - 1,
+/* The levels after the first, one for each cost. */
+#define WIDTH_LEVELS (sizeof width_costs / sizeof *width_costs)
+#define SPEED_LEVELS (sizeof speed_costs / sizeof *speed_costs)
+
+_Static_assert(WIDTH_LEVELS == sizeof widths / sizeof *widths - 1,
                "TUNE_WIDTH_COSTS needs a cost for each width after the first.");
-_Static_assert(sizeof speed_costs / sizeof *speed_costs == sizeof speeds / sizeof *speeds - 1,
+_Static_assert(SPEED_LEVELS == sizeof speeds / sizeof *speeds - 1,
                "TUNE_SPEED_COSTS needs a cost for each speed after the first.");
-_Static_assert(sizeof width_costs / sizeof *width_costs <= UPGRADE_LEVELS_MAX &&
-                   sizeof speed_costs / sizeof *speed_costs <= 5,
+_Static_assert(WIDTH_LEVELS <= UPGRADE_LEVELS_MAX && SPEED_LEVELS <= 5,
                "Too many levels: 6 widths and 5 speeds after the first at most.");
 
 uint8_t upgrade_levels[UPGRADES];
@@ -22,8 +25,7 @@ uint8_t upgrade_levels[UPGRADES];
 /* The highest level of an upgrade. */
 uint8_t upgrades_max(uint8_t upgrade)
 {
-    return upgrade == UPGRADE_WIDTH ? sizeof width_costs / sizeof *width_costs
-                                    : sizeof speed_costs / sizeof *speed_costs;
+    return upgrade == UPGRADE_WIDTH ? WIDTH_LEVELS : SPEED_LEVELS;
 }
 
 /* The cost of the next level, in white nuggets. 0 at the highest level. */
