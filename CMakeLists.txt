@@ -36,16 +36,23 @@ quarry_art(cap.bin image cap.png)
 quarry_art(brace.bin image brace.png)
 quarry_art(machine.bin image machine.png)
 
-# The texture behind a stage, and each curtain set of art/curtains/, as
-# ROM:texture and ROM:curtain1 and on.
-add_custom_command(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/texture.bin
-    COMMAND ${Python3_EXECUTABLE}
-        ${CMAKE_CURRENT_SOURCE_DIR}/art/texture.py ${CMAKE_CURRENT_BINARY_DIR}/texture.bin
-        --preview ${CMAKE_CURRENT_BINARY_DIR}/texture.png
-    DEPENDS art/texture.py art/rd2png.py art/png2bin.py art/palettes.png
-    VERBATIM
-)
+# The textures behind a stage, one for each seed, as ROM:texture1 and on,
+# and each curtain set of art/curtains/, as ROM:curtain1 and on.
+set(QUARRY_TEXTURE_SEEDS 7 11 23 42)
+set(QUARRY_TEXTURES)
+foreach(seed IN LISTS QUARRY_TEXTURE_SEEDS)
+    list(LENGTH QUARRY_TEXTURES n)
+    math(EXPR n "${n} + 1")
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/texture${n}.bin
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/art/texture.py ${CMAKE_CURRENT_BINARY_DIR}/texture${n}.bin
+            --seed ${seed} --preview ${CMAKE_CURRENT_BINARY_DIR}/texture${n}.png
+        DEPENDS art/texture.py art/rd2png.py art/png2bin.py art/palettes.png
+        VERBATIM
+    )
+    list(APPEND QUARRY_TEXTURES texture${n})
+endforeach()
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/curtain1.bin
     COMMAND ${Python3_EXECUTABLE}
@@ -86,7 +93,9 @@ rp6502_asset(quarry XRAM(XRAM_MACHINE_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/machine
 rp6502_asset(quarry tiles ${CMAKE_CURRENT_BINARY_DIR}/tiles.bin)
 rp6502_asset(quarry logo ${CMAKE_CURRENT_BINARY_DIR}/logo.bin)
 rp6502_asset(quarry sleds ${CMAKE_CURRENT_BINARY_DIR}/sleds.bin)
-rp6502_asset(quarry texture ${CMAKE_CURRENT_BINARY_DIR}/texture.bin)
+foreach(texture IN LISTS QUARRY_TEXTURES)
+    rp6502_asset(quarry ${texture} ${CMAKE_CURRENT_BINARY_DIR}/${texture}.bin)
+endforeach()
 rp6502_asset(quarry curtain1 ${CMAKE_CURRENT_BINARY_DIR}/curtain1.bin)
 rp6502_executable(quarry DATA default RESET default)
 rp6502_web(quarry CONFIG [[

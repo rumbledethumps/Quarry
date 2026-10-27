@@ -15,8 +15,11 @@
 #define SCENE_MENU 1
 #define SCENE_STAGE 2
 
-/* The curtain sets, ROM:curtain1 and on. */
+/* The curtain sets, ROM:curtain1 and on, and the textures, ROM:texture1
+   and on. A curtain set holds its palette, then the 4 colors of the
+   texture, then the curtains. */
 #define CURTAIN_SETS 1
+#define TEXTURES 4
 
 static uint8_t scene;
 
@@ -55,22 +58,29 @@ void scene_menu(void)
     xreg_vga_mode2(MODE2_4BPP | MODE2_16X16, XRAM_TILE_CONFIG, 0);
 }
 
-/* A stage: the texture on plane 0, from a new place each time, a curtain
-   set picked at random, and the sled of a level of the width upgrade. */
+/* A stage: a texture on plane 0, shown from a new place, a curtain set,
+   both picked at random, and the sled of a level of the width upgrade. The
+   texture takes its colors from the curtain set. */
 void scene_stage(uint8_t sled_level)
 {
     char curtain[] = "ROM:curtain1";
-    unsigned noise = ria_attr_get(RIA_ATTR_LRAND);
+    char texture[] = "ROM:texture1";
+    unsigned long noise = ria_attr_get(RIA_ATTR_LRAND);
+    unsigned palette = sizeof(((palettes_t *)0)->curtain);
 
     scene = SCENE_STAGE;
-    load("ROM:texture", 0, XRAM_TEXTURE, sizeof(((xram_layout_t *)0)->art.stage.texture));
+    texture[11] = '1' + noise % TEXTURES;
+    noise /= TEXTURES;
     curtain[11] = '1' + noise % CURTAIN_SETS;
-    load(curtain, 0, XRAM_PALETTE_CURTAIN, sizeof(((palettes_t *)0)->curtain));
-    load(curtain, sizeof(((palettes_t *)0)->curtain), XRAM_CURTAINS, 2 * CURTAIN_BYTES);
+    noise /= CURTAIN_SETS;
+    load(texture, 0, XRAM_TEXTURE, sizeof(((xram_layout_t *)0)->art.stage.texture));
+    load(curtain, 0, XRAM_PALETTE_CURTAIN, palette);
+    load(curtain, palette, XRAM_PALETTE_TEXTURE, 4 * sizeof(uint16_t));
+    load(curtain, palette + 4 * sizeof(uint16_t), XRAM_CURTAINS, 2 * CURTAIN_BYTES);
     load("ROM:sleds", (long)sled_level * SLED_SLOT, XRAM_STAGE_SLED, SLED_SLOT);
     xram0_poke16(XRAM_TEXTURE_CONFIG + offsetof(mode3_config_t, x_pos_px), -(int16_t)(noise % TEXTURE_W));
-    xram0_poke16(XRAM_TEXTURE_CONFIG + offsetof(mode3_config_t, y_pos_px),
-                 -(int16_t)(noise / TEXTURE_W % TEXTURE_H));
+    noise /= TEXTURE_W;
+    xram0_poke16(XRAM_TEXTURE_CONFIG + offsetof(mode3_config_t, y_pos_px), -(int16_t)(noise % TEXTURE_H));
     xreg_vga_mode3(MODE3_2BPP, XRAM_TEXTURE_CONFIG, 0);
 }
 

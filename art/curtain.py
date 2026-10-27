@@ -10,9 +10,15 @@ curtain is the CURTAIN_W columns left of the middle, and the right curtain
 the CURTAIN_W columns right of it.
 
 out.bin is the palette, 16 colors as png2bin.py writes a palette row, then
-each curtain as sprite images: CURTAIN_COLS across and CURTAIN_ROWS down,
-row by row, each image packed as png2bin.py packs one. CURTAIN_W and the
-sizes are those of src/xram.h. Only the Python standard library is used.
+the 4 colors of the texture behind the playfield, then each curtain as
+sprite images: CURTAIN_COLS across and CURTAIN_ROWS down, row by row, each
+image packed as png2bin.py packs one. CURTAIN_W and the sizes are those of
+src/xram.h. Only the Python standard library is used.
+
+The texture's colors take the hue of the darker half of the rock, at the
+four faint levels of TEXTURE_LUMA, so the floor of the playfield matches
+the walls around it. A color has 5 bits a channel, so each level is
+nudged, if it must be, to stay brighter than the one under it.
 """
 
 import argparse
@@ -25,6 +31,37 @@ CURTAIN_W = 100
 CURTAIN_COLS = (64, 36)
 CURTAIN_ROWS = (64, 64, 64, 48)
 DARKEN = (0.57, 0.6, 0.67)  # red, green and blue, darker and a little cool
+TEXTURE_LUMA = (7.3, 10.3, 13.7, 17.4)  # of 255, the four levels of the texture
+
+
+def luma(c):
+    return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
+
+
+def rgb555(r5, g5, b5):
+    """An opaque color, as the VGA takes it, from 5-bit channels."""
+    return b5 << 11 | g5 << 6 | 32 | r5
+
+
+def texture_colors(counts):
+    """The 4 colors of the texture, as 5-bit channels, from the colors of
+    the rock and how many pixels each has."""
+    by_luma = sorted(counts.items(), key=lambda ck: luma(ck[0]))
+    half, seen, total = sum(counts.values()) // 2, 0, [0, 0, 0]
+    for color, n in by_luma:
+        if seen >= half:
+            break
+        total = [t + c * n for t, c in zip(total, color)]
+        seen += n
+    hue = [t / max(total) for t in total]
+    levels = []
+    for target in TEXTURE_LUMA:
+        scale = target / luma(hue)
+        c5 = [min(31, round(h * scale / 8)) for h in hue]
+        while levels and luma(c5) <= luma(levels[-1]):
+            c5[hue.index(max(hue))] += 1
+        levels.append(c5)
+    return levels
 
 
 def clear_shaft(pixels, width, height):
@@ -95,6 +132,8 @@ def main():
     data = bytearray()
     for r, g, b, a in palette:
         data += struct.pack('<H', (b >> 3) << 11 | (g >> 3) << 6 | (r >> 3) | (32 if a >= 128 else 0))
+    for c5 in texture_colors(Counter(to[p[:3]] for row in pixels for p in row if p[3])):
+        data += struct.pack('<H', rgb555(*c5))
     data += tiles(rows, width // 2 - CURTAIN_W) + tiles(rows, width // 2)
     with open(args.output, 'wb') as f:
         f.write(data)

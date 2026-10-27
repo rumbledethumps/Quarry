@@ -59,7 +59,14 @@ Behind the bricks is the faintest texture, so the playfield is not plain
 black: two octaves of Perlin noise, cut into four very dark colors of
 equal area, in large soft patches. `art/texture.py` makes it at build
 time. It is a mode 3 bitmap at 2 bits a pixel, the size of the screen,
-19 KB, and it wraps, so each stage shows it from a new random place.
+19 KB, and it wraps. There are four, one for each seed of
+`QUARRY_TEXTURE_SEEDS` in `CMakeLists.txt`, and each stage picks one at
+random and shows it from a random place, so it never seems to repeat. To
+add one, add a seed there and raise `TEXTURES` in `src/scene.c`.
+
+The texture's four colors come from the curtain set, so the floor matches
+the walls: `art/curtain.py` takes the hue of the darker half of the rock,
+at four faint levels.
 
 In front of the texture, behind the ball, stand the supports and the
 machines of the mine:
@@ -92,8 +99,9 @@ There can be many, and a stage picks one at random. To make one:
 The build runs `art/curtain.py` on it. The shaft goes clear, so each
 curtain keeps the rock's own edge, and the texture shows through past it.
 The rock is darkened, since this is underground, and cut to 15 colors of
-its own palette. Each curtain is the 100 columns beside the middle. The
-build writes `curtain<n>.png` in the build folder to look at.
+its own palette, and the texture's four colors are made from it. Each
+curtain is the 100 columns beside the middle. The build writes
+`curtain<n>.png` in the build folder to look at.
 
 ## Industrial: the player's equipment
 
@@ -199,7 +207,7 @@ darkest first. Each class of art gets a row of its own:
 | fx | the smoke and the energy gauge |
 | logo | the title logo |
 | sled | the sleds, their jets and flames, the frame, the braces, the machine, and the digits |
-| texture | the texture behind the playfield, its first 4 colors |
+| texture | the texture behind the playfield, its first 4 colors, loaded with each curtain set |
 | curtain | the curtain set of the stage, loaded with it |
 | shade | the sled row at 60%, for the braces and the machine behind the ball |
 

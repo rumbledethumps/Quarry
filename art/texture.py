@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Draw the texture behind the playfield, as art/style/README.md describes it.
 
-  texture.py out.bin [--preview out.png]
+  texture.py out.bin [--seed N] [--preview out.png]
 
 Two octaves of Perlin noise, cut into four levels of equal area, at 2 bits
 a pixel: 320x240, four pixels to a byte, the leftmost in the high bits. The
 noise repeats across and down, so the bitmap wraps, and each stage can show
-it from a new place. The colors are the first four of the texture row of
-art/palettes.png.
+it from a new place. Each seed makes a texture of its own. The colors come
+with each curtain set, from art/curtain.py; the preview uses the first four
+of the texture row of art/palettes.png.
 """
 
 import argparse
@@ -20,7 +21,6 @@ from rd2png import rgba, write_png
 HERE = os.path.dirname(os.path.abspath(__file__))
 WIDTH, HEIGHT = 320, 240
 TEXTURE_ROW = 5  # the texture row of art/palettes.png
-SEED = 7
 
 
 def perlin(rng, cells_x, cells_y):
@@ -53,9 +53,9 @@ def perlin(rng, cells_x, cells_y):
     return out
 
 
-def texture():
+def texture(seed):
     """The rows of the texture, color indexes 0 to 3."""
-    rng = random.Random(SEED)
+    rng = random.Random(seed)
     big, small = perlin(rng, 4, 3), perlin(rng, 10, 8)
     values = [[big[y][x] + 0.4 * small[y][x] for x in range(WIDTH)] for y in range(HEIGHT)]
     flat = sorted(v for row in values for v in row)
@@ -66,9 +66,10 @@ def texture():
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('output')
+    parser.add_argument('--seed', type=int, default=7)
     parser.add_argument('--preview', help='also write the texture as a PNG')
     args = parser.parse_args()
-    rows = texture()
+    rows = texture(args.seed)
     data = bytes(r[x] << 6 | r[x + 1] << 4 | r[x + 2] << 2 | r[x + 3]
                  for r in rows for x in range(0, WIDTH, 4))
     with open(args.output, 'wb') as f:
