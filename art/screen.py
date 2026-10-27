@@ -4,7 +4,7 @@
   screen.py
 
 Writes art/post.png, art/beam.png, art/cap.png, art/brace.png,
-art/machine.png, art/digits.png, art/energy.png and art/copyright.png. Run it after a change
+art/machine.png, art/digits.png and art/energy.png. Run it after a change
 to the drawing here, then touch up any of them by hand.
 
 The frame is a post on each side of the playfield and the cap beam across
@@ -23,8 +23,7 @@ import os
 from rd2png import rgba, write_png
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-MAIN_ROW, SLED_ROW, FX_ROW = 0, 4, 2
-CREDIT = 7  # the pale steel of the main row
+SLED_ROW, FX_ROW = 4, 2
 
 # The sled row, by index.
 OUT, G0, TAIL, G1, Y1, G2, RED, G3, ORANGE, Y2, Y3, Y4, Y5, CREAM = range(1, 15)
@@ -169,25 +168,17 @@ def gauge():
     return [[c for piece in pieces for c in piece[y]] for y in range(8)]
 
 
-def copyright():
-    """The copyright sign, 8x8, in the main row, the color of the credit."""
-    lines = ['..####..', '.#....#.', '#..##..#', '#.#....#', '#.#....#', '#..##..#', '.#....#.',
-             '..####..']
-    return [[CREDIT if c == '#' else 0 for c in line] for line in lines]
-
-
 def strip(frames):
     return [[c for frame in frames for c in frame[y]] for y in range(len(frames[0]))]
 
 
 def main():
     _, _, palettes = rgba(os.path.join(HERE, 'palettes.png'))
-    main_, sled, fx = palettes[MAIN_ROW], palettes[SLED_ROW], palettes[FX_ROW]
+    sled, fx = palettes[SLED_ROW], palettes[FX_ROW]
     for name, rows, colors in (
         ('post', post(), sled), ('beam', beam(), sled), ('cap', cap(), sled),
         ('brace', brace(), sled), ('machine', machine(), sled),
         ('digits', strip([digit(c) for c in '0123456789']), sled), ('energy', gauge(), fx),
-        ('copyright', copyright(), main_),
     ):
         write_png(os.path.join(HERE, f'{name}.png'), len(rows[0]), len(rows), 3, rows, colors)
 

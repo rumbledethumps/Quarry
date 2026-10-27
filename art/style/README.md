@@ -44,9 +44,9 @@ The title has the same cave as a stage, with no frame: a texture behind
 everything and a curtain set, both picked at random each time, with the
 curtains just outside the word QUARRY. Under the logo are the menu,
 RESUME and NEW GAME, and under it a box as wide as the menu with the
-progress of the save, as a percent. The credit, "(c)2026 Rumbledethumps",
-is plain dim text over the texture at the bottom. There is no sled on the
-title, and no way to exit the game: every menu leads to another screen.
+progress of the save, as a percent. There is no sled on the title, and no
+way to exit the game: every menu leads to another screen. More decoration
+comes later.
 
 ## Stone: the levels
 
@@ -60,8 +60,11 @@ The curtains, the bricks, the break frames, the nuggets, and the logo.
   repeating tiles. Their inner edges are the walls of the playfield.
 - The curtains are the model for how stone is drawn: warm weathered
   sandstone blending into cool blue-grey granite, angular chips, deep
-  cracks, and a dark outline. The logo, `art/logo.png`, is drawn the same
-  way, so the title matches the walls around it.
+  cracks, and a dark outline.
+- The logo, `art/logo.png`, is layered sandstone carved with care: whole
+  letters with crisp bevels, the same colors on every letter, a few chips,
+  and dark specks in its seams. `art/logo.py` turns Retro Diffusion's logo
+  into `art/logo.png`, and turns any moss green to rock.
 
 References: `ref/rock-crop.png`, `ref/logo-stone.png`, `ref/stone-wall.png`, `ref/ore-blocks.png`.
 
@@ -301,7 +304,7 @@ The blocks of the looks:
 | File | What to take from it |
 | --- | --- |
 | `ref/rock-crop.png` | 64x64 of the rock of the first curtain set: how stone is drawn. The reference for every stone prompt. |
-| `ref/logo-stone.png` | The logo as Retro Diffusion made it, before its background went clear and its colors were cut to 15: `rd_pro__typography`, 192x64, with `rock-crop.png` as a reference: "\"QUARRY\" written in big chunky bold letters carved from rough fractured quarry rock like the reference: warm weathered sandstone blending into cool blue-grey granite, angular chips and deep cracks across each letter, a dark outline and a dark shadow under the letters, light from the upper left, on a plain black background". It came back on white, which goes clear. |
+| `ref/logo-stone.png` | The logo as Retro Diffusion made it, before `art/logo.py`: `rd_pro__typography`, 192x64, with `rock-crop.png` and the old logo's Q as references: "\"QUARRY\" in big bold blocky capital letters, carefully carved from solid stone by a master stonemason: clean even letterforms with crisp chiseled bevels and flat faces, every letter whole and unbroken, only a few small natural chips and fine hairline marks, all the letters the same warm weathered sandstone with subtle flecks like the reference rock, cool blue-grey stone only in the shadowed bevels, a dark outline and a dark shadow under the letters, light from the upper left, on a plain white background". One of three, and the one with moss, which `art/logo.py` turns to rock; the others were plainer, or cracked with stray dots. |
 | `ref/stone-wall.png` | The organic shapes of the curtains, and the warm sandstone turning to cool granite. It is too bright as it is. |
 | `ref/ore-blocks.png` | Matte ore rock and the pairing of each brick with its nugget. Eight candidate ores: limestone, gold-flecked sandstone, malachite in granite, iron ore, coal, silver in slate, rose quartz, and amber in basalt. Stage 1's white is the limestone. |
 | `ref/sled-kit.png` | The colors, the chevrons, the bolts, and the thrusters. Keep the scuffs and leave out the rust specks. Its tops are not flat: the new sled has the flat, overhanging top plate of [The Sled](#the-sled). |

@@ -35,7 +35,6 @@ quarry_art(beam.bin image beam.png)
 quarry_art(cap.bin image cap.png)
 quarry_art(brace.bin image brace.png)
 quarry_art(machine.bin image machine.png)
-quarry_art(copyright.bin image copyright.png)
 
 # The textures behind a stage, one for each seed, as ROM:texture1 and on,
 # and each curtain set of art/curtains/, as ROM:curtain1 and on.
@@ -90,7 +89,6 @@ rp6502_asset(quarry XRAM(XRAM_BEAM_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/beam.bin)
 rp6502_asset(quarry XRAM(XRAM_CAP_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/cap.bin)
 rp6502_asset(quarry XRAM(XRAM_BRACE_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/brace.bin)
 rp6502_asset(quarry XRAM(XRAM_MACHINE_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/machine.bin)
-rp6502_asset(quarry XRAM(XRAM_COPYRIGHT_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/copyright.bin)
 # The art of each screen, which the screen loads when it starts.
 rp6502_asset(quarry tiles ${CMAKE_CURRENT_BINARY_DIR}/tiles.bin)
 rp6502_asset(quarry logo ${CMAKE_CURRENT_BINARY_DIR}/logo.bin)
