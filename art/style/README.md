@@ -91,6 +91,10 @@ so it must be unmistakable:
   even when it passes close to the machinery.
 - Nothing rises above the plate, so its top row of pixels is where the
   ball bounces.
+- The plate is thin, 3 rows: a bright top row, safety yellow, and a darker
+  underside that bevels in at the ends. It has no hazard stripes.
+- Under it is a slim graphite mount, and under the mount a small bell
+  nozzle for each jet, with a slim flame no wider than the nozzle's mouth.
 
 A ball that clips the side of the machinery may count for something
 later, such as a rare bonus. The art leaves room for it.
