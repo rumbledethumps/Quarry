@@ -11,20 +11,22 @@
 #include "upgrades.h"
 #include "video.h"
 #include "xram.h"
+#include <panels.h>
 #include <string.h>
 
 /* The upgrade screen, a working mock with stand-in art. Panels hang from
    a rail across the top, one for each upgrade, and slide along it, so the
-   one picked is always in the middle, lit, with the others dim to its
-   sides. The stages are a row of buttons along the bottom. Up and down
+   one picked is always in the middle, lit, flickering on as it comes,
+   with the others dim to its sides. The stages are a row of buttons along the bottom. Up and down
    move the holographic cursor between the rail and the buttons, and left
    and right move the pick. The button buys the upgrade picked, or asks
    to begin the stage picked. Esc asks to go back to the title. A stage
    newly open is still locked when the screen opens: its lock shakes and
    breaks, and its button lights.
 
-   The panels are text cells on plane 1, which slides across, and their
-   pictures are plane 2 sprites that move with them. The counts down the
+   The panels are 8-bit tiles on plane 1, which slides across, and their
+   pictures are plane 2 sprites that move with them. Only their contents
+   dim: the frames stay lit. The counts down the
    left stay in front of them. shop_step() works out where everything goes,
    and shop_draw() moves it there at the start of the next frame, so
    nothing moves while the frame is drawn. */
@@ -55,11 +57,11 @@ _Static_assert(PANELS * PANEL_SPRITES + 4 + 2 <= MENU_SPRITES, "MENU_SPRITES is 
 
 /* Where the panels are. The one picked is centered, PANEL_COLS cells
    wide, and the others are side by side with it. A frame is
-   PANEL_BORDER cells thick all around, for the art to show, which leaves
-   PANEL_INSIDE cells across inside. The rows of the panel cells: the
-   hangers, the top of the frame, the picture, the title, the pips, what
-   the next level does, and two lines of cost. Each panel's frame ends at
-   its own row. */
+   PANEL_BORDER cells thick all around, which leaves PANEL_INSIDE cells
+   across inside. The rows of the panel cells: the hangers, the top of the
+   frame, the picture, the title, the pips, what the next level does, and
+   two lines of cost. Each panel's frame is as tall as art/panels.py makes
+   it. */
 #define PANEL_LEFT ((SCREEN_W - PANEL_COLS * 8) / 2)
 #define PANEL_STEP (PANEL_PITCH * 8)
 #define PANEL_BORDER 2
@@ -71,37 +73,27 @@ _Static_assert(PANELS * PANEL_SPRITES + 4 + 2 <= MENU_SPRITES, "MENU_SPRITES is 
 #define PIPS_ROW 10
 #define EFFECT_ROW 12
 #define COST_ROW 14
-static const uint8_t panel_bottoms[PANELS] = {18, 17, 15, 14}; /* the last row of each frame */
+static const uint8_t panel_heights[PANELS] = PANEL_HEIGHTS; /* the rows of each frame */
+
+_Static_assert(PANEL_LAYOUTS == PANELS, "art/panels.py needs a layout for each panel.");
 
 /* The first panels are the upgrades; the rest are stand-ins. */
 static const char *const panel_titles[PANELS] = {"WIDER SLED", "FASTER SLED", "MORE ENERGY",
                                                  "SPECIAL BRICKS"};
 
-/* Colors of the main palette, lit and dim. */
-#define LIT_FILL 3
-#define LIT_FRAME 7
-#define LIT_TEXT 9
-#define LIT_PIP 14
-#define DIM_FILL 2
-#define DIM_FRAME 4
-#define DIM_TEXT 5
-#define DIM_PIP 13
-#define LIT_PIP_OFF 5
-#define DIM_PIP_OFF 3
+/* A panel coming to the middle flickers on, like a fluorescent tube: lit
+   or dim each step, then lit. */
+static const char flicker[] = "110001000011";
 
-/* Glyphs of code page 437. */
-#define ARROW "\x10"
-#define PIP '\xFE'
-#define HANGER '\xBA'
-#define LOCK '\xB2'
-
-/* The stage buttons, along the bottom, between two lines of track. */
+/* The stage buttons, along the bottom, between two lines of track, in
+   text cells of code page 437. */
 #define TRACK_TOP 24
 #define BUTTON_ROW 26
 #define TRACK_BOTTOM 28
 #define BUTTONS 9
 #define BUTTON_COL 2
 #define BUTTON_COLS 4
+#define LOCK '\xB2'
 
 /* What the cursor is on. */
 #define ON_RAIL 0
@@ -123,6 +115,8 @@ static uint8_t asking;
 static int16_t panel_scroll; /* how far the panels have slid, in px */
 static int16_t cursor[4], cursor_to[4]; /* left, top, right, bottom */
 static uint8_t steps;
+static uint8_t panel_lit[PANELS]; /* whether each panel's contents are lit */
+static uint8_t flicker_steps;     /* into the flicker of the panel picked */
 
 /* What shop_draw() has to do: draw the pictures again, from scratch, or
    move them and the panels to scroll, and move the cursor. */
@@ -159,31 +153,66 @@ static char *put_number(char *at, uint16_t n)
     return at;
 }
 
-/* n cells of panel text from col, row, from s and then spaces. */
-static void cells(uint8_t col, uint8_t row, const char *s, uint8_t n, uint8_t fg, uint8_t bg)
+/* The lit tile of a character, from the panels' font; the plate for one
+   it doesn't have. */
+static uint8_t glyph(char c)
 {
-    mode1_4bpp_data_t line[PANEL_COLS];
-    uint8_t i;
+    const char *at = c ? strchr(PANEL_FONT, c) : 0;
 
-    for (i = 0; i < n; i++)
+    return PANEL_TILE_GLYPH + (at ? at - PANEL_FONT : 0);
+}
+
+/* A row inside panel p: the plate, with n tiles of contents centered on it,
+   lit or dim as the panel is. */
+static void row_draw(uint8_t p, uint8_t row, const uint8_t *tiles, uint8_t n)
+{
+    uint8_t line[PANEL_INSIDE], first = (PANEL_INSIDE - n) / 2, i;
+    uint8_t dim = panel_lit[p] ? 0 : PANEL_TILE_DIM;
+
+    for (i = 0; i < PANEL_INSIDE; i++)
+        line[i] = (i >= first && i < first + n ? tiles[i - first] : PANEL_TILE_GLYPH) + dim;
+    xram0_write(XRAM_PANELS + row * PANEL_MAP_COLS + p * PANEL_PITCH + PANEL_BORDER, line, sizeof line);
+}
+
+/* Text centered on a row inside panel p. */
+static void text_draw(uint8_t p, uint8_t row, const char *s)
+{
+    uint8_t tiles[PANEL_INSIDE], n = 0;
+
+    while (s[n] && n < PANEL_INSIDE)
     {
-        line[i].glyph_code = s && *s ? *s++ : ' ';
-        line[i].bg_fg_index = MODE1_BG_FG(bg, fg);
+        tiles[n] = glyph(s[n]);
+        n++;
     }
-    xram0_write(XRAM_PANELS + (row * PANEL_MAP_COLS + col) * sizeof(mode1_4bpp_data_t), line,
-                n * sizeof(mode1_4bpp_data_t));
+    row_draw(p, row, tiles, n);
+}
+
+/* Lights or dims the whole inside of panel p: every tile of its contents
+   swaps for its lit or dim copy, and the frame stays as it is. */
+static void panel_light(uint8_t p, uint8_t on)
+{
+    uint8_t line[PANEL_INSIDE], row, i;
+
+    panel_lit[p] = on;
+    for (row = TOP_ROW + PANEL_BORDER; row <= panel_heights[p] - PANEL_BORDER; row++)
+    {
+        unsigned at = XRAM_PANELS + row * PANEL_MAP_COLS + p * PANEL_PITCH + PANEL_BORDER;
+        xram0_read(line, at, sizeof line);
+        for (i = 0; i < PANEL_INSIDE; i++)
+        {
+            uint8_t t = line[i];
+            if (on && t > PANEL_TILE_DIM && t < PANEL_TILE_FRAMES)
+                line[i] = t - PANEL_TILE_DIM;
+            else if (!on && t && t <= PANEL_TILE_DIM)
+                line[i] = t + PANEL_TILE_DIM;
+        }
+        xram0_write(at, line, sizeof line);
+    }
 }
 
 static uint8_t lit(uint8_t p)
 {
-    return p == panel_picked;
-}
-
-/* Text centered across the inside of panel p. */
-static void centered(uint8_t p, uint8_t row, const char *s, uint8_t len, uint8_t fg)
-{
-    cells(p * PANEL_PITCH + PANEL_BORDER + (PANEL_INSIDE - len) / 2, row, s, len, fg,
-          lit(p) ? LIT_FILL : DIM_FILL);
+    return panel_lit[p];
 }
 
 static uint8_t can_buy(uint8_t u)
@@ -194,7 +223,7 @@ static uint8_t can_buy(uint8_t u)
 }
 
 /* What the next level does, as the numbers now and then, with the units. */
-static void effect_draw(uint8_t p, uint8_t fg)
+static void effect_draw(uint8_t p)
 {
     char text[PANEL_INSIDE + 1];
     char *at = text;
@@ -206,74 +235,48 @@ static void effect_draw(uint8_t p, uint8_t fg)
     at = put_number(at, VALUE(level));
     if (!max)
     {
-        at = put_text(at, " " ARROW " ");
+        at = put_text(at, " \x10 ");
         at = put_number(at, VALUE(level + 1));
     }
     at = put_text(at, units);
     *at = 0;
-    centered(p, EFFECT_ROW, text, at - text, fg);
+    text_draw(p, EFFECT_ROW, text);
 #undef VALUE
 }
 
-/* A panel: its frame and fill, hanging from the rail, its title, a pip
-   for each level, filled for each bought, what the next level does, and
-   its cost, or MAX. A stand-in says it is coming. The frame is a stand-in
-   too: a double line around the outside, on clear, so there is a gap to
-   the next panel, and a blank ring inside it, where its own font will
-   draw the art. */
+/* A panel's contents: its title, a pip for each level, filled for each
+   bought, what the next level does, and its cost, in short digits while it
+   can't be paid, or MAX. A stand-in says it is coming. The frame is the
+   map's, as art/panels.py made it. */
 static void panel_draw(uint8_t p)
 {
-    uint8_t left = p * PANEL_PITCH, bottom = panel_bottoms[p], row;
-    uint8_t fill = lit(p) ? LIT_FILL : DIM_FILL, frame = lit(p) ? LIT_FRAME : DIM_FRAME;
-    uint8_t text = lit(p) ? LIT_TEXT : DIM_TEXT;
-    static const char hanger[] = {HANGER, 0};
-    char line[PANEL_COLS];
+    uint8_t tiles[PANEL_INSIDE], i;
 
-    cells(left + 4, 0, hanger, 1, frame, CLEAR);
-    cells(left + PANEL_COLS - 5, 0, hanger, 1, frame, CLEAR);
-    for (row = TOP_ROW; row <= bottom; row++)
-    {
-        uint8_t i;
-        char edge = row == TOP_ROW || row == bottom ? '\xCD' : ' ';
-        for (i = 1; i + 1 < PANEL_COLS; i++)
-            line[i] = edge;
-        line[0] = row == TOP_ROW ? '\xC9' : row == bottom ? '\xC8' : '\xBA';
-        line[PANEL_COLS - 1] = row == TOP_ROW ? '\xBB' : row == bottom ? '\xBC' : '\xBA';
-        if (row == TOP_ROW || row == bottom)
-            cells(left, row, line, PANEL_COLS, frame, CLEAR);
-        else
-        {
-            cells(left, row, line, 1, frame, CLEAR);
-            cells(left + 1, row, line + 1, PANEL_COLS - 2, frame, fill);
-            cells(left + PANEL_COLS - 1, row, line + PANEL_COLS - 1, 1, frame, CLEAR);
-        }
-    }
-    centered(p, TITLE_ROW, panel_titles[p], strlen(panel_titles[p]), text);
+    text_draw(p, TITLE_ROW, panel_titles[p]);
     if (p >= UPGRADES)
     {
-        centered(p, PIPS_ROW + 1, "COMING SOON", 11, text);
+        text_draw(p, PIPS_ROW + 1, "COMING SOON");
         return;
     }
     {
         uint8_t max = upgrades_max(p), level = upgrade_levels[p];
-        uint8_t col = left + PANEL_BORDER + (PANEL_INSIDE - max) / 2, i;
         for (i = 0; i < max; i++)
-            line[i] = PIP;
-        if (level)
-            cells(col, PIPS_ROW, line, level, lit(p) ? LIT_PIP : DIM_PIP, fill);
-        if (level < max)
-            cells(col + level, PIPS_ROW, line, max - level, lit(p) ? LIT_PIP_OFF : DIM_PIP_OFF, fill);
+            tiles[i] = i < level ? PANEL_TILE_PIP_ON : PANEL_TILE_PIP_OFF;
+        row_draw(p, PIPS_ROW, tiles, max);
     }
-    effect_draw(p, text);
+    effect_draw(p);
     if (upgrades_cost(p))
     {
         char number[6];
-        *put_number(number, upgrades_cost(p)) = 0;
-        cells(left + PANEL_BORDER + PANEL_INSIDE / 2 - 1, COST_ROW, number, 5,
-              can_buy(p) ? text : DIM_TEXT, fill);
+        uint8_t n = put_number(number, upgrades_cost(p)) - number;
+        /* The cost's icon is a sprite in the cell before it. */
+        tiles[0] = tiles[1] = PANEL_TILE_GLYPH;
+        for (i = 0; i < n; i++)
+            tiles[2 + i] = can_buy(p) ? glyph(number[i]) : PANEL_TILE_SHORT + number[i] - '0';
+        row_draw(p, COST_ROW, tiles, 2 + n);
     }
     else
-        centered(p, COST_ROW, "MAX", 3, text);
+        text_draw(p, COST_ROW, "MAX");
 }
 
 /* The left edge of panel p, as it slides. */
@@ -319,10 +322,12 @@ static void pictures_draw(uint8_t p)
     }
     if (p < UPGRADES && upgrades_cost(p))
     {
+        /* In the first cell of the cost's row, as panel_draw() centers it. */
+        char number[6];
+        uint8_t first = (PANEL_INSIDE - 2 - (put_number(number, upgrades_cost(p)) - number)) / 2;
         sprite_set(PANEL_SPRITE(p, PICTURE_SPRITES), XRAM_NUGGET_IMAGE, XRAM_PALETTE_BRICK(BRICK_WHITE),
                    MODE5_SIZE(8, 8));
-        sprite_move(PANEL_SPRITE(p, PICTURE_SPRITES), x + (PANEL_BORDER + PANEL_INSIDE / 2 - 3) * 8,
-                    PANEL_Y + COST_ROW * 8);
+        sprite_move(PANEL_SPRITE(p, PICTURE_SPRITES), x + (PANEL_BORDER + first) * 8, PANEL_Y + COST_ROW * 8);
     }
 }
 
@@ -332,7 +337,7 @@ static void pictures_place(void)
 {
     uint8_t p, i;
 
-    xram0_poke16(XRAM_PANEL_CONFIG + offsetof(mode1_config_t, x_pos_px), PANEL_LEFT - panel_scroll);
+    xram0_poke16(XRAM_PANEL_CONFIG + offsetof(mode2_config_t, x_pos_px), PANEL_LEFT - panel_scroll);
     for (p = 0; p < PANELS; p++)
     {
         pictures_draw(p);
@@ -353,7 +358,7 @@ static void pictures_move(void)
 {
     uint8_t p, i;
 
-    xram0_poke16(XRAM_PANEL_CONFIG + offsetof(mode1_config_t, x_pos_px), PANEL_LEFT - panel_scroll);
+    xram0_poke16(XRAM_PANEL_CONFIG + offsetof(mode2_config_t, x_pos_px), PANEL_LEFT - panel_scroll);
     for (p = 0; p < PANELS; p++)
         for (i = 0; i < PANEL_SPRITES; i++)
             if (picture_shown[p * PANEL_SPRITES + i])
@@ -417,7 +422,7 @@ static void cursor_aim(void)
         cursor_to[0] = PANEL_LEFT - 3;
         cursor_to[1] = PANEL_Y + TOP_ROW * 8 - 3;
         cursor_to[2] = PANEL_LEFT + PANEL_COLS * 8 + 3;
-        cursor_to[3] = PANEL_Y + (panel_bottoms[panel_picked] + 1) * 8 + 3;
+        cursor_to[3] = PANEL_Y + (panel_heights[panel_picked] + 1) * 8 + 3;
     }
     else
     {
@@ -655,8 +660,14 @@ void shop_open(void)
     asking = ASK_NONE;
     unlocking = save_stages_open() > stages_shown ? save_stages_open() : 0;
     panel_scroll = panel_picked * PANEL_STEP;
+    /* The map comes lit. Every panel dims, and the one picked flickers on. */
     for (p = 0; p < PANELS; p++)
+    {
+        panel_lit[p] = 1;
         panel_draw(p);
+        panel_light(p, 0);
+    }
+    flicker_steps = 0;
     pictures_place();
     stages_draw();
     cursor_aim();
@@ -677,6 +688,16 @@ void shop_open(void)
 void shop_draw(void)
 {
     shimmer();
+    if (flicker_steps < sizeof flicker)
+    {
+        uint8_t on = flicker_steps + 1 == sizeof flicker || flicker[flicker_steps] == '1';
+        flicker_steps++;
+        if (on != panel_lit[panel_picked])
+        {
+            panel_light(panel_picked, on);
+            pictures_dirty = 1;
+        }
+    }
     if (asking)
         return;
     if (pictures_dirty)
@@ -746,10 +767,9 @@ uint8_t shop_step(void)
         uint8_t right = input_pressed & INPUT_RIGHT;
         if (cursor_on == ON_RAIL && (right ? panel_picked + 1 < PANELS : panel_picked > 0))
         {
-            uint8_t was = panel_picked;
+            panel_light(panel_picked, 0);
             panel_picked += right ? 1 : -1;
-            panel_draw(was);
-            panel_draw(panel_picked);
+            flicker_steps = 0;
             pictures_dirty = 1;
             moved = 1;
         }

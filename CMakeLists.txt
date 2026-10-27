@@ -68,6 +68,18 @@ foreach(n RANGE 1 ${QUARRY_CURTAIN_SETS})
     )
 endforeach()
 
+# The panels of the upgrade screen: their tiles, palette and frames, from
+# art/panel-frame.png and art/panel-font.png, and panels.h, which gives the
+# tile numbers. art/panels.py also writes panels.png to look at.
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/panels.bin ${CMAKE_CURRENT_BINARY_DIR}/panels.h
+    COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/art/panels.py ${CMAKE_CURRENT_BINARY_DIR}/panels.bin
+        ${CMAKE_CURRENT_BINARY_DIR}/panels.h --preview ${CMAKE_CURRENT_BINARY_DIR}/panels.png
+    DEPENDS art/panels.py art/rd2png.py art/panel-frame.png art/panel-font.png
+    VERBATIM
+)
+
 # A sled for each width of src/tuning.h, drawn by art/sled.py, which also
 # writes them to look at in sleds/ in the build folder.
 add_custom_command(
@@ -102,6 +114,7 @@ rp6502_asset(quarry XRAM(XRAM_LOCK_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/lock.bin)
 rp6502_asset(quarry tiles ${CMAKE_CURRENT_BINARY_DIR}/tiles.bin)
 rp6502_asset(quarry logo ${CMAKE_CURRENT_BINARY_DIR}/logo.bin)
 rp6502_asset(quarry sleds ${CMAKE_CURRENT_BINARY_DIR}/sleds.bin)
+rp6502_asset(quarry panels ${CMAKE_CURRENT_BINARY_DIR}/panels.bin)
 foreach(texture IN LISTS QUARRY_TEXTURES)
     rp6502_asset(quarry ${texture} ${CMAKE_CURRENT_BINARY_DIR}/${texture}.bin)
 endforeach()
@@ -131,7 +144,9 @@ target_sources(quarry PRIVATE
     src/title.c
     src/upgrades.c
     src/video.c
+    ${CMAKE_CURRENT_BINARY_DIR}/panels.h
 )
+target_include_directories(quarry PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # The tests, which ctest runs in the emulator. Each one plays the ROM from a
 # Python script in tests/. Only autoplay runs on a Release ROM, because the

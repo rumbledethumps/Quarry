@@ -8,7 +8,13 @@ to buy with. Reads the menus from the text cells in XRAM, and the panels
 from their own text cells. Exits 0 when every check passes.
 """
 
+import os
+import sys
+
 from game import SPRITE, Game, check
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'art'))
+from panels import FONT  # noqa: E402
 
 END_ITEMS = ['UPGRADES', 'REPLAY', 'MAIN MENU']
 PICKED = 0x1E  # MODE1_BG_FG(BOX_FILL, PICK_COLOR), the frame of the item picked
@@ -42,17 +48,23 @@ def main():
         check(len(picks) == 1, f'one item of the menu is picked: {picks}')
         return picks[0]
 
-    def panel(p, row):
-        """The text inside panel p, on a row of its cells."""
+    def panel_tiles(p, row):
+        """The tiles inside panel p, on a row of its map."""
         cols, left = sym['PANEL_MAP_COLS'], p * sym['PANEL_PITCH'] + sym['PANEL_BORDER']
-        data = game.xram(sym['XRAM_PANELS'] + (row * cols + left) * 2, sym['PANEL_INSIDE'] * 2)
-        return data[::2].decode('latin-1').strip()
+        return game.xram(sym['XRAM_PANELS'] + row * cols + left, sym['PANEL_INSIDE'])
 
-    def panel_color(p, row, col):
-        """The color byte of a cell inside panel p."""
-        cols = sym['PANEL_MAP_COLS']
-        left = p * sym['PANEL_PITCH'] + sym['PANEL_BORDER']
-        return game.xram(sym['XRAM_PANELS'] + (row * cols + left + col) * 2 + 1, 1)[0]
+    def panel(p, row):
+        """The text inside panel p, on a row of its map: each tile of the
+        font, lit or dim, as its character, and the short digits as digits."""
+        dim, text = sym['PANEL_TILE_DIM'], ''
+        for t in panel_tiles(p, row):
+            i = (t - 1) % dim
+            text += FONT[i] if i < len(FONT) else str(i - len(FONT)) if i < len(FONT) + 10 else '?'
+        return text.strip()
+
+    def panel_lit(p):
+        """Whether panel p's contents are lit: its plate a lit tile."""
+        return panel_tiles(p, sym['TITLE_ROW'])[0] <= sym['PANEL_TILE_DIM']
 
     def settle():
         game.run(40)
@@ -96,7 +108,7 @@ def main():
     # first lit in the middle, and nothing to buy.
     game.poke('nuggets', 0, 2)
     game.menu_choose('UPGRADES', wait=False)
-    game.run(5)
+    game.run(20)  # past the flicker of the panel in the middle
     check(game.ram('panel_picked') == 0 and game.ram('cursor_on') == sym['ON_RAIL'],
           'it opens on the rail, with the first panel picked')
     check(panel(0, sym['TITLE_ROW']) == 'WIDER SLED' and panel(1, sym['TITLE_ROW']) == 'FASTER SLED',
@@ -104,9 +116,7 @@ def main():
     widths = tune['TUNE_WIDTHS']
     check(panel(0, sym['EFFECT_ROW']) == f'{widths[0]} \x10 {widths[1]} PX', 'and what the next width is')
     check(panel(0, sym['COST_ROW']) == str(tune['TUNE_WIDTH_COSTS'][0]), 'and what it costs')
-    lit = panel_color(0, sym['TITLE_ROW'], 0) >> 4
-    check(lit == sym['LIT_FILL'] and panel_color(1, sym['TITLE_ROW'], 0) >> 4 == sym['DIM_FILL'],
-          'the middle panel is lit and the next one dim')
+    check(panel_lit(0) and not panel_lit(1), 'the middle panel is lit and the next one dim')
     game.tap('space')
     game.cmd('expect-not "bought"')
     check(game.ram('upgrade_levels', 2) == 0, 'no upgrade without the nuggets')
@@ -120,7 +130,7 @@ def main():
           'right slides the next panel to the middle')
     check(game.sprite(f'XRAM_MENU_SPRITES')[0] == picture - sym['PANEL_STEP'],
           'the picture slides with its panel')
-    check(panel_color(1, sym['TITLE_ROW'], 0) >> 4 == sym['LIT_FILL'], 'and it is lit')
+    check(panel_lit(1) and not panel_lit(0), 'and it is lit, the one it left dim')
     for _ in range(sym['PANELS']):
         game.tap('right')
     check(game.ram('panel_picked') == sym['PANELS'] - 1, 'right stops at the last panel')

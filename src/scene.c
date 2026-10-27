@@ -65,27 +65,29 @@ static void load(const char *path, long offset, unsigned xaddr, unsigned count)
     close(fd);
 }
 
-/* The upgrade screen: rock tiles on plane 0, and the panels, blank, on
-   plane 1 from PANEL_Y, which the upgrade screen scrolls. */
+/* The upgrade screen: rock tiles on plane 0, and the panels on plane 1 from
+   PANEL_Y, which the upgrade screen scrolls: their palette, their tiles
+   and the map of their frames, with plain plates for the upgrade screen
+   to fill in. */
 void scene_menu(void)
 {
-    mode1_config_t config;
+    mode2_config_t config;
 
     if (!scene_change(SCENE_MENU))
         return;
     load("ROM:tiles", 0, XRAM_TILES, sizeof(((xram_layout_t *)0)->art.menu.tiles));
     load("ROM:sleds", 0, XRAM_SLED_IMAGES, sizeof(((xram_layout_t *)0)->art.menu.sled_images));
     xreg_vga_mode2(MODE2_4BPP | MODE2_16X16, XRAM_TILE_CONFIG, 0);
-    xram0_set(XRAM_PANELS, 0, sizeof(((xram_layout_t *)0)->art.menu.panels));
+    load("ROM:panels", 0, XRAM_PANEL_PALETTE, XRAM_TILE_MAP - XRAM_PANEL_PALETTE);
     memset(&config, 0, sizeof config);
     config.y_pos_px = PANEL_Y;
-    config.width_chars = PANEL_MAP_COLS;
-    config.height_chars = PANEL_ROWS;
+    config.width_tiles = PANEL_MAP_COLS;
+    config.height_tiles = PANEL_ROWS;
     config.xram_data_ptr = XRAM_PANELS;
-    config.xram_palette_ptr = XRAM_PALETTE_MAIN;
-    config.xram_font_ptr = 0xFFFF;
+    config.xram_palette_ptr = XRAM_PANEL_PALETTE;
+    config.xram_tile_ptr = XRAM_PANEL_TILES;
     xram0_write(XRAM_PANEL_CONFIG, &config, sizeof config);
-    xreg_vga_mode1(MODE1_4BPP, XRAM_PANEL_CONFIG, 1, PANEL_Y, PANEL_Y + PANEL_ROWS * 8);
+    xreg_vga_mode2(MODE2_8BPP | MODE2_8X8, XRAM_PANEL_CONFIG, 1, PANEL_Y, PANEL_Y + PANEL_ROWS * 8);
 }
 
 /* The curtain set: its palette, the colors it gives the texture, and its

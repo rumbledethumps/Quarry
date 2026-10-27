@@ -202,6 +202,31 @@ screen. It reads like a thermometer with no bulb, built as an industrial
 indicator: a tube in a steel frame, with the level rising and falling in
 it. It leaves room on its left and right for effects at the level line.
 
+### The Upgrade Panels
+
+The upgrade screen's panels hang from a rail and slide across it. Each is
+20 cells by up to 18, in an 8-bit tile layer of its own, with 256 colors
+and 256 tiles. The frame is two cells thick, drawn 3 px in from the edge of
+its cells, so two panels side by side have a 6 px gap. The frame is
+graphite steel with no yellow: there is nothing to be careful of here.
+
+- `art/panel-frame.png` is frame 1 of the reference images, fitted to the
+  cells: a few repeated rows and columns of steel taken out, so its inner
+  bevel ends 16 px in. Its bottom edge came out of Retro Diffusion cut
+  short, so the build uses its top half turned over for the bottom.
+- `art/panels.py` builds each panel's frame from its cells: the corners,
+  with their clamps, as they are, and plain steel, bolts and hangers along
+  each edge, as `LAYOUTS` says for each panel. Panels of any height share
+  the same tiles, and each can have its own bolts. The build fails past
+  256 tiles, and says how many the frames take.
+- `art/panel-font.png`, from `art/panel_font.py`, is the font on the
+  plates: chunky 6x7 capitals, cream fading toward the foot, with a shadow,
+  plus short digits in red for a cost not yet paid, and the pips. Only the
+  contents of a panel dim: the font, the plate and its corners come twice,
+  lit and dim, and the frames once.
+- Alternate corners and edges cost 4 tiles a corner and 2 to 4 an edge
+  piece. About 60 tiles are left for them.
+
 ## Rules for both
 
 - The light comes from the upper left.
@@ -233,6 +258,8 @@ darkest first. Each class of art gets a row of its own:
 | curtain | the curtain set of the stage, loaded with it |
 | shade | the sled row at 60%, for the braces and the machine behind the ball |
 | holo | the holographic cursor of the upgrade screen, whose colors shimmer |
+
+The upgrade panels have a palette of their own, 256 colors, outside these rows, since they are a tile layer.
 
 A jet's nozzle and its flame are one sprite, so the flames share the sled
 row. Every curtain set brings its own palette into the one curtain row.
@@ -311,6 +338,7 @@ The blocks of the looks:
 
 | File | What to take from it |
 | --- | --- |
+| `ref/panel-frame.png` | Frame 1, the upgrade panel's frame as Retro Diffusion made it: `rd_pro__default`, 154x138, with a 64x64 crop of a gauge frame from `ui-kit.png`: "A single heavy mechanical display panel seen straight on, filling the whole image: a thick frame of dark graphite gunmetal steel around all four edges, the frame about a tenth of the panel's width, built from bolted steel plates with seams and rivets, a different mechanical bracket or clamp at each corner, a thin bright bevel along the inner edge, worn edges but clean and well maintained, no yellow, no hazard stripes, no rust, the inside one plain flat dark blue-grey plate with nothing on it, slightly futuristic heavy machinery, light from the upper left". Chosen for its simplicity. |
 | `ref/old-logo-qu.png` | 64x64 of the old logo's QU: fine, flecked rock at a small scale. The reference for the curtain sets, and the one that made the first. |
 | `ref/rock-crop.png` | 64x64 of the rock of the first curtain set: how stone is drawn. A reference for a stone piece, such as the logo. Not for a curtain set: it is zoomed in, so the rock comes out too big. |
 | `ref/logo-stone.png` | The logo as Retro Diffusion made it, before `art/logo.py`: `rd_pro__typography`, 192x64, with `rock-crop.png` and `old-logo-qu.png` as references: "\"QUARRY\" in big bold blocky capital letters, carefully carved from solid stone by a master stonemason: clean even letterforms with crisp chiseled bevels and flat faces, every letter whole and unbroken, only a few small natural chips and fine hairline marks, all the letters the same warm weathered sandstone with subtle flecks like the reference rock, cool blue-grey stone only in the shadowed bevels, a dark outline and a dark shadow under the letters, light from the upper left, on a plain white background". One of three, and the one with moss, which `art/logo.py` turns to rock; the others were plainer, or cracked with stray dots. |

@@ -302,9 +302,11 @@ typedef struct
 #define BALL_DIGITS 2  /* of the count of balls */
 
 /* The panels of the upgrade screen hang from a rail and slide across it.
-   They are text cells on plane 1, PANEL_MAP_COLS across and PANEL_ROWS
-   down, the top row for the hangers: each panel is PANEL_COLS wide, side
-   by side, and the art of their frames leaves the gap between them. */
+   They are a map of 8-bit tiles on plane 1, PANEL_MAP_COLS across and
+   PANEL_ROWS down, the top row for the hangers: each panel is PANEL_COLS
+   wide, side by side, and the art of their frames leaves the gap between
+   them. art/panels.py makes the tiles, their palette and the map of the
+   frames, and writes build/panels.h. */
 #define PANELS 4
 #define PANEL_COLS 20
 #define PANEL_PITCH PANEL_COLS
@@ -376,6 +378,7 @@ typedef struct
 #define ENERGY_BOTTOM 4
 
 typedef MODE2_TILE(4, 16) tile_t;
+typedef MODE2_TILE(8, 8) panel_tile_t;
 typedef MODE5_CUSTOM_IMAGE(4, 24, 8) brick_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 24, 16) break_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 8, 8) piece_image_t;
@@ -446,7 +449,9 @@ typedef struct
 {
     tile_t tiles[TILES_COUNT];
     uint8_t sled_images[SLEDS][SLED_SLOT];
-    mode1_4bpp_data_t panels[PANEL_ROWS][PANEL_MAP_COLS];
+    uint16_t panel_palette[256]; /* these three, as ROM:panels holds them */
+    panel_tile_t panel_tiles[256];
+    uint8_t panels[PANEL_ROWS][PANEL_MAP_COLS];
     uint8_t tile_map[TILE_MAP_ROWS][TILE_MAP_COLS]; /* an odd size, so last */
 } menu_art_t;
 
@@ -468,7 +473,7 @@ typedef struct
     mode2_config_t tile_config;
     mode3_config_t texture_config;
     mode1_config_t text_config;
-    mode1_config_t panel_config;
+    mode2_config_t panel_config;
     palettes_t palettes;
     scenery_t scenery;
     mode5_csprite_t bricks[BRICKS_MAX];
@@ -560,6 +565,8 @@ typedef struct
 #define XRAM_TILES offsetof(xram_layout_t, art.menu.tiles)
 #define XRAM_SLED_IMAGES offsetof(xram_layout_t, art.menu.sled_images)
 #define XRAM_TILE_MAP offsetof(xram_layout_t, art.menu.tile_map)
+#define XRAM_PANEL_PALETTE offsetof(xram_layout_t, art.menu.panel_palette)
+#define XRAM_PANEL_TILES offsetof(xram_layout_t, art.menu.panel_tiles)
 #define XRAM_PANELS offsetof(xram_layout_t, art.menu.panels)
 #define XRAM_TEXTURE offsetof(xram_layout_t, art.cave.texture)
 #define XRAM_CURTAINS offsetof(xram_layout_t, art.cave.curtains)
