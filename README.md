@@ -8,9 +8,9 @@ and play again.
 preset: llvm-mos/Release
 publish: quarry.zip
 -->
-[![Quarry](https://rumbledethumps.github.io/quarry/quarry/screenshot.png)](https://rumbledethumps.github.io/quarry/quarry/)
+[![Quarry](https://rumbledethumps.github.io/Quarry/quarry/screenshot.png)](https://rumbledethumps.github.io/Quarry/quarry/)
 
-[Play it in your browser](https://rumbledethumps.github.io/quarry/quarry/).
+[Play it in your browser](https://rumbledethumps.github.io/Quarry/quarry/).
 
 ## Controls
 
