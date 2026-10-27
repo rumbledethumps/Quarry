@@ -38,6 +38,16 @@ screens share the rest of XRAM as a union. A screen loads its art from
 the ROM's assets when it starts, in a fraction of a second, so its art has
 most of XRAM to itself.
 
+## The Title
+
+The title has the same cave as a stage, with no frame: a texture behind
+everything and a curtain set, both picked at random each time, with the
+curtains just outside the word QUARRY. Under the logo are the menu,
+RESUME and NEW GAME, and under it a box as wide as the menu with the
+progress of the save, as a percent. The credit, "(c)2026 Rumbledethumps",
+is plain dim text over the texture at the bottom. There is no sled on the
+title, and no way to exit the game: every menu leads to another screen.
+
 ## Stone: the levels
 
 The curtains, the bricks, the break frames, the nuggets, and the logo.

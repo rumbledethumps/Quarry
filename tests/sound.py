@@ -58,10 +58,6 @@ def main():
     game.boot()
     check(all(c == (0, 0, 0) for c in channels(game)), 'the PSG starts quiet, at XRAM_PSG')
 
-    # A menu move clicks.
-    game.tap('up')
-    played(game, MOVE, 5)
-    game.tap('down')
     game.new_game()
     game.run(5)
 

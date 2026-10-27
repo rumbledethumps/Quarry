@@ -59,6 +59,14 @@ static void curtain(uint8_t side, int16_t x)
     }
 }
 
+/* The two curtains of the curtain set, the left one's inner edge at left
+   and the right one's at right. */
+void frame_curtains(int16_t left, int16_t right)
+{
+    curtain(0, left - CURTAIN_W);
+    curtain(1, right);
+}
+
 /* The frame around a playfield from left to right, and the rest around it.
    The width between the outer faces of the posts must be a multiple of 8,
    so the pieces of the beam line up. */
@@ -74,8 +82,7 @@ void frame_start(int16_t left, int16_t right)
           right - BRACE_SIZE, BEAM_H, 1);
     piece(SCENERY(machine, 0), XRAM_MACHINE_IMAGE, XRAM_PALETTE_SHADE, MODE5_SIZE(MACHINE_W, MACHINE_H),
           right - MACHINE_W, MACHINE_Y, 1);
-    curtain(0, outer + CURTAIN_UNDER - CURTAIN_W);
-    curtain(1, right + POST_W - CURTAIN_UNDER);
+    frame_curtains(outer + CURTAIN_UNDER, right + POST_W - CURTAIN_UNDER);
     for (i = 0; i < POST_SPRITES; i++)
     {
         piece(SCENERY(posts, i), XRAM_POST_IMAGE, XRAM_PALETTE_SLED, MODE5_SIZE(POST_W, 64),

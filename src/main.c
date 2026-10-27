@@ -1,5 +1,4 @@
 #include <rp6502.h>
-#include <stdlib.h>
 #include "bricks.h"
 #include "debug.h"
 #include "frame.h"
@@ -36,17 +35,17 @@ static const char *const end_items[] = {"UPGRADES", "PLAY"};
 static const char *const pause_items[] = {"CONTINUE", "EXIT"};
 #define PAUSE_CONTINUE 1
 #define PAUSE_EXIT 2
-static const char *const title_items[] = {"RESUME", "NEW GAME", "EXIT"};
+static const char *const title_items[] = {"RESUME", "NEW GAME"};
 #define TITLE_RESUME 1
 #define TITLE_NEW_GAME 2
-#define TITLE_EXIT 3
 static const char *const confirm_items[] = {"YES", "NO"};
 #define CONFIRM_YES 1
 #define CONFIRM_NO 2
 
+/* The question to start over takes the title menu's place. */
 static const menu_t pause_menu = {20, 11, BOX_COLOR, "PAUSED", pause_items, 2};
-static const menu_t title_menu = {20, 12, BOX_FILL, 0, title_items, 3};
-static const menu_t confirm_menu = {20, 12, BOX_COLOR, "START OVER?", confirm_items, 2};
+static const menu_t title_menu = {20, 11, BOX_FILL, 0, title_items, 2};
+static const menu_t confirm_menu = {20, 11, BOX_COLOR, "START OVER?", confirm_items, 2};
 static menu_t end_menu = {20, 11, BOX_COLOR, 0, end_items, 2};
 
 static uint8_t game_state;
@@ -111,7 +110,7 @@ static void stage_end(uint8_t how)
 /* Resume is grayed out until there is a save. */
 static void title_show(void)
 {
-    title_open();
+    title_open(&title_menu);
     menu_open(&title_menu, save_exists ? TITLE_RESUME - 1 : TITLE_NEW_GAME - 1,
               save_exists ? 0 : 1 << (TITLE_RESUME - 1), 0);
     game_state = STATE_TITLE;
@@ -181,9 +180,8 @@ int main(void)
     for (;;)
     {
         wait_vsync();
-        if (game_state == STATE_TITLE || game_state == STATE_CONFIRM)
-            title_draw();
-        else if (game_state != STATE_SHOP && paused_state != STATE_SHOP)
+        if (game_state != STATE_TITLE && game_state != STATE_CONFIRM && game_state != STATE_SHOP &&
+            paused_state != STATE_SHOP)
             play_draw();
         input_read();
         sfx_step();
@@ -240,7 +238,6 @@ int main(void)
                 }
             break;
         case STATE_TITLE:
-            title_step();
             switch (menu_step())
             {
             case TITLE_RESUME:
@@ -260,12 +257,9 @@ int main(void)
                     game_start();
                 }
                 break;
-            case TITLE_EXIT:
-                exit(0);
             }
             break;
         case STATE_CONFIRM:
-            title_step();
             switch (menu_step())
             {
             case CONFIRM_YES:

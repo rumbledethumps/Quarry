@@ -426,22 +426,23 @@ typedef struct
     mode5_csprite_t menu[MENU_SPRITES];   /* the upgrade screen's pictures */
 } hud_t;
 
-/* The art of the title and the upgrade screens. */
+/* The art of the upgrade screen. */
 typedef struct
 {
     tile_t tiles[TILES_COUNT];
-    logo_image_t logo_images[3];
     uint8_t sled_images[SLEDS][SLED_SLOT];
     uint8_t tile_map[TILE_MAP_ROWS][TILE_MAP_COLS]; /* an odd size, so last */
 } menu_art_t;
 
-/* The art of a stage. */
+/* The art of the title and of a stage: the texture and a curtain set, then
+   the title's logo or the stage's sled. */
 typedef struct
 {
     uint8_t texture[TEXTURE_H][TEXTURE_W / 4];
     uint8_t curtains[2][CURTAIN_BYTES];
-    uint8_t sled_images[SLED_SLOT]; /* the sled of this stage */
-} stage_art_t;
+    uint8_t sled_images[SLED_SLOT]; /* the sled of a stage */
+    logo_image_t logo_images[3];    /* the title's logo */
+} cave_art_t;
 
 typedef struct
 {
@@ -473,7 +474,7 @@ typedef struct
     union
     {
         menu_art_t menu;
-        stage_art_t stage;
+        cave_art_t cave;
     } art; /* each screen loads its own, from the ROM */
 } xram_layout_t;
 
@@ -530,12 +531,12 @@ typedef struct
 #define XRAM_MACHINE_IMAGE offsetof(xram_layout_t, machine_image)
 #define XRAM_ART offsetof(xram_layout_t, art)
 #define XRAM_TILES offsetof(xram_layout_t, art.menu.tiles)
-#define XRAM_LOGO_IMAGES offsetof(xram_layout_t, art.menu.logo_images)
 #define XRAM_SLED_IMAGES offsetof(xram_layout_t, art.menu.sled_images)
 #define XRAM_TILE_MAP offsetof(xram_layout_t, art.menu.tile_map)
-#define XRAM_TEXTURE offsetof(xram_layout_t, art.stage.texture)
-#define XRAM_CURTAINS offsetof(xram_layout_t, art.stage.curtains)
-#define XRAM_STAGE_SLED offsetof(xram_layout_t, art.stage.sled_images)
+#define XRAM_TEXTURE offsetof(xram_layout_t, art.cave.texture)
+#define XRAM_CURTAINS offsetof(xram_layout_t, art.cave.curtains)
+#define XRAM_STAGE_SLED offsetof(xram_layout_t, art.cave.sled_images)
+#define XRAM_LOGO_IMAGES offsetof(xram_layout_t, art.cave.logo_images)
 
 MODE5_PALETTE_CHECK(palettes_t);
 

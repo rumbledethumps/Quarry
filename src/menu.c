@@ -18,9 +18,10 @@ static uint8_t first_item_row(void)
     return shown->top + (shown->title ? 3 : 1);
 }
 
-static uint8_t bottom_row(void)
+/* The row of a menu's bottom edge. */
+uint8_t menu_bottom(const menu_t *menu)
 {
-    return first_item_row() + shown->count * ITEM_ROWS;
+    return menu->top + (menu->title ? 3 : 1) + menu->count * ITEM_ROWS;
 }
 
 static void item_draw(uint8_t i)
@@ -66,7 +67,7 @@ void menu_open(const menu_t *menu, uint8_t pick, uint8_t disabled, uint8_t wait)
     picked = pick;
     if (disabled & (1 << pick))
         pick_step(1);
-    video_box(menu->center - MENU_COLS / 2, menu->top, menu->center + MENU_COLS / 2 - 1, bottom_row(),
+    video_box(menu->center - MENU_COLS / 2, menu->top, menu->center + MENU_COLS / 2 - 1, menu_bottom(menu),
               menu->frame);
     if (menu->title)
         video_text(menu->center - strlen(menu->title) / 2, menu->top + 1, menu->title, TEXT_COLOR,
@@ -81,7 +82,7 @@ void menu_close(void)
 {
     if (shown)
         video_clear(shown->center - MENU_COLS / 2, shown->top, shown->center + MENU_COLS / 2 - 1,
-                    bottom_row());
+                    menu_bottom(shown));
     shown = 0;
 }
 
