@@ -119,9 +119,12 @@ def main():
     game.until('game_state', 'STATE_MENU', 10)
     check(game.shows('UPGRADES') and not game.shows('PAUSED'), 'the end-of-stage menu is back')
     os.remove(os.path.join(folder, SAVE))
+    cave = game.ram('curtain_set'), game.xram('XRAM_TEXTURE_CONFIG', 8)
     game.tap('space')
     game.until('game_state', 'STATE_PLAY', 60)
     check(read_save(folder) is not None, 'PLAY was still picked, and the stage starting saves')
+    check((game.ram('curtain_set'), game.xram('XRAM_TEXTURE_CONFIG', 8)) == cave,
+          'the stage played again keeps its curtains and its texture')
     game.paused_poke([('balls', 0, 1), ('ball_state', 1, 1)])
     game.wait('out of balls', 3000)
     game.menu_choose('UPGRADES')

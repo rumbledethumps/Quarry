@@ -10,7 +10,9 @@
 /* Each screen has art of its own in XRAM_ART, read from the ROM's assets
    when the screen starts. The upgrade screen has the rock tiles and every
    sled. The title has a texture, a curtain set and the logo, and a stage a
-   texture, a curtain set and its own sled. */
+   texture, a curtain set and its own sled. The texture and the curtain set
+   are picked at random only when the screen changes, so a stage played
+   again, or the next one, keeps its rock, and nobody sees it change. */
 
 #define SCENE_MENU 1
 #define SCENE_STAGE 2
@@ -94,19 +96,22 @@ static void cave(void)
     xreg_vga_mode3(MODE3_2BPP, XRAM_TEXTURE_CONFIG, 0);
 }
 
-/* The title: a cave and the logo. */
+/* The title: a cave, if it comes from another screen, and the logo. */
 void scene_title(void)
 {
+    if (scene != SCENE_TITLE)
+        cave();
     scene = SCENE_TITLE;
-    cave();
     load("ROM:logo", 0, XRAM_LOGO_IMAGES, sizeof(((xram_layout_t *)0)->art.cave.logo_images));
 }
 
-/* A stage: a cave and the sled of a level of the width upgrade. */
+/* A stage: a cave, if it comes from another screen, and the sled of a
+   level of the width upgrade. */
 void scene_stage(uint8_t sled_level)
 {
+    if (scene != SCENE_STAGE)
+        cave();
     scene = SCENE_STAGE;
-    cave();
     load("ROM:sleds", (long)sled_level * SLED_SLOT, XRAM_STAGE_SLED, SLED_SLOT);
 }
 
