@@ -122,7 +122,9 @@ bounces. A post has a hydraulic section every 64 rows, the beam a hazard
 band, and a bracket caps each post where the beam ends. The beam is
 pieces 64 wide that repeat every 8 px, so the width between the outer
 faces of the posts must be a multiple of 8. `art/screen.py` also draws
-the braces, the machine, the digits, and the placeholder gauge. Run it
+the braces, the machine, the digits, and the placeholder gauge. The
+braces and the machine use the shade row, so their brightness is set
+there, not in their pictures. Run it
 after a change there, then touch up any piece by hand.
 
 ### The Sled
@@ -199,10 +201,11 @@ darkest first. Each class of art gets a row of its own:
 | sled | the sleds, their jets and flames, the frame, the braces, the machine, and the digits |
 | texture | the texture behind the playfield, its first 4 colors |
 | curtain | the curtain set of the stage, loaded with it |
+| shade | the sled row at 60%, for the braces and the machine behind the ball |
 
 A jet's nozzle and its flame are one sprite, so the flames share the sled
 row. Every curtain set brings its own palette into the one curtain row.
-That is 6 rows and the ores, so 26 rows are left for ores.
+That is 7 rows and the ores, so 25 rows are left for ores.
 
 ## Sizes
 

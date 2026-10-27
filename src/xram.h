@@ -382,6 +382,7 @@ typedef struct
     uint16_t sled[16];    /* the sleds, their jets, the frame, and the digits */
     uint16_t texture[16]; /* the first 4, behind the playfield */
     uint16_t curtain[16]; /* loaded with each curtain set */
+    uint16_t shade[16];   /* the sled row, darker, for the braces and the machine */
 } palettes_t;
 
 /* Plane 0 sprites, in front of the texture and behind the bricks, back to
@@ -485,6 +486,7 @@ typedef struct
 #define XRAM_PALETTE_SLED offsetof(xram_layout_t, palettes.sled)
 #define XRAM_PALETTE_TEXTURE offsetof(xram_layout_t, palettes.texture)
 #define XRAM_PALETTE_CURTAIN offsetof(xram_layout_t, palettes.curtain)
+#define XRAM_PALETTE_SHADE offsetof(xram_layout_t, palettes.shade)
 #define XRAM_SCENERY offsetof(xram_layout_t, scenery)
 #define XRAM_BRACE_SPRITES offsetof(xram_layout_t, scenery.braces)
 #define XRAM_MACHINE_SPRITE offsetof(xram_layout_t, scenery.machine)

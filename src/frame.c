@@ -7,8 +7,9 @@
    bounces: the inner face of a post is the edge of the playfield, and the
    underside of the beam its top. Outside the posts are the curtains, the
    rock of a curtain set. Behind the ball are a knee brace in each top
-   corner and a machine on the right wall. Each piece is drawn for the left
-   side, and MODE5_HFLIP turns it for the right. */
+   corner and a machine on the right wall, in the shade palette, the
+   sled's colors darker, so they stay in the background. Each piece is
+   drawn for the left side, and MODE5_HFLIP turns it for the right. */
 
 #define SCENERY(field, i) (XRAM_SCENERY + offsetof(scenery_t, field) + (i) * sizeof(mode5_csprite_t))
 
@@ -20,7 +21,7 @@ static const uint8_t curtain_rows[] = {64, 64, 64, 48};
 #define CURTAIN_UNDER 6
 
 /* The machine hangs this far down the right wall. */
-#define MACHINE_Y 104
+#define MACHINE_Y 140
 
 _Static_assert(sizeof curtain_cols * sizeof curtain_rows == CURTAIN_TILES, "CURTAIN_TILES is wrong.");
 
@@ -63,11 +64,11 @@ void frame_start(int16_t left, int16_t right)
     int16_t width = right - left + 2 * POST_W;
     uint8_t i, beams = (width + 63) / 64;
 
-    piece(SCENERY(braces, 0), XRAM_BRACE_IMAGE, XRAM_PALETTE_SLED, MODE5_SIZE(BRACE_SIZE, BRACE_SIZE),
+    piece(SCENERY(braces, 0), XRAM_BRACE_IMAGE, XRAM_PALETTE_SHADE, MODE5_SIZE(BRACE_SIZE, BRACE_SIZE),
           left, BEAM_H, 0);
-    piece(SCENERY(braces, 1), XRAM_BRACE_IMAGE, XRAM_PALETTE_SLED, MODE5_SIZE(BRACE_SIZE, BRACE_SIZE),
+    piece(SCENERY(braces, 1), XRAM_BRACE_IMAGE, XRAM_PALETTE_SHADE, MODE5_SIZE(BRACE_SIZE, BRACE_SIZE),
           right - BRACE_SIZE, BEAM_H, 1);
-    piece(SCENERY(machine, 0), XRAM_MACHINE_IMAGE, XRAM_PALETTE_SLED, MODE5_SIZE(MACHINE_W, MACHINE_H),
+    piece(SCENERY(machine, 0), XRAM_MACHINE_IMAGE, XRAM_PALETTE_SHADE, MODE5_SIZE(MACHINE_W, MACHINE_H),
           right - MACHINE_W, MACHINE_Y, 1);
     curtain(0, outer + CURTAIN_UNDER - CURTAIN_W);
     curtain(1, right + POST_W - CURTAIN_UNDER);
