@@ -39,7 +39,8 @@ COLS, ROWS = 20, 19   # the cells of a panel, the top row for its hangers
 PAD = 3               # the clear pixels outside a frame
 BAND = 16             # a frame's depth, with PAD
 
-# Each panel's frame: its rows, from its top edge, and what is along each
+# Each panel's frame: its rows, from its top edge, in steps of 2, a line of
+# its text, and what is along each
 # edge between its corners: across the top and the bottom, a character a
 # cell for cells 4 to 15, and down the sides for rows 4 to rows - 5. A dot
 # is plain steel, B b a pair of bolts, and H, along the top, a hanger. The
@@ -47,14 +48,19 @@ BAND = 16             # a frame's depth, with PAD
 # from each corner.
 LAYOUTS = [
     dict(rows=18, top='H..Bb......H', bottom='..Bb....Bb..', left='..Bb..Bb..', right='Bb......Bb'),
-    dict(rows=17, top='H......Bb..H', bottom='Bb........Bb', left='....Bb...', right='Bb.....Bb'),
-    dict(rows=15, top='H......Bb..H', bottom='....Bb......', left='Bb.....', right='...Bb..'),
+    dict(rows=18, top='H......Bb..H', bottom='Bb........Bb', left='....Bb....', right='Bb......Bb'),
+    dict(rows=16, top='H......Bb..H', bottom='....Bb......', left='Bb......', right='...Bb...'),
     dict(rows=14, top='H..........H', bottom='..Bb..Bb....', left='..Bb..', right='Bb....'),
 ]
 
 # The cells of art/panel-frame.png that plain steel and bolts come from.
 PLAIN_COL, BOLT_COLS = 9, (14, 15)
 PLAIN_ROW, BOLT_ROWS = 8, (5, 6)
+
+# Frame 1's clamps, which stand a pixel proud of its edges: the pixels each
+# spans along the top edge and down the sides, in its top half.
+CLAMPS_ACROSS = ((16, 26), (133, 143))
+CLAMPS_DOWN = ((17, 27),)
 
 # Shades of steel, from art/panel-frame.png, for the hangers.
 OUTLINE = (0, 0, 0)
@@ -72,6 +78,14 @@ def source(frame):
     half turned over, since Retro Diffusion cut its bottom edge short."""
     half = len(frame) // 2
     top = [[p[:3] if p[3] else None for p in row] for row in frame[:half]]
+    w = len(top[0])
+    # Each clamp stands a pixel proud, out into the gap.
+    for x0, x1 in CLAMPS_ACROSS:
+        for x in range(x0, x1 + 1):
+            top[PAD - 1][x] = OUTLINE
+    for y0, y1 in CLAMPS_DOWN:
+        for y in range(y0, y1 + 1):
+            top[y][PAD - 1] = top[y][w - PAD] = OUTLINE
     return top + top[::-1]
 
 
