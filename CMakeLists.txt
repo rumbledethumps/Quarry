@@ -37,7 +37,6 @@ quarry_art(brace.bin image brace.png)
 quarry_art(machine.bin image machine.png)
 quarry_art(coin.bin image coin.png)
 quarry_art(cursor.bin image cursor.png)
-quarry_art(lock.bin image lock.png --tile 8x16)
 
 # The textures behind a stage, one for each seed, as ROM:texture1 and on,
 # and each curtain set of art/curtains/, as ROM:curtain1 and on.
@@ -80,8 +79,8 @@ add_custom_command(
     VERBATIM
 )
 
-# The mine carts of the stage select, from art/carts.py, and carts.h, which
-# gives their tile numbers.
+# The mine carts of the stage select and the padlock of a locked stage,
+# from art/carts.py, and carts.h, which gives their tile numbers.
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/carts.bin ${CMAKE_CURRENT_BINARY_DIR}/carts.h
     COMMAND ${Python3_EXECUTABLE}
@@ -120,7 +119,6 @@ rp6502_asset(quarry XRAM(XRAM_BRACE_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/brace.bin
 rp6502_asset(quarry XRAM(XRAM_MACHINE_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/machine.bin)
 rp6502_asset(quarry XRAM(XRAM_COIN_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/coin.bin)
 rp6502_asset(quarry XRAM(XRAM_CURSOR_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/cursor.bin)
-rp6502_asset(quarry XRAM(XRAM_LOCK_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/lock.bin)
 # The art of each screen, which the screen loads when it starts.
 rp6502_asset(quarry tiles ${CMAKE_CURRENT_BINARY_DIR}/tiles.bin)
 rp6502_asset(quarry logo ${CMAKE_CURRENT_BINARY_DIR}/logo.bin)

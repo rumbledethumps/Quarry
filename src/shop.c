@@ -28,7 +28,7 @@
 
    The panels are 8-bit tiles on plane 1, and the carts 4-bit tiles on its
    scanlines below them, each sliding on its own, and the panels' pictures
-   are plane 2 sprites that move with them. Only the panels' contents dim:
+   and the carts' padlocks are plane 2 sprites that move with them. Only the panels' contents dim:
    the frames stay lit. The counts down the left stay in front of them.
    shop_step() works out where everything goes, and shop_draw() moves it
    there at the start of the next frame, so nothing moves while the frame
@@ -38,14 +38,18 @@
 
 /* Each panel has PANEL_SPRITES sprites: its picture, then an icon for
    each of up to 4 currencies of its cost. The cursor's 4 corners follow,
-   then the two halves of a lock. */
+   then the two halves of the lock that breaks, then the padlocks of the
+   carts. The cart picked is open and in the middle, so the locked ones are
+   all to its right, and no more than LOCKS of them show. */
 #define PANEL_SPRITES 8
 #define PICTURE_SPRITES 4
+#define LOCKS 4
 #define PANEL_SPRITE(p, i) SPRITE((p) * PANEL_SPRITES + (i))
 #define CURSOR_SPRITE(i) SPRITE(PANELS * PANEL_SPRITES + (i))
-#define LOCK_SPRITE(i) SPRITE(PANELS * PANEL_SPRITES + 4 + (i))
+#define HALF_SPRITE(i) SPRITE(PANELS * PANEL_SPRITES + 4 + (i))
+#define LOCK_SPRITE(i) SPRITE(PANELS * PANEL_SPRITES + 4 + 2 + (i))
 
-_Static_assert(PANELS * PANEL_SPRITES + 4 + 2 <= MENU_SPRITES, "MENU_SPRITES is too few.");
+_Static_assert(PANELS * PANEL_SPRITES + 4 + 2 + LOCKS <= MENU_SPRITES, "MENU_SPRITES is too few.");
 
 /* The unlock of a stage newly open: a wait, the lock shaking harder and
    harder, then it breaks, and its halves fly apart and fall away. Their
@@ -125,6 +129,7 @@ static uint8_t asking;
 static int16_t panel_scroll; /* how far the panels have slid, in px */
 static int16_t cart_scroll;  /* how far the carts have slid, in px */
 static int16_t drawn_cart_scroll;
+static uint8_t locks_dirty; /* the padlocks to show have changed */
 static int16_t cursor[4], cursor_to[4]; /* left, top, right, bottom */
 static uint8_t steps;
 static uint8_t panel_lit[PANELS]; /* whether each panel's contents are lit */
@@ -393,7 +398,8 @@ static int16_t cart_x(uint8_t s)
 }
 
 /* Every stage's cart: a heap on each one cleared, its number on its plate,
-   lit on the one picked, or a padlock on each that isn't open yet. */
+   lit on the one picked, or a blank plate on each that isn't open yet,
+   for its padlock. */
 static void carts_draw(void)
 {
     uint8_t open = shown_open(), s, r, c;
@@ -416,8 +422,8 @@ static void carts_draw(void)
             }
         if (s > open)
         {
-            cells[PLATE_ROW][1] = CART_TILE_LOCK;
-            cells[PLATE_ROW][2] = CART_TILE_LOCK + 1;
+            cells[PLATE_ROW][1] = CART_TILE_PLATE;
+            cells[PLATE_ROW][2] = CART_TILE_PLATE;
         }
         else
         {
@@ -430,13 +436,25 @@ static void carts_draw(void)
         for (r = 0; r < CART_ROWS; r++)
             xram0_write(XRAM_CART_MAP + r * CART_MAP_COLS + (s - 1) * CART_COLS, cells[r], CART_COLS);
     }
+    locks_dirty = 1;
 }
 
-/* The carts, slid to cart_scroll. */
+/* The carts, slid to cart_scroll, with a padlock on each of the first
+   LOCKS locked, but for the one whose lock is breaking. */
 static void carts_move(void)
 {
+    uint8_t s = shown_open() + 1, i;
+
+    if (s == unlocking)
+        s++;
     xram0_poke16(XRAM_CART_CONFIG + offsetof(mode2_config_t, x_pos_px), CART_LEFT - cart_scroll);
+    for (i = 0; i < LOCKS; i++, s++)
+        if (s <= STAGES)
+            sprite_move(LOCK_SPRITE(i), cart_x(s) + CART_LOCK_LEFT, CART_Y + CART_LOCK_TOP);
+        else
+            sprite_hide(LOCK_SPRITE(i));
     drawn_cart_scroll = cart_scroll;
+    locks_dirty = 0;
 }
 
 /* Where the cursor goes: around the panel in the middle, or the cart in
@@ -513,10 +531,10 @@ static void lock_start(void)
 
     for (i = 0; i < 2; i++)
     {
-        sprite_set(LOCK_SPRITE(i), XRAM_LOCK_IMAGES + i * sizeof(lock_image_t), XRAM_PALETTE_SLED,
+        sprite_set(HALF_SPRITE(i), XRAM_LOCK_HALVES + i * sizeof(half_lock_image_t), XRAM_CART_PALETTE,
                    MODE5_SIZE(8, 16));
-        half_x[i] = (8 + i * 8) * 16;
-        half_y[i] = (CART_Y + PLATE_ROW * 8 - 4) * 16;
+        half_x[i] = (CART_LOCK_LEFT + i * 8) * 16;
+        half_y[i] = (CART_Y + CART_LOCK_TOP) * 16;
         half_dx[i] = i ? HALF_DX : -HALF_DX;
         half_dy[i] = HALF_DY;
     }
@@ -535,14 +553,14 @@ static void lock_move(void)
         shake = unlock_steps / 2 & 1 ? amount : -amount;
     }
     for (i = 0; i < 2; i++)
-        sprite_move(LOCK_SPRITE(i), cart_x(unlocking) + half_x[i] / 16 + shake, half_y[i] / 16);
+        sprite_move(HALF_SPRITE(i), cart_x(unlocking) + half_x[i] / 16 + shake, half_y[i] / 16);
 }
 
 /* Ends an unlock at once, the stage shown open. */
 static void unlock_finish(void)
 {
-    sprite_hide(LOCK_SPRITE(0));
-    sprite_hide(LOCK_SPRITE(1));
+    sprite_hide(HALF_SPRITE(0));
+    sprite_hide(HALF_SPRITE(1));
     stages_shown = unlocking;
     unlocking = 0;
     lock_dirty = 0;
@@ -695,6 +713,8 @@ void shop_open(void)
     }
     flicker_steps = 0;
     pictures_place();
+    for (p = 0; p < LOCKS; p++)
+        sprite_set(LOCK_SPRITE(p), XRAM_LOCK_IMAGE, XRAM_CART_PALETTE, MODE5_SIZE(16, 16));
     carts_draw();
     cursor_aim();
     for (p = 0; p < 4; p++)
@@ -731,7 +751,7 @@ void shop_draw(void)
         pictures_place();
     else if (panel_scroll != drawn_scroll)
         pictures_move();
-    if (cart_scroll != drawn_cart_scroll)
+    if (cart_scroll != drawn_cart_scroll || locks_dirty)
         carts_move();
     if (cursor_dirty)
         cursor_move();

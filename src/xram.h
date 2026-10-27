@@ -297,7 +297,7 @@ typedef struct
 #define JETS_MAX 3 /* under one sled */
 #define ENERGY_SEGMENTS 12
 #define NUGGETS_MAX 16 /* in flight at once */
-#define MENU_SPRITES 40
+#define MENU_SPRITES 42
 #define COUNT_DIGITS 5 /* of a nugget count */
 #define BALL_DIGITS 2  /* of the count of balls */
 
@@ -317,13 +317,16 @@ typedef struct
 /* The stage select is a train of mine carts along the bottom: a map of
    4-bit tiles on plane 1 too, on the scanlines under the panels, which
    slides on its own. Each cart is CART_COLS cells with its coupling, and
-   CART_ROWS down. art/carts.py makes the tiles and their palette, and
-   writes build/carts.h. */
+   CART_ROWS down. art/carts.py makes the tiles and their palette, and the
+   padlock over a locked stage, whole and in halves, and writes
+   build/carts.h. */
 #define CARTS_MAX 10
 #define CART_COLS 5
 #define CART_ROWS 4
 #define CART_MAP_COLS (CARTS_MAX * CART_COLS)
-#define CART_Y 178 /* the top of the carts' cells: their wheels sit on the track's top line */
+/* The top of the carts' cells. Their wheels sit on the track, as far from
+   the foot of the screen as the panels' rail is from its top. */
+#define CART_Y 194
 #define CART_TILES_MAX 64
 
 /* Background tiles of the title and the upgrade screens, 16x16, in the
@@ -404,7 +407,8 @@ typedef MODE5_CUSTOM_IMAGE(4, 64, BEAM_H) beam_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, POST_W, BEAM_H) cap_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, BRACE_SIZE, BRACE_SIZE) brace_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, MACHINE_W, MACHINE_H) machine_image_t;
-typedef MODE5_CUSTOM_IMAGE(4, 8, 16) lock_image_t; /* half of the lock */
+typedef MODE5_CUSTOM_IMAGE(4, 16, 16) lock_image_t;
+typedef MODE5_CUSTOM_IMAGE(4, 8, 16) half_lock_image_t;
 
 /* The palettes, in the order of the rows of art/palettes.png. */
 typedef struct
@@ -465,7 +469,9 @@ typedef struct
     uint16_t panel_palette[256]; /* these three, as ROM:panels holds them */
     panel_tile_t panel_tiles[256];
     uint8_t panels[PANEL_ROWS][PANEL_MAP_COLS];
-    uint16_t cart_palette[16]; /* these two, as ROM:carts holds them */
+    uint16_t cart_palette[16]; /* these four, as ROM:carts holds them */
+    lock_image_t lock_image;
+    half_lock_image_t lock_halves[2];
     cart_tile_t cart_tiles[CART_TILES_MAX];
     uint8_t cart_map[CART_ROWS][CART_MAP_COLS];
     uint8_t tile_map[TILE_MAP_ROWS][TILE_MAP_COLS]; /* an odd size, so last */
@@ -503,7 +509,6 @@ typedef struct
     piece_image_t ball_image;
     piece_image_t coin_image;
     piece_image_t cursor_image;
-    lock_image_t lock_images[2];
     jet_image_t jet_images[JET_FRAMES];
     piece_image_t smoke_images[SMOKE_FRAMES];
     energy_image_t energy_images[5];
@@ -569,7 +574,6 @@ typedef struct
 #define XRAM_BALL_IMAGE offsetof(xram_layout_t, ball_image)
 #define XRAM_COIN_IMAGE offsetof(xram_layout_t, coin_image)
 #define XRAM_CURSOR_IMAGE offsetof(xram_layout_t, cursor_image)
-#define XRAM_LOCK_IMAGES offsetof(xram_layout_t, lock_images)
 #define XRAM_JET_IMAGES offsetof(xram_layout_t, jet_images)
 #define XRAM_SMOKE_IMAGES offsetof(xram_layout_t, smoke_images)
 #define XRAM_ENERGY_IMAGES offsetof(xram_layout_t, energy_images)
@@ -588,6 +592,8 @@ typedef struct
 #define XRAM_PANELS offsetof(xram_layout_t, art.menu.panels)
 #define XRAM_CART_PALETTE offsetof(xram_layout_t, art.menu.cart_palette)
 #define XRAM_CART_TILES offsetof(xram_layout_t, art.menu.cart_tiles)
+#define XRAM_LOCK_IMAGE offsetof(xram_layout_t, art.menu.lock_image)
+#define XRAM_LOCK_HALVES offsetof(xram_layout_t, art.menu.lock_halves)
 #define XRAM_CART_MAP offsetof(xram_layout_t, art.menu.cart_map)
 #define XRAM_TEXTURE offsetof(xram_layout_t, art.cave.texture)
 #define XRAM_CURTAINS offsetof(xram_layout_t, art.cave.curtains)

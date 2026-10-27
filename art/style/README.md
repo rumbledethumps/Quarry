@@ -239,8 +239,11 @@ The stage select is a train of mine carts on a track along the foot of the
 upgrade screen, the picked one in the middle. `art/carts.py` draws them
 for now, in frame 1's steel, in a 4-bit tile layer of 16 colors: each cart
 is 4 cells by 4, with its coupling in a fifth. The stage's number is on a
-plate in the cart's middle two cells, lit on the cart picked, and a locked
-stage shows a padlock there.
+plate in the cart's middle two cells, lit on the cart picked. A locked
+stage's plate is blank under a padlock, a 16x16 sprite in the carts'
+palette, its body over the plate and its shackle over the rim; it comes
+in two halves too, to break in two. The track is as far from the foot of
+the screen as the panels' rail is from its top.
 
 - The number sits in the middle of the cart, across and down, never a
   pixel off. The cart stands low in its cells for it, its rim on the

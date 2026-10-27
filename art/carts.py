@@ -10,12 +10,15 @@ the stage's number in its two middle cells, and the wheels. The number is
 in the middle of the cart, so the cart stands low in its cells, and its
 top two rows come with the heap and without. The cell after
 each cart holds the coupling to the next. The number's digits come lit and
-dim, and a locked stage shows a padlock on its plate. The steel is frame
-1's, from art/panel-frame.png's colors.
+dim. A locked stage's plate is blank, under a padlock: a 16x16 sprite in
+the same palette, which also comes in two 8x16 halves, so it can break in
+two. The steel is frame 1's, from art/panel-frame.png's colors.
 
 out.bin is the palette, 16 colors as png2bin.py writes a palette row, then
-the tiles, 32 bytes each, the left pixel of each pair in the high nibble.
-out.h gives the tile numbers. Only the Python standard library is used.
+the padlock and its halves, then the tiles, 32 bytes each, all with the
+left pixel of each pair in the high nibble. out.h gives the tile numbers
+and the padlock's place on its cart. Only the Python standard library is
+used.
 """
 
 import argparse
@@ -28,7 +31,7 @@ PALETTE = [
     None,
     (0, 0, 0),        # 1 outline
     (42, 47, 51),     # 2 dark steel
-    (68, 72, 77),     # 3 steel
+    (253, 212, 66),   # 3 gold, lit
     (89, 96, 100),    # 4 mid steel
     (141, 154, 157),  # 5 light steel
     (201, 218, 220),  # 6 shine
@@ -37,12 +40,12 @@ PALETTE = [
     (246, 242, 232),  # 9 cream
     (206, 199, 184),  # 10 cream, darker
     (104, 110, 118),  # 11 a dim digit
-    (240, 186, 80),   # 12 gold
-    (170, 108, 36),   # 13 dark gold
+    (247, 183, 36),   # 12 gold
+    (173, 111, 21),   # 13 dark gold
     (214, 214, 220),  # 14 ore
     (150, 150, 160),  # 15 ore, darker
 ]
-OUT, DARK, STEEL, MID, LIGHT, SHINE, PLATE, SHADOW, CREAM, CREAM2, DIMTXT, GOLD, GOLD2, ORE, ORE2 = range(1, 16)
+OUT, DARK, GOLD_LIT, MID, LIGHT, SHINE, PLATE, SHADOW, CREAM, CREAM2, DIMTXT, GOLD, GOLD2, ORE, ORE2 = range(1, 16)
 
 W, H = 32, 32
 
@@ -117,19 +120,34 @@ def plate_cell(ch, colors):
     return cell
 
 
-def lock_cells():
-    """A padlock across the plate's two cells, for a stage still locked."""
-    img = blank(16, 8, PLATE)
-    for x in range(5, 11):
-        img[0][x] = LIGHT
-    for y in range(1, 3):
-        img[y][4] = img[y][11] = LIGHT
-    for y in range(3, 8):
-        for x in range(3, 13):
-            img[y][x] = GOLD if y < 6 else GOLD2
-        img[y][3] = img[y][12] = OUT
-    img[5][7] = img[5][8] = OUT
-    return [[row[0:8] for row in img], [row[8:16] for row in img]]
+# The padlock, with its keyhole in the middle, as the plate's number is.
+LOCK = ['.....######.....',
+        '....#sSSSSs#....',
+        '...#sS####Ss#...',
+        '...#s#....#s#...',
+        '...#s#....#s#...',
+        '...#s#....#s#...',
+        '.##############.',
+        '.#hhhhhhhhhhhh#.',
+        '.#hffff##ffffr#.',
+        '.#hfff####fffr#.',
+        '.#hfff####fffr#.',
+        '.#hffff##ffffr#.',
+        '.#hffff##ffffr#.',
+        '.#rrrrrrrrrrrr#.',
+        '.##############.',
+        '................']
+LOCK_COLORS = {'.': 0, '#': OUT, 's': LIGHT, 'S': SHINE, 'h': GOLD_LIT, 'f': GOLD, 'r': GOLD2}
+# Where the padlock goes on its cart: its body over the plate.
+LOCK_LEFT, LOCK_TOP = 8, 9
+
+
+def lock():
+    return [[LOCK_COLORS[c] for c in line] for line in LOCK]
+
+
+def packed(img):
+    return bytes(row[x] << 4 | row[x + 1] for row in img for x in range(0, len(row), 2))
 
 
 def coupling():
@@ -137,7 +155,7 @@ def coupling():
     cell = blank(8, 8)
     for x in range(8):
         cell[1][x] = OUT
-        cell[2][x] = STEEL
+        cell[2][x] = MID
         cell[3][x] = OUT
     return cell
 
@@ -171,21 +189,21 @@ def main():
                 continue
             add(f'BODY_{r}_{c}', body[r][c])
     add('COUPLING', coupling())
+    add('PLATE', blank(8, 8, PLATE))
     for d in '0123456789':
         add(f'DIGIT_{d}', plate_cell(d, (CREAM, CREAM2)))
     for d in '0123456789':
         add(f'DIM_{d}', plate_cell(d, (DIMTXT, DIMTXT)))
-    left, right = lock_cells()
-    add('LOCK', left)
-    add('LOCK1', right)
 
     data = bytearray()
     for c in PALETTE:
         r, g, b = c or (0, 0, 0)
         data += struct.pack('<H', (b >> 3) << 11 | (g >> 3) << 6 | (r >> 3) | (32 if c else 0))
+    padlock = lock()
+    data += packed(padlock)
+    data += packed([row[:8] for row in padlock]) + packed([row[8:] for row in padlock])
     for t in tiles:
-        for row in t:
-            data += bytes(row[x] << 4 | row[x + 1] for x in range(0, 8, 2))
+        data += packed(t)
     with open(args.output, 'wb') as f:
         f.write(data)
 
@@ -196,10 +214,12 @@ def main():
                 f'#define CART_TILE_HEAP {first["HEAP_0_0"]} /* the top two rows of a cart with a heap, 4 across */\n'
                 f'#define CART_TILE_BODY {first["BODY_1_0"]} /* a cart under its top row, row by row, without the plate */\n'
                 f'#define CART_TILE_COUPLING {first["COUPLING"]}\n'
+                f'#define CART_TILE_PLATE {first["PLATE"]} /* blank, under a padlock */\n'
                 f'#define CART_TILE_DIGIT {first["DIGIT_0"]} /* lit, then dim, 0 to 9 */\n'
                 f'#define CART_TILE_DIM {first["DIM_0"]}\n'
-                f'#define CART_TILE_LOCK {first["LOCK"]} /* 2 across */\n'
-                f'#define CART_TILES {len(tiles)}\n\n'
+                f'#define CART_TILES {len(tiles)}\n'
+                f'#define CART_LOCK_LEFT {LOCK_LEFT} /* the padlock\'s place on its cart */\n'
+                f'#define CART_LOCK_TOP {LOCK_TOP}\n\n'
                 '#endif\n')
     print(f'carts: {len(tiles)} tiles')
 
@@ -229,8 +249,12 @@ def main():
             return img
         d = lambda n: tiles[first['DIGIT_0'] + n]
         dm = lambda n: tiles[first['DIM_0'] + n]
-        carts = [compose(True, [d(0), d(1)]), compose(True, [dm(0), dm(2)]), compose(False, [dm(0), dm(3)]),
-                 compose(False, [tiles[first['LOCK']], tiles[first['LOCK1']]])]
+        locked = compose(False, [tiles[first['PLATE']]] * 2)
+        for y, row in enumerate(padlock):
+            for x, c in enumerate(row):
+                if c:
+                    locked[LOCK_TOP + y][LOCK_LEFT + x] = c
+        carts = [compose(True, [d(0), d(1)]), compose(True, [dm(0), dm(2)]), compose(False, [dm(0), dm(3)]), locked]
         out = [[c for img in carts for c in img[y]] for y in range(H)]
         rows = [[v for c in row for v in ((PALETTE[c] + (255,)) if c else (40, 10, 60, 255))] for row in out]
         write_png(args.preview, len(out[0]), H, 6, rows)
