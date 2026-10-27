@@ -5,7 +5,7 @@
 
 Needs a Debug ROM, which logs the game's events. The energy is poked low
 to skip ahead. Reads the colors of the bar and the smoke from screenshots,
-and the flames and the tilt of the falling paddle from their sprites.
+and the jets and the tilt of the falling sled from their sprites.
 Exits 0 when every check passes.
 """
 
@@ -50,15 +50,15 @@ def main():
     check(full == sym['TUNE_ENERGY'], 'the energy starts full')
     check(bar(game, shot) == ['full'] * bar_segments, 'the bar starts full and yellow')
     x, y = game.px('paddle_x'), game.px('paddle_y')
-    pieces, flames = 'XRAM_PADDLE_SPRITES', 'XRAM_FLAME_SPRITES'
+    pieces, flames = 'XRAM_SLED_SPRITE', 'XRAM_JET_SPRITES'
+    nozzle = sym['XRAM_JET_IMAGES'] + sym['JET_NOZZLE'] * 8 * 12 // 2  # a jet with no flame
     check(game.sprite(pieces) == (x, y), 'the paddle is where it is in RAM')
     images = set()
     for _ in range(30):
         game.run()
-        left, right = game.sprites(flames, 2)
-        check(left[1] == right[1] == y + 8, 'both flames burn under the paddle')
-        images.add(left[2])
-        images.add(right[2])
+        jet = game.sprites(flames, 1)[0]
+        check(jet[1] == y + sym['JET_TOP'], 'the jet burns under the sled')
+        images.add(jet[2])
     check(len(images) == 3, f'the flames burn through 3 frames, saw {len(images)}')
     game.run(90)
     check(game.ram('energy', 2) == full, 'no energy drains before the first launch')
@@ -92,10 +92,10 @@ def main():
     lit = 0
     for _ in range(20):
         game.run()
-        lit += game.shown(flames, 2)
+        lit += game.sprites(flames, 1)[0][2] != nozzle
     game.cmd('release right')
     check(game.px('paddle_x') == x, 'the paddle does not move while it sputters')
-    check(0 < lit < 40, f'the flames flicker while they sputter, lit {lit} of 40')
+    check(0 < lit < 20, f'the flame flickers while it sputters, lit {lit} of 20')
     check(bar(game, shot) == ['empty'] * bar_segments, 'the bar is empty')
 
     # A puff of smoke, and the paddle falls and tilts.
@@ -105,9 +105,9 @@ def main():
     puff = smoke_pixels(game, shot, x - 4, x + 32, top - 8, top + 16)
     check(puff > 10, f'a puff of smoke where the paddle gave up, {puff} pixels')
     game.run(10)
-    ys = [py for _, py, _ in game.sprites(pieces, 3)]
-    check(ys[0] < ys[1] < ys[2], f'the falling paddle tilts, the right end lower: {ys}')
-    check(game.shown(flames, 2) == 0, 'no flames on a falling paddle')
+    check(game.sizes(pieces, 1)[0] >> 4 == sym['SLED_TILT_ROWS'] // 4 - 1,
+          'the falling sled shows its tilted picture')
+    check(game.sprites(flames, 1)[0][2] == nozzle, 'no flames on a falling paddle')
     check(game.px('paddle_y') > top + 4, 'the paddle falls')
     game.wait('paddle gone', 120)
     game.run(2)
@@ -134,7 +134,7 @@ def main():
     game.wait('paddle falls', sym['TUNE_SPUTTER_STEPS'])
     ball = 'XRAM_BALL_SPRITE'
     game.run(15)
-    middle = game.sprites(pieces, 2)[1][1]
+    middle = game.sprite(pieces)[1] + game.ram('paddle_width') // 2 * sym['TILT_MAX'] // 8
     check(game.sprite(ball)[1] == middle - 8, 'the ball rides the middle of the tilted paddle')
     game.wait('paddle gone', 120)
     game.run(2)
@@ -153,7 +153,7 @@ def main():
     game.wait('stage cleared', 5)
     game.wait('paddle gone', 120)
     game.run(2)
-    check(game.shown(pieces, 3) == 0, 'the paddle fell off after the stage cleared')
+    check(game.shown(pieces, 1) == 0, 'the paddle fell off after the stage cleared')
     check(game.shows('STAGE CLEAR'), 'stage clear is shown')
     print('cleared while falling: the paddle still fell off the screen')
     game.close()

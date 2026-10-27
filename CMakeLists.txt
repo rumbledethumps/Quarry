@@ -25,11 +25,22 @@ quarry_art(brick.bin image brick.png)
 quarry_art(break.bin image break.png --tile 24x16)
 quarry_art(nugget.bin image nugget.png)
 quarry_art(ball.bin image ball.png)
-quarry_art(paddle.bin image paddle.png --tile 8x8)
-quarry_art(flame.bin image flame.png --tile 8x8)
+quarry_art(jet.bin image jet.png --tile 8x12)
 quarry_art(smoke.bin image smoke.png --tile 8x8)
 quarry_art(energy.bin image energy.png --tile 28x4)
 quarry_art(logo.bin image logo.png --tile 64x64)
+
+# Every sled of art/sleds/, from the narrowest, each in a slot of SLED_SLOT
+# bytes of src/xram.h.
+file(GLOB QUARRY_SLEDS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/art/sleds/sled-*.png)
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/sleds.bin
+    COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/art/png2bin.py image --slot 1792
+        ${QUARRY_SLEDS} ${CMAKE_CURRENT_BINARY_DIR}/sleds.bin
+    DEPENDS art/png2bin.py ${QUARRY_SLEDS}
+    VERBATIM
+)
 
 add_executable(quarry)
 rp6502_align(quarry "XRAM_.*")
@@ -40,8 +51,8 @@ rp6502_asset(quarry XRAM(XRAM_BRICK_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/brick.bin
 rp6502_asset(quarry XRAM(XRAM_BREAK_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/break.bin)
 rp6502_asset(quarry XRAM(XRAM_NUGGET_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/nugget.bin)
 rp6502_asset(quarry XRAM(XRAM_BALL_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/ball.bin)
-rp6502_asset(quarry XRAM(XRAM_PADDLE_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/paddle.bin)
-rp6502_asset(quarry XRAM(XRAM_FLAME_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/flame.bin)
+rp6502_asset(quarry XRAM(XRAM_JET_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/jet.bin)
+rp6502_asset(quarry XRAM(XRAM_SLED_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/sleds.bin)
 rp6502_asset(quarry XRAM(XRAM_SMOKE_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/smoke.bin)
 rp6502_asset(quarry XRAM(XRAM_ENERGY_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/energy.bin)
 rp6502_asset(quarry XRAM(XRAM_LOGO_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/logo.bin)

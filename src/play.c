@@ -84,7 +84,7 @@ static void ball_dock(void)
 {
     ball_state = BALL_DOCKED;
     ball_x = paddle_x + FIX(paddle_width / 2 - BALL_SIZE / 2);
-    ball_y = paddle_y + FIX(paddle_width / 16 * paddle_tilt() - BALL_SIZE);
+    ball_y = paddle_y + FIX(paddle_width / 2 * paddle_tilt() / 8 - BALL_SIZE);
 }
 
 void play_start(void)

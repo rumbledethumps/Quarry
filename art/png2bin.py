@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Convert Quarry's PNG art into data for the RP6502 VGA.
 
-  png2bin.py image [--tile WxH] in.png out.bin
+  png2bin.py image [--tile WxH] [--slot N] in.png... out.bin
       An indexed PNG whose palette indexes are the 4-bit colors, 0 to 15.
       The image is cut into tiles of WxH, read left to right, then top to
       bottom, and each tile is written row by row, two pixels to a byte,
       the left pixel in the high nibble. Without --tile, the whole image is
       one tile. This is the format of mode 2 tiles and mode 5 sprites.
+      Several images are written one after another, each padded with 0 to
+      N bytes with --slot, so each one starts N bytes after the last.
 
   png2bin.py palette in.png out.bin
       A PNG 16 pixels wide. Each row is a 16-color palette, written as
@@ -157,10 +159,23 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('mode', choices=['image', 'palette'])
     parser.add_argument('--tile', type=tile_size, help='tile size, WxH')
-    parser.add_argument('input')
+    parser.add_argument('--slot', type=int, help='bytes for each image, padded with 0')
+    parser.add_argument('input', nargs='+')
     parser.add_argument('output')
     args = parser.parse_args()
-    data = image(args.input, args.tile) if args.mode == 'image' else palette(args.input)
+    if args.mode == 'palette':
+        if len(args.input) != 1:
+            parser.error('palette takes one input')
+        data = palette(args.input[0])
+    else:
+        data = bytearray()
+        for path in args.input:
+            one = image(path, args.tile)
+            if args.slot:
+                if len(one) > args.slot:
+                    fail(f'{path}: {len(one)} bytes, more than the slot of {args.slot}')
+                one += bytes(args.slot - len(one))
+            data += one
     with open(args.output, 'wb') as f:
         f.write(data)
 

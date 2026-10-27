@@ -3,6 +3,7 @@
 #include "debug.h"
 #include "input.h"
 #include "nuggets.h"
+#include "paddle.h"
 #include "sfx.h"
 #include "upgrades.h"
 #include "video.h"
@@ -11,17 +12,16 @@
 /* The upgrade screen, after the concept. Rock all around, the nugget count
    at the top, then UPGRADES, a box for each upgrade, and a panel under
    them that tells of the upgrade picked last, with BUY and BACK. It is
-   all text cells, but for the nugget icons and the paddles. */
+   all text cells, but for the nugget icons and the sleds. */
 
 #define SPRITE(i) (XRAM_MENU_SPRITES + (i) * sizeof(mode5_csprite_t))
-#define COUNT_ICON 0  /* the sprites, in the order of the menu list */
-#define COST_ICON 1   /* one for each upgrade */
-#define NODE_PADDLE 3 /* three pieces for each upgrade */
-#define NOW_PADDLE 9  /* eight pieces */
-#define NEXT_PADDLE 17
+#define COUNT_ICON 0 /* the sprites, in the order of the menu list */
+#define COST_ICON 1  /* one for each upgrade */
+#define NODE_SLED 3  /* a sled and its jet for each upgrade */
+#define NOW_SLED 7   /* a sled and its jets */
+#define NEXT_SLED (NOW_SLED + 1 + JETS_MAX)
 
-_Static_assert(NEXT_PADDLE + PADDLE_PIECES_MAX <= MENU_SPRITES, "MENU_SPRITES is too few.");
-_Static_assert(UPGRADE_LEVELS_MAX <= 6, "The boxes have room for 6 pips at most.");
+_Static_assert(NEXT_SLED + 1 + JETS_MAX <= MENU_SPRITES, "MENU_SPRITES is too few.");
 
 /* Where things are, in text cells. */
 #define BAR_LEFT 13
@@ -29,7 +29,7 @@ _Static_assert(UPGRADE_LEVELS_MAX <= 6, "The boxes have room for 6 pips at most.
 #define TITLE_ROW 4
 #define NODE_TOP 6
 #define NODE_BOTTOM 13
-#define NODE_COLS 11
+#define NODE_COLS 12
 #define PANEL_LEFT 3
 #define PANEL_RIGHT 36
 #define PANEL_TOP 16
@@ -43,6 +43,8 @@ _Static_assert(UPGRADE_LEVELS_MAX <= 6, "The boxes have room for 6 pips at most.
 #define BUTTON_RIGHT 34
 #define BUY_TOP 18
 #define BACK_TOP 22
+
+_Static_assert(UPGRADE_LEVELS_MAX <= NODE_COLS - 2, "The boxes have no room for the pips.");
 
 /* Glyphs of code page 437. */
 #define LEFT_ARROWHEAD "\x11"
@@ -73,22 +75,6 @@ static uint8_t can_buy(uint8_t u)
     return cost && nuggets[BRICK_WHITE] >= cost;
 }
 
-/* A paddle width px wide, with its top left at x, y, from the count
-   sprites from first. The pieces it doesn't need are hidden. */
-static void paddle_at(uint8_t first, uint8_t count, int16_t x, int16_t y, uint8_t width)
-{
-    uint8_t i, pieces = width / 8;
-
-    for (i = 0; i < count; i++)
-    {
-        uint8_t piece = i == 0 ? PADDLE_LEFT : i == pieces - 1 ? PADDLE_RIGHT : PADDLE_MIDDLE;
-        sprite_set(SPRITE(first + i), XRAM_PADDLE_IMAGES + piece * sizeof(piece_image_t),
-                   XRAM_PALETTE_MAIN, MODE5_SIZE(8, 8));
-        if (i < pieces)
-            sprite_move(SPRITE(first + i), x + i * 8, y);
-    }
-}
-
 static void nugget_at(uint8_t sprite, uint8_t col, uint8_t row)
 {
     sprite_set(SPRITE(sprite), XRAM_NUGGET_IMAGE, XRAM_PALETTE_BRICK(BRICK_WHITE), MODE5_SIZE(8, 8));
@@ -109,11 +95,11 @@ static void node_draw(uint8_t u)
 {
     uint8_t left = node_left[u], max = upgrades_max(u), i;
     uint16_t cost = upgrades_cost(u);
-    char pips[8];
+    char pips[UPGRADE_LEVELS_MAX + 1];
 
     video_box(left, NODE_TOP, left + NODE_COLS - 1, NODE_BOTTOM, u == upgrade ? PICK_COLOR : BOX_COLOR);
     video_text(left + 3, NODE_TOP + 1, names[u], TEXT_COLOR, BOX_FILL);
-    paddle_at(NODE_PADDLE + u * 3, 3, (left + 4) * 8, (NODE_TOP + 3) * 8, 24);
+    sled_show(SPRITE(NODE_SLED + u * 2), 2, (left + 4) * 8, (NODE_TOP + 3) * 8, 0, 0);
     if (u == UPGRADE_WIDTH)
     {
         video_text(left + 2, NODE_TOP + 3, LEFT_ARROWHEAD, TEXT_COLOR, BOX_FILL);
@@ -158,14 +144,14 @@ static void panel_draw(void)
     video_text(NOW_COL, PANEL_TOP + 3, line, BOX_COLOR, BOX_FILL);
     if (upgrade == UPGRADE_WIDTH)
     {
-        paddle_at(NOW_PADDLE, PADDLE_PIECES_MAX, NOW_COL * 8, PREVIEW_ROW * 8, upgrades_width_at(level));
-        paddle_at(NEXT_PADDLE, PADDLE_PIECES_MAX, NEXT_COL * 8, PREVIEW_ROW * 8,
-                  max ? 0 : upgrades_width_at(level + 1));
+        sled_show(SPRITE(NOW_SLED), 1 + JETS_MAX, NOW_COL * 8, PREVIEW_ROW * 8, level, 1);
+        sled_show(SPRITE(NEXT_SLED), 1 + JETS_MAX, NEXT_COL * 8, PREVIEW_ROW * 8,
+                  max ? SLED_NONE : level + 1, 1);
     }
     else
     {
-        paddle_at(NOW_PADDLE, PADDLE_PIECES_MAX, 0, 0, 0);
-        paddle_at(NEXT_PADDLE, PADDLE_PIECES_MAX, 0, 0, 0);
+        sled_show(SPRITE(NOW_SLED), 1 + JETS_MAX, 0, 0, SLED_NONE, 0);
+        sled_show(SPRITE(NEXT_SLED), 1 + JETS_MAX, 0, 0, SLED_NONE, 0);
         video_text(NOW_COL, PREVIEW_ROW, chevrons + 5 - level, TEXT_COLOR, BOX_FILL);
         if (!max)
             video_text(NEXT_COL, PREVIEW_ROW, chevrons + 4 - level, TEXT_COLOR, BOX_FILL);

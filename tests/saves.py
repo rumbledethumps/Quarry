@@ -127,13 +127,14 @@ def main():
     game.wait('out of balls', 3000)
     game.menu_choose('UPGRADES')
     game.poke('nuggets', 20, 2)
+    left = 20 - game.ram('width_costs', 2)  # after the first width
     game.tap('enter')  # WIDTH, to BUY
     game.tap('enter')  # BUY
     game.wait('bought width 1', 10)
     game.tap('escape')
     game.until('game_state', 'STATE_PAUSE', 30)
     game.run(2)
-    check(read_save(folder)[:2] == (14, (1, 0)), 'pausing saves the upgrade bought')
+    check(read_save(folder)[:2] == (left, (1, 0)), 'pausing saves the upgrade bought')
     rows = game.screen(os.path.join(folder, 'shot.png'))
     box = [rows[y][x] for y in range(11 * 8 + 4, 21 * 8 - 4) for x in range(12 * 8 + 4, 28 * 8 - 4)]
     nugget = (0xd0, 0xd0, 0xd8)  # the light face of a white nugget, in palettes.bricks
@@ -167,10 +168,10 @@ def main():
     game.tap('space')
     game.until('game_state', 'STATE_PLAY', 120)
     game.run(2)
-    check(game.ram('nuggets', 2) == 14, 'Resume brings back the nuggets')
-    check(game.ram('upgrade_levels') == 1 and game.ram('paddle_width') == 32,
+    check(game.ram('nuggets', 2) == left, 'Resume brings back the nuggets')
+    check(game.ram('upgrade_levels') == 1 and game.ram('paddle_width') == game.ram('widths+1'),
           'and the upgrade, on the paddle')
-    print('ok: came back, and Resume brought back 14 nuggets and a wider paddle')
+    print(f'ok: came back, and Resume brought back {left} nuggets and a wider paddle')
 
     # New Game over a save asks first. No leaves the save, Yes starts over.
     game.tap('escape')
@@ -184,7 +185,7 @@ def main():
     check(game.shows('START OVER?'), 'it asks to start over')
     game.tap('space')  # NO, picked first
     game.until('game_state', 'STATE_TITLE', 10)
-    check(read_save(folder)[:2] == (14, (1, 0)), 'No leaves the save')
+    check(read_save(folder)[:2] == (left, (1, 0)), 'No leaves the save')
     game.tap('space')  # NEW GAME, picked after No
     game.until('game_state', 'STATE_CONFIRM', 10)
     game.tap('up')     # YES
@@ -192,7 +193,8 @@ def main():
     game.until('game_state', 'STATE_PLAY', 60)
     game.run(2)
     check(read_save(folder) == (0, (0, 0), 1), 'Yes replaces the save with a new game')
-    check(game.ram('nuggets', 2) == 0 and game.ram('paddle_width') == 24, 'and starts over')
+    check(game.ram('nuggets', 2) == 0 and game.ram('paddle_width') == game.ram('widths'),
+          'and starts over')
     print('ok: New Game asked first, and No kept the save')
     game.close()
 

@@ -264,7 +264,7 @@ typedef struct
 
 #define BRICKS_MAX 48
 #define BRICK_COLORS 1 /* white */
-#define PADDLE_PIECES_MAX 8
+#define JETS_MAX 3 /* under one sled */
 #define ENERGY_SEGMENTS 12
 #define BALL_ICONS_MAX 36
 #define NUGGETS_MAX 16 /* in flight at once */
@@ -282,15 +282,27 @@ typedef struct
 #define TILE_ROCKS 8
 #define TILES_COUNT (TILE_ROCK + TILE_ROCKS)
 
-/* Paddle pieces, in the order of art/paddle.png. */
-#define PADDLE_LEFT 0
-#define PADDLE_MIDDLE 1
-#define PADDLE_RIGHT 2
+/* The sleds, from art/sleds/, one for each width of TUNE_WIDTHS. A sled's
+   images are the sled level, 8 rows, then tilted 1 and 2 px in 8 to the
+   right as it falls, SLED_TILT_ROWS each, all its width wide. Each sled
+   has a slot of SLED_SLOT bytes, which CMakeLists.txt gives too. */
+#define SLEDS 11
+#define SLED_WIDTH_MAX 64
+#define SLED_TILT_ROWS 24
+#define SLED_SLOT (SLED_WIDTH_MAX * (8 + 2 * SLED_TILT_ROWS) / 2)
 
-/* Frames of the brick breaking, the flame and the smoke, in the order of
-   art/break.png, art/flame.png and art/smoke.png. */
+/* Frames of a jet, in the order of art/jet.png: the nozzle alone, then
+   with its short, medium and long flame, straight down, then the flames
+   swiveled to push the sled right. MODE5_HFLIP swivels them to push it
+   left. */
+#define JET_FRAMES 7
+#define JET_NOZZLE 0
+#define JET_FLAME 1
+#define JET_SWIVEL 3
+
+/* Frames of the brick breaking and the smoke, in the order of
+   art/break.png and art/smoke.png. */
 #define BREAK_FRAMES 2
-#define FLAME_FRAMES 3
 #define SMOKE_FRAMES 3
 
 /* Pieces of the energy bar, in the order of art/energy.png. */
@@ -304,6 +316,7 @@ typedef MODE2_TILE(4, 16) tile_t;
 typedef MODE5_CUSTOM_IMAGE(4, 24, 8) brick_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 24, 16) break_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 8, 8) piece_image_t;
+typedef MODE5_CUSTOM_IMAGE(4, 8, 12) jet_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 28, 4) energy_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 64, 64) logo_image_t; /* a third of art/logo.png */
 
@@ -312,16 +325,17 @@ typedef struct
 {
     uint16_t main[16];
     uint16_t bricks[BRICK_COLORS][16]; /* bricks and nuggets, a palette a color */
-    uint16_t fx[16];                   /* flames, smoke and the energy bar */
+    uint16_t fx[16];                   /* smoke and the energy bar */
     uint16_t logo[16];
+    uint16_t sled[16]; /* the sleds, their jets and flames */
 } palettes_t;
 
 /* Plane 1 sprites. */
 typedef struct
 {
     mode5_csprite_t ball;
-    mode5_csprite_t paddle[PADDLE_PIECES_MAX];
-    mode5_csprite_t flames[2];
+    mode5_csprite_t sled;
+    mode5_csprite_t jets[JETS_MAX];
     mode5_csprite_t smoke[2];
 } actors_t;
 
@@ -352,11 +366,11 @@ typedef struct
     break_image_t break_images[BREAK_FRAMES];
     piece_image_t nugget_image;
     piece_image_t ball_image;
-    piece_image_t paddle_images[3];
-    piece_image_t flame_images[FLAME_FRAMES];
+    jet_image_t jet_images[JET_FRAMES];
     piece_image_t smoke_images[SMOKE_FRAMES];
     energy_image_t energy_images[5];
     logo_image_t logo_images[3];
+    uint8_t sled_images[SLEDS][SLED_SLOT];
     uint8_t tile_map[TILE_MAP_ROWS][TILE_MAP_COLS]; /* an odd size, so last */
 } xram_layout_t;
 
@@ -371,11 +385,12 @@ typedef struct
 #define XRAM_PALETTE_BRICK(color) (XRAM_PALETTE_BRICKS + (color) * 16 * sizeof(uint16_t))
 #define XRAM_PALETTE_FX offsetof(xram_layout_t, palettes.fx)
 #define XRAM_PALETTE_LOGO offsetof(xram_layout_t, palettes.logo)
+#define XRAM_PALETTE_SLED offsetof(xram_layout_t, palettes.sled)
 #define XRAM_BRICKS offsetof(xram_layout_t, bricks)
 #define XRAM_ACTORS offsetof(xram_layout_t, actors)
 #define XRAM_BALL_SPRITE offsetof(xram_layout_t, actors.ball)
-#define XRAM_PADDLE_SPRITES offsetof(xram_layout_t, actors.paddle)
-#define XRAM_FLAME_SPRITES offsetof(xram_layout_t, actors.flames)
+#define XRAM_SLED_SPRITE offsetof(xram_layout_t, actors.sled)
+#define XRAM_JET_SPRITES offsetof(xram_layout_t, actors.jets)
 #define XRAM_SMOKE_SPRITES offsetof(xram_layout_t, actors.smoke)
 #define XRAM_HUD offsetof(xram_layout_t, hud)
 #define XRAM_ENERGY_SPRITES offsetof(xram_layout_t, hud.energy)
@@ -390,11 +405,11 @@ typedef struct
 #define XRAM_BREAK_IMAGES offsetof(xram_layout_t, break_images)
 #define XRAM_NUGGET_IMAGE offsetof(xram_layout_t, nugget_image)
 #define XRAM_BALL_IMAGE offsetof(xram_layout_t, ball_image)
-#define XRAM_PADDLE_IMAGES offsetof(xram_layout_t, paddle_images)
-#define XRAM_FLAME_IMAGES offsetof(xram_layout_t, flame_images)
+#define XRAM_JET_IMAGES offsetof(xram_layout_t, jet_images)
 #define XRAM_SMOKE_IMAGES offsetof(xram_layout_t, smoke_images)
 #define XRAM_ENERGY_IMAGES offsetof(xram_layout_t, energy_images)
 #define XRAM_LOGO_IMAGES offsetof(xram_layout_t, logo_images)
+#define XRAM_SLED_IMAGES offsetof(xram_layout_t, sled_images)
 
 MODE5_PALETTE_CHECK(palettes_t);
 

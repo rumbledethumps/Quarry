@@ -94,7 +94,23 @@ so it must be unmistakable:
 - The plate is thin, 3 rows: a bright top row, safety yellow, and a darker
   underside that bevels in at the ends. It has no hazard stripes.
 - Under it is a slim graphite mount, and under the mount a small bell
-  nozzle for each jet, with a slim flame no wider than the nozzle's mouth.
+  nozzle for each jet, with a slim flame no wider than the nozzle's mouth,
+  6 rows at its longest.
+
+The sled grows 4 px with each width upgrade, from 24 px to 64 px. It
+starts with one jet, gets a second at 36 px and a third at 52 px, from
+`TUNE_WIDTHS` and `TUNE_JETS` in `src/tuning.h`. The game is a power trip:
+the widest sled is easy to play, even on the widest playfield.
+
+Each width has a picture of its own in `art/sleds/`, so each sled can
+have details of its own, such as its scuffs, and a lamp between each two
+jets. `art/sled.py` draws them all from the tuning. Run it after a change
+to the widths or the jets, then touch up any sled by hand. A picture holds
+the sled level, then tilted twice for its fall.
+
+The jets are sprites of their own, a nozzle and its flame, in
+`art/jet.png`, so they can swivel. A jet leans a little to push the sled
+the way it moves, and `MODE5_HFLIP` mirrors the lean for the other way.
 
 A ball that clips the side of the machinery may count for something
 later, such as a rare bonus. The art leaves room for it.
@@ -133,15 +149,15 @@ darkest first. Each class of art gets a row of its own:
 | texture | the texture behind the playfield, 4 colors |
 | curtain | the curtains, one row for each stage that differs |
 | logo | the title logo |
-| sled | the sled, and the machinery on the upgrade screen |
-| flames | the thruster flames |
+| sled | the sleds, their jets and flames, and the machinery on the upgrade screen |
 | hud | the ball, the ball sprite of the count, the smoke, and the energy gauge |
 | one per ore | the brick, its break frames, its nugget, and its nugget sprite |
 
-With 4 curtains, that is 11 rows, which leaves 21 for ores.
+A jet's nozzle and its flame are one sprite, so the flames share the sled
+row. With 4 curtains, that is 10 rows, which leaves 22 for ores.
 
-Today `palettes_t` has `main`, `bricks[BRICK_COLORS]`, `fx`, and `logo`.
-It changes to the rows above as the new art comes in.
+Today `palettes_t` has `main`, `bricks[BRICK_COLORS]`, `fx`, `logo`, and
+`sled`. It changes to the rows above as the new art comes in.
 
 ## Sizes
 
@@ -153,8 +169,8 @@ It changes to the rows above as the new art comes in.
 | ball, ball sprite of the count | 8x8 |
 | digit | 8x8 tile, a 7x8 digit with its outline |
 | texture tiles | small tiles at 2 bits a pixel |
-| sled | to be redesigned |
-| flames | 3 frames, 8x8 |
+| sled | 24 to 64 wide, 8 tall, then its two tilts, 24 tall each |
+| jet | 7 frames, 8x12: the nozzle alone, 3 flames, 3 swiveled flames |
 | smoke | 3 frames, 8x8 |
 | energy gauge | a narrow vertical bar, width to decide |
 | logo | 3 pieces, 64x64, as one 192x64 image |

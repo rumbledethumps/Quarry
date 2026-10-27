@@ -64,7 +64,7 @@ def main():
             break
         state = game.ram('ball_state')
         x, y = game.sprite('XRAM_BALL_SPRITE')
-        px = game.sprite('XRAM_PADDLE_SPRITES')[0]
+        px = game.sprite('XRAM_SLED_SPRITE')[0]
         check(play_left <= px <= play_right - paddle_w, f'paddle x {px} left the playfield')
         want = None
         if state == sym['BALL_DOCKED']:
@@ -128,7 +128,7 @@ def main():
     images = set()
     for _ in range(30):
         game.run()
-        images.add(game.sprites('XRAM_FLAME_SPRITES', 1)[0][2])
+        images.add(game.sprites('XRAM_JET_SPRITES', 1)[0][2])
     check(len(images) > 1, 'the flames still burn after the stage ends')
     game.run(90)
     check(game.shown('XRAM_BRICKS', bricks) == left, 'a sprite for each brick left')

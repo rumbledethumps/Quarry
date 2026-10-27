@@ -44,7 +44,7 @@ def main():
     game.cmd('expect-not "launch"')
 
     game.run(2)
-    paddle = game.sym['XRAM_PADDLE_SPRITES']
+    paddle = game.sym['XRAM_SLED_SPRITE']
     start_x = (game.ram('play_left', 2) + game.ram('play_right', 2) - game.ram('paddle_width')) // 2
     check(game.sprite(paddle) == (start_x, game.sym['TUNE_PADDLE_Y']),
           f'the paddle starts centered, at {start_x}')
