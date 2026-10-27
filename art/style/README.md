@@ -1,33 +1,69 @@
 # Quarry Art Style
 
-Quarry has two looks. The levels are **stone**: a rough, organic quarry
-wall, and bricks of rock with their ore showing through. The player's
+Quarry has two looks. The levels are **stone**: rough, organic quarry
+walls, and bricks of rock with their ore showing through. The player's
 equipment is **industrial**: heavy modern mining machinery, used every day
 and well looked after. Every new piece of art belongs to one of the two.
 
 The images in `ref/` set the look. Pass them as references when making new
 art, and compare new art against them.
 
+## The Screen
+
+The playfield starts narrower than it is today and widens with each
+stage, until it fills almost the whole screen. Stone walls on both sides,
+the curtains, close it in, and they open a little more each stage.
+
+The counts float over the curtains, with no panels behind them:
+
+- **Upper left:** a count for each kind of nugget, with a sprite of the
+  nugget beside it.
+- **Lower left:** the count of balls, with a sprite of the ball beside it,
+  in the same presentation as the nuggets.
+- **Right:** the energy gauge, a narrow vertical bar that rises and
+  falls. It is narrower than the counts on the left.
+
+The digits have a black outline, so they read over any stone. One way to
+draw them is a 7x8 font in mode 2 tiles: each 8x8 tile has room for a
+narrow digit and its outline, and narrow digits keep the counts out of the
+playfield.
+
+Each scene, such as play, the upgrade screen, and the title, can have an
+XRAM layout of its own. The keyboard, the gamepads, and the PSG stay put,
+and the scenes share the rest of XRAM as a union. A scene change loads the
+scene's art from the ROM's assets in a fraction of a second, even all
+64 KB, so each scene starts from a blank canvas, and its art has the whole
+of XRAM to itself.
+
 ## Stone: the levels
 
-The backdrop, the walls, the bricks, the break frames, the nuggets, and
-the logo.
+The curtains, the bricks, the break frames, the nuggets, and the logo.
 
 - Rough, matte stone with chipped, irregular edges. Bricks are blocks of
   rock, not cut gems: no facets, no glassy shine.
 - An ore shows as flecks, veins, or crystals in the rock. Each ore has its
   own colors, and its nugget is a small rough lump of the same ore.
-- The backdrop is a quarry wall of ledges, boulders, and cracks, with no
-  repeating tiles. It is dark and muted, so the ball and the bricks stand
-  out in front of it.
+- The curtains are quarry walls of ledges, boulders, and cracks, with no
+  repeating tiles. Their inner edges are the walls of the playfield.
 - The logo, `art/logo.png`, is the model for how stone is drawn: warm
   sandstone, fine cracks, and a dark navy outline and shadow.
 
 References: `ref/stone-wall.png`, `ref/ore-blocks.png`, `ref/logo-crop.png`.
 
+### Behind the Playfield
+
+Behind the bricks is the faintest texture, so the playfield is not plain
+black. It is a mode 2 tile map at 2 bits a pixel: four dark colors close
+in value, laid out as random marching squares. A script makes it, not
+Retro Diffusion, and it takes little memory: a few small tiles, and a map
+the size of the screen.
+
+The map wraps, and each stage starts it at a new random X and Y, so every
+stage looks different with one map.
+
 ## Industrial: the player's equipment
 
-The paddle, its flames and smoke, the ball, the energy bar, and the
+The sled, its flames and smoke, the ball, the energy gauge, and the
 upgrade screen.
 
 - Heavy modern machinery, slightly futuristic: clean panel lines, bolted
@@ -40,16 +76,39 @@ upgrade screen.
   job. It looks heavy, solid, and dependable.
 - The ball is part of the kit: forged steel.
 
-References: `ref/sled-kit.png` for the paddle and its parts,
-`ref/ui-kit.png` for the energy bar and the upgrade screen.
+References: `ref/sled-kit.png` for the sled and its parts,
+`ref/ui-kit.png` for the energy gauge and the upgrade screen.
+
+### The Sled
+
+The sled is the paddle. Its top is the surface that the ball bounces off,
+so it must be unmistakable:
+
+- The top is one flat, crisp plate, the full width of the sled, with a
+  bright top edge.
+- The plate reaches a couple of pixels past the machinery that hangs
+  under it, on both sides. A ball that misses the plate clearly misses,
+  even when it passes close to the machinery.
+- Nothing rises above the plate, so its top row of pixels is where the
+  ball bounces.
+
+A ball that clips the side of the machinery may count for something
+later, such as a rare bonus. The art leaves room for it.
+
+### The Energy Gauge
+
+The energy gauge is a narrow vertical bar on the right side of the
+screen. It reads like a thermometer with no bulb, built as an industrial
+indicator: a tube in a steel frame, with the level rising and falling in
+it. It leaves room on its left and right for effects at the level line.
 
 ## Rules for both
 
 - The light comes from the upper left.
-- Sprites have a dark outline, near-black navy, like the logo and the
-  text panels.
-- The pieces in play, the bricks, the ball, and the paddle, have the
-  strongest contrast. The backdrop stays in the darker half of the values.
+- Sprites have a dark outline, near-black navy, like the logo.
+- The pieces in play, the bricks, the ball, and the sled, have the
+  strongest contrast. The curtains stay in the darker half of the values,
+  and the texture behind the playfield is darker still.
 - Pixels are on the native grid of the canvas, 320x240. No art is scaled
   in the game.
 
@@ -65,37 +124,20 @@ darkest first. Each class of art gets a row of its own:
 
 | Row | Used by |
 | --- | --- |
-| main | the text, the panels, and the menus |
-| backdrop | the backdrop of a stage, one row for each stage that differs |
+| main | the text and the menus |
+| digits | the outlined digits of the counts |
+| texture | the texture behind the playfield, 4 colors |
+| curtain | the curtains, one row for each stage that differs |
 | logo | the title logo |
-| sled | the paddle, and the machinery on the upgrade screen |
+| sled | the sled, and the machinery on the upgrade screen |
 | flames | the thruster flames |
-| hud | the ball, the ball icons, the smoke, and the energy bar |
-| one per ore | the brick, its break frames, its nugget, and its nugget icon |
+| hud | the ball, the ball sprite of the count, the smoke, and the energy gauge |
+| one per ore | the brick, its break frames, its nugget, and its nugget sprite |
 
-With 4 backdrops, that is 9 rows, which leaves 23 for ores.
+With 4 curtains, that is 11 rows, which leaves 21 for ores.
 
 Today `palettes_t` has `main`, `bricks[BRICK_COLORS]`, `fx`, and `logo`.
 It changes to the rows above as the new art comes in.
-
-## The Backdrop
-
-The tiled background goes away. Each stage gets one painted backdrop,
-an organic quarry wall like `ref/stone-wall.png`, with the walls of the
-playfield painted into it.
-
-The proposed way to draw it, which is still a code change to make:
-
-- A mode 3 bitmap, 320x240 at 4 bits a pixel, which is 38,400 bytes of
-  XRAM and one palette row.
-- It replaces the tile layer, the 17 tiles and the tile map.
-- Each stage's backdrop is a ROM asset. The game loads it into XRAM when
-  the stage starts, so only one is in XRAM at a time. With it, about
-  50 KB of the 64 KB of XRAM is in use.
-
-Retro Diffusion's RD Pro styles make images up to 256 pixels wide. A
-320-wide backdrop is a 256x240 image with 32 pixels added to each side by
-outpainting, or with plain stone on the sides where the panels cover it.
 
 ## Sizes
 
@@ -103,21 +145,24 @@ outpainting, or with plain stone on the sides where the panels cover it.
 | --- | --- |
 | brick | 24x8 |
 | break frames | 2 frames, 24x16 |
-| nugget, nugget icon | 8x8 |
-| ball, ball icon | 8x8 |
-| paddle pieces | 8x8 each: left end, middle, right end |
+| nugget, nugget sprite of a count | 8x8 |
+| ball, ball sprite of the count | 8x8 |
+| digit | 8x8 tile, a 7x8 digit with its outline |
+| texture tiles | small tiles at 2 bits a pixel |
+| sled | to be redesigned |
 | flames | 3 frames, 8x8 |
 | smoke | 3 frames, 8x8 |
-| energy bar | 5 pieces, 28x4 |
+| energy gauge | a narrow vertical bar, width to decide |
 | logo | 3 pieces, 64x64, as one 192x64 image |
-| backdrop | 320x240 |
+| curtains | to decide with the playfield widths of the stages |
 
-The sizes come from `src/xram.h`. RD Pro styles start at 12x12, so art 8
-pixels tall is made as a larger study, then redrawn by hand at its size.
+The current sizes come from `src/xram.h`. RD Pro styles start at 12x12, so
+art 8 pixels tall is made as a larger study, then redrawn by hand at its
+size.
 
 ## Making Art with Retro Diffusion
 
-1. Choose the style: `rd_pro__default` for one piece or a backdrop,
+1. Choose the style: `rd_pro__default` for one piece or a curtain,
    `rd_pro__spritesheet` for a family of small pieces in one image, and
    `rd_pro__ui_panel` for the parts of the upgrade screen. Each image
    costs $0.18, and the cost estimate is free.
@@ -141,7 +186,7 @@ pixels tall is made as a larger study, then redrawn by hand at its size.
    `art/palettes.png`. The second puts a piece on a row that is already
    there.
 6. Build the game, and judge the art in the emulator, in front of the
-   backdrop, not as a loose image.
+   curtains and the texture, not as a loose image.
 
 The blocks of the looks:
 
@@ -149,22 +194,25 @@ The blocks of the looks:
   light from the upper left"
 - **Ore:** the stone block, then the ore, such as "granite with
   copper-green malachite veins", then "matte stone, not polished gems"
-- **Backdrop:** "the whole wall dark and muted like a backdrop behind
+- **Curtain:** "the whole wall dark and muted like a backdrop behind
   gameplay"
 - **Industrial:** "heavy modern mining machinery, safety-yellow paint over
   graphite steel, black and yellow hazard chevrons, bolted plates, scuffed
   edges and worn paint but clean and well maintained, slightly futuristic,
   light from the upper left"
+- **Sled:** the industrial block, then "a single flat, crisp top plate
+  that overhangs the machinery beneath it by a couple of pixels on each
+  side"
 
 ## The Reference Images
 
 | File | What to take from it |
 | --- | --- |
 | `ref/logo-crop.png` | The Q of the logo: how stone is drawn. The reference for every stone prompt. |
-| `ref/stone-wall.png` | The organic shapes of the wall, and the warm sandstone turning to cool granite. It is too bright to sit behind play as it is. |
+| `ref/stone-wall.png` | The organic shapes of the curtains, and the warm sandstone turning to cool granite. It is too bright as it is. |
 | `ref/ore-blocks.png` | Matte ore rock and the pairing of each brick with its nugget. Eight candidate ores: limestone, gold-flecked sandstone, malachite in granite, iron ore, coal, silver in slate, rose quartz, and amber in basalt. Stage 1's white is the limestone. |
-| `ref/sled-kit.png` | The colors, the chevrons, the bolts, and the end caps of the paddle. Keep the scuffs and leave out the rust specks. |
-| `ref/ui-kit.png` | Graphite panels with yellow trim, gauges, and meters, for the energy bar and the upgrade screen. |
+| `ref/sled-kit.png` | The colors, the chevrons, the bolts, and the thrusters. Keep the scuffs and leave out the rust specks. Its tops are not flat: the new sled has the flat, overhanging top plate of [The Sled](#the-sled). |
+| `ref/ui-kit.png` | Graphite panels with yellow trim, gauges, and meters. Its vertical meter is a start for the energy gauge. |
 
 The prompts that made them, all RD Pro, with no seed returned:
 
