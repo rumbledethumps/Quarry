@@ -30,7 +30,9 @@ Shift and the arrow keys are for testing, and holding them repeats. On
 the title screen, Shift and Left or Right switch the curtains. A Debug
 build has cheats too: in play, Shift and Right adds a ball, Shift and Left
 takes one away, and Shift and Up or Down adds or takes away a segment of
-energy.
+energy. On the upgrade screen, Shift and Right or Left raises or lowers the
+upgrade picked, for nothing, or, on the stages, opens the next stage or
+locks the last one again.
 
 The paddle floats on thrusters. The energy bar drains from the first
 launch, and when it is empty the paddle falls and the stage ends. Each

@@ -508,6 +508,17 @@ static void lock_move(void)
         sprite_move(LOCK_SPRITE(i), half_x[i] / 16 + shake, half_y[i] / 16);
 }
 
+/* Ends an unlock at once, the stage shown open. */
+static void unlock_finish(void)
+{
+    sprite_hide(LOCK_SPRITE(0));
+    sprite_hide(LOCK_SPRITE(1));
+    stages_shown = unlocking;
+    unlocking = 0;
+    lock_dirty = 0;
+    stages_draw();
+}
+
 /* A step of the unlock: the shake rattles, the break snaps and shows the
    button lit, the halves fall, and a chime plays. At the end the screen
    has shown the stage open, and the game saves. */
@@ -535,14 +546,61 @@ static void unlock_step(void)
         }
     if (t == UNLOCK_WAIT + UNLOCK_SHAKE + UNLOCK_FALL)
     {
-        sprite_hide(LOCK_SPRITE(0));
-        sprite_hide(LOCK_SPRITE(1));
-        unlocking = 0;
-        lock_dirty = 0;
+        unlock_finish();
         save_write();
         DEBUG_LOG("unlocked %u\n", stages_shown);
     }
 }
+
+#ifndef NDEBUG
+/* The cheats of a debug build, with Shift and right or left, which repeat
+   while held. On the rail, they raise or lower the upgrade picked, for
+   nothing. On the stages, they open the next stage, with its unlock, or
+   lock the last one open again. A cheat cuts short an unlock under way. */
+static void cheats_step(void)
+{
+    uint8_t up = shift_pressed & SHIFT_RIGHT, i;
+
+    if (!(shift_pressed & (SHIFT_RIGHT | SHIFT_LEFT)) || asking)
+        return;
+    if (unlocking)
+        unlock_finish();
+    if (cursor_on == ON_RAIL)
+    {
+        uint8_t u = panel_picked;
+        if (u >= UPGRADES || (up ? upgrade_levels[u] >= upgrades_max(u) : !upgrade_levels[u]))
+            return;
+        upgrade_levels[u] += up ? 1 : -1;
+        for (i = 0; i < UPGRADES; i++)
+            panel_draw(i);
+        pictures_dirty = 1;
+        DEBUG_LOG("cheat: %s %u\n", u == UPGRADE_WIDTH ? "width" : "speed", upgrade_levels[u]);
+        return;
+    }
+    if (up && stages_cleared < STAGES)
+    {
+        stages_cleared++;
+        if (save_stages_open() > stages_shown)
+        {
+            stage_picked = unlocking = save_stages_open();
+            lock_start();
+        }
+    }
+    else if (!up && stages_cleared)
+    {
+        stages_cleared--;
+        if (stage_picked > save_stages_open())
+            stage_picked = save_stages_open();
+        if (stages_shown > save_stages_open())
+            stages_shown = save_stages_open();
+    }
+    else
+        return;
+    stages_draw();
+    cursor_aim();
+    DEBUG_LOG("cheat: %u stages cleared\n", stages_cleared);
+}
+#endif
 
 static void sprites_hide(void)
 {
@@ -639,6 +697,9 @@ uint8_t shop_step(void)
     uint8_t moved = 0, i;
 
     steps++;
+#ifndef NDEBUG
+    cheats_step();
+#endif
     if (unlocking)
     {
         unlock_step();

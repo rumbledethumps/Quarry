@@ -130,6 +130,26 @@ def main():
     check(game.ram('panel_picked') == 0 and game.ram('panel_scroll', 2) == 0, 'and left at the first')
     print('ok: the panels slide')
 
+    # The cheats of a debug build: on the rail, Shift and right or left raise
+    # or lower the upgrade picked, for nothing, and repeat while held.
+    game.cmd('press lshift')
+    game.tap('right')
+    check(game.ram('upgrade_levels') == 1 and game.ram('nuggets', 2) == 0,
+          'Shift and right raises the width, for nothing')
+    game.tap('left')
+    check(game.ram('upgrade_levels') == 0, 'Shift and left lowers it')
+    game.cmd('press right')
+    game.run(sym['SHIFT_DELAY'] + 2 * sym['SHIFT_REPEAT'] + 2)
+    game.cmd('release right')
+    check(game.ram('upgrade_levels') >= 3, 'held, it repeats')
+    game.cmd('press left')
+    game.run(sym['SHIFT_DELAY'] + sym['SHIFT_REPEAT'] * sym['UPGRADE_LEVELS_MAX'])
+    game.cmd('release left')
+    game.cmd('release lshift')
+    game.run(2)
+    check(game.ram('upgrade_levels') == 0, 'and back down to none')
+    print('ok: the upgrade cheats')
+
     # With nuggets: every level of width, each at its cost, then MAX. The
     # count shows what is left.
     have = 200
@@ -158,6 +178,24 @@ def main():
     check(game.ram('cursor_on') == sym['ON_STAGES'], 'down moves the cursor to the stages')
     game.tap('right')
     check(game.ram('stage_picked') == 1, 'stage 2 is locked until stage 1 is cleared')
+
+    # On the stages, Shift and right opens the next stage, with its unlock,
+    # and another cuts that short and opens the one after. Shift and left
+    # locks them again.
+    game.cmd('press lshift')
+    game.tap('right')
+    check(game.ram('stages_cleared') == 1 and game.ram('unlocking') == 2,
+          'Shift and right opens stage 2, to unlock')
+    game.tap('right')
+    check(game.ram('stages_shown') == 2 and game.ram('unlocking') == 3,
+          'another cuts the unlock short, and opens stage 3')
+    game.tap('left')
+    game.tap('left')
+    game.cmd('release lshift')
+    game.run(2)
+    check(game.ram('stages_cleared') == 0 and game.ram('unlocking') == 0 and
+          game.ram('stage_picked') == 1 and game.ram('stages_shown') == 1, 'Shift and left locks them again')
+    print('ok: the stage cheats')
 
     # Esc asks to go back to the title, and Esc again doesn't.
     game.tap('escape')
