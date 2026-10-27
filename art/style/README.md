@@ -58,10 +58,12 @@ The curtains, the bricks, the break frames, the nuggets, and the logo.
   own colors, and its nugget is a small rough lump of the same ore.
 - The curtains are quarry walls of ledges, boulders, and cracks, with no
   repeating tiles. Their inner edges are the walls of the playfield.
-- The logo, `art/logo.png`, is the model for how stone is drawn: warm
-  sandstone, fine cracks, and a dark navy outline and shadow.
+- The curtains are the model for how stone is drawn: warm weathered
+  sandstone blending into cool blue-grey granite, angular chips, deep
+  cracks, and a dark outline. The logo, `art/logo.png`, is drawn the same
+  way, so the title matches the walls around it.
 
-References: `ref/stone-wall.png`, `ref/ore-blocks.png`, `ref/logo-crop.png`.
+References: `ref/rock-crop.png`, `ref/logo-stone.png`, `ref/stone-wall.png`, `ref/ore-blocks.png`.
 
 ### Behind the Playfield
 
@@ -93,7 +95,7 @@ A curtain set is one Retro Diffusion image, split into the two curtains.
 There can be many, and a stage picks one at random. To make one:
 
 1. Generate a 256x240 image with `rd_pro__default`, with
-   `ref/logo-crop.png` as a reference, and this prompt: "Looking straight
+   `ref/rock-crop.png` as a reference, and this prompt: "Looking straight
    at two rough quarry rock walls that fill the left and right halves of
    the image and frame a narrow dark vertical shaft down the middle:
    organic fractured stone with stacked broken ledges, angular boulders
@@ -260,7 +262,7 @@ size.
    style draws the pixels, so the prompt never says "pixel art". For a
    single piece, give a plain background, such as "on a plain black
    background", and remove it with `remove_bg`.
-3. Pass a reference: `ref/logo-crop.png` for stone, or a crop of up to
+3. Pass a reference: `ref/rock-crop.png` for stone, or a crop of up to
    64x64 from `ref/sled-kit.png` for industrial. Keep references small
    RGB PNGs. The API refused the indexed `art/logo.png`.
 4. Reduce the colors to 15 with Retro Diffusion's `color_reducer`, which
@@ -298,7 +300,8 @@ The blocks of the looks:
 
 | File | What to take from it |
 | --- | --- |
-| `ref/logo-crop.png` | The Q of the logo: how stone is drawn. The reference for every stone prompt. |
+| `ref/rock-crop.png` | 64x64 of the rock of the first curtain set: how stone is drawn. The reference for every stone prompt. |
+| `ref/logo-stone.png` | The logo as Retro Diffusion made it, before its background went clear and its colors were cut to 15: `rd_pro__typography`, 192x64, with `rock-crop.png` as a reference: "\"QUARRY\" written in big chunky bold letters carved from rough fractured quarry rock like the reference: warm weathered sandstone blending into cool blue-grey granite, angular chips and deep cracks across each letter, a dark outline and a dark shadow under the letters, light from the upper left, on a plain black background". It came back on white, which goes clear. |
 | `ref/stone-wall.png` | The organic shapes of the curtains, and the warm sandstone turning to cool granite. It is too bright as it is. |
 | `ref/ore-blocks.png` | Matte ore rock and the pairing of each brick with its nugget. Eight candidate ores: limestone, gold-flecked sandstone, malachite in granite, iron ore, coal, silver in slate, rose quartz, and amber in basalt. Stage 1's white is the limestone. |
 | `ref/sled-kit.png` | The colors, the chevrons, the bolts, and the thrusters. Keep the scuffs and leave out the rust specks. Its tops are not flat: the new sled has the flat, overhanging top plate of [The Sled](#the-sled). |
@@ -306,14 +309,14 @@ The blocks of the looks:
 
 The prompts that made them, all RD Pro, with no seed returned:
 
-- `stone-wall.png`, `rd_pro__default`, 256x240, with `logo-crop.png` as a
+- `stone-wall.png`, `rd_pro__default`, 256x240, with the old logo's Q as a
   reference: "Looking straight at the inner wall of a deep open-pit
   quarry: an organic face of rough, fractured stone that fills the whole
   image, stacked broken ledges, angular boulders and deep vertical cracks,
   warm weathered sandstone blending into cool blue-grey granite, a few
   faint dull ore streaks, soft light from the upper left, the whole wall
   dark and muted like a backdrop behind gameplay"
-- `ore-blocks.png`, `rd_pro__spritesheet`, 256x256, with `logo-crop.png`
+- `ore-blocks.png`, `rd_pro__spritesheet`, 256x256, with the old logo's Q
   as a reference: "Eight rough rectangular blocks of quarried rock, each
   about three times as wide as it is tall, chipped stone edges and a dark
   outline, each with a small matching rough nugget of its ore beside it:

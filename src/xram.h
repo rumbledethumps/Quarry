@@ -471,6 +471,7 @@ typedef struct
     cap_image_t cap_image;
     brace_image_t brace_image;
     machine_image_t machine_image;
+    piece_image_t copyright_image;
     union
     {
         menu_art_t menu;
@@ -529,6 +530,7 @@ typedef struct
 #define XRAM_CAP_IMAGE offsetof(xram_layout_t, cap_image)
 #define XRAM_BRACE_IMAGE offsetof(xram_layout_t, brace_image)
 #define XRAM_MACHINE_IMAGE offsetof(xram_layout_t, machine_image)
+#define XRAM_COPYRIGHT_IMAGE offsetof(xram_layout_t, copyright_image)
 #define XRAM_ART offsetof(xram_layout_t, art)
 #define XRAM_TILES offsetof(xram_layout_t, art.menu.tiles)
 #define XRAM_SLED_IMAGES offsetof(xram_layout_t, art.menu.sled_images)

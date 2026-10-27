@@ -174,8 +174,8 @@ int main(void)
     input_init();
     sfx_init();
     save_load();
-    title_show();
     video_start();
+    title_show();
 
     for (;;)
     {

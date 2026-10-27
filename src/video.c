@@ -42,15 +42,15 @@ void video_init(void)
 }
 
 /* Planes, back to front:
-   0: the rock tiles of the title and the upgrade screens, or a stage's
-      texture, with the scenery and the bricks over it.
+   0: the rock tiles of the upgrade screen, or the texture of the title and
+      a stage, which each screen programs itself, with the scenery and the
+      bricks over it.
    1: the paddle, its flames and smoke, and the ball.
    2: menu text, with the gauge, the counts and the upgrade screen's
       pictures over it. */
 void video_start(void)
 {
     xreg_vga_canvas(CANVAS_320X240);
-    xreg_vga_mode2(MODE2_4BPP | MODE2_16X16, XRAM_TILE_CONFIG, 0);
     xreg_vga_mode5(MODE5_CUSTOM, XRAM_SCENERY,
                    sizeof(scenery_t) / sizeof(mode5_csprite_t) + BRICKS_MAX, 0);
     xreg_vga_mode5(MODE5_CUSTOM, XRAM_ACTORS, sizeof(actors_t) / sizeof(mode5_csprite_t), 1);

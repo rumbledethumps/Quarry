@@ -21,7 +21,9 @@
    the question to start over, which takes the menu's place, clears it. */
 #define PROGRESS_TOP 21
 #define CREDIT_ROW 28
-static const char credit[] = "(c)2026 Rumbledethumps";
+#define CREDIT_COLOR BOX_COLOR
+#define COPYRIGHT_SPRITE LOGO_SPRITE(3)
+static const char credit[] = "2026 Rumbledethumps"; /* after the copyright sign */
 
 /* How far the save has come: the stages cleared and the upgrade levels
    bought, out of all of them. */
@@ -65,5 +67,8 @@ void title_open(const menu_t *menu)
         sprite_move(LOGO_SPRITE(i), LOGO_X + i * 64, LOGO_Y);
     }
     progress_draw(menu);
-    video_text((TEXT_COLS - (sizeof credit - 1)) / 2, CREDIT_ROW, credit, DIM_COLOR, CLEAR);
+    i = (TEXT_COLS - sizeof credit) / 2; /* the sign, then the credit */
+    sprite_set(COPYRIGHT_SPRITE, XRAM_COPYRIGHT_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(8, 8));
+    sprite_move(COPYRIGHT_SPRITE, i * 8, CREDIT_ROW * 8);
+    video_text(i + 1, CREDIT_ROW, credit, CREDIT_COLOR, CLEAR);
 }
