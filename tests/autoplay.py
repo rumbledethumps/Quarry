@@ -119,17 +119,20 @@ def main():
                     if game.shows(m)), None)
     print(f'stage over after {step} steps: {message!r}, {left} bricks left, '
           f'{launches} launches, {hits} paddle hits, energy {game.ram("energy", 2)}')
-    if left:
+    if message == 'OUT OF ENERGY':
+        check(left and game.ram('energy', 2) == 0, 'the stage ends when the energy runs out')
+    elif left:
         check(message == 'OUT OF BALLS', 'out of balls is shown')
         check(launches == balls, 'the stage ends when the last ball is lost')
     else:
         check(message == 'STAGE CLEAR', 'stage clear is shown')
     check(game.shows('UPGRADES') and game.shows('PLAY'), 'the end-of-stage menu is shown')
-    images = set()
-    for _ in range(30):
-        game.run()
-        images.add(game.sprites('XRAM_JET_SPRITES', 1)[0][2])
-    check(len(images) > 1, 'the flames still burn after the stage ends')
+    if message != 'OUT OF ENERGY':
+        images = set()
+        for _ in range(30):
+            game.run()
+            images.add(game.sprites('XRAM_JET_SPRITES', 1)[0][2])
+        check(len(images) > 1, 'the flames still burn after the stage ends')
     game.run(90)
     check(game.shown('XRAM_BRICKS', bricks) == left, 'a sprite for each brick left')
     counted = game.ram('nuggets', 2)

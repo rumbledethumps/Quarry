@@ -206,11 +206,36 @@ static void ball_step(void)
         ball_y = old;
 }
 
+#ifndef NDEBUG
+/* The cheats of a debug build: Shift and right or left adds a ball or takes
+   one away, and Shift and up or down adds a segment of energy or takes one
+   away. A ball on the paddle keeps the one it is. */
+static void cheats_step(void)
+{
+    if ((cheat_pressed & CHEAT_BALL_MORE) && balls < BALL_ICONS_MAX)
+        balls++;
+    if ((cheat_pressed & CHEAT_BALL_LESS) && balls > (ball_state == BALL_DOCKED))
+        balls--;
+    if (cheat_pressed & (CHEAT_BALL_MORE | CHEAT_BALL_LESS))
+    {
+        icons_draw();
+        DEBUG_LOG("cheat: %u balls\n", balls);
+    }
+    if (cheat_pressed & CHEAT_ENERGY_MORE)
+        energy_cheat(1);
+    if (cheat_pressed & CHEAT_ENERGY_LESS)
+        energy_cheat(-1);
+}
+#endif
+
 /* When the energy runs out, the paddle sputters and falls, and the stage
    ends when it is gone. A ball in flight plays on until then, but a lost
    one is not replaced. */
 uint8_t play_step(void)
 {
+#ifndef NDEBUG
+    cheats_step();
+#endif
     energy_step();
     if (!energy && paddle_state == PADDLE_HOVER)
         paddle_give_up();

@@ -24,4 +24,7 @@
 #define HID_KEY_KEYPAD_8 0x60
 #define HID_KEY_KEYPAD_0 0x62
 
+#define HID_KEY_SHIFT_LEFT 0xE1
+#define HID_KEY_SHIFT_RIGHT 0xE5
+
 #endif

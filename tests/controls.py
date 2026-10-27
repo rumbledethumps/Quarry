@@ -121,6 +121,26 @@ def main():
     game.wait('launch, 3 balls left', 5)
     game.cmd('release space')
     print('ok: a held launch launches once')
+
+    # The cheats of a debug build: Shift and right or left adds a ball or
+    # takes one away, and Shift and up or down a segment of energy. With
+    # Shift, the arrows neither move nor launch.
+    game.cmd(f'state load "{state}"')
+    x, balls, energy = game.sprite(paddle)[0], game.ram('balls'), game.ram('energy', 2)
+    game.cmd('press lshift')
+    game.tap('right')
+    check(game.ram('balls') == balls + 1, 'Shift and right adds a ball')
+    game.tap('left')
+    game.tap('left')
+    check(game.ram('balls') == balls - 1, 'Shift and left takes one away')
+    game.tap('down')
+    check(game.ram('energy', 2) == energy - game.sym['SEGMENT_ENERGY'], 'Shift and down takes energy')
+    game.tap('up')
+    check(game.ram('energy', 2) == energy, 'Shift and up gives it back')
+    check(game.sprite(paddle)[0] == x, 'with Shift, the arrows do not move the paddle')
+    game.cmd('expect-not "launch"')
+    game.cmd('release lshift')
+    print('ok: the cheats')
     game.close()
     print('PASS')
 

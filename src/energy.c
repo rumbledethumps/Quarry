@@ -43,6 +43,18 @@ static void bar_draw(void)
     low_shown = low;
 }
 
+#ifndef NDEBUG
+/* A cheat: adds segments of energy, up to full, or takes them away. */
+void energy_cheat(int8_t segments)
+{
+    int16_t more = energy + segments * (int16_t)SEGMENT_ENERGY;
+
+    energy = more < 0 ? 0 : more > TUNE_ENERGY ? TUNE_ENERGY : more;
+    bar_draw();
+    DEBUG_LOG("cheat: energy %u\n", energy);
+}
+#endif
+
 /* A full bar, with its top left at x, y. */
 void energy_start(int16_t x, int16_t y)
 {

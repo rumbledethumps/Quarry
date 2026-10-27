@@ -22,6 +22,10 @@ publish: quarry.zip
 | Choose | Space, Enter, keypad Enter | A, B, X or Y |
 | Pause | Esc | Start |
 
+A Debug build has cheats for testing. Shift and Right adds a ball, Shift
+and Left takes one away, and Shift and Up or Down adds or takes away a
+segment of energy. Holding them repeats.
+
 The paddle floats on thrusters. The energy bar drains from the first
 launch, and when it is empty the paddle falls and the stage ends. Each
 brick you break turns into a nugget that flies to the count in the left
@@ -71,8 +75,8 @@ ctest --test-dir build/llvm-mos/debug -R energy --output-on-failure
 - `upgrades` works the end-of-stage menu and buys upgrades.
 - `saves` works the title screen and the pause menu, and reads the save.
 - `sound` sets off every sound effect and reads the PSG's channels.
-- `autoplay` plays stage 1 to the end, clearing it, and `autoplay-miss`
-  loses every ball.
+- `autoplay` plays stage 1 until it ends, and `autoplay-miss` loses every
+  ball.
 
 The tests other than the two autoplay ones wait for the events that a
 Debug ROM logs, so a Release build has only the autoplay tests:

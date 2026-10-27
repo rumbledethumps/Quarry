@@ -4,6 +4,43 @@
 
 uint8_t input_held;
 uint8_t input_pressed;
+uint8_t cheat_pressed;
+
+/* A held cheat repeats after CHEAT_DELAY steps, then every CHEAT_REPEAT. */
+#define CHEAT_DELAY 20
+#define CHEAT_REPEAT 6
+
+#ifndef NDEBUG
+static uint8_t cheat_held;
+static uint8_t cheat_steps;
+
+static void cheats_read(const uint8_t *keys)
+{
+    uint8_t held = 0;
+
+    if (KEYBOARD_PRESSED(keys, HID_KEY_ARROW_RIGHT))
+        held |= CHEAT_BALL_MORE;
+    if (KEYBOARD_PRESSED(keys, HID_KEY_ARROW_LEFT))
+        held |= CHEAT_BALL_LESS;
+    if (KEYBOARD_PRESSED(keys, HID_KEY_ARROW_UP))
+        held |= CHEAT_ENERGY_MORE;
+    if (KEYBOARD_PRESSED(keys, HID_KEY_ARROW_DOWN))
+        held |= CHEAT_ENERGY_LESS;
+    if (held != cheat_held)
+    {
+        cheat_pressed = held & ~cheat_held;
+        cheat_steps = 0;
+    }
+    else if (held && ++cheat_steps >= CHEAT_DELAY)
+    {
+        cheat_pressed = held;
+        cheat_steps = CHEAT_DELAY - CHEAT_REPEAT;
+    }
+    else
+        cheat_pressed = 0;
+    cheat_held = held;
+}
+#endif
 
 /* Everything counts as held to begin with, so a key that is already down
    when the game starts, such as the Enter that loaded it, is not a press. */
@@ -16,29 +53,39 @@ void input_init(void)
 
 /* Keyboard from the key bitmap, so held keys work, and every connected
    gamepad: the d-pad merged with the left stick, and A, B, X or Y to
-   launch and choose. Up launches too. Esc or Start pauses. */
+   launch and choose. Up launches too. Esc or Start pauses. In a debug
+   build, the arrow keys with Shift are cheats instead. */
 void input_read(void)
 {
     uint8_t keys[sizeof(keyboard_t)];
     gamepad_t pads;
     uint8_t held = 0;
+    uint8_t arrows = 1;
     uint8_t i;
 
     xram0_read(keys, XRAM_KEYBOARD, sizeof keys);
+#ifndef NDEBUG
+    arrows = !KEYBOARD_PRESSED(keys, HID_KEY_SHIFT_LEFT) &&
+             !KEYBOARD_PRESSED(keys, HID_KEY_SHIFT_RIGHT);
+    if (arrows)
+        cheat_held = cheat_pressed = 0;
+    else
+        cheats_read(keys);
+#endif
     if (KEYBOARD_PRESSED(keys, HID_KEY_A) ||
-        KEYBOARD_PRESSED(keys, HID_KEY_ARROW_LEFT) ||
+        (arrows && KEYBOARD_PRESSED(keys, HID_KEY_ARROW_LEFT)) ||
         KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_4))
         held |= INPUT_LEFT;
     if (KEYBOARD_PRESSED(keys, HID_KEY_D) ||
-        KEYBOARD_PRESSED(keys, HID_KEY_ARROW_RIGHT) ||
+        (arrows && KEYBOARD_PRESSED(keys, HID_KEY_ARROW_RIGHT)) ||
         KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_6))
         held |= INPUT_RIGHT;
     if (KEYBOARD_PRESSED(keys, HID_KEY_W) ||
-        KEYBOARD_PRESSED(keys, HID_KEY_ARROW_UP) ||
+        (arrows && KEYBOARD_PRESSED(keys, HID_KEY_ARROW_UP)) ||
         KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_8))
         held |= INPUT_UP | INPUT_LAUNCH;
     if (KEYBOARD_PRESSED(keys, HID_KEY_S) ||
-        KEYBOARD_PRESSED(keys, HID_KEY_ARROW_DOWN) ||
+        (arrows && KEYBOARD_PRESSED(keys, HID_KEY_ARROW_DOWN)) ||
         KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_2))
         held |= INPUT_DOWN;
     if (KEYBOARD_PRESSED(keys, HID_KEY_SPACE) ||

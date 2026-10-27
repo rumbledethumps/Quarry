@@ -11,9 +11,9 @@
 
 /* Energy. A full bar holds this many steps of thrust, and it drains from
    the first launch of a stage until the stage ends. */
-#define TUNE_ENERGY 14400     /* 4 minutes */
+#define TUNE_ENERGY 1440      /* 24 seconds */
 #define TUNE_ENERGY_DRAIN 1   /* per step */
-#define TUNE_ENERGY_LOW 2880  /* the bar turns orange: the last 48 seconds */
+#define TUNE_ENERGY_LOW 288   /* the bar turns orange: the last 4.8 seconds */
 
 /* Out of energy: the flames sputter, then the paddle falls. */
 #define TUNE_SPUTTER_STEPS 45 /* how long the flames sputter */
