@@ -186,18 +186,18 @@ static void ball_step(void)
    away. A ball on the paddle keeps the one it is. */
 static void cheats_step(void)
 {
-    if ((cheat_pressed & CHEAT_BALL_MORE) && balls < BALLS_MAX)
+    if ((shift_pressed & SHIFT_RIGHT) && balls < BALLS_MAX)
         balls++;
-    if ((cheat_pressed & CHEAT_BALL_LESS) && balls > (ball_state == BALL_DOCKED))
+    if ((shift_pressed & SHIFT_LEFT) && balls > (ball_state == BALL_DOCKED))
         balls--;
-    if (cheat_pressed & (CHEAT_BALL_MORE | CHEAT_BALL_LESS))
+    if (shift_pressed & (SHIFT_RIGHT | SHIFT_LEFT))
     {
         balls_draw();
         DEBUG_LOG("cheat: %u balls\n", balls);
     }
-    if (cheat_pressed & CHEAT_ENERGY_MORE)
+    if (shift_pressed & SHIFT_UP)
         energy_cheat(1);
-    if (cheat_pressed & CHEAT_ENERGY_LESS)
+    if (shift_pressed & SHIFT_DOWN)
         energy_cheat(-1);
 }
 #endif

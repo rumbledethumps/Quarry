@@ -164,6 +164,26 @@ def main():
     game.run(3)
     title = Title(game)
     check(title.picked() == 'RESUME', 'Resume is picked when the player comes back')
+
+    # Left and right don't move a menu. On the title, Shift and right or left
+    # switch the curtains, and with Shift, down doesn't move the menu.
+    for key in ['right', 'left']:
+        game.tap(key)
+        check(title.picked() == 'RESUME', f'{key} does not move the menu')
+    sets, shown = game.sym['CURTAIN_SETS'], game.ram('curtain_set')
+    palette = game.xram('XRAM_PALETTE_CURTAIN', 32)
+    game.cmd('press lshift')
+    game.tap('right')
+    check(game.ram('curtain_set') == (shown + 1) % sets, 'Shift and right show the next curtains')
+    check(sets == 1 or game.xram('XRAM_PALETTE_CURTAIN', 32) != palette, 'with their own colors')
+    game.tap('left')
+    check(game.ram('curtain_set') == shown, 'Shift and left show the ones before')
+    game.tap('left')
+    check(game.ram('curtain_set') == (shown - 1) % sets, 'and go on around')
+    game.tap('down')
+    game.cmd('release lshift')
+    check(title.picked() == 'RESUME', 'with Shift, down does not move the menu')
+    print(f'ok: left and right leave the menu, and Shift switches the {sets} curtain sets')
     game.tap('space')
     game.until('game_state', 'STATE_PLAY', 120)
     game.run(2)

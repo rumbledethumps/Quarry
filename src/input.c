@@ -4,43 +4,42 @@
 
 uint8_t input_held;
 uint8_t input_pressed;
-uint8_t cheat_pressed;
+uint8_t shift_pressed;
 
-/* A held cheat repeats after CHEAT_DELAY steps, then every CHEAT_REPEAT. */
-#define CHEAT_DELAY 20
-#define CHEAT_REPEAT 6
+/* A held Shift key repeats after SHIFT_DELAY steps, then every
+   SHIFT_REPEAT. */
+#define SHIFT_DELAY 20
+#define SHIFT_REPEAT 6
 
-#ifndef NDEBUG
-static uint8_t cheat_held;
-static uint8_t cheat_steps;
+static uint8_t shift_held;
+static uint8_t shift_steps;
 
-static void cheats_read(const uint8_t *keys)
+static void shift_read(const uint8_t *keys)
 {
     uint8_t held = 0;
 
     if (KEYBOARD_PRESSED(keys, HID_KEY_ARROW_RIGHT))
-        held |= CHEAT_BALL_MORE;
+        held |= SHIFT_RIGHT;
     if (KEYBOARD_PRESSED(keys, HID_KEY_ARROW_LEFT))
-        held |= CHEAT_BALL_LESS;
+        held |= SHIFT_LEFT;
     if (KEYBOARD_PRESSED(keys, HID_KEY_ARROW_UP))
-        held |= CHEAT_ENERGY_MORE;
+        held |= SHIFT_UP;
     if (KEYBOARD_PRESSED(keys, HID_KEY_ARROW_DOWN))
-        held |= CHEAT_ENERGY_LESS;
-    if (held != cheat_held)
+        held |= SHIFT_DOWN;
+    if (held != shift_held)
     {
-        cheat_pressed = held & ~cheat_held;
-        cheat_steps = 0;
+        shift_pressed = held & ~shift_held;
+        shift_steps = 0;
     }
-    else if (held && ++cheat_steps >= CHEAT_DELAY)
+    else if (held && ++shift_steps >= SHIFT_DELAY)
     {
-        cheat_pressed = held;
-        cheat_steps = CHEAT_DELAY - CHEAT_REPEAT;
+        shift_pressed = held;
+        shift_steps = SHIFT_DELAY - SHIFT_REPEAT;
     }
     else
-        cheat_pressed = 0;
-    cheat_held = held;
+        shift_pressed = 0;
+    shift_held = held;
 }
-#endif
 
 /* Everything counts as held to begin with, so a key that is already down
    when the game starts, such as the Enter that loaded it, is not a press. */
@@ -53,25 +52,23 @@ void input_init(void)
 
 /* Keyboard from the key bitmap, so held keys work, and every connected
    gamepad: the d-pad merged with the left stick, and A, B, X or Y to
-   launch and choose. Up launches too. Esc or Start pauses. In a debug
-   build, the arrow keys with Shift are cheats instead. */
+   launch and choose. Up launches too. Esc or Start pauses. The arrow
+   keys with Shift are the SHIFT_ keys instead. */
 void input_read(void)
 {
     uint8_t keys[sizeof(keyboard_t)];
     gamepad_t pads;
     uint8_t held = 0;
-    uint8_t arrows = 1;
+    uint8_t arrows;
     uint8_t i;
 
     xram0_read(keys, XRAM_KEYBOARD, sizeof keys);
-#ifndef NDEBUG
     arrows = !KEYBOARD_PRESSED(keys, HID_KEY_SHIFT_LEFT) &&
              !KEYBOARD_PRESSED(keys, HID_KEY_SHIFT_RIGHT);
     if (arrows)
-        cheat_held = cheat_pressed = 0;
+        shift_held = shift_pressed = 0;
     else
-        cheats_read(keys);
-#endif
+        shift_read(keys);
     if (KEYBOARD_PRESSED(keys, HID_KEY_A) ||
         (arrows && KEYBOARD_PRESSED(keys, HID_KEY_ARROW_LEFT)) ||
         KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_4))

@@ -1,6 +1,7 @@
 #include "title.h"
 #include "bricks.h"
 #include "frame.h"
+#include "input.h"
 #include "save.h"
 #include "scene.h"
 #include "upgrades.h"
@@ -63,4 +64,13 @@ void title_open(const menu_t *menu)
         sprite_move(LOGO_SPRITE(i), LOGO_X + i * 64, LOGO_Y);
     }
     progress_draw(menu);
+}
+
+/* Shift and left or right switch the curtains, to look at each set. */
+void title_step(void)
+{
+    if (shift_pressed & SHIFT_LEFT)
+        scene_curtains(-1);
+    if (shift_pressed & SHIFT_RIGHT)
+        scene_curtains(1);
 }

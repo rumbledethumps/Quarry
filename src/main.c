@@ -238,6 +238,7 @@ int main(void)
                 }
             break;
         case STATE_TITLE:
+            title_step();
             switch (menu_step())
             {
             case TITLE_RESUME:

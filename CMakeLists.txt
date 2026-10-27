@@ -53,14 +53,17 @@ foreach(seed IN LISTS QUARRY_TEXTURE_SEEDS)
     )
     list(APPEND QUARRY_TEXTURES texture${n})
 endforeach()
-add_custom_command(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/curtain1.bin
-    COMMAND ${Python3_EXECUTABLE}
-        ${CMAKE_CURRENT_SOURCE_DIR}/art/curtain.py ${CMAKE_CURRENT_SOURCE_DIR}/art/curtains/curtain-1.png
-        ${CMAKE_CURRENT_BINARY_DIR}/curtain1.bin --preview ${CMAKE_CURRENT_BINARY_DIR}/curtain1.png
-    DEPENDS art/curtain.py art/rd2png.py art/png2bin.py art/curtains/curtain-1.png
-    VERBATIM
-)
+set(QUARRY_CURTAIN_SETS 4)
+foreach(n RANGE 1 ${QUARRY_CURTAIN_SETS})
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/curtain${n}.bin
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/art/curtain.py ${CMAKE_CURRENT_SOURCE_DIR}/art/curtains/curtain-${n}.png
+            ${CMAKE_CURRENT_BINARY_DIR}/curtain${n}.bin --preview ${CMAKE_CURRENT_BINARY_DIR}/curtain${n}.png
+        DEPENDS art/curtain.py art/rd2png.py art/png2bin.py art/curtains/curtain-${n}.png
+        VERBATIM
+    )
+endforeach()
 
 # A sled for each width of src/tuning.h, drawn by art/sled.py, which also
 # writes them to look at in sleds/ in the build folder.
@@ -96,7 +99,9 @@ rp6502_asset(quarry sleds ${CMAKE_CURRENT_BINARY_DIR}/sleds.bin)
 foreach(texture IN LISTS QUARRY_TEXTURES)
     rp6502_asset(quarry ${texture} ${CMAKE_CURRENT_BINARY_DIR}/${texture}.bin)
 endforeach()
-rp6502_asset(quarry curtain1 ${CMAKE_CURRENT_BINARY_DIR}/curtain1.bin)
+foreach(n RANGE 1 ${QUARRY_CURTAIN_SETS})
+    rp6502_asset(quarry curtain${n} ${CMAKE_CURRENT_BINARY_DIR}/curtain${n}.bin)
+endforeach()
 rp6502_executable(quarry DATA default RESET default)
 rp6502_web(quarry CONFIG [[
     title: 'Quarry',

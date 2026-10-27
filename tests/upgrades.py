@@ -60,14 +60,17 @@ def main():
     check(game.ram('game_state') == game.sym['STATE_MENU'], 'a choice right away is not taken')
     game.run(60)
 
-    # Every menu key moves the pick, and keypad 0, which only launches,
-    # does not choose.
-    for key in ['down', 'up', 's', 'w', 'kp2', 'kp8', 'right', 'left', 'd', 'a',
-                'pad 0 down', 'pad 0 up']:
+    # Every up and down key moves the pick, no left or right key does, and
+    # keypad 0, which only launches, does not choose.
+    for key in ['down', 'up', 's', 'w', 'kp2', 'kp8', 'pad 0 down', 'pad 0 up']:
         was = picked()
         game.tap(key)
         check(picked() != was, f'{key} moves the pick')
-    print('ok: every menu key moves the pick')
+    for key in ['right', 'left', 'd', 'a', 'kp6', 'kp4', 'pad 0 right', 'pad 0 left']:
+        was = picked()
+        game.tap(key)
+        check(picked() == was, f'{key} does not move the pick')
+    print('ok: up and down move the pick, and left and right do not')
     game.tap('kp0')
     check(game.ram('game_state') == game.sym['STATE_MENU'], 'keypad 0 does not choose')
 

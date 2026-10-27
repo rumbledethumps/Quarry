@@ -34,6 +34,7 @@ CURTAIN_COLS = (64, 36)
 CURTAIN_ROWS = (64, 64, 64, 48)
 DARKEN = (0.57, 0.6, 0.67)  # red, green and blue, darker and a little cool
 TEXTURE_LUMA = (7.3, 10.3, 13.7, 17.4)  # of 255, the four levels of the texture
+SHAFT_RUN = 32  # rows of one color down the middle column that are shaft, not rock
 
 
 def luma(c):
@@ -65,13 +66,23 @@ def texture_colors(counts):
 
 
 def clear_shaft(pixels, width, height):
-    """The shaft is the color at the top of the middle column, and every
-    pixel of it joined to the middle column goes clear."""
-    shaft = pixels[0][width // 2][:3]
-    todo = deque((width // 2, y) for y in range(height))
+    """The shaft is each color that runs SHAFT_RUN rows or more down the
+    middle column, and every pixel of those colors joined to the middle
+    column goes clear. Where rock crosses the middle, nothing does."""
+    middle = [pixels[y][width // 2][:3] for y in range(height)]
+    shaft = set()
+    run = 1
+    for y in range(1, height + 1):
+        if y < height and middle[y] == middle[y - 1]:
+            run += 1
+            continue
+        if run >= SHAFT_RUN:
+            shaft.add(middle[y - 1])
+        run = 1
+    todo = deque((width // 2, y) for y in range(height) if middle[y] in shaft)
     while todo:
         x, y = todo.popleft()
-        if 0 <= x < width and 0 <= y < height and pixels[y][x][3] and pixels[y][x][:3] == shaft:
+        if 0 <= x < width and 0 <= y < height and pixels[y][x][3] and pixels[y][x][:3] in shaft:
             pixels[y][x] = (0, 0, 0, 0)
             todo.extend(((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)))
 

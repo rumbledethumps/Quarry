@@ -4,5 +4,6 @@
 #include "menu.h"
 
 void title_open(const menu_t *menu);
+void title_step(void);
 
 #endif

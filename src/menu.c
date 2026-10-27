@@ -92,8 +92,8 @@ uint8_t menu_picked(void)
     return picked;
 }
 
-/* Up and left pick the item before, down and right the item after, and
-   choose returns the one picked, from 1. */
+/* Up picks the item before, down the item after, and choose returns the
+   one picked, from 1. */
 uint8_t menu_step(void)
 {
     uint8_t was = picked;
@@ -105,9 +105,9 @@ uint8_t menu_step(void)
         waiting--;
         return MENU_NONE;
     }
-    if (input_pressed & (INPUT_UP | INPUT_LEFT))
+    if (input_pressed & INPUT_UP)
         pick_step(shown->count - 1);
-    else if (input_pressed & (INPUT_DOWN | INPUT_RIGHT))
+    else if (input_pressed & INPUT_DOWN)
         pick_step(1);
     else if (input_pressed & INPUT_CHOOSE)
         return picked + 1;
