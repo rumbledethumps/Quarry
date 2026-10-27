@@ -43,16 +43,20 @@ static void items_draw(void)
         item_draw(i);
 }
 
-/* Steps the pick by step, 1 or count - 1, past items that can't be picked. */
-static void pick_step(uint8_t step)
+/* Steps the pick by step, 1 or -1, past items that can't be picked. It
+   stops at the first and the last: a menu doesn't wrap around. */
+static void pick_step(int8_t step)
 {
-    uint8_t i;
+    uint8_t i = picked;
 
-    for (i = 0; i < shown->count; i++)
+    while ((uint8_t)(i + step) < shown->count)
     {
-        picked = (picked + step) % shown->count;
-        if (!(disabled_items & (1 << picked)))
+        i += step;
+        if (!(disabled_items & (1 << i)))
+        {
+            picked = i;
             return;
+        }
     }
 }
 
@@ -92,8 +96,8 @@ uint8_t menu_picked(void)
     return picked;
 }
 
-/* Up picks the item before, down the item after, and choose returns the
-   one picked, from 1. */
+/* Up picks the item before, down the item after, but for the first and
+   the last, and choose returns the one picked, from 1. */
 uint8_t menu_step(void)
 {
     uint8_t was = picked;
@@ -106,7 +110,7 @@ uint8_t menu_step(void)
         return MENU_NONE;
     }
     if (input_pressed & INPUT_UP)
-        pick_step(shown->count - 1);
+        pick_step(-1);
     else if (input_pressed & INPUT_DOWN)
         pick_step(1);
     else if (input_pressed & INPUT_CHOOSE)

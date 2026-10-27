@@ -50,10 +50,11 @@ void input_init(void)
     input_held = 0xFF;
 }
 
-/* Keyboard from the key bitmap, so held keys work, and every connected
-   gamepad: the d-pad merged with the left stick, and A, B, X or Y to
-   launch and choose. Up launches too. Esc or Start pauses. The arrow
-   keys with Shift are the SHIFT_ keys instead. */
+/* One stick and one button. Keyboard from the key bitmap, so held keys
+   work: arrows, WASD or the keypad to move, and Space, Enter or Ctrl for
+   the button. Every connected gamepad: the d-pad merged with the left
+   stick, and any face button. Up launches too. Esc, Start or Select is the
+   menu. The arrow keys with Shift are the SHIFT_ keys instead. */
 void input_read(void)
 {
     uint8_t keys[sizeof(keyboard_t)];
@@ -87,7 +88,9 @@ void input_read(void)
         held |= INPUT_DOWN;
     if (KEYBOARD_PRESSED(keys, HID_KEY_SPACE) ||
         KEYBOARD_PRESSED(keys, HID_KEY_ENTER) ||
-        KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_ENTER))
+        KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_ENTER) ||
+        KEYBOARD_PRESSED(keys, HID_KEY_CONTROL_LEFT) ||
+        KEYBOARD_PRESSED(keys, HID_KEY_CONTROL_RIGHT))
         held |= INPUT_LAUNCH | INPUT_CHOOSE;
     if (KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_0))
         held |= INPUT_LAUNCH;
@@ -110,10 +113,10 @@ void input_read(void)
             held |= INPUT_UP | INPUT_LAUNCH;
         if (dirs & GAMEPAD_DPAD_DOWN)
             held |= INPUT_DOWN;
-        if (pad->btn0 & (GAMEPAD_BTN0_A | GAMEPAD_BTN0_B |
-                         GAMEPAD_BTN0_X | GAMEPAD_BTN0_Y))
+        if (pad->btn0 & (GAMEPAD_BTN0_A | GAMEPAD_BTN0_B | GAMEPAD_BTN0_C |
+                         GAMEPAD_BTN0_X | GAMEPAD_BTN0_Y | GAMEPAD_BTN0_Z))
             held |= INPUT_LAUNCH | INPUT_CHOOSE;
-        if (pad->btn1 & GAMEPAD_BTN1_START)
+        if (pad->btn1 & (GAMEPAD_BTN1_START | GAMEPAD_BTN1_SELECT))
             held |= INPUT_PAUSE;
     }
 

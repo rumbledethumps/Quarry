@@ -17,8 +17,8 @@ from game import Game, check
 
 MOVES = [('d', 'right'), ('a', 'left'), ('right', 'right'), ('left', 'left'),
          ('kp6', 'right'), ('kp4', 'left')]
-LAUNCH_KEYS = ['space', 'enter', 'kp0', 'kpenter', 'w', 'up', 'kp8']
-LAUNCH_BUTTONS = [(0, 'a'), (0, 'b'), (0, 'x'), (1, 'y'), (0, 'up')]
+LAUNCH_KEYS = ['space', 'enter', 'lctrl', 'rctrl', 'kp0', 'kpenter', 'w', 'up', 'kp8']
+LAUNCH_BUTTONS = [(0, 'a'), (0, 'b'), (0, 'c'), (0, 'x'), (1, 'y'), (1, 'z'), (0, 'up')]
 
 
 def main():

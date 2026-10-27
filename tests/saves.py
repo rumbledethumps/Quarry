@@ -67,7 +67,7 @@ def main():
     check(title.resume_dim(), 'Resume is grayed out with no save')
     check(title.picked() == 'NEW GAME', 'New Game is picked')
     game.tap('up')
-    check(title.picked() == 'NEW GAME', 'up from New Game skips Resume')
+    check(title.picked() == 'NEW GAME', 'up from New Game stays, as Resume cannot be picked')
     check(read_save(folder) is None, 'no save yet')
     game.new_game()
     check(read_save(folder) == (0, (0, 0), 1), 'a stage starting saves a new game')
@@ -99,7 +99,11 @@ def main():
     game.until('game_state', 'STATE_PAUSE', 10)
     game.tap('space')  # Continue
     game.until('game_state', 'STATE_PLAY', 10)
-    print(f'ok: paused with {broken} nuggets saved, and carried on')
+    game.tap('pad 0 select')
+    game.until('game_state', 'STATE_PAUSE', 10)
+    game.tap('space')
+    game.until('game_state', 'STATE_PLAY', 10)
+    print(f'ok: paused with {broken} nuggets saved, and carried on, and Select pauses too')
 
     # The stage ends, and that saves too.
     os.remove(os.path.join(folder, SAVE))
