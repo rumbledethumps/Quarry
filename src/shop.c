@@ -7,6 +7,7 @@
 #include "sfx.h"
 #include "upgrades.h"
 #include "video.h"
+#include "scene.h"
 #include "xram.h"
 
 /* The upgrade screen, after the concept. Rock all around, the nugget count
@@ -188,6 +189,7 @@ void shop_hide(void)
 void shop_open(void)
 {
     video_hide_sprites();
+    scene_menu();
     video_rock();
     video_text_clear();
     video_text(NOW_COL + 4, TITLE_ROW, line + 10, BOX_COLOR, BOX_FILL);

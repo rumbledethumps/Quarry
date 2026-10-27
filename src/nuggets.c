@@ -7,12 +7,12 @@
 #define ICON_SPRITE(c) (XRAM_NUGGET_ICONS + (c) * sizeof(mode5_csprite_t))
 #define NUGGET_SPRITE(i) (XRAM_NUGGET_SPRITES + (i) * sizeof(mode5_csprite_t))
 
-/* The left panel is a framed box, with a line for each color reached: the
-   nugget icon, then the count. */
-#define PANEL_TOP_ROW 1
-#define ICON_X 12
-#define COUNT_COL 3
-#define COUNT_DIGITS 5
+/* The counts are at the top left, a line for each color reached: the
+   nugget, then its count in outlined digits. */
+#define ICON_X 4
+#define ICON_TOP 5
+#define LINE_H 12
+#define DIGITS(c) (XRAM_NUGGET_DIGITS + (c) * COUNT_DIGITS * sizeof(mode5_csprite_t))
 
 /* A nugget in flight, stepped along its line like Bresenham's. */
 typedef struct
@@ -29,17 +29,16 @@ typedef struct
 uint16_t nuggets[BRICK_COLORS];
 
 static flight_t flights[NUGGETS_MAX];
-static uint8_t lines; /* colors shown in the panel */
+static uint8_t lines; /* colors shown in the counts */
 
 static int16_t icon_y(uint8_t color)
 {
-    return (PANEL_TOP_ROW + 1 + color) * 8;
+    return ICON_TOP + color * LINE_H;
 }
 
 static void count_draw(uint8_t color)
 {
-    video_number(COUNT_COL, PANEL_TOP_ROW + 1 + color, nuggets[color], COUNT_DIGITS,
-                 TEXT_COLOR, BOX_FILL);
+    video_count(DIGITS(color), COUNT_DIGITS, ICON_X + 9, icon_y(color) - 1, nuggets[color]);
 }
 
 void nuggets_add(uint8_t color)
@@ -75,15 +74,14 @@ uint8_t nuggets_flying(uint8_t color)
     return n;
 }
 
-/* Draws the panel with a line for each of the first colors, and lands any
-   nugget still in flight. The panel ends at panel_right. */
-void nuggets_start(uint8_t colors, int16_t panel_right)
+/* Shows a line for each of the first colors, and lands any nugget still
+   in flight. */
+void nuggets_start(uint8_t colors)
 {
     uint8_t i;
 
     lines = colors;
     nuggets_land();
-    video_box(0, PANEL_TOP_ROW, panel_right / 8 - 1, PANEL_TOP_ROW + 1 + colors, BOX_COLOR);
     for (i = 0; i < BRICK_COLORS; i++)
     {
         sprite_set(ICON_SPRITE(i), XRAM_NUGGET_IMAGE, XRAM_PALETTE_BRICK(i), MODE5_SIZE(8, 8));
@@ -97,7 +95,7 @@ void nuggets_start(uint8_t colors, int16_t panel_right)
         sprite_set(NUGGET_SPRITE(i), XRAM_NUGGET_IMAGE, XRAM_PALETTE_BRICK(0), MODE5_SIZE(8, 8));
 }
 
-/* A nugget at x, y, its top left, flies to its color's line in the panel.
+/* A nugget at x, y, its top left, flies to its color's line of the counts.
    It shows at once, so it takes the place of the brick that just broke
    with no frame between. With every flight taken, it counts at once. */
 void nuggets_spawn(int16_t x, int16_t y, uint8_t color)
@@ -129,7 +127,7 @@ void nuggets_spawn(int16_t x, int16_t y, uint8_t color)
 }
 
 /* Each nugget takes TUNE_NUGGET_SPEED pixel steps along its line, and the
-   one that reaches its line in the panel adds to the count. */
+   one that reaches its line of the counts adds to it. */
 void nuggets_step(void)
 {
     uint8_t i, n;

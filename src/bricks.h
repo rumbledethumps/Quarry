@@ -12,7 +12,8 @@
 /* There is only stage 1 so far. */
 #define STAGES 1
 
-extern uint8_t bricks_cols; /* the width of the stage, in bricks */
+extern uint8_t bricks_cols;   /* the width of the stage, in bricks */
+extern uint8_t bricks_margin; /* the space between the bricks and each wall */
 extern uint8_t bricks_left; /* bricks not yet broken */
 
 /* The box around the bricks the last bricks_hit() broke. */

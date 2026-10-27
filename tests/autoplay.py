@@ -33,7 +33,7 @@ def main():
     game.run(10)
     play_left = game.ram('play_left', 2, signed=True)
     play_right = game.ram('play_right', 2, signed=True)
-    play_top = sym['WALL_SIZE']
+    play_top = sym['BEAM_H']
     paddle_y, paddle_w = sym['TUNE_PADDLE_Y'], game.ram('paddle_width')
     ball = sym['BALL_SIZE']
     bricks = sym['STAGE1_COLS'] * sym['STAGE1_ROWS']
@@ -51,7 +51,8 @@ def main():
 
     full = game.ram('energy', 2)
     check(game.ram('balls') == balls, f'{balls} balls at the start')
-    check(game.shown('XRAM_BALL_ICONS', balls + 1) == balls, f'{balls} ball icons at the start')
+    count = lambda: game.count('XRAM_BALL_DIGITS', sym['BALL_DIGITS'])
+    check(count() == balls, f'the count shows {balls} balls at the start')
     check(game.ram('bricks_left') == bricks, f'{bricks} bricks at the start')
     check(game.shown('XRAM_BRICKS', bricks) == bricks, f'{bricks} brick sprites at the start')
 
@@ -76,8 +77,7 @@ def main():
                 game.run(2)
                 launches += 1
                 check(game.ram('balls') == balls - launches, 'each launch takes a ball')
-                check(game.shown('XRAM_BALL_ICONS', balls) == balls - launches,
-                      'an icon goes with each launch')
+                check(count() == balls - launches, 'the count goes down with each launch')
             continue
         if state == sym['BALL_FLYING'] and 0 <= y < sym['SCREEN_H']:
             check(play_left <= x <= play_right - ball, f'ball x {x} left the playfield')
@@ -148,7 +148,7 @@ def main():
     check(game.shown('XRAM_BRICKS', bricks) == bricks, 'the brick sprites come back')
     check(game.ram('balls') == balls, 'the balls come back')
     check(game.ram('nuggets', 2) == counted, 'the nuggets are kept')
-    check(game.shown('XRAM_BALL_ICONS', balls + 1) == balls, 'the ball icons come back')
+    check(count() == balls, 'the count of balls comes back')
     check(game.ram('energy', 2) == full, 'the energy is full again')
     check(not game.shows('UPGRADES'), 'the menu is gone')
     game.close()

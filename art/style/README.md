@@ -10,30 +10,33 @@ art, and compare new art against them.
 
 ## The Screen
 
-The playfield starts narrower than it is today and widens with each
-stage, until it fills almost the whole screen. Stone walls on both sides,
-the curtains, close it in, and they open a little more each stage.
+A stage's playfield is framed in steel: a post on each side and a cap beam
+across the top, where the ball bounces. Outside the posts are the
+curtains, the rock walls of the quarry. Stage 1 is the narrowest, 4 bricks
+across with half a brick of space at each wall. The widest is about 10
+bricks, with a little rock left on each side. Each stage is laid out
+fresh, so the curtains never move while anyone watches.
 
 The counts float over the curtains, with no panels behind them:
 
 - **Upper left:** a count for each kind of nugget, with a sprite of the
-  nugget beside it.
+  nugget beside it, a line for each, room for 8 or more.
 - **Lower left:** the count of balls, with a sprite of the ball beside it,
   in the same presentation as the nuggets.
 - **Right:** the energy gauge, a narrow vertical bar that rises and
-  falls. It is narrower than the counts on the left.
+  falls. It is narrower than the counts on the left. The bar there now is
+  a placeholder.
 
-The digits have a black outline, so they read over any stone. One way to
-draw them is a 7x8 font in mode 2 tiles: each 8x8 tile has room for a
-narrow digit and its outline, and narrow digits keep the counts out of the
-playfield.
+The digits are sprites, 6x8 with a 1 px black outline, so they read over
+any rock or steel. Each digit's outline overlaps the last one's, so a
+5-digit count with its nugget is about 45 px wide. On the widest stages
+the counts reach into the playfield, and those stages leave them room.
 
-Each scene, such as play, the upgrade screen, and the title, can have an
-XRAM layout of its own. The keyboard, the gamepads, and the PSG stay put,
-and the scenes share the rest of XRAM as a union. A scene change loads the
-scene's art from the ROM's assets in a fraction of a second, even all
-64 KB, so each scene starts from a blank canvas, and its art has the whole
-of XRAM to itself.
+Each screen has an XRAM layout of its own. The keyboard, the gamepads,
+the PSG, the sprite lists, and the small shared images stay put, and the
+screens share the rest of XRAM as a union. A screen loads its art from
+the ROM's assets when it starts, in a fraction of a second, so its art has
+most of XRAM to itself.
 
 ## Stone: the levels
 
@@ -53,13 +56,44 @@ References: `ref/stone-wall.png`, `ref/ore-blocks.png`, `ref/logo-crop.png`.
 ### Behind the Playfield
 
 Behind the bricks is the faintest texture, so the playfield is not plain
-black. It is a mode 2 tile map at 2 bits a pixel: four dark colors close
-in value, laid out as random marching squares. A script makes it, not
-Retro Diffusion, and it takes little memory: a few small tiles, and a map
-the size of the screen.
+black: two octaves of Perlin noise, cut into four very dark colors of
+equal area, in large soft patches. `art/texture.py` makes it at build
+time. It is a mode 3 bitmap at 2 bits a pixel, the size of the screen,
+19 KB, and it wraps, so each stage shows it from a new random place.
 
-The map wraps, and each stage starts it at a new random X and Y, so every
-stage looks different with one map.
+In front of the texture, behind the ball, stand the supports and the
+machines of the mine:
+
+- a 45 degree knee brace in each top corner, from the post up to the beam,
+  bolted at each end, heavy and a little cartoonish;
+- a machine bolted to the inside of the right wall. It is not explained.
+  It hints that it powers the energy gauge. Upgrades may add more machines
+  along the walls.
+
+### Curtain Sets
+
+A curtain set is one Retro Diffusion image, split into the two curtains.
+There can be many, and a stage picks one at random. To make one:
+
+1. Generate a 256x240 image with `rd_pro__default`, with
+   `ref/logo-crop.png` as a reference, and this prompt: "Looking straight
+   at two rough quarry rock walls that fill the left and right halves of
+   the image and frame a narrow dark vertical shaft down the middle:
+   organic fractured stone with stacked broken ledges, angular boulders
+   and deep cracks, warm weathered sandstone blending into cool blue-grey
+   granite, a few faint dull ore streaks, soft light from the upper left,
+   the whole wall dark and muted like a backdrop behind gameplay". Vary
+   the rock and the ore streaks for variety, but keep the shaft down the
+   middle.
+2. Save it as the next `art/curtains/curtain-<n>.png`, add its
+   `curtain.py` command and its `rp6502_asset()` to `CMakeLists.txt`, and
+   raise `CURTAIN_SETS` in `src/scene.c`.
+
+The build runs `art/curtain.py` on it. The shaft goes clear, so each
+curtain keeps the rock's own edge, and the texture shows through past it.
+The rock is darkened, since this is underground, and cut to 15 colors of
+its own palette. Each curtain is the 100 columns beside the middle. The
+build writes `curtain<n>.png` in the build folder to look at.
 
 ## Industrial: the player's equipment
 
@@ -78,6 +112,18 @@ upgrade screen.
 
 References: `ref/sled-kit.png` for the sled and its parts,
 `ref/ui-kit.png` for the energy gauge and the upgrade screen.
+
+### The Frame
+
+The posts and the cap beam are industrial too, a mine's post-and-cap set
+in the sled's yellow and graphite, from `art/screen.py`. The inner face of
+each post and the underside of the beam are bright lines, where the ball
+bounces. A post has a hydraulic section every 64 rows, the beam a hazard
+band, and a bracket caps each post where the beam ends. The beam is
+pieces 64 wide that repeat every 8 px, so the width between the outer
+faces of the posts must be a multiple of 8. `art/screen.py` also draws
+the braces, the machine, the digits, and the placeholder gauge. Run it
+after a change there, then touch up any piece by hand.
 
 ### The Sled
 
@@ -146,20 +192,17 @@ darkest first. Each class of art gets a row of its own:
 
 | Row | Used by |
 | --- | --- |
-| main | the text and the menus |
-| digits | the outlined digits of the counts |
-| texture | the texture behind the playfield, 4 colors |
-| curtain | the curtains, one row for each stage that differs |
+| main | the text and the menus, and the ball |
+| bricks | one per ore: the brick, its break frames, its nugget, and its nugget sprite |
+| fx | the smoke and the energy gauge |
 | logo | the title logo |
-| sled | the sleds, their jets and flames, and the machinery on the upgrade screen |
-| hud | the ball, the ball sprite of the count, the smoke, and the energy gauge |
-| one per ore | the brick, its break frames, its nugget, and its nugget sprite |
+| sled | the sleds, their jets and flames, the frame, the braces, the machine, and the digits |
+| texture | the texture behind the playfield, its first 4 colors |
+| curtain | the curtain set of the stage, loaded with it |
 
 A jet's nozzle and its flame are one sprite, so the flames share the sled
-row. With 4 curtains, that is 10 rows, which leaves 22 for ores.
-
-Today `palettes_t` has `main`, `bricks[BRICK_COLORS]`, `fx`, `logo`, and
-`sled`. It changes to the rows above as the new art comes in.
+row. Every curtain set brings its own palette into the one curtain row.
+That is 6 rows and the ores, so 26 rows are left for ores.
 
 ## Sizes
 
@@ -169,14 +212,18 @@ Today `palettes_t` has `main`, `bricks[BRICK_COLORS]`, `fx`, `logo`, and
 | break frames | 2 frames, 24x16 |
 | nugget, nugget sprite of a count | 8x8 |
 | ball, ball sprite of the count | 8x8 |
-| digit | 8x8 tile, a 7x8 digit with its outline |
-| texture tiles | small tiles at 2 bits a pixel |
+| digit | 8x12 sprite, a 6x8 digit with its outline |
+| texture | 320x240 at 2 bits a pixel |
+| post | 8 wide, in pieces 64 tall |
+| cap beam | 16 tall, in pieces 64 wide, and a cap 8x16 over each post |
+| brace | 32x32 |
+| machine | 24x40 |
 | sled | the widths of `TUNE_WIDTHS`, up to 64, rounded up to 4 for the sprite; 8 tall, then its two tilts, 24 tall each |
 | jet | 7 frames, 8x12: the nozzle alone, 3 flames, 3 swiveled flames |
 | smoke | 3 frames, 8x8 |
-| energy gauge | a narrow vertical bar, width to decide |
+| energy gauge | a narrow vertical bar; the placeholder is 8 wide, in pieces 8 tall |
 | logo | 3 pieces, 64x64, as one 192x64 image |
-| curtains | to decide with the playfield widths of the stages |
+| curtains | 100x240 each, cut from a 256x240 curtain set |
 
 The current sizes come from `src/xram.h`. RD Pro styles start at 12x12, so
 art 8 pixels tall is made as a larger study, then redrawn by hand at its

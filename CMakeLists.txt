@@ -27,8 +27,33 @@ quarry_art(nugget.bin image nugget.png)
 quarry_art(ball.bin image ball.png)
 quarry_art(jet.bin image jet.png --tile 8x12)
 quarry_art(smoke.bin image smoke.png --tile 8x8)
-quarry_art(energy.bin image energy.png --tile 28x4)
+quarry_art(energy.bin image energy.png --tile 8x8)
 quarry_art(logo.bin image logo.png --tile 64x64)
+quarry_art(digits.bin image digits.png --tile 8x12)
+quarry_art(post.bin image post.png)
+quarry_art(beam.bin image beam.png)
+quarry_art(cap.bin image cap.png)
+quarry_art(brace.bin image brace.png)
+quarry_art(machine.bin image machine.png)
+
+# The texture behind a stage, and each curtain set of art/curtains/, as
+# ROM:texture and ROM:curtain1 and on.
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/texture.bin
+    COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/art/texture.py ${CMAKE_CURRENT_BINARY_DIR}/texture.bin
+        --preview ${CMAKE_CURRENT_BINARY_DIR}/texture.png
+    DEPENDS art/texture.py art/rd2png.py art/png2bin.py art/palettes.png
+    VERBATIM
+)
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/curtain1.bin
+    COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/art/curtain.py ${CMAKE_CURRENT_SOURCE_DIR}/art/curtains/curtain-1.png
+        ${CMAKE_CURRENT_BINARY_DIR}/curtain1.bin --preview ${CMAKE_CURRENT_BINARY_DIR}/curtain1.png
+    DEPENDS art/curtain.py art/rd2png.py art/png2bin.py art/curtains/curtain-1.png
+    VERBATIM
+)
 
 # A sled for each width of src/tuning.h, drawn by art/sled.py, which also
 # writes them to look at in sleds/ in the build folder.
@@ -44,16 +69,25 @@ add_executable(quarry)
 rp6502_align(quarry "XRAM_.*")
 rp6502_asset(quarry help src/help.txt)
 rp6502_asset(quarry XRAM(XRAM_PALETTES) ${CMAKE_CURRENT_BINARY_DIR}/palettes.bin)
-rp6502_asset(quarry XRAM(XRAM_TILES) ${CMAKE_CURRENT_BINARY_DIR}/tiles.bin)
 rp6502_asset(quarry XRAM(XRAM_BRICK_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/brick.bin)
 rp6502_asset(quarry XRAM(XRAM_BREAK_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/break.bin)
 rp6502_asset(quarry XRAM(XRAM_NUGGET_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/nugget.bin)
 rp6502_asset(quarry XRAM(XRAM_BALL_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/ball.bin)
 rp6502_asset(quarry XRAM(XRAM_JET_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/jet.bin)
-rp6502_asset(quarry XRAM(XRAM_SLED_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/sleds.bin)
 rp6502_asset(quarry XRAM(XRAM_SMOKE_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/smoke.bin)
 rp6502_asset(quarry XRAM(XRAM_ENERGY_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/energy.bin)
-rp6502_asset(quarry XRAM(XRAM_LOGO_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/logo.bin)
+rp6502_asset(quarry XRAM(XRAM_DIGIT_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/digits.bin)
+rp6502_asset(quarry XRAM(XRAM_POST_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/post.bin)
+rp6502_asset(quarry XRAM(XRAM_BEAM_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/beam.bin)
+rp6502_asset(quarry XRAM(XRAM_CAP_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/cap.bin)
+rp6502_asset(quarry XRAM(XRAM_BRACE_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/brace.bin)
+rp6502_asset(quarry XRAM(XRAM_MACHINE_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/machine.bin)
+# The art of each screen, which the screen loads when it starts.
+rp6502_asset(quarry tiles ${CMAKE_CURRENT_BINARY_DIR}/tiles.bin)
+rp6502_asset(quarry logo ${CMAKE_CURRENT_BINARY_DIR}/logo.bin)
+rp6502_asset(quarry sleds ${CMAKE_CURRENT_BINARY_DIR}/sleds.bin)
+rp6502_asset(quarry texture ${CMAKE_CURRENT_BINARY_DIR}/texture.bin)
+rp6502_asset(quarry curtain1 ${CMAKE_CURRENT_BINARY_DIR}/curtain1.bin)
 rp6502_executable(quarry DATA default RESET default)
 rp6502_web(quarry CONFIG [[
     title: 'Quarry',
@@ -63,6 +97,7 @@ rp6502_web(quarry CONFIG [[
 target_sources(quarry PRIVATE
     src/bricks.c
     src/energy.c
+    src/frame.c
     src/input.c
     src/main.c
     src/menu.c
@@ -70,6 +105,7 @@ target_sources(quarry PRIVATE
     src/paddle.c
     src/play.c
     src/save.c
+    src/scene.c
     src/sfx.c
     src/shop.c
     src/title.c

@@ -14,15 +14,14 @@
 #define BOX_FILL 1   /* the dark inside of a box */
 #define CLEAR 0      /* transparent */
 
-/* The walls are one background tile thick. */
-#define WALL_SIZE 16
+/* The outlined digits of a count are this far apart. */
+#define DIGIT_ADVANCE 7
 
 /* A hidden sprite sits above the canvas. Sprites are at most 64 tall. */
 #define SPRITE_HIDDEN_Y -64
 
 void video_init(void);
 void video_start(void);
-void video_walls(int16_t left, int16_t right);
 void video_rock(void);
 void video_hide_sprites(void);
 void video_text_clear(void);
@@ -34,5 +33,7 @@ void video_box(uint8_t left, uint8_t top, uint8_t right, uint8_t bottom, uint8_t
 void sprite_set(unsigned sprite, unsigned image, unsigned palette, uint8_t width_height);
 void sprite_move(unsigned sprite, int16_t x, int16_t y);
 void sprite_hide(unsigned sprite);
+void sprite_flip(unsigned sprite);
+void video_count(unsigned first, uint8_t sprites, int16_t x, int16_t y, uint16_t n);
 
 #endif

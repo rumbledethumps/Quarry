@@ -7,7 +7,7 @@
 
 #define BAR_SPRITE(i) (XRAM_ENERGY_SPRITES + (i) * sizeof(mode5_csprite_t))
 #define BAR_IMAGE(i) (XRAM_ENERGY_IMAGES + (i) * sizeof(energy_image_t))
-#define BAR_PIECE_H 4
+#define BAR_PIECE_H 8
 
 /* While the energy is low, a beep every LOW_BEEP_STEPS steps. */
 #define LOW_BEEP_STEPS 180
@@ -65,7 +65,7 @@ void energy_start(int16_t x, int16_t y)
     for (i = 0; i < ENERGY_SEGMENTS + 2; i++)
     {
         uint8_t image = i == 0 ? ENERGY_TOP : i == ENERGY_SEGMENTS + 1 ? ENERGY_BOTTOM : ENERGY_EMPTY;
-        sprite_set(BAR_SPRITE(i), BAR_IMAGE(image), XRAM_PALETTE_FX, MODE5_SIZE(28, BAR_PIECE_H));
+        sprite_set(BAR_SPRITE(i), BAR_IMAGE(image), XRAM_PALETTE_FX, MODE5_SIZE(8, BAR_PIECE_H));
         sprite_move(BAR_SPRITE(i), x, y + i * BAR_PIECE_H);
     }
     lit_shown = 0;

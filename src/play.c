@@ -13,22 +13,17 @@
 /* The ball is the size of its image. */
 #define BALL_SIZE 8
 
-/* The right panel is a framed box from the wall to the edge of the
-   screen, with the energy bar at the top and the ball icons under it, in
-   rows as wide as the bar. */
-#define PANEL_TOP_ROW 1
-#define PANEL_BOTTOM_ROW 28
-#define PANEL_LABEL_ROW 2
-#define ENERGY_Y 26
-#define ICONS_COLS 3
-#define ICONS_PITCH 10
-#define ICONS_Y 92
+/* The count of balls is at the bottom left, the ball and then its digits,
+   and the energy gauge at the right edge. */
+#define BALLS_X 4
+#define BALLS_Y 227
+#define BALLS_MAX 99
+#define GAUGE_X 306
+#define GAUGE_Y 64
 
 #define BALL_DOCKED 0 /* on the paddle, waiting for launch */
 #define BALL_FLYING 1
 #define BALL_GONE 2
-
-#define ICON_SPRITE(i) (XRAM_BALL_ICONS + (i) * sizeof(mode5_csprite_t))
 
 #define ZONE_SPEED(unit) ((int16_t)((int32_t)TUNE_BALL_SPEED * (unit) / 256))
 
@@ -52,30 +47,16 @@ static int32_t ball_y;
 static int16_t ball_vx;
 static int16_t ball_vy;
 
-static uint8_t icons_shown;
-static int16_t icons_x;
-
 void play_init(void)
 {
-    uint8_t i;
-
-    for (i = 0; i < BALL_ICONS_MAX; i++)
-        sprite_set(ICON_SPRITE(i), XRAM_BALL_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(8, 8));
     sprite_set(XRAM_BALL_SPRITE, XRAM_BALL_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(8, 8));
+    sprite_set(XRAM_BALL_ICON, XRAM_BALL_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(8, 8));
 }
 
-/* Shows one icon for each ball not yet launched. */
-static void icons_draw(void)
+/* The count of balls not yet launched. */
+static void balls_draw(void)
 {
-    while (icons_shown < balls && icons_shown < BALL_ICONS_MAX)
-    {
-        sprite_move(ICON_SPRITE(icons_shown),
-                    icons_x + icons_shown % ICONS_COLS * ICONS_PITCH,
-                    ICONS_Y + icons_shown / ICONS_COLS * ICONS_PITCH);
-        icons_shown++;
-    }
-    while (icons_shown > balls)
-        sprite_hide(ICON_SPRITE(--icons_shown));
+    video_count(XRAM_BALL_DIGITS, BALL_DIGITS, BALLS_X + 9, BALLS_Y - 1, balls);
 }
 
 /* The ball sits on the middle of the paddle, and goes where it goes, even
@@ -89,17 +70,10 @@ static void ball_dock(void)
 
 void play_start(void)
 {
-    int16_t panel_left = play_right + WALL_SIZE;
-    int16_t center = (panel_left + SCREEN_W) / 2;
-    int16_t bar_left = center - (ICONS_COLS * ICONS_PITCH - (ICONS_PITCH - 8)) / 2;
-
-    video_box(panel_left / 8, PANEL_TOP_ROW, SCREEN_W / 8 - 1, PANEL_BOTTOM_ROW, BOX_COLOR);
-    video_text(panel_left / 8 + 1, PANEL_LABEL_ROW, "ENERGY", TEXT_COLOR, BOX_FILL);
-    energy_start(bar_left, ENERGY_Y);
+    energy_start(GAUGE_X, GAUGE_Y);
     balls = TUNE_BALLS;
-    icons_x = bar_left;
-    icons_shown = 0;
-    icons_draw();
+    sprite_move(XRAM_BALL_ICON, BALLS_X, BALLS_Y);
+    balls_draw();
     paddle_start();
     ball_dock();
 }
@@ -109,7 +83,7 @@ void play_start(void)
 static void ball_launch(void)
 {
     balls--;
-    icons_draw();
+    balls_draw();
     ball_state = BALL_FLYING;
     ball_vx = zone_vx[paddle_left ? 2 : 3];
     ball_vy = zone_vy[3];
@@ -177,9 +151,9 @@ static void ball_step(void)
 
     old = ball_y;
     ball_y += ball_vy;
-    if (ball_y < FIX(WALL_SIZE))
+    if (ball_y < FIX(BEAM_H))
     {
-        ball_y = FIX(WALL_SIZE) * 2 - ball_y;
+        ball_y = FIX(BEAM_H) * 2 - ball_y;
         ball_vy = -ball_vy;
         sfx_play(SFX_WALL, PX(ball_x));
     }
@@ -212,13 +186,13 @@ static void ball_step(void)
    away. A ball on the paddle keeps the one it is. */
 static void cheats_step(void)
 {
-    if ((cheat_pressed & CHEAT_BALL_MORE) && balls < BALL_ICONS_MAX)
+    if ((cheat_pressed & CHEAT_BALL_MORE) && balls < BALLS_MAX)
         balls++;
     if ((cheat_pressed & CHEAT_BALL_LESS) && balls > (ball_state == BALL_DOCKED))
         balls--;
     if (cheat_pressed & (CHEAT_BALL_MORE | CHEAT_BALL_LESS))
     {
-        icons_draw();
+        balls_draw();
         DEBUG_LOG("cheat: %u balls\n", balls);
     }
     if (cheat_pressed & CHEAT_ENERGY_MORE)

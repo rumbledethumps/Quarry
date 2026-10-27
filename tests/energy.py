@@ -27,8 +27,8 @@ def bar(game, shot):
     """The segments of the bar, top to bottom, as 'full', 'low' or 'empty'."""
     sym = game.sym
     rows = game.screen(shot)
-    x = game.sprite('XRAM_ENERGY_SPRITES')[0] + 14
-    return [nearest(rows[sym['ENERGY_Y'] + sym['BAR_PIECE_H'] * (1 + i) + 1][x], COLORS)
+    x, top = game.sprite('XRAM_ENERGY_SPRITES')
+    return [nearest(rows[top + sym['BAR_PIECE_H'] * (1 + i) + 1][x + 3], COLORS)
             for i in range(sym['ENERGY_SEGMENTS'])]
 
 

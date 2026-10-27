@@ -2,15 +2,18 @@
 #include <stdlib.h>
 #include "bricks.h"
 #include "debug.h"
+#include "frame.h"
 #include "input.h"
 #include "menu.h"
 #include "nuggets.h"
 #include "play.h"
 #include "save.h"
+#include "scene.h"
 #include "sfx.h"
 #include "shop.h"
 #include "title.h"
 #include "tuning.h"
+#include "upgrades.h"
 #include "video.h"
 
 /* Steps after a stage ends before the menu takes a choice, so a press
@@ -52,23 +55,24 @@ static uint8_t paused_pick;  /* the pick of the end-of-stage menu under it */
 static uint8_t stage = 1;
 static uint8_t stage_set; /* the playfield shows a stage ready to play */
 
-/* Lays out the stage, centers the playfield between the panels, and sets
-   up the paddle and every ball, ready to play. It starts from no sprites,
-   so nothing is left of another screen. */
+/* Lays out the stage, centers the playfield with its frame and curtains,
+   and sets up the paddle and every ball, ready to play. It starts from no
+   sprites and the stage's own art, so nothing is left of another screen. */
 static void stage_setup(void)
 {
     int16_t width;
 
     video_hide_sprites();
+    scene_stage(upgrade_levels[UPGRADE_WIDTH]);
     play_init();
     bricks_layout();
-    width = bricks_cols * BRICK_W;
+    width = bricks_cols * BRICK_W + 2 * bricks_margin;
     play_left = (SCREEN_W - width) / 2;
     play_right = play_left + width;
-    video_walls(play_left, play_right);
+    frame_start(play_left, play_right);
     video_text_clear();
-    bricks_start(play_left, TUNE_BRICKS_Y);
-    nuggets_start(1, play_left - WALL_SIZE);
+    bricks_start(play_left + bricks_margin, TUNE_BRICKS_Y);
+    nuggets_start(1);
     play_start();
     stage_set = 1;
 }

@@ -2,6 +2,7 @@
 #include "paddle.h"
 #include "play.h"
 #include "video.h"
+#include "scene.h"
 #include "xram.h"
 
 /* The title screen, after the concept: rock all around, the logo at the
@@ -17,6 +18,7 @@ void title_open(void)
     uint8_t i;
 
     video_hide_sprites();
+    scene_menu();
     video_rock();
     video_text_clear();
     for (i = 0; i < 3; i++)

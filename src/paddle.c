@@ -2,6 +2,7 @@
 #include "debug.h"
 #include "input.h"
 #include "play.h"
+#include "scene.h"
 #include "sfx.h"
 #include "tuning.h"
 #include "upgrades.h"
@@ -66,7 +67,7 @@ static uint8_t jet_x(uint8_t width, uint8_t jets, uint8_t i)
    level or tilted, as art/sled.py lays it out. */
 static unsigned sled_image(uint8_t level, uint8_t width, uint8_t tilt)
 {
-    unsigned image = XRAM_SLED_IMAGES + level * SLED_SLOT;
+    unsigned image = scene_sled(level);
 
     if (tilt)
         image += SLED_IMAGE_W(width) * (8 + (tilt - 1) * SLED_TILT_ROWS) / 2;

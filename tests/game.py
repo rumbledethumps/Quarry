@@ -163,6 +163,14 @@ class Game(rp6502.Emu):
         hidden = self.sym['SPRITE_HIDDEN_Y']
         return sum(y != hidden for _, y, _ in self.sprites(addr, count))
 
+    def count(self, first, sprites):
+        """The number that the digit sprites of a count from first show."""
+        base, size = self.sym['XRAM_DIGIT_IMAGES'], 8 * 12 // 2  # sizeof(digit_image_t)
+        hidden = self.sym['SPRITE_HIDDEN_Y']
+        digits = ''.join(str((image - base) // size)
+                         for _, y, image in self.sprites(first, sprites) if y != hidden)
+        return int(digits) if digits else None
+
     def cell(self, col, row):
         """The XRAM address of the text cell at col, row."""
         return self.sym['XRAM_TEXT'] + (row * self.sym['TEXT_COLS'] + col) * 2

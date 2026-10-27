@@ -141,13 +141,15 @@ def main():
     check(game.ram('game_state') == game.sym['STATE_PLAY'], 'PLAY plays')
     check(not game.shows('UPGRADES') and not game.shows('OUT OF BALLS'), 'the menu is gone')
     check(game.ram('nuggets', 2) == have, 'the nuggets left are kept')
+    # Short of the wall: the steps it takes from the middle of the playfield.
     x = game.px('paddle_x')
+    steps = min(20, (x - game.ram('play_left', 2)) * 256 // speed)
     game.cmd('press left')
-    game.run(20)
+    game.run(steps)
     game.cmd('release left')
     moved = x - game.px('paddle_x')
-    check(abs(moved - 19 * speed / 256) <= speed / 256 + 1,
-          f'the paddle moves at its new speed, {moved} px in 20 steps')
+    check(abs(moved - (steps - 1) * speed / 256) <= speed / 256 + 1,
+          f'the paddle moves at its new speed, {moved} px in {steps} steps')
     print(f'ok: a {width} px paddle moving {speed / 256} px a step')
 
     # Clearing stage 1, the only stage, plays stage 1 again.

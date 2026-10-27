@@ -1,0 +1,81 @@
+#include "scene.h"
+#include "debug.h"
+#include "video.h"
+#include "xram.h"
+#include <fcntl.h>
+#include <rp6502.h>
+#include <stdio.h>
+#include <unistd.h>
+
+/* Each screen has art of its own in XRAM_ART, read from the ROM's assets
+   when the screen starts. The title and the upgrade screens have the rock
+   tiles, the logo and every sled. A stage has the texture, a curtain set
+   and its own sled. */
+
+#define SCENE_MENU 1
+#define SCENE_STAGE 2
+
+/* The curtain sets, ROM:curtain1 and on. */
+#define CURTAIN_SETS 1
+
+static uint8_t scene;
+
+/* Reads count bytes of a ROM asset, from offset, into XRAM at xaddr. */
+static void load(const char *path, long offset, unsigned xaddr, unsigned count)
+{
+    int fd = open(path, O_RDONLY);
+
+    if (fd < 0)
+    {
+        DEBUG_LOG("no %s\n", path);
+        return;
+    }
+    if (offset)
+        lseek(fd, offset, SEEK_SET);
+    while (count)
+    {
+        int n = read_xram(xaddr, count < 0x7FFF ? count : 0x7FFF, fd);
+        if (n <= 0)
+            break;
+        xaddr += n;
+        count -= n;
+    }
+    close(fd);
+}
+
+/* The title and the upgrade screens: rock tiles on plane 0. */
+void scene_menu(void)
+{
+    if (scene == SCENE_MENU)
+        return;
+    scene = SCENE_MENU;
+    load("ROM:tiles", 0, XRAM_TILES, sizeof(((xram_layout_t *)0)->art.menu.tiles));
+    load("ROM:logo", 0, XRAM_LOGO_IMAGES, sizeof(((xram_layout_t *)0)->art.menu.logo_images));
+    load("ROM:sleds", 0, XRAM_SLED_IMAGES, sizeof(((xram_layout_t *)0)->art.menu.sled_images));
+    xreg_vga_mode2(MODE2_4BPP | MODE2_16X16, XRAM_TILE_CONFIG, 0);
+}
+
+/* A stage: the texture on plane 0, from a new place each time, a curtain
+   set picked at random, and the sled of a level of the width upgrade. */
+void scene_stage(uint8_t sled_level)
+{
+    char curtain[] = "ROM:curtain1";
+    unsigned noise = ria_attr_get(RIA_ATTR_LRAND);
+
+    scene = SCENE_STAGE;
+    load("ROM:texture", 0, XRAM_TEXTURE, sizeof(((xram_layout_t *)0)->art.stage.texture));
+    curtain[11] = '1' + noise % CURTAIN_SETS;
+    load(curtain, 0, XRAM_PALETTE_CURTAIN, sizeof(((palettes_t *)0)->curtain));
+    load(curtain, sizeof(((palettes_t *)0)->curtain), XRAM_CURTAINS, 2 * CURTAIN_BYTES);
+    load("ROM:sleds", (long)sled_level * SLED_SLOT, XRAM_STAGE_SLED, SLED_SLOT);
+    xram0_poke16(XRAM_TEXTURE_CONFIG + offsetof(mode3_config_t, x_pos_px), -(int16_t)(noise % TEXTURE_W));
+    xram0_poke16(XRAM_TEXTURE_CONFIG + offsetof(mode3_config_t, y_pos_px),
+                 -(int16_t)(noise / TEXTURE_W % TEXTURE_H));
+    xreg_vga_mode3(MODE3_2BPP, XRAM_TEXTURE_CONFIG, 0);
+}
+
+/* The images of the sled of a level of the width upgrade, on this screen. */
+unsigned scene_sled(uint8_t level)
+{
+    return scene == SCENE_STAGE ? XRAM_STAGE_SLED : XRAM_SLED_IMAGES + level * SLED_SLOT;
+}
