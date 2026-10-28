@@ -116,11 +116,19 @@ class Game(rp6502.Emu):
         self.talk_ok()
 
     def talk_ok(self):
-        """Wait for a dwarf's OK, press the button, and wait until he and his
-        bubble have gone."""
-        self.until('talk_state', 'TALK_READY', 120)
-        self.tap('space')
-        self.until('talk_state', 'TALK_OFF', 60)
+        """Get past the dwarves: wait for each one's OK, press the button, and
+        wait until he has gone, and the next comes in, or the last has gone
+        and the screen under him has taken over again."""
+        off, coming = self.sym['TALK_OFF'], self.sym['TALK_IN']
+        self.run(2)
+        while self.ram('talk_state') != off:
+            self.until('talk_state', 'TALK_READY', 120)
+            self.tap('space')
+            for _ in range(60):
+                if self.ram('talk_state') in (off, coming):
+                    break
+                self.run(1)
+        self.run(2)
 
     def run(self, frames=1):
         self.cmd(f'run {frames}')

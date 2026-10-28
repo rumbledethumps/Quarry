@@ -42,19 +42,32 @@ static uint8_t steps;
 static uint16_t away; /* as in coming and going */
 static talk_head_t head; /* the talk's, as it loaded */
 
-/* The talk, after any already waiting, unless the player has seen it, or
-   it is up or waiting already. It counts as seen once its OK is pressed,
-   and the save keeps that the next time the game saves. */
-void talk_once(uint8_t talk)
+/* The talk, after any already waiting, unless it is up or waiting
+   already. It counts as seen once its OK is pressed, and the save keeps
+   that the next time the game saves. */
+void talk_queue(uint8_t talk)
 {
     uint8_t i;
 
-    if (talks_seen & 1 << (talk - 1) || queued == QUEUE || (talk_state != TALK_OFF && showing == talk))
+    if (queued == QUEUE || (talk_state != TALK_OFF && showing == talk))
         return;
     for (i = 0; i < queued; i++)
         if (queue[i] == talk)
             return;
     queue[queued++] = talk;
+}
+
+/* The talk, as talk_queue(), unless the player has seen it. */
+void talk_once(uint8_t talk)
+{
+    if (!(talks_seen & 1 << (talk - 1)))
+        talk_queue(talk);
+}
+
+/* Whether a dwarf is talking, or about to. */
+uint8_t talk_busy(void)
+{
+    return talk_state != TALK_OFF || queued;
 }
 
 /* The next talk comes in from off the screen. The cursor goes, and the

@@ -120,6 +120,8 @@ def main():
           f'{launches} launches, {hits} paddle hits, energy {energy}')
     if how == 'out of balls':
         check(launches == balls, 'the stage ends when the last ball is lost')
+    if how == 'cleared':
+        game.talk_ok()  # the dwarf with the coin, before the menu
     title = {'cleared': 'STAGE COMPLETE', 'out of energy': 'OUT OF FUEL', 'out of balls': 'OUT OF BALLS'}[how]
     check(game.shows(title) and game.shows('UPGRADES') and game.shows('REPLAY'),
           f'the menu says {title} when the stage ends')

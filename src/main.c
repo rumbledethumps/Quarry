@@ -62,6 +62,7 @@ _Static_assert(PLAY_OUT == PLAY_CLEARED + 1 && PLAY_NO_ENERGY == PLAY_CLEARED + 
 
 static uint8_t game_state;
 static uint8_t stage = 1; /* the stage being played, from 1 */
+static uint8_t stage_how; /* how it ended, as play_step() returned */
 
 /* Lays out the stage, centers the playfield with its frame and curtains,
    and sets up the paddle and every ball, ready to play. It starts from no
@@ -97,20 +98,41 @@ static void stage_play(void)
     DEBUG_LOG("stage %u start\n", stage);
 }
 
+/* The menu when a stage ends, which waits wait steps before it takes a
+   choice. */
+static void end_menu(uint8_t wait)
+{
+    menu_open(&end_menus[stage_how - PLAY_CLEARED], END_UPGRADES - 1, 0, wait);
+}
+
 /* The first clear of a stage earns a coin and opens the next, which the
-   upgrade screen then picks. The game saves. */
+   upgrade screen then picks, and a dwarf hands the coin over before the
+   menu opens. The game saves. */
 static void stage_end(uint8_t how)
 {
+    stage_how = how;
     if (how == PLAY_CLEARED && stage > stages_cleared)
     {
         stages_cleared = stage;
         stage_picked = save_stages_open();
         coins_add();
+        talk_queue(TALK_COIN);
         DEBUG_LOG("coin for stage %u\n", stage);
     }
-    menu_open(&end_menus[how - PLAY_CLEARED], END_UPGRADES - 1, 0, STAGE_OVER_WAIT);
+    else
+        end_menu(STAGE_OVER_WAIT);
     game_state = STATE_MENU;
     save_write();
+}
+
+/* The last dwarf has gone: the menu waiting for him opens, or the upgrade
+   screen's cursor comes back. */
+static void talk_over(void)
+{
+    if (game_state == STATE_MENU)
+        end_menu(0);
+    else if (game_state == STATE_SHOP)
+        shop_resume();
 }
 
 /* Resume is left off until there is a save. */
@@ -172,6 +194,8 @@ static void wait_vsync(void)
    game: every menu leads to another screen. */
 int main(void)
 {
+    uint8_t talked = 0; /* whether a dwarf talked the step before */
+
     video_init();
     scene_menus();
     input_init();
@@ -193,11 +217,19 @@ int main(void)
         sfx_step();
         if (talk_step())
         {
-            /* A dwarf takes the input, and the stage under him idles. */
-            if (game_state == STATE_PLAY)
+            /* A dwarf takes the input, and the screen under him carries on. */
+            if (game_state == STATE_PLAY || game_state == STATE_MENU)
                 play_idle();
+            else if (game_state == STATE_SHOP)
+                shop_idle();
+            talked = 1;
             cursor_step();
             continue;
+        }
+        if (talked)
+        {
+            talked = 0;
+            talk_over();
         }
         switch (game_state)
         {

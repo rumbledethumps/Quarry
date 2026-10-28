@@ -129,7 +129,7 @@ add_custom_command(
 # each as ROM:talk1 and on, and talks.h, which numbers them. There are
 # QUARRY_TALKS of them, as art/talk.py lists them, and talk.png is the
 # first, to look at.
-set(QUARRY_TALKS 1)
+set(QUARRY_TALKS 4)
 set(QUARRY_TALK_BINS)
 foreach(n RANGE 1 ${QUARRY_TALKS})
     list(APPEND QUARRY_TALK_BINS ${CMAKE_CURRENT_BINARY_DIR}/talk${n}.bin)

@@ -120,6 +120,7 @@ def main():
     game.tap('up')
     game.menu_choose('UPGRADES', wait=False)
     game.cmd('expect "upgrades"')  # past every click before the upgrade screen
+    game.talk_ok()
     game.poke('nuggets', 50, 2)
     game.tap('right')
     played(game, MOVE, 5)

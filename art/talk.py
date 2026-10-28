@@ -44,13 +44,22 @@ BUBBLE_TILES = 48
 TALK_BYTES = 14 + 8 * DWARF_PIECES + 32 + DWARF_BYTES + 8 + 16 * BUBBLE_TILES + BUBBLE_ROWS * BUBBLE_COLS
 SCREEN_H = 240
 
-# Where they stand on a stage: he is in the lower left corner, and his
-# bubble beside him, its tail under his beard. The bubble is placed by its
-# left and its foot, so the tail is as high whatever its lines.
+# Where they stand: he is in the lower left corner, and his bubble beside
+# him, its tail under his beard. The bubble is placed by its left and its
+# foot, so the tail is as high whatever its lines. On the upgrade screen
+# its foot is over the carts, which show what he talks about.
 STAGE = {'dwarf': (0, SCREEN_H - DWARF_SIZE), 'bubble': (68, SCREEN_H - 24)}
+UPGRADES = {'dwarf': (0, SCREEN_H - DWARF_SIZE), 'bubble': (68, 196)}
 
 TALKS = [
+    # A new game's first stage.
     ('WELCOME', 'miner', ['WELCOME TO QUARRY.', 'BREAK SOME BRICKS AND', 'BUY SOME UPGRADES.'], STAGE),
+    # Each first clear of a stage, before its menu.
+    ('COIN', 'miner', ['CONGRATULATIONS!', "HERE'S A COIN."], STAGE),
+    # The upgrade screen, as stage 2 unlocks.
+    ('UNLOCK', 'miner', ['GREAT JOB! EACH LEVEL YOU', 'CLEAR UNLOCKS THE NEXT.', 'PICK ITS CART BELOW.'], UPGRADES),
+    # The first time on the upgrade screen, after any other.
+    ('UPGRADES', 'miner', ['SPEND YOUR NUGGETS HERE', 'ON UPGRADES THAT HELP', 'YOU CLEAR LEVELS.'], UPGRADES),
 ]
 
 CLEAR, INK, PAPER, SHADE = range(4)

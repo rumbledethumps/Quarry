@@ -113,6 +113,7 @@ def main():
     # first lit in the middle, and nothing to buy.
     game.poke('nuggets', 0, 2)
     game.menu_choose('UPGRADES', wait=False)
+    game.talk_ok()  # the dwarf's first word on the screen
     game.run(20)  # past the flicker of the panel in the middle
     check(game.ram('panel_picked') == 0 and game.ram('cursor_on') == sym['ON_RAIL'],
           'it opens on the rail, with the first panel picked')
@@ -274,6 +275,7 @@ def main():
     clear()
     check(game.ram('coins', 2) == 1 and game.ram('stages_cleared') == 1, 'a coin for clearing stage 1')
     check(game.count('XRAM_COIN_DIGITS', sym['COUNT_DIGITS']) == 1, 'the count shows it')
+    game.talk_ok()  # the dwarf hands it over
     game.menu_choose('REPLAY')
     clear()
     check(game.ram('coins', 2) == 1, 'no coin for clearing it again')
@@ -289,6 +291,7 @@ def main():
           'the lock breaks, and stage 2 shows open, picked')
     game.run(40)
     check(game.ram('cart_scroll', 2) == sym['CART_STEP'], 'and the train slides over to it')
+    game.talk_ok()  # the dwarf who says what the unlock means
     game.tap('down')
     game.tap('space')
     check(game.shows('BEGIN LEVEL 2?'), 'and asks to begin stage 2')

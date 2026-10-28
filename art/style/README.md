@@ -407,14 +407,21 @@ same time, the two stopping together. Half a second later the OK shows at
 the end of the last line, with the holographic cursor close round it, and the
 button sends them back the way they came. Only one dwarf shows at a time,
 and the cursor is off while they come and go. They show when a screen
-opens, never in the middle of play: the first stage of a new game starts
-with a welcome.
+opens, never in the middle of play, and the screen under them carries on:
+
+- the first stage of a new game starts with a welcome;
+- each first clear of a stage has a dwarf hand over its coin, before the
+  menu opens;
+- on the upgrade screen, as stage 2 unlocks, one says what an unlock
+  means, as the unlock goes on over the carts, and the first time there,
+  another says what the screen is for, after any other.
 
 - A dwarf is a head-and-shoulders portrait, 80x80, in the outlined
   cartoon look of the sleds: bold shapes, a crisp dark outline, flat
   shading in a few colors, light from the upper left, facing a little to
   the right, toward his bubble. He stands in the lower left corner, his
-  shoulders on the foot of the screen, and covers the counts there.
+  shoulders on the foot of the screen, and covers the counts there. On the
+  upgrade screen his bubble's foot is just over the carts, so they show.
 - Each dwarf is a portrait in `art/dwarves/` as Retro Diffusion drew it,
   in a frame of its own on a plain background. `art/talk.py` cuts off the
   frame, clears the background from the edges in, and brings him down to

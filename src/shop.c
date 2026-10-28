@@ -10,6 +10,7 @@
 #include "save.h"
 #include "scene.h"
 #include "sfx.h"
+#include "talk.h"
 #include "upgrades.h"
 #include "video.h"
 #include "xram.h"
@@ -507,9 +508,12 @@ static void carts_move(void)
 }
 
 /* Where the cursor goes: around the panel in the middle, or the cart in
-   the middle and its heap, if it has one, a few pixels out. */
+   the middle and its heap, if it has one, a few pixels out. While a dwarf
+   talks, it stays off, and comes back with shop_resume(). */
 static void cursor_aim(void)
 {
+    if (talk_busy())
+        return;
     if (cursor_on == ON_RAIL)
         cursor_place(PANEL_LEFT - 3, PANEL_Y + TOP_ROW * 8 - 3, PANEL_LEFT + PANEL_COLS * 8 + 3,
                      PANEL_Y + (panel_heights[panel_picked] + 1) * 8 + 3);
@@ -728,6 +732,11 @@ void shop_open(uint8_t on)
         sprite_set(LOCK_SPRITE(p), XRAM_LOCK_IMAGE, XRAM_LOCK_PALETTE, MODE5_SIZE(16, 16));
     machines_start();
     carts_draw();
+    /* The first unlock has a dwarf say what it means, and the first time
+       here another says what the screen is for. */
+    if (unlocking == 2)
+        talk_once(TALK_UNLOCK);
+    talk_once(TALK_UPGRADES);
     cursor_aim();
     pictures_dirty = 0;
     carts_move();
@@ -736,6 +745,24 @@ void shop_open(uint8_t on)
     save_write();
     scene_menu_show(); /* only now, with everything in its place */
     DEBUG_LOG("upgrades\n");
+}
+
+/* A step of the upgrade screen while a dwarf talks over it: the machines
+   turn, an unlock goes on, and the rail and the train slide where they
+   were going, but it takes no input. */
+void shop_idle(void)
+{
+    machines_step();
+    if (unlocking)
+        unlock_step();
+    panel_scroll = ease(panel_scroll, panel_picked * PANEL_STEP);
+    cart_scroll = ease(cart_scroll, (stage_picked - 1) * CART_STEP);
+}
+
+/* The last dwarf has gone, and the cursor comes back. */
+void shop_resume(void)
+{
+    cursor_aim();
 }
 
 /* At the start of a frame: the panels and their pictures move to where

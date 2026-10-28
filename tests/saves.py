@@ -145,6 +145,7 @@ def main():
     game.paused_poke([('balls', 0, 1), ('ball_state', 1, 1)])
     game.wait('out of balls', 3000)
     game.menu_choose('UPGRADES')
+    game.talk_ok()
     game.poke('nuggets', 20, 2)
     left = 20 - game.ram('width_costs', 2)  # after the first width
     game.tap('enter')

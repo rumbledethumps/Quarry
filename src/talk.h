@@ -11,7 +11,11 @@
 #define TALK_READY 3 /* the OK showing, with the cursor round it */
 #define TALK_OUT 4   /* going */
 
+extern uint8_t talk_state;
+
+void talk_queue(uint8_t talk);
 void talk_once(uint8_t talk);
+uint8_t talk_busy(void);
 uint8_t talk_step(void);
 void talk_draw(void);
 

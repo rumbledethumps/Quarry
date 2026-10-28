@@ -62,8 +62,10 @@ Stages 2 to 10 are stand-ins: stage 1 a column wider each time.
 
 A new game starts with a cartoon dwarf miner coming up in the lower left
 corner, his speech bubble coming in beside him with a welcome, a stand-in
-for now. The button on its OK sends them away. More of the dwarves, and
-more for them to say, are coming.
+for now. The button on its OK sends them away. He comes back with the coin
+for each first clear, and on the upgrade screen to explain the first
+unlock and, the first time there, what the screen is for. More dwarves,
+and more for them to say, are coming.
 
 The game saves when a stage starts or ends, when it pauses, and when an
 upgrade is bought, in `SAVE:quarry.save`, with what the dwarves have

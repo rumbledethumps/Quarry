@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-"""Checks a dwarf's talk, the welcome at the start of a new game, in the
-emulator.
+"""Checks the dwarves' talks in the emulator: the welcome at the start of a
+new game, the coin for a first clear before the menu, and on the upgrade
+screen, the first unlock's and the screen's, one after the other while
+the unlock goes on.
 
   talk.py rom.rp6502
 
@@ -109,6 +111,57 @@ def main():
     game.run(30)
     check(game.ram('talk_state') == sym['TALK_OFF'], 'the welcome is only once')
     check(field(game.screen(shot)) == after, 'and he left nothing on the screen')
+    print('ok: the welcome is only once, and he left nothing behind')
+
+    # A first clear: the dwarf hands over the coin, and then the menu opens,
+    # with the cursor.
+    talk = lambda name: game.wait(f'talk {sym[name]}\\n', 30)  # the line's end, so 1 is not 11
+    game.tap('space')
+    game.run(20)
+    game.paused_poke([('bricks_left', 0, 1)])
+    game.wait('stage cleared', 10)
+    talk('TALK_COIN')
+    game.run(30)
+    check(not game.shows('STAGE COMPLETE'), 'the dwarf with the coin comes before the menu')
+    game.talk_ok()
+    game.run(2)
+    check(game.shows('STAGE COMPLETE') and game.shown(cursor, 4) == 4, 'then the menu, with the cursor')
+    print('ok: the coin, then the menu')
+
+    # The upgrade screen: as stage 2 unlocks, a dwarf says what that means,
+    # and the unlock goes on under him. Then another says what the screen is
+    # for. The cursor is off until each OK, and comes back to the rail after.
+    game.tap('space')  # UPGRADES
+    game.until('game_state', 'STATE_SHOP', 60)
+    talk('TALK_UNLOCK')
+    check(game.shown(cursor, 4) == 0, 'no cursor while he comes in')
+    game.wait('unlocked 2', 200)
+    check(game.ram('talk_state') == sym['TALK_READY'], 'the unlock goes on while he talks')
+    game.tap('space')
+    check(game.shown(cursor, 4) == 0, 'the cursor goes with his OK')
+    talk('TALK_UPGRADES')
+    check(game.shown(cursor, 4) == 0, 'and stays off as the next comes in')
+    game.talk_ok()
+    game.run(2)
+    check(game.ram('cursor_on') == sym['ON_RAIL'] and game.shown(cursor, 4) == 4, 'then it comes back to the rail')
+    print('ok: the unlock, the upgrade screen, and the cursor back')
+
+    # The next first clear has a coin but no more of the upgrade screen's.
+    game.tap('down')
+    game.tap('space')
+    game.tap('space')  # YES, begin stage 2
+    game.until('game_state', 'STATE_PLAY', 60)
+    game.run(5)
+    check(game.ram('talk_state') == sym['TALK_OFF'], 'no welcome on stage 2')
+    game.tap('space')
+    game.run(20)
+    game.paused_poke([('bricks_left', 0, 1)])
+    game.wait('stage cleared', 10)
+    talk('TALK_COIN')
+    game.talk_ok()
+    game.menu_choose('UPGRADES', wait=False)
+    game.wait('unlocked 3', 200)
+    check(game.ram('talk_state') == sym['TALK_OFF'], 'the unlock and the screen are told of once')
     print('PASS')
 
 

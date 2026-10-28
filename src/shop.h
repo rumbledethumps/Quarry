@@ -14,6 +14,8 @@
 
 void shop_open(uint8_t on);
 uint8_t shop_step(void);
+void shop_idle(void);
+void shop_resume(void);
 void shop_draw(void);
 
 #endif
