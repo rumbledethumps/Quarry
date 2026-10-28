@@ -258,3 +258,10 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     rp6502_test(NAME sound COMMAND tests/sound.py ${QUARRY_ROM})
     rp6502_test(NAME talk COMMAND tests/talk.py ${QUARRY_ROM})
 endif()
+
+# A spike, not part of the game: spikes/rng.c compares random number
+# generators on the 6502, for speed and for how even they are. Its ROM is
+# rng.rp6502, to run on the hardware.
+add_executable(rng)
+target_sources(rng PRIVATE spikes/rng.c)
+rp6502_executable(rng DATA default RESET default)
