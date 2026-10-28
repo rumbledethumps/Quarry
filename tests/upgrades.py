@@ -280,7 +280,7 @@ def main():
     game.menu_choose('UPGRADES')
     game.run(5)
     check(game.ram('stage_picked') == 2, 'the upgrade screen picks stage 2, just opened')
-    lock = sym['XRAM_MENU_SPRITES'] + (sym['PANELS'] * sym['PANEL_SPRITES'] + 4) * SPRITE
+    lock = sym['XRAM_MENU_SPRITES'] + sym['PANELS'] * sym['PANEL_SPRITES'] * SPRITE  # its halves, then the padlocks
     check(game.ram('unlocking') == 2 and game.shown(lock, 2) == 2, 'and its lock shows, to break')
     check(game.shown(lock + 2 * SPRITE, 4) == 4, 'with padlocks on the 4 carts locked after it')
     game.wait('unlocked 2', 200)

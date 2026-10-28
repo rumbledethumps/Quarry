@@ -234,5 +234,22 @@ void scene_curtains(int8_t step)
    screen's pictures. */
 void scene_picture_sled(uint8_t slot, uint8_t level)
 {
-    load("ROM:sleds", (long)level * SLED_SLOT, XRAM_PICTURE(slot), PICTURE_BYTES);
+    load("ROM:sleds", (long)level * SLED_SLOT, XRAM_PICTURE(slot), SLED_WIDTH_MAX * 8 / 2);
+}
+
+/* The menus' palette and tiles, at the start, and again after a dwarf has
+   talked in their place. */
+void scene_menus(void)
+{
+    load("ROM:menus", 0, XRAM_MENU_PALETTE,
+         XRAM_MENU_TILES + MENU_TILES * sizeof(menu_tile_t) - XRAM_MENU_PALETTE);
+}
+
+/* A talk, ROM:talk1 and on, in the menus' place. */
+void scene_talk(uint8_t talk)
+{
+    char path[] = "ROM:talk1";
+
+    path[8] = '0' + talk;
+    load(path, 0, XRAM_TALK, sizeof(talk_t));
 }

@@ -19,6 +19,8 @@
 void video_init(void);
 void video_blank(void);
 void video_start(void);
+void video_menus(void);
+void video_talk(void);
 void video_hide_sprites(void);
 void video_text_clear(void);
 void video_clear(uint8_t left, uint8_t top, uint8_t right, uint8_t bottom);

@@ -125,6 +125,25 @@ add_custom_command(
     VERBATIM
 )
 
+# What the dwarves say, from art/talk.py with the dwarves of art/dwarves/,
+# each as ROM:talk1 and on, and talks.h, which numbers them. There are
+# QUARRY_TALKS of them, as art/talk.py lists them, and talk.png is the
+# first, to look at.
+set(QUARRY_TALKS 1)
+set(QUARRY_TALK_BINS)
+foreach(n RANGE 1 ${QUARRY_TALKS})
+    list(APPEND QUARRY_TALK_BINS ${CMAKE_CURRENT_BINARY_DIR}/talk${n}.bin)
+endforeach()
+add_custom_command(
+    OUTPUT ${QUARRY_TALK_BINS} ${CMAKE_CURRENT_BINARY_DIR}/talks.h
+    COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/art/talk.py ${CMAKE_CURRENT_BINARY_DIR}
+        ${CMAKE_CURRENT_BINARY_DIR}/talks.h --count ${QUARRY_TALKS}
+        --preview ${CMAKE_CURRENT_BINARY_DIR}/talk.png
+    DEPENDS art/talk.py art/curtain.py art/panel_font.py art/panels.py art/rd2png.py art/dwarves/miner.png
+    VERBATIM
+)
+
 # A sled for each width of src/tuning.h, drawn by art/sled.py, which also
 # writes them to look at in sleds/ in the build folder.
 add_custom_command(
@@ -150,13 +169,16 @@ rp6502_asset(quarry XRAM(XRAM_DIGIT_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/digits.b
 rp6502_asset(quarry XRAM(XRAM_MACHINE_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/machine.bin)
 rp6502_asset(quarry XRAM(XRAM_COIN_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/coin.bin)
 rp6502_asset(quarry XRAM(XRAM_CURSOR_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/cursor.bin)
-rp6502_asset(quarry XRAM(XRAM_MENU_PALETTE) ${CMAKE_CURRENT_BINARY_DIR}/menus.bin)
 # The art of each screen, which the screen loads when it starts.
 rp6502_asset(quarry backdrop ${CMAKE_CURRENT_BINARY_DIR}/backdrop.bin)
 rp6502_asset(quarry logo ${CMAKE_CURRENT_BINARY_DIR}/logo.bin)
 rp6502_asset(quarry sleds ${CMAKE_CURRENT_BINARY_DIR}/sleds.bin)
 rp6502_asset(quarry panels ${CMAKE_CURRENT_BINARY_DIR}/panels.bin)
 rp6502_asset(quarry carts ${CMAKE_CURRENT_BINARY_DIR}/carts.bin)
+rp6502_asset(quarry menus ${CMAKE_CURRENT_BINARY_DIR}/menus.bin)
+foreach(n RANGE 1 ${QUARRY_TALKS})
+    rp6502_asset(quarry talk${n} ${CMAKE_CURRENT_BINARY_DIR}/talk${n}.bin)
+endforeach()
 foreach(texture IN LISTS QUARRY_TEXTURES)
     rp6502_asset(quarry ${texture} ${CMAKE_CURRENT_BINARY_DIR}/${texture}.bin)
 endforeach()
@@ -188,6 +210,7 @@ target_sources(quarry PRIVATE
     src/scene.c
     src/sfx.c
     src/shop.c
+    src/talk.c
     src/title.c
     src/upgrades.c
     src/video.c
@@ -195,6 +218,7 @@ target_sources(quarry PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}/panels.h
     ${CMAKE_CURRENT_BINARY_DIR}/carts.h
     ${CMAKE_CURRENT_BINARY_DIR}/menus.h
+    ${CMAKE_CURRENT_BINARY_DIR}/talks.h
 )
 target_include_directories(quarry PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -211,4 +235,5 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     rp6502_test(NAME upgrades COMMAND tests/upgrades.py ${QUARRY_ROM})
     rp6502_test(NAME saves COMMAND tests/saves.py ${QUARRY_ROM})
     rp6502_test(NAME sound COMMAND tests/sound.py ${QUARRY_ROM})
+    rp6502_test(NAME talk COMMAND tests/talk.py ${QUARRY_ROM})
 endif()

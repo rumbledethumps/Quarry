@@ -59,11 +59,17 @@ picked. A stage newly open is still locked the first time the screen shows
 it: the padlock on its cart shakes and breaks, and its number lights.
 Stages 2 to 10 are stand-ins: stage 1 a column wider each time.
 
+A new game starts with a cartoon dwarf miner coming up in the lower left
+corner, his speech bubble coming in beside him with a welcome, a stand-in
+for now. The button on its OK sends them away. More of the dwarves, and
+more for them to say, are coming.
+
 The game saves when a stage starts or ends, when it pauses, and when an
-upgrade is bought, in `SAVE:quarry.save`. Resume on the title screen,
-there once there is a save, opens the upgrade screen from there, on its
-stage select; from a stage, it opens on the upgrades. New Game starts over at stage 1, and
-replaces the save.
+upgrade is bought, in `SAVE:quarry.save`, with what the dwarves have
+already said. Resume on the title screen, there once there is a save,
+opens the upgrade screen from there, on its stage select; from a stage, it
+opens on the upgrades. New Game starts over at stage 1, and replaces the
+save, once Yes answers whether to; Esc is No.
 
 ## Building
 

@@ -9,12 +9,12 @@
 #include <unistd.h>
 
 /* One save, one file: the nugget counts of each color, the coins, the
-   upgrade levels, the stages cleared, the stage picked to play, and the
-   highest stage the upgrade screen has shown open. It starts with a tag
-   that names its layout, so a save of another layout is not read as this
-   one. */
+   upgrade levels, the stages cleared, the stage picked to play, the
+   highest stage the upgrade screen has shown open, and the talks of the
+   dwarves already seen. It starts with a tag that names its layout, so a
+   save of another layout is not read as this one. */
 #define SAVE_PATH "SAVE:quarry.save"
-#define SAVE_TAG "QRY3"
+#define SAVE_TAG "QRY4"
 
 typedef struct
 {
@@ -25,12 +25,14 @@ typedef struct
     uint8_t stages_cleared;
     uint8_t stage_picked;
     uint8_t stages_shown;
+    uint8_t talks_seen;
 } save_t;
 
 uint8_t save_exists;
 uint8_t stages_cleared;
 uint8_t stage_picked = 1;
 uint8_t stages_shown = 1;
+uint8_t talks_seen;
 
 /* The stages that can be played: every one cleared, and the next. */
 uint8_t save_stages_open(void)
@@ -64,6 +66,7 @@ uint8_t save_load(void)
     stages_cleared = s.stages_cleared;
     stage_picked = s.stage_picked;
     stages_shown = s.stages_shown;
+    talks_seen = s.talks_seen;
     save_exists = 1;
     DEBUG_LOG("loaded\n");
     return 1;
@@ -88,6 +91,7 @@ void save_write(void)
     s.stages_cleared = stages_cleared;
     s.stage_picked = stage_picked;
     s.stages_shown = stages_shown;
+    s.talks_seen = talks_seen;
     fd = open(SAVE_PATH, O_WRONLY | O_CREAT | O_TRUNC);
     if (fd < 0)
     {
@@ -101,8 +105,9 @@ void save_write(void)
     DEBUG_LOG("saved\n");
 }
 
-/* Starts over: no nuggets, no coins, no upgrades, no stage cleared, and
-   stage 1 picked and shown open, and replaces the save with that. */
+/* Starts over: no nuggets, no coins, no upgrades, no stage cleared,
+   stage 1 picked and shown open, and no talk seen, and replaces the save
+   with that. */
 void save_new_game(void)
 {
     memset(nuggets, 0, sizeof nuggets);
@@ -111,5 +116,6 @@ void save_new_game(void)
     stages_cleared = 0;
     stage_picked = 1;
     stages_shown = 1;
+    talks_seen = 0;
     save_write();
 }

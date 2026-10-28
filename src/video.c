@@ -45,15 +45,29 @@ void video_blank(void)
       bricks over it.
    1: the upgrade screen's panels and carts, and the paddle, its flames
       and smoke, and the ball.
-   2: the menus, with the gauge, the counts, the upgrade screen's
-      pictures and the holographic cursor over them. */
+   2: the menus, or a dwarf's speech bubble in their place, with the
+      gauge, the counts, the upgrade screen's pictures, the dwarf and the
+      holographic cursor over them. */
 void video_start(void)
 {
     xreg_vga_mode5(MODE5_CUSTOM, XRAM_SCENERY,
                    sizeof(scenery_t) / sizeof(mode5_csprite_t) + BRICKS_MAX, 0);
     xreg_vga_mode5(MODE5_CUSTOM, XRAM_ACTORS, sizeof(actors_t) / sizeof(mode5_csprite_t), 1);
-    xreg_vga_mode2(MODE2_4BPP | MODE2_8X8, XRAM_MENU_CONFIG, 2);
+    video_menus();
     xreg_vga_mode5(MODE5_CUSTOM, XRAM_HUD, sizeof(hud_t) / sizeof(mode5_csprite_t), 2);
+}
+
+/* Plane 2's fill: the menus, 4-bit tiles. */
+void video_menus(void)
+{
+    xreg_vga_mode2(MODE2_4BPP | MODE2_8X8, XRAM_MENU_CONFIG, 2);
+}
+
+/* Plane 2's fill: a dwarf's speech bubble, 2-bit tiles, in the menus'
+   place. */
+void video_talk(void)
+{
+    xreg_vga_mode2(MODE2_2BPP | MODE2_8X8, XRAM_TALK_CONFIG, 2);
 }
 
 /* Every sprite of every plane, as a plain hidden sprite. Whatever shows a

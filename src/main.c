@@ -11,6 +11,7 @@
 #include "scene.h"
 #include "sfx.h"
 #include "shop.h"
+#include "talk.h"
 #include "title.h"
 #include "tuning.h"
 #include "upgrades.h"
@@ -84,12 +85,14 @@ static void stage_setup(void)
     play_start();
 }
 
-/* A stage starts, set up from the start, and the game saves. */
+/* A stage starts, set up from the start, and the game saves. The first
+   stage of a game starts with a dwarf's welcome. */
 static void stage_play(void)
 {
     menu_close();
     stage_setup();
     game_state = STATE_PLAY;
+    talk_once(TALK_WELCOME);
     save_write();
     DEBUG_LOG("stage %u start\n", stage);
 }
@@ -170,6 +173,7 @@ static void wait_vsync(void)
 int main(void)
 {
     video_init();
+    scene_menus();
     input_init();
     sfx_init();
     save_load();
@@ -180,12 +184,21 @@ int main(void)
         wait_vsync();
         cursor_draw();
         menu_draw();
+        talk_draw();
         if (game_state == STATE_PLAY || game_state == STATE_MENU || game_state == STATE_PAUSE)
             play_draw();
         else if (game_state == STATE_SHOP)
             shop_draw();
         input_read();
         sfx_step();
+        if (talk_step())
+        {
+            /* A dwarf takes the input, and the stage under him idles. */
+            if (game_state == STATE_PLAY)
+                play_idle();
+            cursor_step();
+            continue;
+        }
         switch (game_state)
         {
         case STATE_PLAY:

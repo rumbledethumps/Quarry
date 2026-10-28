@@ -35,12 +35,16 @@ def main():
     game.run(5)
     check(game.ram('game_state') == game.sym['STATE_TITLE'], 'a key held from boot does not choose')
 
-    # Nor does a choose held into play launch.
+    # Nor does a choose held into play get past the dwarf's welcome, which
+    # takes the input while he is up, or launch once he has gone.
     game.cmd('press enter')
     game.until('game_state', 'STATE_PLAY')
-    game.run(30)
+    game.until('talk_state', 'TALK_READY', 120)
+    game.run(10)
     game.cmd('release enter')
     game.run(5)
+    check(game.ram('talk_state') == game.sym['TALK_READY'], 'a key held into play does not pass the dwarf')
+    game.talk_ok()
     game.cmd('expect-not "launch"')
 
     game.run(2)

@@ -108,11 +108,19 @@ class Game(rp6502.Emu):
 
     def new_game(self):
         """From the title screen with no save, where New Game is picked,
-        start a new game."""
+        start a new game, and get past the dwarf's welcome."""
         if not self.booted:
             self.boot()
         self.tap('space')
         self.until('game_state', 'STATE_PLAY')
+        self.talk_ok()
+
+    def talk_ok(self):
+        """Wait for a dwarf's OK, press the button, and wait until he and his
+        bubble have gone."""
+        self.until('talk_state', 'TALK_READY', 120)
+        self.tap('space')
+        self.until('talk_state', 'TALK_OFF', 60)
 
     def run(self, frames=1):
         self.cmd(f'run {frames}')

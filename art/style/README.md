@@ -399,6 +399,49 @@ shows, as the tape's 4 palette entries turn round.
 - The title's boxes are plain, with no tape, until the title is
   redesigned.
 
+## The Dwarves
+
+Now and then a cartoon dwarf comes up from the foot of the screen with
+something to say, in a speech bubble that comes in from the right at the
+same time, the two stopping together. Half a second later the OK shows at
+the end of the last line, with the holographic cursor close round it, and the
+button sends them back the way they came. Only one dwarf shows at a time,
+and the cursor is off while they come and go. They show when a screen
+opens, never in the middle of play: the first stage of a new game starts
+with a welcome.
+
+- A dwarf is a head-and-shoulders portrait, 80x80, in the outlined
+  cartoon look of the sleds: bold shapes, a crisp dark outline, flat
+  shading in a few colors, light from the upper left, facing a little to
+  the right, toward his bubble. He stands in the lower left corner, his
+  shoulders on the foot of the screen, and covers the counts there.
+- Each dwarf is a portrait in `art/dwarves/` as Retro Diffusion drew it,
+  in a frame of its own on a plain background. `art/talk.py` cuts off the
+  frame, clears the background from the edges in, and brings him down to
+  15 colors of his own. He is up to 3 sprites, a band across his head and
+  a band across his shoulders, each as narrow as he is there, in 2816
+  bytes at most, so every dwarf keeps to about his outline.
+- The miner, `art/dwarves/miner.png`, the third of four, `rd_pro__default`,
+  96x96: "Head and shoulders of a friendly cartoon dwarf miner, as a
+  character portrait in a 16-bit game's dialogue, facing a little to the
+  right as if talking to someone: a big bushy beard, a rounded steel
+  mining helmet with a lamp on the front, bright eyes under bushy brows,
+  sturdy work clothes with suspenders, a cheerful knowing expression,
+  clean bold shapes with a crisp dark outline, smooth flat shading in a
+  few colors, light from the upper left, on a plain flat pure green
+  background". Other dwarves, a schoolmaster or a general, are to be the
+  same dwarf in other clothes, each a talk of its own.
+- The bubble is a comic speech bubble in 4 colors: near-black ink, cream
+  paper, and a darker cream along the inside of its foot. Its corners are
+  rounded, its outline a pixel wide, and its tail reaches out of its left
+  side, low down, to tuck under his beard. Its corners, edges and tail
+  are drawn by hand in `art/talk.py`.
+- His lines are the panels' font in ink, a blank row of cells between
+  them, in capitals: the font has `, ' !` for the dwarves' speech too.
+  The bubble is as wide as the longest line, and as wide again as the
+  last line needs for the OK, with a cell clear all round the OK for the
+  cursor.
+
 ## Rules for both
 
 - The light comes from the upper left.
@@ -431,7 +474,7 @@ darkest first. Each class of art gets a row of its own:
 | shade | the sled row at half, for the machine behind the ball and a dim sled |
 | holo | the holographic cursor of the upgrade screen and the menus, whose colors shimmer |
 
-The upgrade panels have a palette of their own, 256 colors, outside these rows, since they are a tile layer, and so do the menus, 16 colors. Each frame set brings its own 16 colors, and the same darkened for its braces, with its pieces.
+The upgrade panels have a palette of their own, 256 colors, outside these rows, since they are a tile layer, and so do the menus, 16 colors. Each frame set brings its own 16 colors, and the same darkened for its braces, with its pieces. Each talk brings its dwarf's 16 colors and its bubble's 4.
 
 A jet's nozzle and its flame are one sprite, so the flames share the sled
 row. Every curtain set brings its own palette into the one curtain row.
@@ -458,6 +501,8 @@ That is 8 rows and the ores, so 24 rows are left for ores.
 | logo | 3 pieces, 64x64, as one 192x64 image |
 | curtains | 100x240 each, cut from a 256x240 curtain set |
 | cursor | 4 corners, 12x12, one image turned |
+| dwarf | 80x80, in up to 3 sprites |
+| speech bubble | up to 28x10 cells of 8x8, the tail's column with them |
 
 The current sizes come from `src/xram.h`. RD Pro styles start at 12x12, so
 art 8 pixels tall is made as a larger study, then redrawn by hand at its

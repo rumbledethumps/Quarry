@@ -135,11 +135,15 @@ static int16_t drawn_scroll;
 static int16_t picture_x[PANELS * PANEL_SPRITES]; /* from the panel's left */
 static uint8_t picture_shown[PANELS * PANEL_SPRITES];
 
-/* The pictures of the panels within two of the one picked are in slots of
-   XRAM, panel p's in slot p % PICTURE_SLOTS: those that show, and the next
-   one each way, which loads before it slides into view. */
+/* The pictures of the panels near the one picked are in slots of XRAM,
+   panel p's in slot p % PICTURE_SLOTS: the three that show, and the next
+   one the way the rail last moved, which loads before it slides into
+   view. Those are four panels side by side, so each has a slot. */
 static uint8_t slot_panel[PICTURE_SLOTS]; /* whose picture each slot holds, or PANELS */
 static uint8_t slot_level[PICTURE_SLOTS]; /* and at which level */
+static int8_t heading = 1; /* the way the rail last moved: 1 to the panels on the right, -1 to the left */
+
+_Static_assert(PICTURE_SLOTS >= 4, "A slot for each of the four panels near the one picked.");
 
 static uint8_t unlocking; /* the stage being unlocked, or 0 */
 static uint8_t unlock_steps;
@@ -317,13 +321,14 @@ static uint8_t picture_ready(uint8_t p)
     return slot_panel[slot] == p && slot_level[slot] == upgrade_levels[UPGRADE_WIDTH];
 }
 
-/* Loads the pictures of the panels within two of the one picked that
-   aren't in their slots yet. */
+/* Loads the pictures of the panels near the one picked that aren't in
+   their slots yet. */
 static void pictures_load(void)
 {
-    uint8_t p = panel_picked > 2 ? panel_picked - 2 : 0;
+    int8_t first = panel_picked - (heading < 0 ? 2 : 1);
+    uint8_t p = first > 0 ? first : 0;
 
-    for (; p <= panel_picked + 2 && p < PANELS; p++)
+    for (; p <= first + 3 && p < PANELS; p++)
         if ((p == UPGRADE_WIDTH || p == UPGRADE_SPEED) && !picture_ready(p))
         {
             uint8_t slot = p % PICTURE_SLOTS;
@@ -816,6 +821,7 @@ uint8_t shop_step(void)
         if (cursor_on == ON_RAIL && (right ? panel_picked + 1 < PANELS : panel_picked > 0))
         {
             panel_picked += right ? 1 : -1;
+            heading = right ? 1 : -1;
             pictures_load();
             pictures_dirty = 1;
             moved = 1;

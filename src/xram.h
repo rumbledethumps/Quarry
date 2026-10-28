@@ -337,10 +337,11 @@ typedef struct
    in 15 colors, and the middle is behind the panels, in 4 grays. */
 #define BACKDROP_BANDS 3
 
-/* The pictures of the panels nearest the middle, each PICTURE_BYTES, the
-   biggest a picture can be: for now, a flat sled. */
-#define PICTURE_SLOTS 5
-#define PICTURE_BYTES (SLED_WIDTH_MAX * 8 / 2)
+/* The pictures of the panels nearest the middle, each up to PICTURE_BYTES:
+   the three that show, and the next one the way the rail moves, which
+   loads before it slides into view. For now a picture is a flat sled. */
+#define PICTURE_SLOTS 4
+#define PICTURE_BYTES 1024
 
 /* The texture behind a stage's playfield, from art/texture.py: a bitmap at
    2 bits a pixel that wraps. */
@@ -406,9 +407,23 @@ typedef struct
 #define ENERGY_EMPTY 3
 #define ENERGY_BOTTOM 4
 
+/* A dwarf with something to say, from art/talk.py. He and his speech
+   bubble take the menus' place in XRAM, as the two never show together:
+   the dwarf a portrait DWARF_SIZE square, in up to DWARF_PIECES sprites
+   on plane 2 in his own colors, and the bubble a map of 2-bit tiles on
+   plane 2's fill, BUBBLE_COLS by up to BUBBLE_ROWS, in place of the
+   menus. */
+#define DWARF_SIZE 80
+#define DWARF_PIECES 3
+#define DWARF_BYTES 2816
+#define BUBBLE_COLS 28
+#define BUBBLE_ROWS 10
+#define BUBBLE_TILES 48
+
 typedef MODE2_TILE(8, 8) panel_tile_t;
 typedef MODE2_TILE(4, 8) cart_tile_t;
 typedef MODE2_TILE(4, 8) menu_tile_t;
+typedef MODE2_TILE(2, 8) bubble_tile_t;
 typedef MODE5_CUSTOM_IMAGE(4, 24, 8) brick_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 24, 16) break_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 8, 8) piece_image_t;
@@ -475,6 +490,7 @@ typedef struct
     mode5_csprite_t ball_digits[BALL_DIGITS];
     mode5_csprite_t nuggets[NUGGETS_MAX]; /* in flight */
     mode5_csprite_t menu[MENU_SPRITES];   /* the upgrade screen's pictures */
+    mode5_csprite_t dwarf[DWARF_PIECES];  /* over the counts, when he talks */
     mode5_csprite_t cursor[4];
 } hud_t;
 
@@ -522,6 +538,43 @@ typedef struct
     brace_image_t brace;
 } frame_set_t;
 
+/* A piece of a dwarf: where it goes, from his top left, and its image,
+   from the start of his. */
+typedef struct
+{
+    int16_t x, y;
+    uint16_t image;
+    uint8_t size; /* MODE5_SIZE */
+    uint8_t unused;
+} dwarf_piece_t;
+
+/* Where a dwarf and his bubble stand once they are in, how many rows the
+   bubble has, the cell of its OK and the OK's two tiles, which go in when
+   it shows, and the pieces of the dwarf. */
+typedef struct
+{
+    int16_t dwarf_x, dwarf_y;
+    int16_t bubble_x, bubble_y;
+    uint8_t rows;
+    uint8_t ok_col, ok_row;
+    uint8_t ok_tiles[2];
+    uint8_t pieces;
+    dwarf_piece_t piece[DWARF_PIECES];
+} talk_head_t;
+
+/* What a dwarf says, as ROM:talk1 and on hold it: its head, then his
+   colors and his image, then the bubble's 4 colors, its tiles and its
+   map. */
+typedef struct
+{
+    talk_head_t head;
+    uint16_t palette[16];
+    uint8_t images[DWARF_BYTES];
+    uint16_t bubble_palette[4];
+    bubble_tile_t bubble_tiles[BUBBLE_TILES];
+    uint8_t bubble_map[BUBBLE_ROWS][BUBBLE_COLS];
+} talk_t;
+
 /* The art of the title and of a stage: the texture and a curtain set, the
    stage's sled, then the title's logo or, in its place, the stage's frame
    set. Each screen loads its own when it starts. */
@@ -545,6 +598,7 @@ typedef struct
     mode2_config_t backdrop_configs[BACKDROP_BANDS];
     mode3_config_t texture_config;
     mode2_config_t menu_config;
+    mode2_config_t talk_config; /* the bubble, on plane 2 in the menus' place */
     mode2_config_t panel_config;
     mode2_config_t cart_config;
     palettes_t palettes;
@@ -552,9 +606,16 @@ typedef struct
     mode5_csprite_t bricks[BRICKS_MAX];
     actors_t actors;
     hud_t hud;
-    uint8_t menu_map[TEXT_ROWS][TEXT_COLS]; /* the menus' tiles, a byte a cell */
-    uint16_t menu_palette[16];              /* these two, as art/menus.py writes them */
-    menu_tile_t menu_tiles[MENU_TILES];
+    union
+    {
+        struct
+        {
+            uint8_t menu_map[TEXT_ROWS][TEXT_COLS]; /* the menus' tiles, a byte a cell */
+            uint16_t menu_palette[16];              /* these two, as ROM:menus holds them */
+            menu_tile_t menu_tiles[MENU_TILES];
+        };
+        talk_t talk; /* a dwarf talking, in the menus' place */
+    };
     brick_image_t brick_image;
     break_image_t break_images[BREAK_FRAMES];
     piece_image_t nugget_image;
@@ -579,6 +640,7 @@ typedef struct
 #define XRAM_BACKDROP_CONFIG(band) (offsetof(xram_layout_t, backdrop_configs) + (band) * sizeof(mode2_config_t))
 #define XRAM_TEXTURE_CONFIG offsetof(xram_layout_t, texture_config)
 #define XRAM_MENU_CONFIG offsetof(xram_layout_t, menu_config)
+#define XRAM_TALK_CONFIG offsetof(xram_layout_t, talk_config)
 #define XRAM_PANEL_CONFIG offsetof(xram_layout_t, panel_config)
 #define XRAM_CART_CONFIG offsetof(xram_layout_t, cart_config)
 #define XRAM_PALETTES offsetof(xram_layout_t, palettes)
@@ -615,10 +677,17 @@ typedef struct
 #define XRAM_BALL_DIGITS offsetof(xram_layout_t, hud.ball_digits)
 #define XRAM_NUGGET_SPRITES offsetof(xram_layout_t, hud.nuggets)
 #define XRAM_MENU_SPRITES offsetof(xram_layout_t, hud.menu)
+#define XRAM_DWARF_SPRITES offsetof(xram_layout_t, hud.dwarf)
 #define XRAM_CURSOR_SPRITES offsetof(xram_layout_t, hud.cursor)
 #define XRAM_MENU_MAP offsetof(xram_layout_t, menu_map)
 #define XRAM_MENU_PALETTE offsetof(xram_layout_t, menu_palette)
 #define XRAM_MENU_TILES offsetof(xram_layout_t, menu_tiles)
+#define XRAM_TALK offsetof(xram_layout_t, talk)
+#define XRAM_DWARF_PALETTE offsetof(xram_layout_t, talk.palette)
+#define XRAM_DWARF_IMAGES offsetof(xram_layout_t, talk.images)
+#define XRAM_BUBBLE_PALETTE offsetof(xram_layout_t, talk.bubble_palette)
+#define XRAM_BUBBLE_TILES offsetof(xram_layout_t, talk.bubble_tiles)
+#define XRAM_BUBBLE_MAP offsetof(xram_layout_t, talk.bubble_map)
 #define XRAM_BRICK_IMAGE offsetof(xram_layout_t, brick_image)
 #define XRAM_BREAK_IMAGES offsetof(xram_layout_t, break_images)
 #define XRAM_NUGGET_IMAGE offsetof(xram_layout_t, nugget_image)
