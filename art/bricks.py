@@ -22,12 +22,13 @@ coin shares, so one image of each serves every color:
 A brick is 24x8, 2 bits a pixel, with no gap of its own: a 1 px bevel all
 round, lit from the upper left. Its cracks are sprites over it, 16x8 at 2
 bits, in CRACK_SETS sets of CRACK_STATES, a state for each step of a brick
-more broken, each the last with more: a crack grows from inside the brick
-up and down a little with each state, to reach both edges, through the
-bevels, at the last, and a second beside it starts once the brick is
-SECOND_CRACK broken and grows faster, to reach both edges at the last
-too. They are black with a gray lip where the light catches the edge
-under them, and the game flips them either way.
+more broken, each the last with more: a crack starts at an edge, through
+its bevel, FIRST_PIXELS long, and grows wider and deeper with each state,
+to reach the other edge at the last, and a second beside it starts once
+the brick is SECOND_CRACK broken and grows faster, to reach the other
+edge at the last too: from the same edge in half the sets, and from the
+opposite one in the rest. They are black with a gray lip where the light
+catches the edge under them, and the game flips them either way.
 The chunks are 8x8 at 2 bits, CHUNKS of them, rough lumps of the brick's
 colors that fly when it breaks. The nugget is a sphere 7 px across, with
 an outline, as it flies, and 10 px across beside its count, as tall as
@@ -105,36 +106,31 @@ def brick():
     return img
 
 
-def arm(rng, x, y, dy, left, right):
-    """Half a crack, from just off x, y a row a step up or down to the
-    edge of the brick, through its bevel, wandering across, and now and
-    then a step sideways too, in the order it grows."""
-    pts = []
-    while 0 < y < H - 1:
+def crack(rng, left, right, down):
+    """A crack within columns left to right, its pixels in the order it
+    grows: from the top edge down to the bottom, or the bottom up to the
+    top, through both bevels, wandering across, and now and then a step
+    sideways, with a short branch off it here and there, each coming a
+    little after the crack has passed it."""
+    x, dy = rng.randint(left, right), 1 if down else -1
+    y = 0 if down else H - 1
+    keyed = [(0, (x, y))]
+    while 0 < y + dy < H - 1 or y + dy in (0, H - 1):
         x = max(left, min(right, x + rng.choice((-1, 0, 0, 1))))
         y += dy
-        pts.append((x, y))
-        if 0 < y < H - 1 and rng.random() < 0.3:
+        keyed.append((len(keyed), (x, y)))
+        if y in (0, H - 1):
+            break
+        if rng.random() < 0.3:
             x = max(left, min(right, x + rng.choice((-1, 1))))
-            pts.append((x, y))
-    return pts
-
-
-def crack(rng, left, right):
-    """A crack within columns left to right, its pixels in the order it
-    grows: where it starts, inside the brick, then its two halves, up to
-    the top edge and down to the bottom, each as far along as the other,
-    so both reach their edges at the end, and a short branch off one of
-    them on the way."""
-    x, y = rng.randint(left, right), rng.randint(3, 4)
-    up, down = arm(rng, x, y, -1, left, right), arm(rng, x, y, 1, left, right)
-    along, dy = rng.choice(((up, -1), (down, 1)))
-    bx, by = along[len(along) // 2]
-    dx = rng.choice((-1, 1))
-    branch = [(bx + dx, by), (bx + 2 * dx, by + dy)]
-    branch = [(px, py) for px, py in branch if 0 < px < CRACK_W - 1 and 0 < py < H - 1]
-    keyed = [(0, (x, y))] + [((i + 1) / len(up), p) for i, p in enumerate(up)] + \
-            [((i + 1) / len(down), p) for i, p in enumerate(down)] + [(0.6 + 0.1 * j, p) for j, p in enumerate(branch)]
+            keyed.append((len(keyed), (x, y)))
+    path = len(keyed)
+    for at in (path // 3, 2 * path // 3):
+        bx, by = keyed[at][1]
+        side = rng.choice((-1, 1))
+        for j, (px, py) in enumerate(((bx + side, by + dy), (bx + 2 * side, by + dy))):
+            if 0 < px < CRACK_W - 1 and 0 < py < H - 1:
+                keyed.append((at + 1.5 + j, (px, py)))
     order = []
     for _, p in sorted(keyed, key=lambda kp: kp[0]):
         if p not in order:
@@ -142,31 +138,40 @@ def crack(rng, left, right):
     return order
 
 
-def grown(order, part):
-    """The pixels of a crack grown part of the way, 0 to 1."""
-    return order[:math.ceil(part * len(order))] if part > 0 else []
+FIRST_PIXELS = 3  # of a crack, the state it shows
+
+
+def grown(order, state, states):
+    """The pixels of a crack at its state, from 1 to its states: its first
+    FIRST_PIXELS at once, then the rest by even steps, all of it at the
+    last."""
+    if state < 1:
+        return []
+    return order[:FIRST_PIXELS + math.ceil((state - 1) * (len(order) - FIRST_PIXELS) / max(1, states - 1))]
 
 
 def crack_set(seed):
     """The CRACK_STATES states of a set, a brick more and more broken: one
-    crack grows from where it starts, a pixel or more with each state, to
-    reach the top and the bottom edges at the last; a second, beside it,
-    starts at the state that holds SECOND_CRACK broken, and grows faster,
-    to reach both edges at the last too. Each is black, with a gray lip
-    under it where the light catches the edge. A crack too short to grow
-    with every state is drawn again."""
+    crack starts at an edge at the first state, and grows to the other
+    edge, wider and deeper, by the last; a second, beside it, starts at the
+    state that holds SECOND_CRACK broken, and grows faster, to reach the
+    other edge at the last too. In the first half of the sets they start
+    from the same edge, and in the rest from opposite edges. Each is black,
+    with a gray lip under it where the light catches the edge. A crack too
+    short to grow with every state is drawn again."""
     rng = random.Random(seed)
     begins = math.ceil(CRACK_STATES * SECOND_CRACK)
+    opposite = seed >= CRACK_SETS // 2
+    later = CRACK_STATES - begins + 1
     first = second = []
-    while len(first) < CRACK_STATES:
-        first = crack(rng, 3, 6)
-    while len(second) < CRACK_STATES - begins + 1:
-        second = crack(rng, 9, 12)
+    while len(first) < FIRST_PIXELS + CRACK_STATES - 1:
+        first = crack(rng, 3, 6, True)
+    while len(second) < FIRST_PIXELS + later - 1:
+        second = crack(rng, 9, 12, not opposite)
     states = []
     for state in range(1, CRACK_STATES + 1):
         img = [[0] * CRACK_W for _ in range(H)]
-        later = (state - begins + 1) / (CRACK_STATES - begins + 1)
-        cracks = grown(first, state / CRACK_STATES) + grown(second, later)
+        cracks = grown(first, state, CRACK_STATES) + grown(second, state - begins + 1, later)
         for x, y in cracks:
             img[y][x] = SPLIT
         for x, y in cracks:
