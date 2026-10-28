@@ -161,8 +161,10 @@ and cut to the game's sizes by `art/frames.py`.
 - The ball bounces off bright steel: the dark outline of a post or the
   beam, with its bright flange just inside. No rubber strip or shadow on
   the edge it hits.
-- A post is 16 wide and the beam 16 tall. Where the art is wider, plain
-  columns or rows of its web are left out, never a rivet or an edge.
+- A post shows 16 or 20 of its sprite's 20 columns, from its inside, and
+  the beam is 16 tall, so the ball bounces where it always has. Where the
+  art is wider, plain columns or rows of its web are left out, and where
+  it is narrower, plain ones repeat, never a rivet, a brace or an edge.
 - A post is two images of 64 rows that alternate down the screen, so its
   art repeats every 128 rows, or 64. The beam is pieces 64 wide from the
   left post, and the last is as wide as what is left, from the beam's own
@@ -176,9 +178,15 @@ and cut to the game's sizes by `art/frames.py`.
   without the rock or the shadows around them. Nothing behind the ball is
   brighter than the machine on the right wall, and `art/frames.py` stops
   the build if a brace is.
-- Set 1 is a riveted girder, its knee braces gusset plates. The concepts
-  in `art/style/ref/frame-*.png` hold more looks for the next sets: the
-  lattices of B2 and B3 and the mine shaft frames of D1, D3 and D4.
+- Set 1 is a riveted girder showing 16, its knee braces gusset plates.
+- Set 2 is an open truss of welded steel bars showing 20, X bracing in
+  square cells that the rock shows through, like lighting truss built
+  heavy for construction. Its beam's top chord runs off the top of the
+  screen, and its uprights are 3 wide, so its cells repeat every 16. Its
+  art was drawn on green, which goes clear, and turned to the girder's
+  cool gray.
+- The concepts in `art/style/ref/frame-*.png` hold more looks for the next
+  sets, such as the mine shaft frames of D1, D3 and D4.
 
 `art/screen.py` draws the machine, the digits, and the placeholder gauge.
 The machine uses the shade row, so its brightness is set there, not in its
@@ -431,8 +439,8 @@ That is 8 rows and the ores, so 24 rows are left for ores.
 | ball, ball sprite of the count | 8x8 |
 | digit | 8x12 sprite, a 6x8 digit with its outline |
 | texture | 320x240 at 2 bits a pixel |
-| post | 16 wide, 128 tall in two images of 64 |
-| cap beam | 16 tall, in pieces 64 wide, and a cap 16x16 over each post |
+| post | 20 wide, 16 or 20 of it showing, 128 tall in two images of 64 |
+| cap beam | 16 tall, in pieces 64 wide and an end piece, and a cap 20x16 over each post |
 | brace | 32x32 |
 | machine | 24x40 |
 | sled | the widths of `TUNE_WIDTHS`, up to 64, rounded up to 4 for the sprite; 8 tall, then its two tilts, 24 tall each |
@@ -580,6 +588,21 @@ The prompts that made them, all RD Pro, with no seed returned:
   concept smaller with it as a reference goes muddy: a reference at half
   size passes its noise on, and one of only a corner gets a close-up of
   the beam.
+- `art/frames/frame-2.png`, `rd_pro__default`, 80x76, the last of four,
+  with no reference: "Seen straight on, a heavy-duty open steel truss frame
+  like construction scaffolding: an open lattice tower down the far left
+  edge and another down the far right edge, each a fifth of the image's
+  width, two square steel tube chords with X-shaped cross bracing bars
+  welded between them in square cells so you can see right through,
+  joined across the very top by a matching open truss beam with X bracing,
+  as tall as the towers are wide, welded gusset plates where they meet,
+  grey steel with a crisp dark outline around every bar, smooth flat
+  shading, used but well maintained, no rust, no cracks, no damage, light
+  from the upper left, on a plain flat pure green background that shows
+  through every gap and fills the whole middle". It drew a corner, which
+  is all the cut needs. The same prompt at 128x120 drew the frame that set
+  2 was chosen from, its towers 25 wide; at 64 and 68 the X bracing turned
+  to mush. Retro Diffusion would not draw strips 16 wide to repeat.
 - `ui-kit.png`, `rd_pro__ui_panel`, 256x256: "Control panel parts for
   heavy modern mining machinery: riveted graphite steel panels with
   safety-yellow trim, chunky industrial push buttons and toggle switches,

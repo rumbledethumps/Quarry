@@ -64,7 +64,7 @@ endforeach()
 
 # Each frame set of the playfield, cut by art/frames.py from art/frames/,
 # as ROM:frame1 and on. art/frames.py also writes frame<n>.png to look at.
-set(QUARRY_FRAME_SETS 1)
+set(QUARRY_FRAME_SETS 2)
 foreach(n RANGE 1 ${QUARRY_FRAME_SETS})
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/frame${n}.bin

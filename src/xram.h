@@ -350,9 +350,11 @@ typedef struct
 /* The frame of the playfield, a frame set from art/frames.py: a post
    POST_W wide on each side, in POST_SPRITES pieces 64 rows tall, the cap
    beam BEAM_H tall across the top, in up to BEAM_SPRITES pieces 64 columns
-   wide, and a cap over each post. Behind them are a knee brace in each top
-   corner, and a machine on the right wall, from art/screen.py. */
-#define POST_W 16
+   wide, and a cap over each post. A set's post shows a multiple of 4 of
+   its columns, from its inside, and the rest are clear. Behind them are a
+   knee brace in each top corner, and a machine on the right wall, from
+   art/screen.py. */
+#define POST_W 20
 #define POST_SPRITES 4
 #define BEAM_H 16
 #define BEAM_SPRITES 6
@@ -507,6 +509,8 @@ typedef struct
 {
     uint16_t palette[16];
     uint16_t shade[16];
+    uint8_t shows; /* how many of the post's columns show */
+    uint8_t unused;
     post_image_t post[2];
     beam_image_t beam;
     uint8_t beam_ends[BEAM_ENDS_BYTES];
@@ -643,6 +647,7 @@ typedef struct
 #define XRAM_FRAME offsetof(xram_layout_t, art.cave.frame)
 #define XRAM_FRAME_PALETTE offsetof(xram_layout_t, art.cave.frame.palette)
 #define XRAM_FRAME_SHADE offsetof(xram_layout_t, art.cave.frame.shade)
+#define XRAM_FRAME_SHOWS offsetof(xram_layout_t, art.cave.frame.shows)
 #define XRAM_POST_IMAGE(half) (offsetof(xram_layout_t, art.cave.frame.post) + (half) * sizeof(post_image_t))
 #define XRAM_BEAM_IMAGE offsetof(xram_layout_t, art.cave.frame.beam)
 #define XRAM_BEAM_END(width) \

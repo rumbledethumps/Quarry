@@ -11,8 +11,13 @@ CUTS gives each piece's image and its columns and rows: the post's from
 the outside in, then down it, and the beam's along it, then from the top
 down. Each ends on its edge where the ball bounces, its dark outline with
 the bright flange just inside. Plain columns or rows of steel are left out
-where the art is wider than the game's, never a rivet or an edge. Pure
-green in the art is a gap, and goes clear, so the rock shows through.
+where the art is wider than the game's, or repeated where it is narrower,
+never a rivet, a brace or an edge. A post shows 16 or 20 columns, from its
+inside, and None for its first columns leaves them clear; the frame lays
+itself out by how many show. A set drawn on green has its gaps clear, so
+the rock shows through: a pixel clearly greener than gray is a gap, and
+the rest are turned to the cool gray of steel, each as bright as it was,
+so no green or rusty brown is left in it.
 
 The post is two sprite images of 64 rows that alternate down the screen,
 128 rows in all. The beam is pieces 64 wide from the left post, and the
@@ -28,7 +33,8 @@ something to bounce off.
 
 out.bin is a frame_set_t of src/xram.h: the set's palette, 16 colors as
 png2bin.py writes a palette row, the same colors at SHADE for the brace,
-then the post's two halves, the beam, its ends, the cap and the brace,
+how many of the post's columns show and a spare byte, then the post's two
+halves, the beam, its ends, the cap and the brace,
 each a 4-bit image with the left pixel of each pair in the high nibble. Only the Python standard
 library is used.
 """
@@ -42,12 +48,13 @@ from curtain import reduce
 from rd2png import rgba, write_png
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-POST_W, BEAM_H, BRACE = 16, 16, 32
+POST_W, BEAM_H, BRACE = 20, 16, 32
 SHADE = 0.4  # the brace's colors, of the set's
 DIM = 66  # in the brace, darker than this is rock or shadow, and goes clear
 
 # Each set: for each piece, its image, then its columns and its rows.
 _GIRDER = list(range(0, 8)) + list(range(10, 18))  # two plain columns of the web out
+_TRUSS = [8] + list(range(7, 26))  # its outer chord a column wider, to show 20
 
 
 def _cell(start):
@@ -56,11 +63,20 @@ def _cell(start):
 
 
 CUTS = {
-    1: {  # a riveted steel girder
-        'post': ('frame-1.png', _GIRDER, _cell(63)),
+    1: {  # a riveted steel girder, showing 16
+        'on green': False,
+        'post': ('frame-1.png', [None] * 4 + _GIRDER, _cell(63)),
         'beam': ('frame-1.png', _cell(34)[:64], _GIRDER),
-        'cap': ('frame-1.png', _GIRDER, _GIRDER),
+        'cap': ('frame-1.png', [None] * 4 + _GIRDER, _GIRDER),
         'brace': ('frame-1.png', range(18, 18 + BRACE), range(18, 18 + BRACE)),
+    },
+    2: {  # an open truss of welded bars with X bracing, showing 20; its beam's
+        # top chord is off the top of the screen, and its uprights are 3 wide
+        'on green': True,
+        'post': ('frame-2.png', _TRUSS, [55 + i % 16 for i in range(128)]),
+        'beam': ('frame-2.png', ([37, 38, 38, 38] + list(range(39, 51))) * 4, list(range(7, 23))),
+        'cap': ('frame-2.png', _TRUSS, list(range(7, 23))),
+        'brace': ('frame-2.png', range(26, 26 + BRACE), range(23, 23 + BRACE)),
     },
 }
 
@@ -70,7 +86,13 @@ def luma(c):
 
 
 def green(c):
-    return c[1] > 150 and c[0] < 100 and c[2] < 100
+    return c[1] - max(c[0], c[2]) > 40
+
+
+def gray(c):
+    """c as the cool gray of steel, as bright as it was."""
+    v = luma(c)
+    return (min(255, v * 94 // 100), min(255, v * 99 // 100), min(255, v * 106 // 100))
 
 
 def cut(n):
@@ -83,14 +105,25 @@ def cut(n):
             _, _, px = rgba(os.path.join(HERE, 'frames', path))
             images[path] = [[p[:3] for p in row] for row in px]
         px = images[path]
-        return [[None if clear(px[y][x]) else px[y][x] for x in cols] for y in rows]
+        tint = gray if CUTS[n]['on green'] else (lambda c: c)
+        return [[None if x is None or clear(px[y][x]) else tint(px[y][x]) for x in cols] for y in rows]
 
-    post = piece('post', green)
-    beam = piece('beam', green)
-    cap = piece('cap', green)
-    brace = piece('brace', lambda c: green(c) or luma(c) < DIM)
+    gap = green if CUTS[n]['on green'] else (lambda c: False)
+    post = piece('post', gap)
+    beam = piece('beam', gap)
+    cap = piece('cap', gap)
+    brace = piece('brace', lambda c: gap(c) or luma(c) < DIM)
     assert len(post) == 128 and len(post[0]) == POST_W and len(beam) == BEAM_H and len(beam[0]) == 64
+    assert len(cap) == BEAM_H and len(cap[0]) == POST_W
     return post, beam, cap, brace
+
+
+def shows(n):
+    """How many of the set's post's columns show, from its inside."""
+    cols = CUTS[n]['post'][1]
+    count = sum(1 for x in cols if x is not None)
+    assert count % 4 == 0, f'set {n} shows {count} columns, not a multiple of 4'
+    return count
 
 
 def machine_luma():
@@ -133,6 +166,7 @@ def main():
         for c in [None] + pal + [None] * (15 - len(pal)):
             r, g, b = c or (0, 0, 0)
             data += struct.pack('<H', (b >> 3) << 11 | (g >> 3) << 6 | (r >> 3) | (32 if c else 0))
+    data += bytes([shows(args.n), 0])
     post, beam, cap, brace = pieces
     for img in [post, beam] + [[row[:w] for row in beam] for w in range(8, 64, 8)] + [cap, brace]:
         data += packed(img, index)
@@ -158,10 +192,10 @@ def main():
             half = post[y % 128:y % 128 + 64]
             put(half, left - POST_W, y)
             put(half, right, y, flip=True)
-        outer, far = left - POST_W, right + POST_W
+        outer, far = left - shows(args.n), right + shows(args.n)
         for x in range(outer, far, 64):
             put([row[:far - x] for row in beam], x, 0)
-        put(cap, outer, 0)
+        put(cap, left - POST_W, 0)
         put(cap, right, 0, flip=True)
         write_png(args.preview, w, h, 2, [[v for c in row for v in c] for row in out])
 

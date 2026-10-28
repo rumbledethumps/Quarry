@@ -36,9 +36,9 @@ energy. On the upgrade screen, Shift and Right or Left raises or lowers the
 upgrade picked, for nothing, or, on the stages, opens the next stage or
 locks the last one again.
 
-The playfield is framed in riveted gray steel girders, which the ball
-bounces off, a frame set picked at random for each new stage, as its rock
-walls are. The paddle floats on thrusters. The energy bar drains from the first
+The playfield is framed in gray steel the ball bounces off, riveted
+girders or an open truss, a frame set picked at random for each new stage,
+as its rock walls are. The paddle floats on thrusters. The energy bar drains from the first
 launch, and when it is empty the paddle falls and the stage ends. Each
 brick you break turns into a nugget that flies to the counts at the top
 left. The first clear of a stage earns a coin, and opens the next stage.

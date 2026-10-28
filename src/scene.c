@@ -28,7 +28,7 @@
 #define TEXTURES 4
 
 /* The frame sets, ROM:frame1 and on, each a frame_set_t. */
-#define FRAME_SETS 1 /* QUARRY_FRAME_SETS of CMakeLists.txt */
+#define FRAME_SETS 2 /* QUARRY_FRAME_SETS of CMakeLists.txt */
 
 _Static_assert(CURTAIN_SETS <= 9 && TEXTURES <= 9 && FRAME_SETS <= 9, "An asset's name has one digit.");
 
