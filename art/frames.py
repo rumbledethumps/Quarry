@@ -54,7 +54,8 @@ DIM = 66  # in the brace, darker than this is rock or shadow, and goes clear
 
 # Each set: for each piece, its image, then its columns and its rows.
 _GIRDER = list(range(0, 8)) + list(range(10, 18))  # two plain columns of the web out
-_TRUSS = [8] + list(range(7, 26))  # its outer chord a column wider, to show 20
+_TRUSS = list(range(7, 24)) + [23, 24, 25]  # its inner chord a column wider, to show 20
+_BAY = [38, 38, 38] + list(range(39, 51)) + [37]  # an upright, 3 wide, and the X after it
 
 
 def _cell(start):
@@ -74,8 +75,11 @@ CUTS = {
         # top chord is off the top of the screen, and its uprights are 3 wide
         'on green': True,
         'post': ('frame-2.png', _TRUSS, [55 + i % 16 for i in range(128)]),
-        'beam': ('frame-2.png', ([37, 38, 38, 38] + list(range(39, 51))) * 4, list(range(7, 23))),
-        'cap': ('frame-2.png', _TRUSS, list(range(7, 23))),
+        'beam': ('frame-2.png', _BAY * 4, list(range(7, 23))),
+        'cap': ('frame-2.png', _TRUSS, list(range(55, 71))),  # the tower runs on up
+        # A beam half a bay short ends on an upright and its bottom chord, its
+        # web open, rather than half an X.
+        'tail': ('frame-2.png', [38, 38, 38, 39], 45, range(1, 12)),
         'brace': ('frame-2.png', range(26, 26 + BRACE), range(23, 23 + BRACE)),
     },
 }
@@ -116,6 +120,28 @@ def cut(n):
     assert len(post) == 128 and len(post[0]) == POST_W and len(beam) == BEAM_H and len(beam[0]) == 64
     assert len(cap) == BEAM_H and len(cap[0]) == POST_W
     return post, beam, cap, brace
+
+
+def beam_ends(n, beam):
+    """The beam's end pieces, 8 to 56 wide: its first columns, or for a set
+    with a tail, those that end half a bay short ending on the tail
+    instead: an upright, then a column with its web rows open, 8 in all."""
+    ends = [[row[:w] for row in beam] for w in range(8, 64, 8)]
+    if 'tail' not in CUTS[n]:
+        return ends
+    path, upright, open_col, web = CUTS[n]['tail']
+    _, _, px = rgba(os.path.join(HERE, 'frames', path))
+    rows = CUTS[n]['beam'][2]
+    tint = gray if CUTS[n]['on green'] else (lambda c: c)
+    clear = green if CUTS[n]['on green'] else (lambda c: False)
+
+    def color(x, y):
+        c = px[y][x][:3]
+        return None if clear(c) else tint(c)
+    tail = [[color(x, y) for x in upright] + [None if i in web else color(open_col, y)] * (8 - len(upright))
+            for i, y in enumerate(rows)]
+    return [[row[:w - 8] + t for row, t in zip(beam, tail)] if w % 16 == 8 else end
+            for w, end in zip(range(8, 64, 8), ends)]
 
 
 def shows(n):
@@ -168,7 +194,8 @@ def main():
             data += struct.pack('<H', (b >> 3) << 11 | (g >> 3) << 6 | (r >> 3) | (32 if c else 0))
     data += bytes([shows(args.n), 0])
     post, beam, cap, brace = pieces
-    for img in [post, beam] + [[row[:w] for row in beam] for w in range(8, 64, 8)] + [cap, brace]:
+    ends = beam_ends(args.n, beam)
+    for img in [post, beam] + ends + [cap, brace]:
         data += packed(img, index)
     with open(args.output, 'wb') as f:
         f.write(data)
@@ -192,9 +219,8 @@ def main():
             half = post[y % 128:y % 128 + 64]
             put(half, left - POST_W, y)
             put(half, right, y, flip=True)
-        outer, far = left - shows(args.n), right + shows(args.n)
-        for x in range(outer, far, 64):
-            put([row[:far - x] for row in beam], x, 0)
+        for x in range(left, right, 64):
+            put(beam if right - x >= 64 else ends[(right - x) // 8 - 1], x, 0)
         put(cap, left - POST_W, 0)
         put(cap, right, 0, flip=True)
         write_png(args.preview, w, h, 2, [[v for c in row for v in c] for row in out])

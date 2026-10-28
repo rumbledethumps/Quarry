@@ -69,28 +69,24 @@ void frame_curtains(int16_t left, int16_t right)
 }
 
 /* The frame around a playfield from left to right, and the rest around it.
-   The posts' outer faces are as far out as the frame set's posts show, and
-   the width between them must be a multiple of 8:
-   the beam is pieces 64 wide from the left post, and the last is as wide as
-   what is left, an image of the beam's first columns, so the beam's art
-   carries on across every piece. The post's two images alternate down the
-   screen. */
+   The posts' outer faces are as far out as the frame set's posts show. The
+   beam runs between the posts, in pieces 64 wide from the left one, and
+   the last is as wide as what is left, an image of the beam's first
+   columns, so the beam's art carries on across every piece; the width
+   between the posts must be a multiple of 8. The post's two images
+   alternate down the screen, and a cap tops each. */
 void frame_start(int16_t left, int16_t right)
 {
     uint8_t shows, i;
-    int16_t outer, far;
 
     xram0_read(&shows, XRAM_FRAME_SHOWS, 1);
-    outer = left - shows;
-    far = right + shows;
-
     piece(SCENERY(braces, 0), XRAM_BRACE_IMAGE, XRAM_FRAME_SHADE, MODE5_SIZE(BRACE_SIZE, BRACE_SIZE),
           left, BEAM_H, 0);
     piece(SCENERY(braces, 1), XRAM_BRACE_IMAGE, XRAM_FRAME_SHADE, MODE5_SIZE(BRACE_SIZE, BRACE_SIZE),
           right - BRACE_SIZE, BEAM_H, 1);
     piece(SCENERY(machine, 0), XRAM_MACHINE_IMAGE, XRAM_PALETTE_SHADE, MODE5_SIZE(MACHINE_W, MACHINE_H),
           right - MACHINE_W, MACHINE_Y, 1);
-    frame_curtains(outer + CURTAIN_UNDER, far - CURTAIN_UNDER);
+    frame_curtains(left - shows + CURTAIN_UNDER, right + shows - CURTAIN_UNDER);
     for (i = 0; i < POST_SPRITES; i++)
     {
         piece(SCENERY(posts, i), XRAM_POST_IMAGE(i & 1), XRAM_FRAME_PALETTE, MODE5_SIZE(POST_W, 64),
@@ -100,10 +96,10 @@ void frame_start(int16_t left, int16_t right)
     }
     for (i = 0; i < BEAM_SPRITES; i++)
     {
-        int16_t x = outer + i * 64;
-        uint8_t w = far - x < 64 ? far - x : 64;
+        int16_t x = left + i * 64;
+        uint8_t w = right - x < 64 ? right - x : 64;
 
-        if (x >= far)
+        if (x >= right)
             sprite_hide(SCENERY(beam, i));
         else
             piece(SCENERY(beam, i), w == 64 ? XRAM_BEAM_IMAGE : XRAM_BEAM_END(w), XRAM_FRAME_PALETTE,

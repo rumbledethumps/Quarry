@@ -166,11 +166,12 @@ and cut to the game's sizes by `art/frames.py`.
   art is wider, plain columns or rows of its web are left out, and where
   it is narrower, plain ones repeat, never a rivet, a brace or an edge.
 - A post is two images of 64 rows that alternate down the screen, so its
-  art repeats every 128 rows, or 64. The beam is pieces 64 wide from the
-  left post, and the last is as wide as what is left, from the beam's own
-  first columns, so its art repeats every 64 and runs on across every
-  piece; the width between the outer faces of the posts must be a
-  multiple of 8. Retro Diffusion spaces rivets unevenly, so a girder's
+  art repeats every 128 rows, or 64. The beam runs between the posts,
+  butting into each, never behind one, in pieces 64 wide from the left
+  post; the last is as wide as what is left, from the beam's own first
+  columns, so its art repeats every 64 and runs on across every piece; the
+  width between the posts must be a multiple of 8. Nothing passes through
+  anything else: a cap tops each post with its own steel. Retro Diffusion spaces rivets unevenly, so a girder's
   post and beam are each one 8 px cell of its art, a rivet and its plate,
   repeated: the rivets fall every 8.
 - The knee braces stand behind the ball and are barely there, so nobody
@@ -181,10 +182,13 @@ and cut to the game's sizes by `art/frames.py`.
 - Set 1 is a riveted girder showing 16, its knee braces gusset plates.
 - Set 2 is an open truss of welded steel bars showing 20, X bracing in
   square cells that the rock shows through, like lighting truss built
-  heavy for construction. Its beam's top chord runs off the top of the
-  screen, and its uprights are 3 wide, so its cells repeat every 16. Its
-  art was drawn on green, which goes clear, and turned to the girder's
-  cool gray.
+  heavy for construction. Its towers run on up past the top of the
+  screen, and its beam's top chord runs off the top of it. Its uprights
+  are 3 wide, so its cells repeat every 16, and a beam that ends half a
+  cell short ends on an upright and a stub of its bottom chord rather than
+  half an X. Its inner chords are a column wider than its outer, for the
+  edge the ball hits. Its art was drawn on green, which goes clear, and
+  turned to the girder's cool gray.
 - The concepts in `art/style/ref/frame-*.png` hold more looks for the next
   sets, such as the mine shaft frames of D1, D3 and D4.
 
