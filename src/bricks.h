@@ -5,7 +5,6 @@
 
 #define BRICK_W 24
 #define BRICK_H 8
-#define BRICK_GAP 1 /* between two bricks, across and down */
 
 /* Colors of brick, each with its own palette and nugget, in the order of
    COLORS in art/bricks.py. */
@@ -21,6 +20,7 @@
 extern uint8_t bricks_cols;   /* the width of the level, in bricks */
 extern int16_t bricks_width;  /* of the playfield */
 extern uint8_t bricks_margin; /* the room between each wall and the bricks */
+extern uint8_t bricks_gap;    /* between two bricks, across and down */
 extern uint8_t bricks_left; /* bricks not yet broken */
 
 /* The box around the bricks the last bricks_hit() broke. */

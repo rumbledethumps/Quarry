@@ -95,8 +95,8 @@ of them by rule, and nothing is touched up by hand:
 
 - **Brick:** 24x8 with no gap of its own, its face the plain color and a
   1 px bevel all round, light on the top and the left, dark on the bottom
-  and the right. Widths are multiples of 4. The game sets bricks 1 px
-  apart, across and down.
+  and the right. Widths are multiples of 4. Each level sets how far
+  apart its bricks are, across and down: 2 px on levels 1 and 2.
 - **Cracks:** sprites over the brick, so they flip either way: black lines
   with a gray lip under them, in sets of three, a brick a quarter, a half
   and three quarters broken. The first stays inside the face, the second

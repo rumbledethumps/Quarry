@@ -31,34 +31,37 @@
 #define CHUNK_SUB 16
 
 /* Level 1 is 4 by 4 bricks. A playfield is as wide as its bricks, with
-   their gaps, and its margin, the room for a ball between the bricks and
-   each wall. */
+   the gaps between them, across and down, and its margin, the room for a
+   ball between the bricks and each wall. */
 #define LEVEL1_COLS 4
 #define LEVEL1_ROWS 4
 #define LEVEL1_MARGIN (BRICK_W / 2)
+#define LEVEL1_GAP 2
 #define LEVEL_COLS_MAX 10
 
 _Static_assert(LEVEL_COLS_MAX * LEVEL1_ROWS <= BRICKS_MAX, "A level has too many bricks.");
 _Static_assert(BRICKS_MAX * CRACK_PIECES <= CRACKS_MAX, "Every brick needs its cracks.");
 _Static_assert(CHUNKS_MAX % CHUNKS_PER_BREAK == 0, "A break takes its chunks together.");
 
-/* A level designed: its margin, in px, and LEVEL1_ROWS rows of
-   LEVEL1_COLS bricks, a digit a brick: its color, from BRICK_GRAY. */
+/* A level designed: its margin and its gap, in px, and LEVEL1_ROWS rows
+   of LEVEL1_COLS bricks, a digit a brick: its color, from BRICK_GRAY. */
 typedef struct
 {
     uint8_t margin;
+    uint8_t gap;
     const char *bricks;
 } design_t;
 
 /* The levels designed so far. The levels after them are stand-ins, gray, a
-   column wider each time, up to LEVEL_COLS_MAX. */
+   column wider each time, up to LEVEL_COLS_MAX, with level 1's margin and
+   gap. */
 static const design_t designs[] = {
-    {LEVEL1_MARGIN,
+    {LEVEL1_MARGIN, LEVEL1_GAP,
      "0000"
      "0000"
      "0000"
      "0000"},
-    {LEVEL1_MARGIN,
+    {LEVEL1_MARGIN, LEVEL1_GAP,
      "0110"
      "0110"
      "0000"
@@ -72,6 +75,7 @@ static const uint8_t brick_hits[BRICK_COLORS] = TUNE_BRICK_HITS;
 uint8_t bricks_cols;
 int16_t bricks_width;
 uint8_t bricks_margin;
+uint8_t bricks_gap;
 uint8_t bricks_left;
 int16_t bricks_hit_left;
 int16_t bricks_hit_right;
@@ -127,7 +131,8 @@ void bricks_layout(uint8_t level)
     design = level <= DESIGNS ? &designs[level - 1] : 0;
     bricks_cols = design ? LEVEL1_COLS : cols < LEVEL_COLS_MAX ? cols : LEVEL_COLS_MAX;
     bricks_margin = design ? design->margin : LEVEL1_MARGIN;
-    bricks_width = bricks_cols * (BRICK_W + BRICK_GAP) - BRICK_GAP + 2 * bricks_margin;
+    bricks_gap = design ? design->gap : LEVEL1_GAP;
+    bricks_width = bricks_cols * (BRICK_W + bricks_gap) - bricks_gap + 2 * bricks_margin;
 }
 
 /* New cracks for every brick, picked at random as the screen opens: each
@@ -168,8 +173,8 @@ void bricks_start(int16_t left, int16_t top)
     brick_count = bricks_cols * LEVEL1_ROWS;
     for (i = 0; i < brick_count; i++)
     {
-        brick_x[i] = left + (i % bricks_cols) * (BRICK_W + BRICK_GAP);
-        brick_y[i] = top + (i / bricks_cols) * (BRICK_H + BRICK_GAP);
+        brick_x[i] = left + (i % bricks_cols) * (BRICK_W + bricks_gap);
+        brick_y[i] = top + (i / bricks_cols) * (BRICK_H + bricks_gap);
         brick_alive[i] = 1;
         brick_color[i] = design ? design->bricks[i] - '0' : BRICK_GRAY;
         brick_damage[i] = 0;
