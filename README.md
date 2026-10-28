@@ -53,7 +53,7 @@ cursor picks in them.
 The upgrade screen is coming together. Panels hang from a rail, one for
 each upgrade, and slide left and right; the one in the middle lights up,
 and the button buys it. Left, right and the button repeat while held. The
-panels have their final frames and a stand-in font, and hang in front of a
+panels have their final frames and font, and hang in front of a
 workshop whose cogs turn and whose vent puffs steam, their trolleys riding
 the rail; their pictures are still stand-ins. Down goes to a train of mine
 carts on a track, a cart for each level, where the button begins the level
