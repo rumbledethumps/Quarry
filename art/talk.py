@@ -329,8 +329,7 @@ def main():
                 '#ifndef TALKS_H\n#define TALKS_H\n\n')
         for n, (name, *_) in enumerate(TALKS, 1):
             f.write(f'#define TALK_{name} {n}\n')
-        f.write(f'#define TALKS {len(TALKS)}\n'
-                f'#define TALK_BYTES {TALK_BYTES} /* of each, sizeof(talk_t) */\n\n#endif\n')
+        f.write(f'#define TALKS {len(TALKS)}\n\n#endif\n')
 
 
 if __name__ == '__main__':

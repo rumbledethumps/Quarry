@@ -12,7 +12,7 @@ from level to level. Exits 0 when every check passes.
 import os
 import tempfile
 
-from game import SPRITE, Game, check
+from game import Game, check
 
 BREAK_SIZE = 0x35  # MODE5_SIZE(24, 16)
 
@@ -53,9 +53,9 @@ def main():
     sizes = game.sizes(bricks, BRICKS)
     broken = [i for i, s in enumerate(sizes) if s == BREAK_SIZE]
     check(broken, 'a broken brick shows its break')
-    first = bricks + broken[0] * SPRITE
+    first = bricks + broken[0] * sym['SPRITE_BYTES']
     bx = game.sprites(first, 1)[0][0]
-    middles = [game.sprites(bricks + i * SPRITE, 1)[0][0] + 8 for i in broken]
+    middles = [game.sprites(bricks + i * sym['SPRITE_BYTES'], 1)[0][0] + 8 for i in broken]
     by = game.sprites(first, 1)[0][1] + 4
     shot = os.path.join(tempfile.mkdtemp(), 'shot.png')
     images, paths, lit = [], {}, []

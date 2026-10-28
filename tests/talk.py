@@ -139,7 +139,8 @@ def main():
     game.until('game_state', 'STATE_SHOP', 60)
     talk('TALK_UNLOCK')
     check(game.shown(cursor, 4) == 0, 'no cursor while he comes in')
-    icon = sym['XRAM_MENU_SPRITES'] + (game.ram('panel_picked') * sym['PANEL_SPRITES'] + sym['PICTURE_SPRITES']) * 10
+    icon = sym['XRAM_MENU_SPRITES'] + (game.ram('panel_picked') * sym['PANEL_SPRITES'] + sym['PICTURE_SPRITES']) * \
+        sym['SPRITE_BYTES']
     check(game.shown(icon, 1) == 0, "nor the cost icon that would show over his bubble")
     game.until('talk_state', 'TALK_READY', 120)
     art = open(os.path.join(os.path.dirname(os.path.dirname(rom())), f'talk{sym["TALK_UNLOCK"]}.bin'), 'rb').read()

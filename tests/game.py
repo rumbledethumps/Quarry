@@ -38,8 +38,6 @@ import rp6502  # noqa: E402
 from panels import FONT  # noqa: E402
 from png2bin import read_png  # noqa: E402
 
-SPRITE = 10  # sizeof(mode5_csprite_t)
-
 
 def fail(message):
     sys.exit(f'FAIL: {message}')
@@ -168,13 +166,15 @@ class Game(rp6502.Emu):
 
     def sprites(self, addr, count):
         """The x, y, image of each of count sprites in a list from addr."""
-        data = self.xram(addr, count * SPRITE)
-        return [struct.unpack('<hhH', data[i:i + 6]) for i in range(0, len(data), SPRITE)]
+        step = self.sym['SPRITE_BYTES']
+        data = self.xram(addr, count * step)
+        return [struct.unpack('<hhH', data[i:i + 6]) for i in range(0, len(data), step)]
 
     def sizes(self, addr, count):
         """The width_height byte of each of count sprites in a list from addr."""
-        data = self.xram(addr, count * SPRITE)
-        return [data[i + 8] for i in range(0, len(data), SPRITE)]
+        step = self.sym['SPRITE_BYTES']
+        data = self.xram(addr, count * step)
+        return [data[i + 8] for i in range(0, len(data), step)]
 
     def shown(self, addr, count):
         """How many of count sprites in a list from addr are on the screen."""

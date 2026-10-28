@@ -113,11 +113,16 @@ ctest --test-dir build/llvm-mos/debug -R energy --output-on-failure
 - `upgrades` works the menu when a level ends and the upgrade screen, and earns a coin.
 - `saves` works the title screen and the pause menu, and reads the save.
 - `sound` sets off every sound effect and reads the PSG's channels.
+- `talk` brings in the dwarves: the welcome, the coin, and the upgrade
+  screen's two, and checks the cursor and the screen under them.
 - `autoplay` plays level 1 until it ends, and `autoplay-miss` loses every
   ball.
+- `assets` checks that each asset the art scripts write is the size of
+  what the game loads it into. It reads the files and `quarry.sym`, and
+  doesn't run the emulator.
 
-The tests other than the two autoplay ones wait for the events that a
-Debug ROM logs, so a Release build has only the autoplay tests:
+The tests other than autoplay and assets wait for the events that a Debug
+ROM logs, so a Release build has only those:
 
 ```bash
 ctest --test-dir build/llvm-mos/release

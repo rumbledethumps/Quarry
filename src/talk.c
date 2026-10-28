@@ -25,7 +25,6 @@
 
 _Static_assert(TALKS <= 8, "talks_seen has a bit for each talk.");
 _Static_assert(TALKS <= 9, "A talk's asset has one digit.");
-_Static_assert(sizeof(talk_t) == TALK_BYTES, "art/talk.py writes a talk_t of another size.");
 
 #define DWARF(i) (XRAM_DWARF_SPRITES + (i) * sizeof(mode5_csprite_t))
 

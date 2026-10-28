@@ -293,6 +293,7 @@ typedef struct
 #define TEXT_COLS 40
 #define TEXT_ROWS 30
 
+#define SPRITE_BYTES sizeof(mode5_csprite_t) /* for the tests, which step through the lists */
 #define BRICKS_MAX 48
 #define BRICK_COLORS 1 /* white */
 #define JETS_MAX 3 /* under one sled */
@@ -730,6 +731,8 @@ typedef struct
 #define XRAM_LOGO_IMAGES offsetof(xram_layout_t, art.cave.logo_images)
 
 MODE5_PALETTE_CHECK(palettes_t);
+
+#define PALETTES_BYTES sizeof(palettes_t) /* for tests/assets.py */
 
 PSG_PAGE_CHECK(XRAM_PSG);
 

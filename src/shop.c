@@ -50,8 +50,10 @@
 #define TROLLEY_SPRITES (PICTURE_SPRITES + 4) /* a panel's first trolley */
 #define LOCKS 4
 #define PANEL_SPRITE(p, i) SPRITE((p) * PANEL_SPRITES + (i))
-#define HALF_SPRITE(i) SPRITE(PANELS * PANEL_SPRITES + (i))
-#define LOCK_SPRITE(i) SPRITE(PANELS * PANEL_SPRITES + 2 + (i))
+#define HALF_SPRITES (PANELS * PANEL_SPRITES) /* the first, which the tests read too */
+#define LOCK_SPRITES (HALF_SPRITES + 2)
+#define HALF_SPRITE(i) SPRITE(HALF_SPRITES + (i))
+#define LOCK_SPRITE(i) SPRITE(LOCK_SPRITES + (i))
 
 _Static_assert(PANELS * PANEL_SPRITES + 2 + LOCKS <= MENU_SPRITES, "MENU_SPRITES is too few.");
 

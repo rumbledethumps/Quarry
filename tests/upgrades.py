@@ -11,7 +11,7 @@ from their own text cells. Exits 0 when every check passes.
 import os
 import sys
 
-from game import SPRITE, Game, check
+from game import Game, check
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'art'))
 from panels import FONT  # noqa: E402
@@ -283,9 +283,10 @@ def main():
     game.run(5)
     check(game.ram('level_picked') == 1 and game.ram('cart_scroll', 2) == 0,
           'the upgrade screen opens on level 1, just cleared')
-    lock = sym['XRAM_MENU_SPRITES'] + sym['PANELS'] * sym['PANEL_SPRITES'] * SPRITE  # its halves, then the padlocks
-    check(game.ram('unlocking') == 2 and game.shown(lock, 2) == 2, 'and the lock of level 2 shows, to break')
-    check(game.shown(lock + 2 * SPRITE, 4) == 4, 'with padlocks on the 4 carts locked after it')
+    sprite = lambda i: sym['XRAM_MENU_SPRITES'] + i * sym['SPRITE_BYTES']
+    check(game.ram('unlocking') == 2 and game.shown(sprite(sym['HALF_SPRITES']), 2) == 2,
+          'and the lock of level 2 shows, to break')
+    check(game.shown(sprite(sym['LOCK_SPRITES']), 4) == 4, 'with padlocks on the 4 carts locked after it')
     game.wait('unlocked 2', 200)
     check(game.ram('levels_shown') == 2 and game.ram('unlocking') == 0 and game.ram('level_picked') == 2,
           'the lock breaks, and level 2 shows open, picked')

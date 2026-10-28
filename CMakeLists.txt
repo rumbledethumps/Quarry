@@ -223,9 +223,11 @@ target_sources(quarry PRIVATE
 target_include_directories(quarry PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # The tests, which ctest runs in the emulator. Each one plays the ROM from a
-# Python script in tests/. Only autoplay runs on a Release ROM, because the
-# others wait for the events that a Debug ROM logs.
+# Python script in tests/, but assets, which checks the size of each asset
+# against the .sym file. Only those and autoplay run on a Release ROM,
+# because the others wait for the events that a Debug ROM logs.
 set(QUARRY_ROM $<TARGET_PROPERTY:quarry,RP6502_ROM>)
+rp6502_test(NAME assets COMMAND tests/assets.py ${QUARRY_ROM})
 rp6502_test(NAME autoplay COMMAND tests/autoplay.py ${QUARRY_ROM})
 rp6502_test(NAME autoplay-miss COMMAND tests/autoplay.py --miss 5 ${QUARRY_ROM})
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")

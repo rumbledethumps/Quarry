@@ -32,6 +32,20 @@
 
 _Static_assert(CURTAIN_SETS <= 9 && TEXTURES <= 9 && FRAME_SETS <= 9, "An asset's name has one digit.");
 
+/* The bytes of each asset, as a screen loads it, which tests/assets.py
+   checks the assets against. A curtain set holds its palette, then the 4
+   colors of the texture, then the curtains. */
+#define BACKDROP_BYTES (XRAM_PICTURE(0) - XRAM_BACKDROP)
+#define PANELS_BYTES (XRAM_CART_PALETTE - XRAM_PANEL_PALETTE)
+#define CARTS_BYTES (XRAM_CART_MAP - XRAM_CART_PALETTE)
+#define MENUS_BYTES (XRAM_MENU_TILES + MENU_TILES * sizeof(menu_tile_t) - XRAM_MENU_PALETTE)
+#define LOGO_BYTES sizeof(((xram_layout_t *)0)->art.cave.logo_images)
+#define TEXTURE_BYTES sizeof(((xram_layout_t *)0)->art.cave.texture)
+#define CURTAIN_PALETTE_BYTES sizeof(((palettes_t *)0)->curtain)
+#define CURTAIN_SET_BYTES (CURTAIN_PALETTE_BYTES + 4 * sizeof(uint16_t) + 2 * CURTAIN_BYTES)
+#define FRAME_SET_BYTES sizeof(frame_set_t)
+#define TALK_BYTES sizeof(talk_t)
+
 static uint8_t scene;
 static uint8_t curtain_set; /* the one shown, from 0 */
 static uint8_t frame_set;   /* the one a level shows, from 0 */
@@ -109,7 +123,7 @@ void scene_menu(void)
 
     if (!scene_change(SCENE_MENU))
         return;
-    load("ROM:backdrop", 0, XRAM_BACKDROP, XRAM_PICTURE(0) - XRAM_BACKDROP);
+    load("ROM:backdrop", 0, XRAM_BACKDROP, BACKDROP_BYTES);
     menu_shown = 0;
     backdrop_band(0, XRAM_BAND_PALETTE(top), XRAM_BAND_TILES(top), XRAM_BAND_MAP(top), BACKDROP_TOP_Y,
                   BACKDROP_TOP_ROWS);
@@ -117,7 +131,7 @@ void scene_menu(void)
                   BACKDROP_MIDDLE_Y, BACKDROP_MIDDLE_ROWS);
     backdrop_band(2, XRAM_BAND_PALETTE(bottom), XRAM_BAND_TILES(bottom), XRAM_BAND_MAP(bottom),
                   BACKDROP_BOTTOM_Y, BACKDROP_BOTTOM_ROWS);
-    load("ROM:panels", 0, XRAM_PANEL_PALETTE, XRAM_CART_PALETTE - XRAM_PANEL_PALETTE);
+    load("ROM:panels", 0, XRAM_PANEL_PALETTE, PANELS_BYTES);
     memset(&config, 0, sizeof config);
     config.y_pos_px = PANEL_Y;
     config.width_tiles = PANEL_MAP_COLS;
@@ -126,7 +140,7 @@ void scene_menu(void)
     config.xram_palette_ptr = XRAM_PANEL_PALETTE;
     config.xram_tile_ptr = XRAM_PANEL_TILES;
     xram0_write(XRAM_PANEL_CONFIG, &config, sizeof config);
-    load("ROM:carts", 0, XRAM_CART_PALETTE, XRAM_CART_MAP - XRAM_CART_PALETTE);
+    load("ROM:carts", 0, XRAM_CART_PALETTE, CARTS_BYTES);
     xram0_set(XRAM_CART_MAP, 0, sizeof(((xram_layout_t *)0)->art.menu.cart_map));
     config.y_pos_px = CART_Y;
     config.width_tiles = CART_MAP_COLS;
@@ -163,12 +177,11 @@ void scene_menu_show(void)
 static void curtains_load(void)
 {
     char curtain[] = "ROM:curtain1";
-    unsigned palette = sizeof(((palettes_t *)0)->curtain);
 
     curtain[11] = '1' + curtain_set;
-    load(curtain, 0, XRAM_PALETTE_CURTAIN, palette);
-    load(curtain, palette, XRAM_PALETTE_TEXTURE, 4 * sizeof(uint16_t));
-    load(curtain, palette + 4 * sizeof(uint16_t), XRAM_CURTAINS, 2 * CURTAIN_BYTES);
+    load(curtain, 0, XRAM_PALETTE_CURTAIN, CURTAIN_PALETTE_BYTES);
+    load(curtain, CURTAIN_PALETTE_BYTES, XRAM_PALETTE_TEXTURE, 4 * sizeof(uint16_t));
+    load(curtain, CURTAIN_PALETTE_BYTES + 4 * sizeof(uint16_t), XRAM_CURTAINS, 2 * CURTAIN_BYTES);
     DEBUG_LOG("curtains %u\n", curtain_set + 1);
 }
 
@@ -186,7 +199,7 @@ static void cave(void)
     noise /= CURTAIN_SETS;
     frame_set = noise % FRAME_SETS;
     noise /= FRAME_SETS;
-    load(texture, 0, XRAM_TEXTURE, sizeof(((xram_layout_t *)0)->art.cave.texture));
+    load(texture, 0, XRAM_TEXTURE, TEXTURE_BYTES);
     curtains_load();
     xram0_poke16(XRAM_TEXTURE_CONFIG + offsetof(mode3_config_t, x_pos_px), -(int16_t)(noise % TEXTURE_W));
     noise /= TEXTURE_W;
@@ -202,7 +215,7 @@ void scene_title(void)
         video_start();
         cave();
     }
-    load("ROM:logo", 0, XRAM_LOGO_IMAGES, sizeof(((xram_layout_t *)0)->art.cave.logo_images));
+    load("ROM:logo", 0, XRAM_LOGO_IMAGES, LOGO_BYTES);
 }
 
 /* A level: a cave and its frame set, if it comes from another screen, and
@@ -216,7 +229,7 @@ void scene_level(uint8_t sled_rank)
         video_start();
         cave();
         frame[9] = '1' + frame_set;
-        load(frame, 0, XRAM_FRAME, sizeof(frame_set_t));
+        load(frame, 0, XRAM_FRAME, FRAME_SET_BYTES);
         DEBUG_LOG("frame %u\n", frame_set + 1);
     }
     load("ROM:sleds", (long)sled_rank * SLED_SLOT, XRAM_LEVEL_SLED, SLED_SLOT);
@@ -241,8 +254,7 @@ void scene_picture_sled(uint8_t slot, uint8_t rank)
    talked in their place. */
 void scene_menus(void)
 {
-    load("ROM:menus", 0, XRAM_MENU_PALETTE,
-         XRAM_MENU_TILES + MENU_TILES * sizeof(menu_tile_t) - XRAM_MENU_PALETTE);
+    load("ROM:menus", 0, XRAM_MENU_PALETTE, MENUS_BYTES);
 }
 
 /* A talk, ROM:talk1 and on, in the menus' place. */
@@ -251,5 +263,5 @@ void scene_talk(uint8_t talk)
     char path[] = "ROM:talk1";
 
     path[8] = '0' + talk;
-    load(path, 0, XRAM_TALK, sizeof(talk_t));
+    load(path, 0, XRAM_TALK, TALK_BYTES);
 }
