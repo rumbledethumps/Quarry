@@ -42,20 +42,18 @@
 
 /* Each panel has PANEL_SPRITES sprites: its picture, then an icon for
    each of up to 4 currencies of its cost, then the trolley over each of
-   its hangers, which rides the rail. The two halves of the lock that
-   breaks follow, then the padlocks of the carts. The cart picked is open and in the middle, so the locked ones are
-   all to its right, and no more than LOCKS of them show. */
+   its hangers, which rides the rail. The locks are on plane 1, in the
+   actors' place: the two halves of the lock that breaks, and the padlocks
+   of the carts. The cart picked is open and in the middle, so the locked
+   ones are all to its right, and no more than LOCKS of them show. */
 #define PANEL_SPRITES (PICTURE_SPRITES + 4 + PANEL_HANGERS)
 #define PICTURE_SPRITES 4
 #define TROLLEY_SPRITES (PICTURE_SPRITES + 4) /* a panel's first trolley */
-#define LOCKS 4
 #define PANEL_SPRITE(p, i) SPRITE((p) * PANEL_SPRITES + (i))
-#define HALF_SPRITES (PANELS * PANEL_SPRITES) /* the first, which the tests read too */
-#define LOCK_SPRITES (HALF_SPRITES + 2)
-#define HALF_SPRITE(i) SPRITE(HALF_SPRITES + (i))
-#define LOCK_SPRITE(i) SPRITE(LOCK_SPRITES + (i))
+#define HALF_SPRITE(i) (XRAM_HALF_SPRITES + (i) * sizeof(mode5_csprite_t))
+#define LOCK_SPRITE(i) (XRAM_LOCK_SPRITES + (i) * sizeof(mode5_csprite_t))
 
-_Static_assert(PANELS * PANEL_SPRITES + 2 + LOCKS <= MENU_SPRITES, "MENU_SPRITES is too few.");
+_Static_assert(PANELS * PANEL_SPRITES <= MENU_SPRITES, "MENU_SPRITES is too few.");
 
 /* The unlock of a level newly open, on the cart beside the level just
    cleared, which is picked: a wait, the lock shaking harder and harder,
@@ -762,13 +760,12 @@ void shop_idle(void)
     cart_scroll = ease(cart_scroll, (level_picked - 1) * CART_STEP);
 }
 
-/* The last dwarf has gone, and the cursor and the cost icons come back. A
-   question a test key's dwarf took the place of goes. */
+/* The last dwarf has gone, and the cursor comes back. A question a test
+   key's dwarf took the place of goes. */
 void shop_resume(void)
 {
     if (asking)
         unask();
-    pictures_dirty = 1;
     cursor_aim();
 }
 
@@ -778,9 +775,17 @@ void shop_resume(void)
    frame is drawn. While a question is up, nothing moves but the cursor. */
 void shop_draw(void)
 {
+    static uint8_t talking;
     uint8_t p;
 
     machines_draw();
+    /* As a dwarf comes, or the last goes, the pictures draw again, so the
+       cost icons hide from his bubble, or come back. */
+    if (talk_busy() != talking)
+    {
+        talking = !talking;
+        pictures_dirty = 1;
+    }
     if (!asking)
     {
         if (pictures_dirty)

@@ -299,7 +299,8 @@ typedef struct
 #define JETS_MAX 3 /* under one sled */
 #define ENERGY_SEGMENTS 12
 #define NUGGETS_MAX 16 /* in flight at once */
-#define MENU_SPRITES 46
+#define MENU_SPRITES 40
+#define LOCKS 4 /* padlocks on the carts of the levels after the one picked */
 #define CURSOR_SIZE 12 /* each of its 4 corners, square */
 #define COUNT_DIGITS 5 /* of a nugget count */
 #define BALL_DIGITS 2  /* of the count of balls */
@@ -470,7 +471,9 @@ typedef struct
     mode5_csprite_t caps[2];
 } scenery_t;
 
-/* Plane 1 sprites. */
+/* Plane 1 sprites, over its tiles and under plane 2's: on a level, the
+   ball and the sled, and on the upgrade screen, in their place, the locks
+   over its carts, under the menus and a dwarf's bubble. */
 typedef struct
 {
     mode5_csprite_t ball;
@@ -478,6 +481,14 @@ typedef struct
     mode5_csprite_t jets[JETS_MAX];
     mode5_csprite_t smoke[JETS_MAX]; /* a puff under each jet */
 } actors_t;
+
+typedef struct
+{
+    mode5_csprite_t halves[2]; /* of the lock that breaks */
+    mode5_csprite_t padlocks[LOCKS];
+} locks_t;
+
+_Static_assert(sizeof(locks_t) <= sizeof(actors_t), "The locks take the actors' place.");
 
 /* Plane 2 sprites, over the menus: the gauge, the counts with their
    nugget or ball, the nuggets in flight, the upgrade screen's pictures,
@@ -607,7 +618,11 @@ typedef struct
     palettes_t palettes;
     scenery_t scenery;
     mode5_csprite_t bricks[BRICKS_MAX];
-    actors_t actors;
+    union
+    {
+        actors_t actors;
+        locks_t locks;
+    };
     hud_t hud;
     union
     {
@@ -666,6 +681,8 @@ typedef struct
 #define XRAM_CAP_SPRITES offsetof(xram_layout_t, scenery.caps)
 #define XRAM_BRICKS offsetof(xram_layout_t, bricks)
 #define XRAM_ACTORS offsetof(xram_layout_t, actors)
+#define XRAM_HALF_SPRITES offsetof(xram_layout_t, locks.halves)
+#define XRAM_LOCK_SPRITES offsetof(xram_layout_t, locks.padlocks)
 #define XRAM_BALL_SPRITE offsetof(xram_layout_t, actors.ball)
 #define XRAM_SLED_SPRITE offsetof(xram_layout_t, actors.sled)
 #define XRAM_JET_SPRITES offsetof(xram_layout_t, actors.jets)
