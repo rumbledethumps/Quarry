@@ -299,6 +299,7 @@ typedef struct
 #define ENERGY_SEGMENTS 12
 #define NUGGETS_MAX 16 /* in flight at once */
 #define MENU_SPRITES 46
+#define CURSOR_SIZE 12 /* each of its 4 corners, square */
 #define COUNT_DIGITS 5 /* of a nugget count */
 #define BALL_DIGITS 2  /* of the count of balls */
 
@@ -404,6 +405,7 @@ typedef MODE2_TILE(4, 8) menu_tile_t;
 typedef MODE5_CUSTOM_IMAGE(4, 24, 8) brick_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 24, 16) break_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 8, 8) piece_image_t;
+typedef MODE5_CUSTOM_IMAGE(4, CURSOR_SIZE, CURSOR_SIZE) cursor_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 8, 12) jet_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 8, 12) digit_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 8, 8) energy_image_t;
@@ -529,7 +531,7 @@ typedef struct
     piece_image_t nugget_image;
     piece_image_t ball_image;
     piece_image_t coin_image;
-    piece_image_t cursor_image;
+    cursor_image_t cursor_image;
     jet_image_t jet_images[JET_FRAMES];
     piece_image_t smoke_images[SMOKE_FRAMES];
     energy_image_t energy_images[5];

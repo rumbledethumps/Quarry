@@ -18,8 +18,8 @@ machine stand behind the ball. The digits are 6x8 with a 1 px outline, in
 The frame, the machine, the digits and the coin use the sled row of
 art/palettes.png, the gauge the fx row, and the cursor the holo row.
 The coin is a placeholder: a plain gold disc. The cursor is one corner of the
-holographic outline of the upgrade screen, and MODE5_HFLIP and MODE5_VFLIP
-turn it for the other three.
+holographic outline of the upgrade screen and the menus, and MODE5_HFLIP and
+MODE5_VFLIP turn it for the other three.
 """
 
 import os
@@ -187,18 +187,34 @@ def coin():
     return [[colors[c] for c in line] for line in shape]
 
 
-def cursor():
-    """The top left corner of the cursor, 8x8, in the holo row: a bright
-    bracket whose arms fade out."""
+def cursor(n=11, size=12):
+    """The top left corner of the cursor, size x size, in the holo row: a
+    bright bracket whose arms fade out. It is drawn at 8 px below, and its
+    lines are stretched along their length to n px across, each pixel the
+    color at the same place along the line, so it keeps its fade and its
+    taper, the inner line shorter than the outer."""
     shape = ['44444321',
              '4333210.',
              '43......',
              '42......',
              '31......',
              '21......',
-             '1.......',
-             '........']
-    return [[0 if c == '.' else int(c) for c in line] for line in shape]
+             '1.......']
+    g = [[0 if c == '.' else int(c) for c in line] for line in shape]
+    lines = (([g[0][x] for x in range(8)], 0, 0, 0, 8),            # outer, across
+             ([g[y][0] for y in range(7)], 0, 0, 1, 7),            # outer, down
+             ([g[1][x] for x in range(1, 6)], 1, 1, 0, 5),         # inner, across
+             ([g[y][1] for y in range(1, 6)], 1, 1, 1, 5))         # inner, down
+    img = [[0] * size for _ in range(size)]
+    for line, x, y, down, length in lines:
+        stretched = round(n * length / 8)
+        for s in range(stretched):
+            c = line[s * len(line) // stretched]
+            if down:
+                img[y + s][x] = c
+            else:
+                img[y][x + s] = c
+    return img
 
 
 def strip(frames):

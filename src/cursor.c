@@ -28,7 +28,8 @@ static void corners_move(void)
 
     out = breath[steps / BEAT];
     for (i = 0; i < 4; i++)
-        sprite_move(CORNER(i), i & 1 ? at[2] + out - 8 : at[0] - out, i & 2 ? at[3] + out - 8 : at[1] - out);
+        sprite_move(CORNER(i), i & 1 ? at[2] + out - CURSOR_SIZE : at[0] - out,
+                    i & 2 ? at[3] + out - CURSOR_SIZE : at[1] - out);
 }
 
 /* Steps a value a quarter of the way to where it is going, at least a
@@ -58,7 +59,7 @@ void cursor_place(int16_t left, int16_t top, int16_t right, int16_t bottom)
         for (i = 0; i < 4; i++)
         {
             at[i] = to[i];
-            sprite_set(CORNER(i), XRAM_CURSOR_IMAGE, XRAM_PALETTE_HOLO, MODE5_SIZE(8, 8));
+            sprite_set(CORNER(i), XRAM_CURSOR_IMAGE, XRAM_PALETTE_HOLO, MODE5_SIZE(CURSOR_SIZE, CURSOR_SIZE));
             sprite_attributes(CORNER(i), flips[i]);
         }
         corners_move();

@@ -345,7 +345,12 @@ shows, as the tape's 4 palette entries turn round.
 - A menu's title is set off from its items by a thin rule of light steel
   over its shadow, in the gap under it, two cells in from each side.
 - The holographic cursor of the upgrade screen picks in the menus too, a
-  cell in from the frame and as tall as the item. On the upgrade screen it
+  cell in from the frame and as tall as the item. Its corners are one
+  bright bracket, `art/cursor.png`, turned for each: two lines that fade
+  out along the arms, the inner one shorter, 11 px across in a 12x12
+  sprite. `art/screen.py` draws it at 8 px and stretches its lines, so it
+  keeps that fade. It breathes 2 px out and back while its two brightest
+  colors pulse. On the upgrade screen it
   slides into a question and back out; elsewhere it appears at once.
 - Nothing is grayed out: an item that doesn't apply is left off.
 - The title's boxes are plain, with no tape, until the title is
@@ -409,6 +414,7 @@ That is 8 rows and the ores, so 24 rows are left for ores.
 | energy gauge | a narrow vertical bar; the placeholder is 8 wide, in pieces 8 tall |
 | logo | 3 pieces, 64x64, as one 192x64 image |
 | curtains | 100x240 each, cut from a 256x240 curtain set |
+| cursor | 4 corners, 12x12, one image turned |
 
 The current sizes come from `src/xram.h`. RD Pro styles start at 12x12, so
 art 8 pixels tall is made as a larger study, then redrawn by hand at its
