@@ -45,13 +45,14 @@ static uint8_t bottom(void)
 }
 
 /* The cursor goes round the item picked, as wide as the box inside its
-   frame and a cell in from it. */
+   frame and a cell in from it, and centered on the letters, which have
+   their shadow under them. */
 static void cursor_aim(void)
 {
     int16_t row = first_item_row() + place(picked) * ITEM_ROWS;
 
     cursor_place((shown->center - MENU_COLS / 2 + 2) * 8, row * 8, (shown->center + MENU_COLS / 2 - 2) * 8,
-                 (row + ITEM_ROWS) * 8);
+                 (row + ITEM_ROWS) * 8 - 1);
 }
 
 /* Steps the pick by step, 1 or -1, past items left off. It stops at the

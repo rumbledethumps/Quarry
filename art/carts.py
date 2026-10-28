@@ -163,6 +163,7 @@ def main():
     args = parser.parse_args()
 
     heaped, plain = cart(True), cart(False)
+    heap_top = min(y for y, row in enumerate(heaped) if any(row))
     link = coupling(plain)
     heaped_cells, body = cells(heaped), cells(plain)
     tiles = [[[None] * 8 for _ in range(8)]]  # tile 0 is clear
@@ -218,6 +219,7 @@ def main():
                 f'#define CART_TILE_DIM {first["DIM_0"]}\n'
                 f'#define CART_TILES {len(tiles)}\n'
                 f'#define CART_RIM {RIM} /* the top of the rim, under any heap */\n'
+                f'#define CART_HEAP_TOP {heap_top} /* the top of the heap */\n'
                 f'#define CART_FOOT {FOOT} /* just under the wheels, where the track is */\n'
                 f'#define CART_LOCK_LEFT {LOCK_LEFT} /* the padlock\'s place on its cart */\n'
                 f'#define CART_LOCK_TOP {LOCK_TOP}\n\n'

@@ -501,14 +501,15 @@ static void carts_move(void)
 }
 
 /* Where the cursor goes: around the panel in the middle, or the cart in
-   the middle, a few pixels out. */
+   the middle and its heap, if it has one, a few pixels out. */
 static void cursor_aim(void)
 {
     if (cursor_on == ON_RAIL)
         cursor_place(PANEL_LEFT - 3, PANEL_Y + TOP_ROW * 8 - 3, PANEL_LEFT + PANEL_COLS * 8 + 3,
                      PANEL_Y + (panel_heights[panel_picked] + 1) * 8 + 3);
     else
-        cursor_place(CART_LEFT - 3, CART_Y + CART_RIM - 3, CART_LEFT + CART_W + 3, CART_Y + CART_FOOT + 3);
+        cursor_place(CART_LEFT - 3, CART_Y + (stage_picked <= stages_cleared ? CART_HEAP_TOP : CART_RIM) - 3,
+                     CART_LEFT + CART_W + 3, CART_Y + CART_FOOT + 3);
 }
 
 /* Steps a value a quarter of the way to where it is going, at least a
