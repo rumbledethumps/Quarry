@@ -295,7 +295,9 @@ typedef struct
 
 #define SPRITE_BYTES sizeof(mode5_csprite_t) /* for the tests, which step through the lists */
 #define BRICKS_MAX 48
-#define BRICK_COLORS 1 /* white */
+#define BRICK_COLORS 5 /* gray, red, green, blue, gold */
+/* A brick's palette from here holds its cracks' 4 colors. */
+#define BRICK_CRACK_COLORS 8
 #define JETS_MAX 3 /* under one sled */
 #define ENERGY_SEGMENTS 12
 #define NUGGETS_MAX 16 /* in flight at once */
@@ -303,6 +305,7 @@ typedef struct
 #define LOCKS 4 /* padlocks on the carts of the levels after the one picked */
 #define CURSOR_SIZE 12 /* each of its 4 corners, square */
 #define COUNT_DIGITS 5 /* of a nugget count */
+#define ICON_SIZE 12   /* the sprite of the nugget or the coin by a count, as tall as its digits */
 #define BALL_DIGITS 2  /* of the count of balls */
 
 /* The panels of the upgrade screen hang from a rail and slide across it.
@@ -397,9 +400,23 @@ typedef struct
 #define JET_FLAME 1
 #define JET_SWIVEL 3
 
-/* Frames of the brick breaking and the smoke, in the order of
-   art/break.png and art/smoke.png. */
-#define BREAK_FRAMES 2
+/* The cracks over a brick, from art/bricks.py: pieces CRACK_W wide, as
+   many as fit across it, each from one of CRACK_SETS sets, flipped either
+   way, a set an image for each of CRACK_STATES, a brick a quarter, a half
+   and three quarters broken. */
+#define CRACK_W 16
+#define CRACK_H 8
+#define CRACK_SETS 16
+#define CRACK_STATES 3
+#define CRACKS_MAX 48 /* a sprite each, over the bricks */
+
+/* A brick breaks into chunks that fly, CHUNK_IMAGES of them in
+   art/chunks.png, and CHUNKS_MAX sprites for them, the oldest giving way to
+   a new break. */
+#define CHUNK_IMAGES 16
+#define CHUNKS_MAX 32
+
+/* Frames of the smoke, in the order of art/smoke.png. */
 #define SMOKE_FRAMES 3
 
 /* Pieces of the energy gauge, in the order of art/energy.png. */
@@ -426,9 +443,12 @@ typedef MODE2_TILE(8, 8) panel_tile_t;
 typedef MODE2_TILE(4, 8) cart_tile_t;
 typedef MODE2_TILE(4, 8) menu_tile_t;
 typedef MODE2_TILE(2, 8) bubble_tile_t;
-typedef MODE5_CUSTOM_IMAGE(4, 24, 8) brick_image_t;
-typedef MODE5_CUSTOM_IMAGE(4, 24, 16) break_image_t;
+typedef MODE5_CUSTOM_IMAGE(2, 24, 8) brick_image_t;
+typedef MODE5_CUSTOM_IMAGE(2, CRACK_W, CRACK_H) crack_image_t;
+typedef MODE5_CUSTOM_IMAGE(2, 8, 8) chunk_image_t;
+#define CRACK_IMAGE_BYTES sizeof(crack_image_t) /* for the tests */
 typedef MODE5_CUSTOM_IMAGE(4, 8, 8) piece_image_t;
+typedef MODE5_CUSTOM_IMAGE(4, ICON_SIZE, ICON_SIZE) icon_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, CURSOR_SIZE, CURSOR_SIZE) cursor_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 8, 12) jet_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 8, 12) digit_image_t;
@@ -449,7 +469,7 @@ typedef MODE5_CUSTOM_IMAGE(4, 8, 16) half_lock_image_t;
 typedef struct
 {
     uint16_t main[16];
-    uint16_t bricks[BRICK_COLORS][16]; /* bricks and nuggets, a palette a color */
+    uint16_t bricks[BRICK_COLORS][16]; /* bricks, their cracks and chunks, and nuggets, a palette a color */
     uint16_t fx[16];                   /* smoke and the energy gauge */
     uint16_t logo[16];
     uint16_t sled[16];    /* the sleds, their jets, the digits, and the coin */
@@ -471,9 +491,17 @@ typedef struct
     mode5_csprite_t caps[2];
 } scenery_t;
 
-/* Plane 1 sprites, over its tiles and under plane 2's: on a level, the
-   ball and the sled, and on the upgrade screen, in their place, the locks
-   over its carts, under the menus and a dwarf's bubble. */
+/* Plane 1 sprites, over its tiles and under plane 2's: on the title and
+   the upgrade screen, the locks over its carts, under the menus and a
+   dwarf's bubble, and on a level, from the level's own art, the cracks
+   over the bricks, the chunks of the bricks breaking, the ball and the
+   sled. */
+typedef struct
+{
+    mode5_csprite_t halves[2]; /* of the lock that breaks */
+    mode5_csprite_t padlocks[LOCKS];
+} locks_t;
+
 typedef struct
 {
     mode5_csprite_t ball;
@@ -484,11 +512,12 @@ typedef struct
 
 typedef struct
 {
-    mode5_csprite_t halves[2]; /* of the lock that breaks */
-    mode5_csprite_t padlocks[LOCKS];
-} locks_t;
+    mode5_csprite_t cracks[CRACKS_MAX];
+    mode5_csprite_t chunks[CHUNKS_MAX];
+    actors_t actors;
+} level_sprites_t;
 
-_Static_assert(sizeof(locks_t) <= sizeof(actors_t), "The locks take the actors' place.");
+#define LEVEL_SPRITES (sizeof(level_sprites_t) / sizeof(mode5_csprite_t))
 
 /* Plane 2 sprites, over the menus: the gauge, the counts with their
    nugget or ball, the nuggets in flight, the upgrade screen's pictures,
@@ -552,6 +581,16 @@ typedef struct
     brace_image_t brace;
 } frame_set_t;
 
+/* A level's own art: its frame set, the cracks and the chunks, as
+   ROM:cracks and ROM:chunks hold them, and its sprites on plane 1. */
+typedef struct
+{
+    frame_set_t frame;
+    crack_image_t cracks[CRACK_SETS][CRACK_STATES];
+    chunk_image_t chunks[CHUNK_IMAGES];
+    level_sprites_t sprites;
+} level_art_t;
+
 /* A piece of a dwarf: where it goes, from his top left, and its image,
    from the start of his. */
 typedef struct
@@ -590,8 +629,8 @@ typedef struct
 } talk_t;
 
 /* The art of the title and of a level: the texture and a curtain set, the
-   level's sled, then the title's logo or, in its place, the level's frame
-   set. Each screen loads its own when it starts. */
+   level's sled, then the title's logo or, in its place, the level's own
+   art. Each screen loads its own when it starts. */
 typedef struct
 {
     uint8_t texture[TEXTURE_H][TEXTURE_W / 4];
@@ -600,7 +639,7 @@ typedef struct
     union
     {
         logo_image_t logo_images[3]; /* the title's logo */
-        frame_set_t frame;           /* a level's frame set */
+        level_art_t level;           /* a level's own */
     };
 } cave_art_t;
 
@@ -618,11 +657,7 @@ typedef struct
     palettes_t palettes;
     scenery_t scenery;
     mode5_csprite_t bricks[BRICKS_MAX];
-    union
-    {
-        actors_t actors;
-        locks_t locks;
-    };
+    locks_t locks;
     hud_t hud;
     union
     {
@@ -635,10 +670,10 @@ typedef struct
         talk_t talk; /* a dwarf talking, in the menus' place */
     };
     brick_image_t brick_image;
-    break_image_t break_images[BREAK_FRAMES];
     piece_image_t nugget_image;
+    icon_image_t nugget_icon_image;
     piece_image_t ball_image;
-    piece_image_t coin_image;
+    icon_image_t coin_image;
     cursor_image_t cursor_image;
     jet_image_t jet_images[JET_FRAMES];
     piece_image_t smoke_images[SMOKE_FRAMES];
@@ -680,13 +715,9 @@ typedef struct
 #define XRAM_BEAM_SPRITES offsetof(xram_layout_t, scenery.beam)
 #define XRAM_CAP_SPRITES offsetof(xram_layout_t, scenery.caps)
 #define XRAM_BRICKS offsetof(xram_layout_t, bricks)
-#define XRAM_ACTORS offsetof(xram_layout_t, actors)
+#define XRAM_LOCKS offsetof(xram_layout_t, locks)
 #define XRAM_HALF_SPRITES offsetof(xram_layout_t, locks.halves)
 #define XRAM_LOCK_SPRITES offsetof(xram_layout_t, locks.padlocks)
-#define XRAM_BALL_SPRITE offsetof(xram_layout_t, actors.ball)
-#define XRAM_SLED_SPRITE offsetof(xram_layout_t, actors.sled)
-#define XRAM_JET_SPRITES offsetof(xram_layout_t, actors.jets)
-#define XRAM_SMOKE_SPRITES offsetof(xram_layout_t, actors.smoke)
 #define XRAM_HUD offsetof(xram_layout_t, hud)
 #define XRAM_ENERGY_SPRITES offsetof(xram_layout_t, hud.energy)
 #define XRAM_COIN_ICON offsetof(xram_layout_t, hud.coin_icon)
@@ -709,8 +740,8 @@ typedef struct
 #define XRAM_BUBBLE_TILES offsetof(xram_layout_t, talk.bubble_tiles)
 #define XRAM_BUBBLE_MAP offsetof(xram_layout_t, talk.bubble_map)
 #define XRAM_BRICK_IMAGE offsetof(xram_layout_t, brick_image)
-#define XRAM_BREAK_IMAGES offsetof(xram_layout_t, break_images)
 #define XRAM_NUGGET_IMAGE offsetof(xram_layout_t, nugget_image)
+#define XRAM_NUGGET_ICON_IMAGE offsetof(xram_layout_t, nugget_icon_image)
 #define XRAM_BALL_IMAGE offsetof(xram_layout_t, ball_image)
 #define XRAM_COIN_IMAGE offsetof(xram_layout_t, coin_image)
 #define XRAM_CURSOR_IMAGE offsetof(xram_layout_t, cursor_image)
@@ -737,15 +768,24 @@ typedef struct
 #define XRAM_CART_MAP offsetof(xram_layout_t, art.menu.cart_map)
 #define XRAM_TEXTURE offsetof(xram_layout_t, art.cave.texture)
 #define XRAM_CURTAINS offsetof(xram_layout_t, art.cave.curtains)
-#define XRAM_FRAME offsetof(xram_layout_t, art.cave.frame)
-#define XRAM_FRAME_PALETTE offsetof(xram_layout_t, art.cave.frame.palette)
-#define XRAM_FRAME_SHADE offsetof(xram_layout_t, art.cave.frame.shade)
-#define XRAM_FRAME_SHOWS offsetof(xram_layout_t, art.cave.frame.shows)
-#define XRAM_POST_IMAGE offsetof(xram_layout_t, art.cave.frame.post)
-#define XRAM_BEAM_IMAGE offsetof(xram_layout_t, art.cave.frame.beam)
-#define XRAM_BEAM_END offsetof(xram_layout_t, art.cave.frame.beam_end)
-#define XRAM_CAP_IMAGE offsetof(xram_layout_t, art.cave.frame.cap)
-#define XRAM_BRACE_IMAGE offsetof(xram_layout_t, art.cave.frame.brace)
+#define XRAM_FRAME offsetof(xram_layout_t, art.cave.level.frame)
+#define XRAM_FRAME_PALETTE offsetof(xram_layout_t, art.cave.level.frame.palette)
+#define XRAM_FRAME_SHADE offsetof(xram_layout_t, art.cave.level.frame.shade)
+#define XRAM_FRAME_SHOWS offsetof(xram_layout_t, art.cave.level.frame.shows)
+#define XRAM_POST_IMAGE offsetof(xram_layout_t, art.cave.level.frame.post)
+#define XRAM_BEAM_IMAGE offsetof(xram_layout_t, art.cave.level.frame.beam)
+#define XRAM_BEAM_END offsetof(xram_layout_t, art.cave.level.frame.beam_end)
+#define XRAM_CAP_IMAGE offsetof(xram_layout_t, art.cave.level.frame.cap)
+#define XRAM_BRACE_IMAGE offsetof(xram_layout_t, art.cave.level.frame.brace)
+#define XRAM_CRACK_IMAGES offsetof(xram_layout_t, art.cave.level.cracks)
+#define XRAM_CHUNK_IMAGES offsetof(xram_layout_t, art.cave.level.chunks)
+#define XRAM_LEVEL_SPRITES offsetof(xram_layout_t, art.cave.level.sprites)
+#define XRAM_CRACK_SPRITES offsetof(xram_layout_t, art.cave.level.sprites.cracks)
+#define XRAM_CHUNK_SPRITES offsetof(xram_layout_t, art.cave.level.sprites.chunks)
+#define XRAM_BALL_SPRITE offsetof(xram_layout_t, art.cave.level.sprites.actors.ball)
+#define XRAM_SLED_SPRITE offsetof(xram_layout_t, art.cave.level.sprites.actors.sled)
+#define XRAM_JET_SPRITES offsetof(xram_layout_t, art.cave.level.sprites.actors.jets)
+#define XRAM_SMOKE_SPRITES offsetof(xram_layout_t, art.cave.level.sprites.actors.smoke)
 #define XRAM_LEVEL_SLED offsetof(xram_layout_t, art.cave.sled_images)
 #define XRAM_LOGO_IMAGES offsetof(xram_layout_t, art.cave.logo_images)
 
@@ -756,10 +796,11 @@ MODE5_PALETTE_CHECK(palettes_t);
 PSG_PAGE_CHECK(XRAM_PSG);
 
 /* video_init() hides every sprite from XRAM_SCENERY up to XRAM_MENU_MAP, and
-   plane 0 draws the scenery and the bricks as one list. */
+   plane 0 draws the scenery and the bricks as one list. A level's plane 1
+   sprites are in its own art, and it hides them itself. */
 _Static_assert(XRAM_BRICKS == XRAM_SCENERY + sizeof(scenery_t), "The bricks must follow the scenery.");
 _Static_assert(XRAM_MENU_MAP == XRAM_BRICKS + (BRICKS_MAX * sizeof(mode5_csprite_t) +
-                                               sizeof(actors_t) + sizeof(hud_t)),
+                                               sizeof(locks_t) + sizeof(hud_t)),
                "The sprite lists must lie together, before the menus' map.");
 
 #endif

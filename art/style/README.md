@@ -1,9 +1,10 @@
 # Quarry Art Style
 
 Quarry has two looks. The levels are **stone**: rough, organic quarry
-walls, and bricks of rock with their ore showing through. The player's
-equipment is **industrial**: heavy modern mining machinery, used every day
-and well looked after. Every new piece of art belongs to one of the two.
+walls. The player's equipment is **industrial**: heavy modern mining
+machinery, used every day and well looked after. Every new piece of art
+belongs to one of the two, but the bricks, which are plain colors, as in
+a classic brick breaker: see [Bricks](#bricks).
 
 The images in `ref/` set the look. Pass them as references when making new
 art, and compare new art against them.
@@ -18,7 +19,7 @@ bought its rank.
 | --- | --- |
 | LEVEL | One playfield of bricks. Mines are dug in levels, each deeper than the last. Its cart on the upgrade screen begins it. |
 | BRICK | A block of rock, broken by the ball. |
-| NUGGET | The ore that comes out of a broken brick, and flies to the counts. Nuggets buy upgrades. |
+| NUGGET | The token that comes out of a broken brick, a ball of its color, and flies to the counts. Nuggets buy upgrades. |
 | COIN | One for the first clear of each level, never again. Coins will open the upgrades' next tiers. |
 | SLED | The paddle, which floats on its jets. |
 | FUEL | What the gauge on the right shows. When it runs out, the sled falls and the level ends. |
@@ -68,12 +69,10 @@ comes later.
 
 ## Stone: the levels
 
-The curtains, the bricks, the break frames, the nuggets, and the logo.
+The curtains and the logo.
 
-- Rough, matte stone with chipped, irregular edges. Bricks are blocks of
-  rock, not cut gems: no facets, no glassy shine.
-- An ore shows as flecks, veins, or crystals in the rock. Each ore has its
-  own colors, and its nugget is a small rough lump of the same ore.
+- Rough, matte stone with chipped, irregular edges, not cut gems: no
+  facets, no glassy shine.
 - The curtains are quarry walls of ledges, boulders, and cracks, with no
   repeating tiles. Their inner edges are the walls of the playfield.
 - The curtains are the model for how stone is drawn: warm weathered
@@ -85,6 +84,30 @@ The curtains, the bricks, the break frames, the nuggets, and the logo.
   into `art/logo.png`, and turns any moss green to rock.
 
 References: `ref/old-logo-qu.png`, `ref/rock-crop.png`, `ref/logo-stone.png`, `ref/stone-wall.png`, `ref/ore-blocks.png`.
+
+### Bricks
+
+The bricks are plain colors, gray, red, green, blue and gold, in that
+order, picked with simulations of each kind of color blindness so every
+pair stays apart, and none white, as the ball is. Gray is the darkest of
+them, so it is never taken for the red. `art/bricks.py` draws every piece
+of them by rule, and nothing is touched up by hand:
+
+- **Brick:** 24x8 with no gap of its own, its face the plain color and a
+  1 px bevel all round, light on the top and the left, dark on the bottom
+  and the right. Widths are multiples of 4.
+- **Cracks:** sprites over the brick, so they flip either way: black lines
+  with a gray lip under them, in sets of three, a brick a quarter, a half
+  and three quarters broken. The first stays inside the face, the second
+  reaches through the top bevel, and the third adds a crack up through the
+  bottom one.
+- **Chunks:** rough lumps of the brick's colors, lit like it, that fly up
+  and out when it breaks, fall, and turn over as they go.
+- **Nugget:** a sphere of the brick's color, lit from the upper left,
+  with a dark outline: 7 px across as it flies, and as tall as the digits
+  beside its count.
+- **Coin:** the same circle as the big nugget, in the sled row's gold,
+  beveled, with a square hole cut in the middle.
 
 ### Behind the Playfield
 
@@ -494,7 +517,7 @@ darkest first. Each class of art gets a row of its own:
 | Row | Used by |
 | --- | --- |
 | main | the ball |
-| bricks | one per ore: the brick, its break frames, its nugget, and its nugget sprite |
+| bricks | one per color: the brick, its cracks and chunks, and its nuggets |
 | fx | the smoke and the energy gauge |
 | logo | the title logo |
 | sled | the sleds, their jets and flames, the machine, the digits, and the coin |
@@ -507,15 +530,17 @@ The upgrade panels have a palette of their own, 256 colors, outside these rows, 
 
 A jet's nozzle and its flame are one sprite, so the flames share the sled
 row. Every curtain set brings its own palette into the one curtain row.
-That is 8 rows and the ores, so 24 rows are left for ores.
+That is 8 rows and the 5 brick colors, so 19 rows are left.
 
 ## Sizes
 
 | Art | Size |
 | --- | --- |
-| brick | 24x8 |
-| break frames | 2 frames, 24x16 |
-| nugget, nugget sprite of a count | 8x8 |
+| brick | 24x8, 2 bits a pixel |
+| cracks | 16 sets of 3, 16x8, 2 bits a pixel, as many across a brick as fit |
+| chunks | 16, 8x8, 2 bits a pixel |
+| nugget | 8x8 as it flies, and 10 across in a 12x12 sprite by its count |
+| coin | 10 across in a 12x12 sprite, by its count |
 | ball, ball sprite of the count | 8x8 |
 | digit | 8x12 sprite, a 6x8 digit with its outline |
 | texture | 320x240 at 2 bits a pixel |
@@ -555,8 +580,8 @@ size.
 5. Convert it with `art/rd2png.py`:
 
    ```bash
-   python3 art/rd2png.py ore.png art/brick.png --palette-out row.png
-   python3 art/rd2png.py nugget.png art/nugget.png --palette art/palettes.png --row 4
+   python3 art/rd2png.py piece.png art/piece.png --palette-out row.png
+   python3 art/rd2png.py piece.png art/piece.png --palette art/palettes.png --row 8
    ```
 
    The first writes the colors as a palette row, to add to
@@ -569,8 +594,6 @@ The blocks of the looks:
 
 - **Stone:** "rough matte quarried stone, chipped edges, dark outline,
   light from the upper left"
-- **Ore:** the stone block, then the ore, such as "granite with
-  copper-green malachite veins", then "matte stone, not polished gems"
 - **Curtain:** "the whole wall dark and muted like a backdrop behind
   gameplay"
 - **Industrial:** "heavy modern mining machinery, safety-yellow paint over
@@ -590,7 +613,7 @@ The blocks of the looks:
 | `ref/rock-crop.png` | 64x64 of the rock of the first curtain set: how stone is drawn. A reference for a stone piece, such as the logo. Not for a curtain set: it is zoomed in, so the rock comes out too big. |
 | `ref/logo-stone.png` | The logo as Retro Diffusion made it, before `art/logo.py`: `rd_pro__typography`, 192x64, with `rock-crop.png` and `old-logo-qu.png` as references: "\"QUARRY\" in big bold blocky capital letters, carefully carved from solid stone by a master stonemason: clean even letterforms with crisp chiseled bevels and flat faces, every letter whole and unbroken, only a few small natural chips and fine hairline marks, all the letters the same warm weathered sandstone with subtle flecks like the reference rock, cool blue-grey stone only in the shadowed bevels, a dark outline and a dark shadow under the letters, light from the upper left, on a plain white background". One of three, and the one with moss, which `art/logo.py` turns to rock; the others were plainer, or cracked with stray dots. |
 | `ref/stone-wall.png` | The organic shapes of the curtains, and the warm sandstone turning to cool granite. It is too bright as it is. |
-| `ref/ore-blocks.png` | Matte ore rock and the pairing of each brick with its nugget. Eight candidate ores: limestone, gold-flecked sandstone, malachite in granite, iron ore, coal, silver in slate, rose quartz, and amber in basalt. Level 1's white is the limestone. |
+| `ref/ore-blocks.png` | Matte ore rock and the pairing of each brick with its nugget. Eight candidate ores: limestone, gold-flecked sandstone, malachite in granite, iron ore, coal, silver in slate, rose quartz, and amber in basalt. The bricks became plain colors instead. |
 | `ref/sled-kit.png` | The colors, the chevrons, the bolts, and the thrusters. Keep the scuffs and leave out the rust specks. Its tops are not flat: the new sled has the flat, overhanging top plate of [The Sled](#the-sled). |
 | `ref/ui-kit.png` | Graphite panels with yellow trim, gauges, and meters. Its vertical meter is a start for the energy gauge. |
 | `ref/frame-B2.png`, `ref/frame-B3.png` | Concepts for the playfield's frame: lattice towers of angle iron with X bracing, a zigzag truss beam, bolted gussets. Gray steel, see-through. |

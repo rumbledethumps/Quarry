@@ -20,7 +20,7 @@ from rd2png import rgba, write_png
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WIDTH, HEIGHT = 320, 240
-TEXTURE_ROW = 5  # the texture row of art/palettes.png
+TEXTURE_ROW = 9  # the texture row of art/palettes.png
 
 
 def perlin(rng, cells_x, cells_y):

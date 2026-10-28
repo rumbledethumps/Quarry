@@ -32,7 +32,7 @@ uint8_t upgrades_max(uint8_t upgrade)
     return upgrade == UPGRADE_WIDTH ? WIDTH_RANKS : SPEED_RANKS;
 }
 
-/* The cost of the next rank, in white nuggets. 0 at the highest rank. */
+/* The cost of the next rank, in gray nuggets. 0 at the highest rank. */
 uint16_t upgrades_cost(uint8_t upgrade)
 {
     uint8_t rank = upgrade_ranks[upgrade];
@@ -47,9 +47,9 @@ uint8_t upgrades_buy(uint8_t upgrade)
 {
     uint16_t cost = upgrades_cost(upgrade);
 
-    if (!cost || nuggets[BRICK_WHITE] < cost)
+    if (!cost || nuggets[BRICK_GRAY] < cost)
         return 0;
-    nuggets[BRICK_WHITE] -= cost;
+    nuggets[BRICK_GRAY] -= cost;
     upgrade_ranks[upgrade]++;
     DEBUG_LOG("bought %s %u\n", upgrade == UPGRADE_WIDTH ? "width" : "speed",
               upgrade_ranks[upgrade]);

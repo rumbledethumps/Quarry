@@ -19,7 +19,7 @@ from curtain import reduce
 from rd2png import luma, rgba, write_png
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-LOGO_ROW = 3  # the logo row of art/palettes.png
+LOGO_ROW = 7  # the logo row of art/palettes.png
 MOSS = (55, 180)  # the hues of moss and slime
 ROCK = (22, 0.2)  # the hue and saturation they turn to
 

@@ -10,11 +10,12 @@
 
 /* One save, one file: the nugget counts of each color, the coins, the
    upgrade ranks, the levels cleared, the level picked to play, the
-   highest level the upgrade screen has shown open, and the talks of the
-   dwarves already seen. It starts with a tag that names its layout, so a
-   save of another layout is not read as this one. */
+   highest level the upgrade screen has shown open, the talks of the
+   dwarves already seen, and the lines of the counts reached. It starts
+   with a tag that names its layout, so a save of another layout is not
+   read as this one. */
 #define SAVE_PATH "SAVE:quarry.save"
-#define SAVE_TAG "QRY4"
+#define SAVE_TAG "QRY5"
 
 typedef struct
 {
@@ -26,6 +27,7 @@ typedef struct
     uint8_t level_picked;
     uint8_t levels_shown;
     uint8_t talks_seen;
+    uint8_t counts_shown;
 } save_t;
 
 #define SAVE_BYTES sizeof(save_t) /* for tests/saves.py */
@@ -69,13 +71,14 @@ uint8_t save_load(void)
     level_picked = s.level_picked;
     levels_shown = s.levels_shown;
     talks_seen = s.talks_seen;
+    counts_shown = s.counts_shown;
     save_exists = 1;
     DEBUG_LOG("loaded\n");
     return 1;
 }
 
 /* Writes the game to the save, with the nuggets still on their way to the
-   panel counted, and waits until it is stored. */
+   panel counted, and their lines shown, and waits until it is stored. */
 void save_write(void)
 {
     save_t s;
@@ -83,10 +86,13 @@ void save_write(void)
     int fd;
 
     memcpy(s.tag, SAVE_TAG, sizeof s.tag);
+    s.counts_shown = counts_shown;
     for (i = 0; i < BRICK_COLORS; i++)
     {
         uint16_t pending = play_pending(i);
         s.nuggets[i] = nuggets[i] > 0xFFFF - pending ? 0xFFFF : nuggets[i] + pending;
+        if (pending)
+            s.counts_shown |= 1 << i;
     }
     s.coins = coins;
     memcpy(s.upgrades, upgrade_ranks, sizeof s.upgrades);
@@ -108,8 +114,8 @@ void save_write(void)
 }
 
 /* Starts over: no nuggets, no coins, no upgrades, no level cleared,
-   level 1 picked and shown open, and no talk seen, and replaces the save
-   with that. */
+   level 1 picked and shown open, no talk seen and no line of the counts,
+   and replaces the save with that. */
 void save_new_game(void)
 {
     memset(nuggets, 0, sizeof nuggets);
@@ -119,5 +125,6 @@ void save_new_game(void)
     level_picked = 1;
     levels_shown = 1;
     talks_seen = 0;
+    counts_shown = 0;
     save_write();
 }

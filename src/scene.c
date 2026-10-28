@@ -11,11 +11,12 @@
 /* Each screen has art of its own in XRAM_ART, read from the ROM's assets
    when the screen starts. The upgrade screen has its backdrop, its panels
    and carts, and slots for the pictures of the panels near the middle,
-   which load as the panels come near. The title has a texture, a curtain set and the logo, and a level a
-   texture, a curtain set, a frame set and its own sled. The texture, the
-   curtain set and the frame set are picked at random only when the screen
-   changes, so a level played again keeps its rock and its frame, and
-   nobody sees them change. */
+   which load as the panels come near. The title has a texture, a curtain
+   set and the logo, and a level a texture, a curtain set, a frame set,
+   the cracks and the chunks of its bricks, and its own sled. The texture,
+   the curtain set and the frame set are picked at random only when the
+   screen changes, so a level played again keeps its rock and its frame,
+   and nobody sees them change. */
 
 #define SCENE_MENU 1
 #define SCENE_LEVEL 2
@@ -44,6 +45,8 @@ _Static_assert(CURTAIN_SETS <= 9 && TEXTURES <= 9 && FRAME_SETS <= 9, "An asset'
 #define CURTAIN_PALETTE_BYTES sizeof(((palettes_t *)0)->curtain)
 #define CURTAIN_SET_BYTES (CURTAIN_PALETTE_BYTES + 4 * sizeof(uint16_t) + 2 * CURTAIN_BYTES)
 #define FRAME_SET_BYTES sizeof(frame_set_t)
+#define CRACKS_BYTES sizeof(((level_art_t *)0)->cracks)
+#define CHUNKS_BYTES sizeof(((level_art_t *)0)->chunks)
 #define TALK_BYTES sizeof(talk_t)
 
 static uint8_t scene;
@@ -161,7 +164,7 @@ void scene_menu_show(void)
         return;
     menu_shown = 1;
     next_frame();
-    video_start();
+    video_start(0);
     xreg_vga_mode2(BAND_MODE(BACKDROP_TOP_BPP), XRAM_BACKDROP_CONFIG(0), 0, BACKDROP_TOP_Y,
                    BACKDROP_TOP_Y + BACKDROP_TOP_ROWS * 16);
     xreg_vga_mode2(BAND_MODE(BACKDROP_MIDDLE_BPP), XRAM_BACKDROP_CONFIG(1), 0, BACKDROP_MIDDLE_Y,
@@ -212,27 +215,35 @@ void scene_title(void)
 {
     if (scene_change(SCENE_TITLE))
     {
-        video_start();
+        video_start(0);
         cave();
     }
     load("ROM:logo", 0, XRAM_LOGO_IMAGES, LOGO_BYTES);
 }
 
-/* A level: a cave and its frame set, if it comes from another screen, and
-   the sled of a rank of the width upgrade. */
-void scene_level(uint8_t sled_rank)
+/* A level: a cave, its frame set and the cracks and chunks of its bricks,
+   if it comes from another screen, and the sled of a rank of the width
+   upgrade. Its own sprites start hidden, before plane 1 shows them.
+   Returns whether the screen changed. */
+uint8_t scene_level(uint8_t sled_rank)
 {
-    if (scene_change(SCENE_LEVEL))
+    uint8_t changed = scene_change(SCENE_LEVEL);
+
+    video_hide_level_sprites();
+    if (changed)
     {
         char frame[] = "ROM:frame1";
 
-        video_start();
+        video_start(1);
         cave();
         frame[9] = '1' + frame_set;
         load(frame, 0, XRAM_FRAME, FRAME_SET_BYTES);
+        load("ROM:cracks", 0, XRAM_CRACK_IMAGES, CRACKS_BYTES);
+        load("ROM:chunks", 0, XRAM_CHUNK_IMAGES, CHUNKS_BYTES);
         DEBUG_LOG("frame %u\n", frame_set + 1);
     }
     load("ROM:sleds", (long)sled_rank * SLED_SLOT, XRAM_LEVEL_SLED, SLED_SLOT);
+    return changed;
 }
 
 /* The curtain set after this one, or before it, in its place, while the

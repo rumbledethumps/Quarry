@@ -21,6 +21,7 @@
 
 /* Bricks */
 #define TUNE_BRICKS_Y 32      /* the top of the first row of bricks */
+#define TUNE_BRICK_HITS {1, 2, 3, 4, 5} /* to break each color: gray, red, green, blue, gold */
 
 /* Nuggets fly from a broken brick to the left panel this many pixels a
    step, along the longer of across and down. */
@@ -29,7 +30,7 @@
 /* Paddle */
 #define TUNE_PADDLE_Y 208     /* hover height, the top of the paddle */
 
-/* Upgrades, paid in white nuggets. Each rank of an upgrade has its
+/* Upgrades, paid in gray nuggets. Each rank of an upgrade has its
    value, starting with the value before any upgrade, and each rank after
    the first has its cost. The build draws a sled for each width, with
    its jets. */

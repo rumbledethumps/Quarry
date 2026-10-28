@@ -9,6 +9,7 @@ from their own text cells. Exits 0 when every check passes.
 """
 
 import os
+import struct
 import sys
 
 from game import Game, check
@@ -179,6 +180,7 @@ def main():
     # held, every other rank, then MAX. The count shows what is left.
     have = 200
     game.poke('nuggets', have, 2)
+    game.poke('counts_shown', 1 << sym['BRICK_GRAY'])
     game.tap('space')
     game.wait('bought width 1', 10)
     have -= tune['TUNE_WIDTH_COSTS'][0]
@@ -298,10 +300,41 @@ def main():
     check(game.shows('BEGIN LEVEL 2?'), 'and asks to begin level 2')
     game.tap('space')
     game.until('game_state', 'STATE_PLAY', 30)
-    check(game.ram('bricks_left') == (sym['LEVEL1_COLS'] + 1) * sym['LEVEL1_ROWS'],
-          'level 2 is a column wider')
-    game.close()
+    game.run(2)
     print('ok: a coin for the first clear, and the next level')
+
+    # Level 2 is level 1 with red bricks in the middle of its top two rows.
+    # A red brick takes two hits: the first cracks it, half broken, and the
+    # second breaks it, into red chunks and a red nugget, whose line of the
+    # counts shows once it lands.
+    bricks, step = sym['LEVEL1_COLS'] * sym['LEVEL1_ROWS'], sym['SPRITE_BYTES']
+    gray, red = sym['XRAM_PALETTE_BRICKS'], sym['XRAM_PALETTE_BRICKS'] + 32 * sym['BRICK_RED']
+    palette = lambda addr: struct.unpack('<H', game.xram(addr + 6, 2))[0]
+    colors = [palette(sym['XRAM_BRICKS'] + i * step) for i in range(bricks)]
+    check(game.ram('bricks_left') == bricks and [i for i, c in enumerate(colors) if c == red] == [1, 2, 5, 6] and
+          colors.count(gray) == bricks - 4, f'level 2 has red bricks in the middle of its top two rows: {colors}')
+    x, y = game.ram('brick_x+2', 2), game.ram('brick_y+2', 2)
+    game.tap('space', 2)
+    game.paused_poke([('ball_x', x + 8 << 8, 4), ('ball_y', sym['BEAM_H'] + 4 << 8, 4), ('ball_vx', 0, 2),
+                      ('ball_vy', 512, 2)])
+    game.wait('cracked 1, 1 hits', 30)
+    game.run(1)
+    cx, cy, image, crack_palette, _, mode = struct.unpack('<hhHHBB', game.xram(sym['XRAM_CRACK_SPRITES'] + step, step))
+    state = (image - sym['XRAM_CRACK_IMAGES']) // sym['CRACK_IMAGE_BYTES'] % sym['CRACK_STATES']
+    check(x <= cx <= x + sym['BRICK_W'] - sym['CRACK_W'] and cy == y and state == 1 and mode & 3 == sym['MODE5_2BPP'] and
+          crack_palette == red + 2 * sym['BRICK_CRACK_COLORS'], 'the first hit cracks a red brick, half broken')
+    game.wait('brick 1,', 60)
+    game.run(1)
+    check(game.shown(sym['XRAM_CRACK_SPRITES'] + step, 1) == 0, 'the second breaks it, and its cracks are gone')
+    first = (game.ram('chunk_next') - sym['CHUNKS_PER_BREAK']) % sym['CHUNKS_MAX']
+    check(palette(sym['XRAM_CHUNK_SPRITES'] + first * step) == red, 'it breaks into red chunks')
+    game.wait('nugget landed', 120)
+    game.run(1)
+    icon = sym['XRAM_NUGGET_ICONS'] + sym['BRICK_RED'] * step
+    check(game.sprite(icon) == (sym['ICON_X'], sym['ICON_TOP'] + (sym['BRICK_RED'] + 1) * sym['LINE_H'] - 1) and
+          game.ram(f'nuggets+{2 * sym["BRICK_RED"]}', 2) == 1, 'its nugget lands in the red line of the counts')
+    game.close()
+    print('ok: level 2, and a red brick')
     print('PASS')
 
 

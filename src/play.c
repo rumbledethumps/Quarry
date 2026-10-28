@@ -258,9 +258,8 @@ uint8_t play_step(void)
 }
 
 /* After the level ends, the flames still burn, a falling paddle still
-   falls off the screen, and the last nuggets still fly to the panel. The
-   nuggets step before the bricks, so a new one stays where its brick was
-   until the next step. */
+   falls off the screen, the last nuggets still fly to the panel, and the
+   last chunks still fall. */
 void play_idle(void)
 {
     paddle_step(0);
@@ -268,7 +267,7 @@ void play_idle(void)
     bricks_step();
 }
 
-/* Finishes every break and lands every nugget at once, so the counts are
+/* Ends every break and lands every nugget at once, so the counts are
    whole. */
 void play_finish(void)
 {
@@ -276,10 +275,10 @@ void play_finish(void)
     nuggets_land();
 }
 
-/* The nuggets of a color still to land: breaking, or in flight. */
+/* The nuggets of a color still to land, in flight. */
 uint8_t play_pending(uint8_t color)
 {
-    return bricks_pending(color) + nuggets_flying(color);
+    return nuggets_flying(color);
 }
 
 /* The ball is drawn first, as early in the vertical blank as it can be. */
@@ -291,4 +290,5 @@ void play_draw(void)
         sprite_move(XRAM_BALL_SPRITE, PX(ball_x), PX(ball_y));
     paddle_draw();
     nuggets_draw();
+    bricks_draw();
 }

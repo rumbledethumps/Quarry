@@ -18,10 +18,11 @@
 
 void video_init(void);
 void video_blank(void);
-void video_start(void);
+void video_start(uint8_t level);
 void video_menus(void);
 void video_talk(void);
 void video_hide_sprites(void);
+void video_hide_level_sprites(void);
 void video_text_clear(void);
 void video_clear(uint8_t left, uint8_t top, uint8_t right, uint8_t bottom);
 void video_text(uint8_t col, uint8_t row, const char *s);
@@ -34,6 +35,7 @@ void sprite_move(unsigned sprite, int16_t x, int16_t y);
 void sprite_hide(unsigned sprite);
 void sprite_flip(unsigned sprite);
 void sprite_attributes(unsigned sprite, uint8_t attributes);
+void sprite_mode(unsigned sprite, uint8_t attributes);
 void video_count(unsigned first, uint8_t sprites, int16_t x, int16_t y, uint16_t n);
 
 #endif

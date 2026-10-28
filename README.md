@@ -40,10 +40,20 @@ it looks there, without counting it as seen.
 
 The playfield is framed in gray steel the ball bounces off, riveted
 girders or an open truss, a frame set picked at random for each new level,
-as its rock walls are. The paddle floats on thrusters. The energy bar drains from the first
-launch, and when it is empty the paddle falls and the level ends. Each
-brick you break turns into a nugget that flies to the counts at the top
-left. The first clear of a level earns a coin, and opens the next level.
+as its rock walls are. The paddle floats on thrusters. The energy bar
+drains from the first launch, and when it is empty the paddle falls and
+the level ends.
+
+The bricks are plain colors, gray, red, green, blue and gold, which stay
+apart with any kind of color blindness. Gray breaks in one hit, red in
+two, and the rest in more, by `TUNE_BRICK_HITS` in `src/tuning.h`. A brick
+cracks more with each hit, its cracks a sprite over it, flipped and
+placed at random for each brick when the level's screen opens. A brick
+that breaks flies apart in chunks, and its nugget, a small ball of its
+color, flies to the counts at the top left. A color's line of the counts
+shows once its first nugget lands there, and the coins' once the first
+level is cleared. The first clear of a level earns a coin, and opens the
+next level.
 When a level ends, its menu says how, LEVEL COMPLETE, OUT OF BALLS or
 OUT OF FUEL, and goes to the upgrade screen, replays the level, or goes to
 the main menu. Esc in a level pauses it, with Restart too. The menus are
@@ -60,7 +70,9 @@ carts on a track, a cart for each level, where the button begins the level
 picked. A level newly open is still locked the first time the screen shows
 it: the screen opens on the level just cleared, the padlock on the next
 cart shakes and breaks, and the train slides over to the new level, picked.
-Levels 2 to 10 are stand-ins: level 1 a column wider each time.
+Level 1 is 4 by 4 gray bricks, and level 2 the same with red ones in the
+middle of its top two rows. Levels 3 to 10 are stand-ins: gray, a column
+wider each time.
 
 A new game starts with a cartoon dwarf miner coming up in the lower left
 corner, his speech bubble coming in beside him with a welcome, a stand-in
@@ -71,7 +83,7 @@ and more for them to say, are coming.
 
 The game saves when a level starts or ends, when it pauses, and when an
 upgrade is bought, in `SAVE:quarry.save`, with what the dwarves have
-already said. Resume on the title screen, there once there is a save,
+already said and the lines of the counts reached. Resume on the title screen, there once there is a save,
 opens the upgrade screen from there, on its level select; from a level, it
 opens on the upgrades. New Game starts over at level 1, and replaces the
 save, once Yes answers whether to; Esc is No.
@@ -111,8 +123,9 @@ ctest --test-dir build/llvm-mos/debug -R energy --output-on-failure
 
 - `controls` works every key and gamepad control.
 - `energy` drains the energy bar and runs out of energy.
-- `nuggets` breaks bricks and follows their nuggets to the panel.
-- `upgrades` works the menu when a level ends and the upgrade screen, and earns a coin.
+- `nuggets` breaks bricks into chunks and follows their nuggets to the panel.
+- `upgrades` works the menu when a level ends and the upgrade screen, earns a
+  coin, and cracks and breaks a red brick of level 2.
 - `saves` works the title screen and the pause menu, and reads the save.
 - `sound` sets off every sound effect and reads the PSG's channels.
 - `talk` brings in the dwarves: the welcome, the coin, and the upgrade

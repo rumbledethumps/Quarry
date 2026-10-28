@@ -6,10 +6,15 @@
 #define BRICK_W 24
 #define BRICK_H 8
 
-/* Colors of brick, each with its own palette and nugget. */
-#define BRICK_WHITE 0
+/* Colors of brick, each with its own palette and nugget, in the order of
+   COLORS in art/bricks.py. */
+#define BRICK_GRAY 0
+#define BRICK_RED 1
+#define BRICK_GREEN 2
+#define BRICK_BLUE 3
+#define BRICK_GOLD 4
 
-/* Levels 2 on are stand-ins until the levels are designed. */
+/* Levels 3 on are stand-ins until the levels are designed. */
 #define LEVELS 10
 
 extern uint8_t bricks_cols;   /* the width of the level, in bricks */
@@ -23,11 +28,12 @@ extern int16_t bricks_hit_top;
 extern int16_t bricks_hit_bottom;
 
 void bricks_layout(uint8_t level);
+void bricks_shuffle(void);
 void bricks_start(int16_t left, int16_t top);
 uint8_t bricks_hit(int16_t x, int16_t y, uint8_t w, uint8_t h);
 uint8_t bricks_touch(int16_t x, int16_t y, uint8_t w, uint8_t h);
 void bricks_step(void);
+void bricks_draw(void);
 void bricks_finish(void);
-uint8_t bricks_pending(uint8_t color);
 
 #endif

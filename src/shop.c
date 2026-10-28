@@ -241,7 +241,7 @@ static uint8_t can_buy(uint8_t u)
 {
     uint16_t cost = upgrades_cost(u);
 
-    return cost && nuggets[BRICK_WHITE] >= cost;
+    return cost && nuggets[BRICK_GRAY] >= cost;
 }
 
 /* What the next rank does, as the numbers now and then, with the units. */
@@ -378,9 +378,9 @@ static void pictures_draw(uint8_t p)
     }
     else
     {
-        sprite_set(PANEL_SPRITE(p, 0), XRAM_BRICK_IMAGE, XRAM_PALETTE_BRICK(BRICK_WHITE),
+        sprite_set(PANEL_SPRITE(p, 0), XRAM_BRICK_IMAGE, XRAM_PALETTE_BRICK(BRICK_GRAY),
                    MODE5_SIZE(BRICK_W, BRICK_H));
-        sprite_attributes(PANEL_SPRITE(p, 0), MODE5_HDOUBLE | MODE5_VDOUBLE);
+        sprite_mode(PANEL_SPRITE(p, 0), MODE5_2BPP | MODE5_HDOUBLE | MODE5_VDOUBLE);
         sprite_move(PANEL_SPRITE(p, 0), x + PANEL_COLS * 4 - BRICK_W, top + (PICTURE_H - 2 * BRICK_H) / 2);
     }
     if (p < UPGRADES && upgrades_cost(p) && !talk_busy())
@@ -389,7 +389,7 @@ static void pictures_draw(uint8_t p)
            but not while a dwarf talks, as it would show over his bubble. */
         char number[6];
         uint8_t first = (PANEL_INSIDE - 2 - (put_number(number, upgrades_cost(p)) - number)) / 2;
-        sprite_set(PANEL_SPRITE(p, PICTURE_SPRITES), XRAM_NUGGET_IMAGE, XRAM_PALETTE_BRICK(BRICK_WHITE),
+        sprite_set(PANEL_SPRITE(p, PICTURE_SPRITES), XRAM_NUGGET_IMAGE, XRAM_PALETTE_BRICK(BRICK_GRAY),
                    MODE5_SIZE(8, 8));
         sprite_move(PANEL_SPRITE(p, PICTURE_SPRITES), x + (PANEL_BORDER + first) * 8, PANEL_Y + COST_ROW * 8);
     }
@@ -709,7 +709,7 @@ void shop_open(uint8_t on)
     cursor_hide();
     input_repeat_stop();
     menu_clear();
-    nuggets_start(1);
+    nuggets_start();
     cursor_on = on;
     asking = ASK_NONE;
     unlocking = save_levels_open() > levels_shown ? save_levels_open() : 0;
@@ -886,7 +886,7 @@ uint8_t shop_step(void)
             sfx_play(SFX_BUY, SFX_CENTER);
             for (i = 0; i < UPGRADES; i++)
                 panel_draw(i);
-            nuggets_start(1);
+            nuggets_start();
             pictures_load();
             pictures_dirty = 1;
             save_write();

@@ -3,7 +3,7 @@
 
   screen.py
 
-Writes art/machine.png, art/digits.png, art/energy.png, art/coin.png and
+Writes art/machine.png, art/digits.png, art/energy.png and
 art/cursor.png. Run it after a change to the drawing here, then touch up
 any of them by hand. The frame of the playfield comes from art/frames.py.
 
@@ -12,11 +12,11 @@ right wall shows it with MODE5_HFLIP. The digits are 6x8 with a 1 px
 outline, in 8x12 sprites. The energy gauge is a placeholder until its
 redesign.
 
-The machine, the digits and the coin use the sled row of
-art/palettes.png, the gauge the fx row, and the cursor the holo row.
-The coin is a placeholder: a plain gold disc. The cursor is one corner of the
-holographic outline of the upgrade screen and the menus, and MODE5_HFLIP and
-MODE5_VFLIP turn it for the other three.
+The machine and the digits use the sled row of art/palettes.png, the
+gauge the fx row, and the cursor the holo row. The coin is drawn by
+art/bricks.py. The cursor is one corner of the holographic outline of the
+upgrade screen and the menus, and MODE5_HFLIP and MODE5_VFLIP turn it for
+the other three.
 """
 
 import os
@@ -24,7 +24,7 @@ import os
 from rd2png import rgba, write_png
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SLED_ROW, FX_ROW, HOLO_ROW = 4, 2, 8
+SLED_ROW, FX_ROW, HOLO_ROW = 8, 6, 12
 
 # The sled row, by index.
 OUT, G0, TAIL, G1, Y1, G2, RED, G3, ORANGE, Y2, Y3, Y4, Y5, CREAM = range(1, 15)
@@ -112,21 +112,6 @@ def gauge():
     return [[c for piece in pieces for c in piece[y]] for y in range(8)]
 
 
-def coin():
-    """The placeholder coin, 8x8: a gold disc with a dark outline, lit from
-    the upper left."""
-    shape = ['..####..',
-             '.#hhhh#.',
-             '#hHffff#',
-             '#hffffr#',
-             '#hffffr#',
-             '#hffffr#',
-             '.#rrrr#.',
-             '..####..']
-    colors = {'.': 0, '#': OUT, 'h': Y4, 'H': Y5, 'f': Y3, 'r': Y1}
-    return [[colors[c] for c in line] for line in shape]
-
-
 def cursor(n=11, size=12):
     """The top left corner of the cursor, size x size, in the holo row: a
     bright bracket whose arms fade out. It is drawn at 8 px below, and its
@@ -167,7 +152,7 @@ def main():
     for name, rows, colors in (
         ('machine', machine(), sled),
         ('digits', strip([digit(c) for c in '0123456789']), sled), ('energy', gauge(), fx),
-        ('coin', coin(), sled), ('cursor', cursor(), holo),
+        ('cursor', cursor(), holo),
     ):
         write_png(os.path.join(HERE, f'{name}.png'), len(rows[0]), len(rows), 3, rows, colors)
 
