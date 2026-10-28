@@ -24,8 +24,8 @@
 #define TUNE_LEAVE_ACCEL 4
 #define TUNE_LEAVE_SPEED 192  /* 0.75 px per step */
 
-/* Bricks. Where they are is each level's, in levels/levels.py. */
-#define TUNE_BRICK_HITS {1, 2, 3, 4, 5} /* to break each color: gray, red, green, blue, gold */
+/* Bricks. Where they are, and the hits that break each, are each level's,
+   in levels/levels.py. */
 
 /* Nuggets fly from a broken brick to the left panel this many pixels a
    step, along the longer of across and down. */
@@ -43,6 +43,8 @@
 #define TUNE_JETS {1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3} /* under the sled of each width, 3 at most */
 #define TUNE_SPEEDS {512, 576, 640, 704, 768} /* 2 to 3 px per step */
 #define TUNE_SPEED_COSTS {6, 10, 16, 24}
+#define TUNE_DAMAGES {1, 2, 3, 4}  /* a brick's hits each hit of the ball takes */
+#define TUNE_DAMAGE_COSTS {10, 20, 40}
 
 /* The paddle is cut into six zones of equal width. The two in the center
    send the ball up steeply, the zones beside them at 45 degrees, and the

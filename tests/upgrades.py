@@ -124,6 +124,8 @@ def main():
     widths = tune['TUNE_WIDTHS']
     check(panel(0, sym['EFFECT_ROW']) == f'{widths[0]} \x10 {widths[1]} PX', 'and what the next width is')
     check(panel(0, sym['COST_ROW']) == str(tune['TUNE_WIDTH_COSTS'][0]), 'and what it costs')
+    check(panel(2, sym['TITLE_ROW']) == 'HEAVIER BALL' and panel(2, sym['EFFECT_ROW']) == '1 \x10 2 DAMAGE',
+          "and the ball's damage has its panel")
     check(panel_lit(0) and not panel_lit(1), 'the middle panel is lit and the next one dim')
     game.tap('space')
     game.cmd('expect-not "bought"')
@@ -319,29 +321,36 @@ def main():
     game.run(2)
     print('ok: a coin for the first clear, and the next level')
 
-    # Level 2 is level 1 with red bricks in the middle of its top two rows.
-    # A red brick takes two hits: the first cracks it, half broken, and the
-    # second breaks it, into red chunks and a red nugget, whose line of the
-    # counts shows once it lands.
+    # Level 2 is level 1 with red bricks in the middle of its top two rows,
+    # and tougher: the gray take two hits and the red three. Each hit cracks
+    # a red brick more, to the quarter broken nearest, and the third breaks
+    # it, into red chunks and a red nugget, whose line of the counts shows
+    # once it lands.
     bricks, step = sym['LEVEL2_BRICKS'], sym['SPRITE_BYTES']
     gray, red = sym['XRAM_PALETTE_BRICKS'], sym['XRAM_PALETTE_BRICKS'] + 32 * sym['BRICK_RED']
     palette = lambda addr: struct.unpack('<H', game.xram(addr + 6, 2))[0]
     colors = [palette(sym['XRAM_BRICKS'] + i * step) for i in range(bricks)]
-    check(game.ram('bricks_left') == bricks and [i for i, c in enumerate(colors) if c == red] == [1, 2, 5, 6] and
-          colors.count(gray) == bricks - 4, f'level 2 has red bricks in the middle of its top two rows: {colors}')
+    reds = [i for i, c in enumerate(colors) if c == red]
+    check(game.ram('bricks_left') == bricks and reds == [1, 2, 5, 6] and colors.count(gray) == bricks - 4,
+          f'level 2 has red bricks in the middle of its top two rows: {colors}')
+    check(all(game.ram(f'brick_hits+{i}') == (3 if i in reds else 2) for i in range(bricks)),
+          'the gray take two hits, and the red three')
     x, y = game.ram('brick_x+2', 2), game.ram('brick_y+2', 2)
     game.tap('space', 2)
     game.paused_poke([('ball_x', x + 8 << 8, 4), ('ball_y', sym['BEAM_H'] + 4 << 8, 4), ('ball_vx', 0, 2),
                       ('ball_vy', 512, 2)])
-    game.wait('cracked 1, 1 hits', 30)
-    game.run(1)
-    cx, cy, image, crack_palette, _, mode = struct.unpack('<hhHHBB', game.xram(sym['XRAM_CRACK_SPRITES'] + step, step))
-    state = (image - sym['XRAM_CRACK_IMAGES']) // sym['CRACK_IMAGE_BYTES'] % sym['CRACK_STATES']
-    check(x <= cx <= x + sym['BRICK_W'] - sym['CRACK_W'] and cy == y and state == 1 and mode & 3 == sym['MODE5_2BPP'] and
-          crack_palette == red + 2 * sym['BRICK_CRACK_COLORS'], 'the first hit cracks a red brick, half broken')
+    for hit, quarters in ((1, 1), (2, 3)):
+        game.wait(f'cracked 1, {hit} of 3', 60)
+        game.run(1)
+        cx, cy, image, crack_palette, _, mode = struct.unpack('<hhHHBB',
+                                                               game.xram(sym['XRAM_CRACK_SPRITES'] + step, step))
+        state = (image - sym['XRAM_CRACK_IMAGES']) // sym['CRACK_IMAGE_BYTES'] % sym['CRACK_STATES'] + 1
+        check(x <= cx <= x + sym['BRICK_W'] - sym['CRACK_W'] and cy == y and state == quarters and
+              mode & 3 == sym['MODE5_2BPP'] and crack_palette == red + 2 * sym['BRICK_CRACK_COLORS'],
+              f'hit {hit} cracks a red brick, {quarters} quarters broken')
     game.wait('brick 1,', 60)
     game.run(1)
-    check(game.shown(sym['XRAM_CRACK_SPRITES'] + step, 1) == 0, 'the second breaks it, and its cracks are gone')
+    check(game.shown(sym['XRAM_CRACK_SPRITES'] + step, 1) == 0, 'the third breaks it, and its cracks are gone')
     first = (game.ram('chunk_next') - sym['CHUNKS_PER_BREAK']) % sym['CHUNKS_MAX']
     check(palette(sym['XRAM_CHUNK_SPRITES'] + first * step) == red, 'it breaks into red chunks')
     game.wait('nugget landed', 120)

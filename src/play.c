@@ -13,7 +13,8 @@
 /* The ball is the size of its image. */
 #define BALL_SIZE 8
 
-/* The count of balls is at the bottom left, the ball and then its digits,
+/* The count of balls is at the bottom left, the ball, as big as the
+   digits, and then its digits,
    and the energy gauge at the right edge, clear of the right post of the
    widest level, which ends at 312. */
 #define BALLS_X 4
@@ -51,13 +52,13 @@ static int16_t ball_vy;
 void play_init(void)
 {
     sprite_set(XRAM_BALL_SPRITE, XRAM_BALL_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(8, 8));
-    sprite_set(XRAM_BALL_ICON, XRAM_BALL_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(8, 8));
+    sprite_set(XRAM_BALL_ICON, XRAM_BALL_ICON_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(ICON_SIZE, ICON_SIZE));
 }
 
 /* The count of balls not yet launched. */
 static void balls_draw(void)
 {
-    video_count(XRAM_BALL_DIGITS, BALL_DIGITS, BALLS_X + 9, BALLS_Y - 1, balls);
+    video_count(XRAM_BALL_DIGITS, BALL_DIGITS, BALLS_X + 12, BALLS_Y - 1, balls);
 }
 
 /* The ball sits on the middle of the paddle, and goes where it goes, even
@@ -73,7 +74,7 @@ void play_start(void)
 {
     energy_start(GAUGE_X, GAUGE_Y);
     balls = TUNE_BALLS;
-    sprite_move(XRAM_BALL_ICON, BALLS_X, BALLS_Y);
+    sprite_move(XRAM_BALL_ICON, BALLS_X, BALLS_Y - 1);
     balls_draw();
     paddle_start();
     ball_dock();

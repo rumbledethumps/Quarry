@@ -4,6 +4,7 @@
 #include "play.h"
 #include "sfx.h"
 #include "tuning.h"
+#include "upgrades.h"
 #include "video.h"
 #include "xram.h"
 #include <fcntl.h>
@@ -39,12 +40,13 @@ _Static_assert(CHUNKS_MAX % CHUNKS_PER_BREAK == 0, "A break takes its chunks tog
 
 /* A level, as levels/levels.py lays it out and ROM:levels holds them, one
    after another: its walls, the inner faces of its posts, and its bricks,
-   each its top left and its color, all on the screen. */
+   each its top left, on the screen, its color and the hits that break
+   it. */
 typedef struct
 {
     int16_t x;
     uint8_t y;
-    uint8_t color; /* BRICK_GRAY and on */
+    uint8_t look; /* its color, BRICK_GRAY and on, | its hits << 4 */
 } level_brick_t;
 
 typedef struct
@@ -57,8 +59,6 @@ typedef struct
 
 #define LEVEL_BYTES sizeof(level_t) /* for tests/assets.py */
 
-/* The hits that break a brick of each color. */
-static const uint8_t brick_hits[BRICK_COLORS] = TUNE_BRICK_HITS;
 
 uint8_t bricks_left;
 int16_t bricks_hit_left;
@@ -73,7 +73,8 @@ static int16_t brick_x[BRICKS_MAX];
 static int16_t brick_y[BRICKS_MAX];
 static uint8_t brick_alive[BRICKS_MAX];
 static uint8_t brick_color[BRICKS_MAX];
-static uint8_t brick_damage[BRICKS_MAX]; /* hits taken */
+static uint8_t brick_hits[BRICKS_MAX];   /* that break it */
+static uint8_t brick_damage[BRICKS_MAX]; /* taken, a ball's damage a hit */
 
 /* Each piece of cracks, its set and its flips, and each brick's, where its
    cracks start across it. They stay the same while the screen does. */
@@ -155,7 +156,8 @@ void bricks_start(void)
         brick_x[i] = layout.bricks[i].x;
         brick_y[i] = layout.bricks[i].y;
         brick_alive[i] = 1;
-        brick_color[i] = layout.bricks[i].color;
+        brick_color[i] = layout.bricks[i].look & 15;
+        brick_hits[i] = layout.bricks[i].look >> 4;
         brick_damage[i] = 0;
         sprite_set(brick_sprite(i), XRAM_BRICK_IMAGE, XRAM_PALETTE_BRICK(brick_color[i]),
                    MODE5_SIZE(BRICK_W, BRICK_H));
@@ -175,11 +177,11 @@ static uint8_t brick_overlaps(uint8_t i, int16_t x, int16_t y, uint8_t w, uint8_
            y < brick_y[i] + BRICK_H && y + h > brick_y[i];
 }
 
-/* A brick's cracks, for the hits it has taken: the quarters of it broken,
-   to the nearest, 1 to CRACK_STATES. */
+/* A brick's cracks, for the damage it has taken: the quarters of it
+   broken, to the nearest, 1 to CRACK_STATES. */
 static void cracks_show(uint8_t i)
 {
-    uint8_t hits = brick_hits[brick_color[i]];
+    uint8_t hits = brick_hits[i];
     uint8_t state = (brick_damage[i] * 8 / hits + 1) / 2;
     uint8_t k;
 
@@ -225,9 +227,9 @@ static void chunks_spawn(uint8_t i)
 }
 
 /* Hits every brick that overlaps the box, and returns how many it hit. A
-   brick cracks more with each hit, and breaks with the last its color
-   takes: it is gone at once, in chunks, with a crunch, and its nugget
-   takes its place, with a chime. */
+   brick takes the ball's damage with each hit and cracks more, and breaks
+   once its damage reaches its hits: it is gone at once, in chunks, with a
+   crunch, and its nugget takes its place, with a chime. */
 uint8_t bricks_hit(int16_t x, int16_t y, uint8_t w, uint8_t h)
 {
     uint8_t i, k, hits = 0, broke = 0;
@@ -245,10 +247,11 @@ uint8_t bricks_hit(int16_t x, int16_t y, uint8_t w, uint8_t h)
         if (!hits || brick_y[i] + BRICK_H > bricks_hit_bottom)
             bricks_hit_bottom = brick_y[i] + BRICK_H;
         hits++;
-        if (++brick_damage[i] < brick_hits[brick_color[i]])
+        brick_damage[i] += upgrades_damage();
+        if (brick_damage[i] < brick_hits[i])
         {
             cracks_show(i);
-            DEBUG_LOG("cracked %u, %u hits\n", i, brick_damage[i]);
+            DEBUG_LOG("cracked %u, %u of %u\n", i, brick_damage[i], brick_hits[i]);
             continue;
         }
         brick_alive[i] = 0;

@@ -24,6 +24,7 @@ bought its rank.
 | SLED | The paddle, which floats on its jets. |
 | FUEL | What the gauge on the right shows. When it runs out, the sled falls and the level ends. |
 | BALL | The ball, and the count of those left. |
+| HITS | What breaks a brick: each hit of the ball does its DAMAGE, and the brick breaks once the damage reaches its hits. |
 | UPGRADE | A panel on the upgrade screen's rail, and what it buys. |
 | CART | A level, on the train of mine carts under the rail. |
 
@@ -90,8 +91,9 @@ References: `ref/old-logo-qu.png`, `ref/rock-crop.png`, `ref/logo-stone.png`, `r
 
 The bricks are plain colors, gray, red, green, blue and gold, in that
 order, picked with simulations of each kind of color blindness so every
-pair stays apart, and none white, as the ball is. Gray is the darkest of
-them, so it is never taken for the red. `art/bricks.py` draws every piece
+pair stays apart, and none white, as the ball is. Gray is a light gray,
+so it stands out from the steel of the frames and the machinery, as the
+colors do, and light enough that it is never taken for the red. `art/bricks.py` draws every piece
 of them by rule, and nothing is touched up by hand:
 
 - **Brick:** 24x8 with no gap of its own, its face the plain color and a
@@ -111,6 +113,8 @@ of them by rule, and nothing is touched up by hand:
 - **Coin:** the same circle as the big nugget, in the sled row's gold,
   beveled, with a square hole cut in the middle, clear inside an outline
   of its own, as every edge is outlined.
+- **Ball:** a sphere shaded as the nuggets are, but a very bright white,
+  8 px across in play, and as tall as the digits by its count.
 
 ### Behind the Playfield
 
@@ -543,7 +547,7 @@ That is 8 rows and the 5 brick colors, so 19 rows are left.
 | chunks | 16, 8x8, 2 bits a pixel |
 | nugget | 8x8 as it flies, and 10 across in a 12x12 sprite by its count |
 | coin | 10 across in a 12x12 sprite, by its count |
-| ball, ball sprite of the count | 8x8 |
+| ball | 8x8, and 10 across in a 12x12 sprite by its count |
 | digit | 8x12 sprite, a 6x8 digit with its outline |
 | texture | 320x240 at 2 bits a pixel |
 | post | 20 wide, up to 20 of it showing, in pieces 48 tall |

@@ -91,7 +91,8 @@ static const uint8_t hanger_x[PANEL_HANGERS] = PANEL_HANGER_X;  /* from a panel'
 _Static_assert(PANEL_LAYOUTS == PANELS, "art/panels.py needs a layout for each panel.");
 
 /* The first panels are the upgrades; the rest are stand-ins. */
-static const char *const panel_titles[PANELS] = {"WIDER SLED", "FASTER SLED", "MORE ENERGY",
+#define PANEL_ENERGY 3
+static const char *const panel_titles[PANELS] = {"WIDER SLED", "FASTER SLED", "HEAVIER BALL", "MORE ENERGY",
                                                  "SPECIAL BRICKS"};
 
 /* The levels are a train of mine carts along the bottom, the one picked
@@ -250,9 +251,12 @@ static void effect_draw(uint8_t p)
     char text[PANEL_INSIDE + 1];
     char *at = text;
     uint8_t rank = upgrade_ranks[p], max = rank >= upgrades_max(p);
-    const char *units = p == UPGRADE_WIDTH ? " PX" : " PX/S";
+    static const char *const units[UPGRADES] = {" PX", " PX/S", " DAMAGE"};
     /* A speed is in 1/256 px a step, at 60 steps a second. */
-#define VALUE(l) (p == UPGRADE_WIDTH ? upgrades_width_at(l) : (uint16_t)(upgrades_speed_at(l) * 60u / 256))
+#define VALUE(l)                                                                                         \
+    (p == UPGRADE_WIDTH   ? upgrades_width_at(l)                                                         \
+     : p == UPGRADE_SPEED ? (uint16_t)(upgrades_speed_at(l) * 60u / 256)                                 \
+                          : upgrades_damage_at(l))
 
     at = put_number(at, VALUE(rank));
     if (!max)
@@ -260,7 +264,7 @@ static void effect_draw(uint8_t p)
         at = put_text(at, " \x10 ");
         at = put_number(at, VALUE(rank + 1));
     }
-    at = put_text(at, units);
+    at = put_text(at, units[p]);
     *at = 0;
     text_draw(p, EFFECT_ROW, text);
 #undef VALUE
@@ -342,7 +346,8 @@ static void pictures_load(void)
 
 /* A panel's picture and cost icons, where it is now. The pictures are
    stand-ins, doubled: the sled for width, the sled with its flames lit
-   for speed, the energy gauge, and a brick. */
+   for speed, a ball under a brick for damage, the energy gauge, and a
+   brick. */
 static void pictures_draw(uint8_t p)
 {
     int16_t x = panel_x(p), top = PANEL_Y + PICTURE_ROW * 8;
@@ -365,7 +370,7 @@ static void pictures_draw(uint8_t p)
             sled_show(PANEL_SPRITE(p, 0), PICTURE_SPRITES, x + (PANEL_COLS * 8 - w) / 2, top + 7, rank,
                       SLED_DOUBLE | dim | (p == UPGRADE_SPEED ? SLED_FLAMES : 0), XRAM_PICTURE(p % PICTURE_SLOTS));
     }
-    else if (p == 2)
+    else if (p == PANEL_ENERGY)
     {
         static const uint8_t pieces[] = {ENERGY_TOP, ENERGY_FULL, ENERGY_BOTTOM};
         for (i = 0; i < sizeof pieces; i++)
@@ -378,10 +383,17 @@ static void pictures_draw(uint8_t p)
     }
     else
     {
+        int16_t y = p == UPGRADE_DAMAGE ? top + 4 : top + (PICTURE_H - 2 * BRICK_H) / 2;
         sprite_set(PANEL_SPRITE(p, 0), XRAM_BRICK_IMAGE, XRAM_PALETTE_BRICK(BRICK_GRAY),
                    MODE5_SIZE(BRICK_W, BRICK_H));
         sprite_mode(PANEL_SPRITE(p, 0), MODE5_2BPP | MODE5_HDOUBLE | MODE5_VDOUBLE);
-        sprite_move(PANEL_SPRITE(p, 0), x + PANEL_COLS * 4 - BRICK_W, top + (PICTURE_H - 2 * BRICK_H) / 2);
+        sprite_move(PANEL_SPRITE(p, 0), x + PANEL_COLS * 4 - BRICK_W, y);
+        if (p == UPGRADE_DAMAGE)
+        {
+            sprite_set(PANEL_SPRITE(p, 1), XRAM_BALL_ICON_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(ICON_SIZE, ICON_SIZE));
+            sprite_attributes(PANEL_SPRITE(p, 1), MODE5_HDOUBLE | MODE5_VDOUBLE);
+            sprite_move(PANEL_SPRITE(p, 1), x + PANEL_COLS * 4 - ICON_ROUND, y + 2 * BRICK_H + 2);
+        }
     }
     if (p < UPGRADES && upgrades_cost(p) && !talk_busy())
     {

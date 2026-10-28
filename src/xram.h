@@ -301,11 +301,12 @@ typedef struct
 #define JETS_MAX 3 /* under one sled */
 #define ENERGY_SEGMENTS 12
 #define NUGGETS_MAX 16 /* in flight at once */
-#define MENU_SPRITES 40
+#define MENU_SPRITES 50
 #define LOCKS 4 /* padlocks on the carts of the levels after the one picked */
 #define CURSOR_SIZE 12 /* each of its 4 corners, square */
 #define COUNT_DIGITS 5 /* of a nugget count */
-#define ICON_SIZE 12   /* the sprite of the nugget or the coin by a count, as tall as its digits */
+#define ICON_SIZE 12   /* the sprite of the nugget, coin or ball by a count, as tall as its digits */
+#define ICON_ROUND 10  /* its circle, across, at the sprite's top left */
 #define BALL_DIGITS 2  /* of the count of balls */
 
 /* The panels of the upgrade screen hang from a rail and slide across it.
@@ -314,7 +315,7 @@ typedef struct
    wide, side by side, and the art of their frames leaves the gap between
    them. art/panels.py makes the tiles, their palette and the map of the
    frames, and writes build/panels.h. */
-#define PANELS 4
+#define PANELS 5
 #define PANEL_COLS 20
 #define PANEL_PITCH PANEL_COLS
 #define PANEL_MAP_COLS (PANELS * PANEL_PITCH)
@@ -669,6 +670,7 @@ typedef struct
     piece_image_t nugget_image;
     icon_image_t nugget_icon_image;
     piece_image_t ball_image;
+    icon_image_t ball_icon_image;
     icon_image_t coin_image;
     cursor_image_t cursor_image;
     jet_image_t jet_images[JET_FRAMES];
@@ -739,6 +741,7 @@ typedef struct
 #define XRAM_NUGGET_IMAGE offsetof(xram_layout_t, nugget_image)
 #define XRAM_NUGGET_ICON_IMAGE offsetof(xram_layout_t, nugget_icon_image)
 #define XRAM_BALL_IMAGE offsetof(xram_layout_t, ball_image)
+#define XRAM_BALL_ICON_IMAGE offsetof(xram_layout_t, ball_icon_image)
 #define XRAM_COIN_IMAGE offsetof(xram_layout_t, coin_image)
 #define XRAM_CURSOR_IMAGE offsetof(xram_layout_t, cursor_image)
 #define XRAM_JET_IMAGES offsetof(xram_layout_t, jet_images)

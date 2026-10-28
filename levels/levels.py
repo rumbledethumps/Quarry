@@ -11,13 +11,15 @@ and walls with a margin each side, and a level can place anything by
 hand too. LEVELS levels are written: the ones designed, then the last of
 them again for the rest, until more are designed.
 
-The checks: every brick is inside its playfield, under the beam and above
-the sled, no two overlap, a level has no more than BRICKS_MAX of them, and
-its posts are on the screen, the right one clear of the energy gauge.
+Each brick takes the hits of its color in HITS to break, unless its level
+says otherwise. The checks: every brick is inside its playfield, under the
+beam and above the sled, no two overlap, a level has no more than
+BRICKS_MAX of them, a brick takes 1 to 15 hits, and the posts are on the
+screen, the right one clear of the energy gauge.
 
 out.bin is LEVELS level_t of src/bricks.c, one after another: the walls,
 the count of bricks, a spare byte, then BRICKS_MAX bricks, each its x, its
-y and its color, the rest zero. out.h #defines LEVELS and the bricks of
+y, and its color with its hits in the top 4 bits, the rest zero. out.h #defines LEVELS and the bricks of
 each level, LEVEL1_BRICKS and on, for the tests. --preview writes
 level-<n>.png for each level into dir, to look at. Only the Python
 standard library is used.
@@ -55,19 +57,24 @@ BALL = 8
 # and . for no brick.
 COLORS = 'xrgby'  # gray, red, green, blue, gold
 
+# The hits a brick of each color takes to break, unless its level says.
+HITS = {'x': 1, 'r': 2, 'g': 3, 'b': 4, 'y': 5}
+
 
 class Level:
     """A playfield from left to right, its walls on the screen, and its
-    bricks, each (x, y, color)."""
+    bricks, each (x, y, color, hits)."""
 
     def __init__(self, left, right, bricks):
         self.left, self.right, self.bricks = left, right, bricks
 
 
-def grid(rows, x=0, y=0, gap=2):
+def grid(rows, x=0, y=0, gap=2, hits=None):
     """Bricks from rows of letters, the top left one at x, y, each gap px
-    from the next across and down."""
-    return [(x + c * (BRICK_W + gap), y + r * (BRICK_H + gap), COLORS.index(ch))
+    from the next across and down, each taking its color's hits in HITS,
+    or in hits, by letter."""
+    hits = dict(HITS, **(hits or {}))
+    return [(x + c * (BRICK_W + gap), y + r * (BRICK_H + gap), COLORS.index(ch), hits[ch])
             for r, row in enumerate(rows) for c, ch in enumerate(row) if ch != '.']
 
 
@@ -78,7 +85,7 @@ def fit(bricks, left, right, top=32):
     x0, y0 = min(b[0] for b in bricks), min(b[1] for b in bricks)
     width = max(b[0] for b in bricks) + BRICK_W - x0 + left + right
     wall = (SCREEN_W - width) // 2
-    return Level(wall, wall + width, [(x - x0 + wall + left, y - y0 + top, c) for x, y, c in bricks])
+    return Level(wall, wall + width, [(x - x0 + wall + left, y - y0 + top, c, h) for x, y, c, h in bricks])
 
 
 def level_1():
@@ -91,12 +98,12 @@ def level_1():
 
 
 def level_2():
-    """Level 1 with red bricks in the middle of its top two rows, which take
-    two hits."""
+    """Level 1 with red bricks in the middle of its top two rows, and
+    tougher: the gray take two hits, and the red three."""
     return fit(grid(['xrrx',
                      'xrrx',
                      'xxxx',
-                     'xxxx']), left=12, right=12)
+                     'xxxx'], hits={'x': 2, 'r': 3}), left=12, right=12)
 
 
 DESIGNED = [level_1, level_2]
@@ -112,19 +119,21 @@ def check(n, level):
         fail(f'walls {level.left} and {level.right} put a post off the screen or over the energy gauge')
     if level.right - level.left < SLED_WIDTH_MAX:
         fail(f'{level.right - level.left} px wide, narrower than the widest sled')
-    for i, (x, y, c) in enumerate(level.bricks):
+    for i, (x, y, c, hits) in enumerate(level.bricks):
         if not (level.left <= x and x + BRICK_W <= level.right and BEAM_H <= y and
                 y + BRICK_H <= PADDLE_Y - 2 * BALL):
             fail(f'brick {i} at {x}, {y} is outside the playfield, or too near the beam or the sled')
-        for j, (x2, y2, _) in enumerate(level.bricks[:i]):
+        if not 1 <= hits <= 15:
+            fail(f'brick {i} takes {hits} hits, not 1 to 15')
+        for j, (x2, y2, _, _) in enumerate(level.bricks[:i]):
             if abs(x - x2) < BRICK_W and abs(y - y2) < BRICK_H:
                 fail(f'bricks {j} and {i} overlap')
 
 
 def packed(level):
     data = struct.pack('<hhBB', level.left, level.right, len(level.bricks), 0)
-    for x, y, c in level.bricks + [(0, 0, 0)] * (BRICKS_MAX - len(level.bricks)):
-        data += struct.pack('<hBB', x, y, c)
+    for x, y, c, hits in level.bricks + [(0, 0, 0, 0)] * (BRICKS_MAX - len(level.bricks)):
+        data += struct.pack('<hBB', x, y, c | hits << 4)
     return data
 
 
@@ -140,7 +149,7 @@ def preview(level, path):
     for y in range(BEAM_H):
         for x in range(level.left, level.right):
             out[y][x] = steel
-    for bx, by, c in level.bricks:
+    for bx, by, c, _ in level.bricks:
         for y in range(BRICK_H):
             for x in range(BRICK_W):
                 out[by + y][bx + x] = palettes[1 + c][palettes[1].index(brick[y][x])][:3]

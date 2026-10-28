@@ -47,9 +47,10 @@ paddle flies home, down off the screen under its own power: only out of
 fuel does it fall.
 
 The bricks are plain colors, gray, red, green, blue and gold, which stay
-apart with any kind of color blindness. Gray breaks in one hit, red in
-two, and the rest in more, by `TUNE_BRICK_HITS` in `src/tuning.h`. A brick
-cracks more with each hit, its cracks a sprite over it, flipped and
+apart with any kind of color blindness. Each level sets the hits its
+bricks take: on level 1 gray takes one, and on level 2 gray two and red
+three. Each hit of the ball does its damage, which HEAVIER BALL on the
+upgrade screen raises, and a brick cracks more with each hit, its cracks a sprite over it, flipped and
 placed at random for each brick when the level's screen opens. A brick
 that breaks flies apart in chunks, and its nugget, a small ball of its
 color, flies to the counts at the top left. A color's line of the counts

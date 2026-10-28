@@ -3,9 +3,9 @@
 
   bricks.py
 
-Writes the brick rows of art/palettes.png, and art/brick.png,
-art/cracks.png, art/chunks.png, art/nugget.png, art/nugget-icon.png and
-art/coin.png. Run it
+Writes the ball's row and the brick rows of art/palettes.png, and
+art/brick.png, art/cracks.png, art/chunks.png, art/nugget.png,
+art/nugget-icon.png, art/coin.png, art/ball.png and art/ball-icon.png. Run it
 after a change to the drawing here. Every piece is drawn here, by rule, and
 nothing is touched up by hand.
 
@@ -31,7 +31,8 @@ colors that fly when it breaks. The nugget is a sphere 7 px across, with
 an outline, as it flies, and 10 px across beside its count, as tall as
 the outlined digits, and the coin is the same big circle in the gold of
 the sled row, beveled, with a hole in the middle, square or diamond, as
-HOLE says.
+HOLE says. The ball is a sphere as the nuggets are, a very bright white,
+8 px across as it is in play and as big as the digits by its count.
 """
 
 import math
@@ -41,12 +42,13 @@ import random
 from rd2png import rgba, write_png
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-BRICK_ROW = 1  # the first brick row of art/palettes.png
+BALL_ROW = 0   # the main row of art/palettes.png, the ball's
+BRICK_ROW = 1  # the first brick row
 SLED_ROW = 8   # the sled row, which the coin uses
 
 # The colors of the bricks, in the order of BRICK_GRAY and on in
 # src/bricks.h.
-COLORS = [(93, 93, 93), (235, 105, 121), (24, 137, 47), (44, 172, 255), (207, 187, 22)]
+COLORS = [(180, 180, 180), (235, 105, 121), (24, 137, 47), (44, 172, 255), (207, 187, 22)]
 OUTLINE = (16, 19, 28)  # near-black navy, the sled row's outline
 CRACK, LIP = (34, 34, 40), (150, 150, 158)
 
@@ -60,6 +62,11 @@ HOLE = 'square'  # or 'diamond'
 
 # The brick row, by index.
 LIGHT, FACE, DARK, EDGE, DEEP, SHINE = range(1, 7)
+
+# The ball's row: a sphere shaded as the nuggets are, but a very bright
+# white, by the same indexes.
+BALL = {SHINE: (255, 255, 255), LIGHT: (246, 246, 250), FACE: (226, 228, 234), DARK: (170, 174, 186),
+        DEEP: (118, 124, 140), EDGE: OUTLINE}
 CRACK_COLORS = 8
 SPLIT, LIPPED = 1, 2  # in a crack image, as the palette from CRACK_COLORS
 
@@ -174,22 +181,24 @@ def chunk(seed):
     return img
 
 
-def circle(d, size):
+def circle(d, size, round_off=0.2):
     """The pixels of a circle d across, at the top left of a sprite size
     square, and where its middle is: the inside, and the ring of its edge,
-    the pixels with a side open."""
+    the pixels with a side open. Its radius is round_off less than half of
+    d, which rounds the pixels of its edge best for each d."""
     mid = d / 2
     solid = {(x, y) for y in range(size) for x in range(size)
-             if (x + 0.5 - mid) ** 2 + (y + 0.5 - mid) ** 2 <= (mid - 0.2) ** 2}
+             if (x + 0.5 - mid) ** 2 + (y + 0.5 - mid) ** 2 <= (mid - round_off) ** 2}
     edge = {(x, y) for x, y in solid
             if any((x + ax, y + ay) not in solid for ax, ay in ((1, 0), (-1, 0), (0, 1), (0, -1)))}
     return solid - edge, edge, mid - 0.5
 
 
-def nugget(d=7, size=8):
+def nugget(d=7, size=8, round_off=0.2):
     """A sphere lit from the upper left, in the brick row's shades: 7
-    across as it flies, and as big as the digits beside its count."""
-    inside, edge, mid = circle(d, size)
+    across as it flies, and as big as the digits beside its count. The
+    ball is the same, in its own row."""
+    inside, edge, mid = circle(d, size, round_off)
     img = [[0] * size for _ in range(size)]
     light = (-0.55, -0.6, 0.58)
     for x, y in edge:
@@ -244,6 +253,7 @@ def main():
     _, count, palettes = rgba(os.path.join(HERE, 'palettes.png'))
     rows = [palette(c) for c in COLORS]
     palettes[BRICK_ROW:BRICK_ROW + len(COLORS)] = rows
+    palettes[BALL_ROW] = [BALL[i] + (255,) if i in BALL else (0, 0, 0, 0) for i in range(16)]
     write_png(os.path.join(HERE, 'palettes.png'), 16, count, 6,
               [[v for c in row for v in c] for row in palettes])
     gray = rows[0]
@@ -252,7 +262,9 @@ def main():
     for name, img, colors in (('brick', brick(), gray), ('cracks', sheet(cracks, CRACK_STATES), crack_colors),
                               ('chunks', sheet([chunk(i) for i in range(CHUNKS)], CHUNKS), gray),
                               ('nugget', nugget(), gray), ('nugget-icon', nugget(ICON_D, ICON_SIZE), gray),
-                              ('coin', coin(), palettes[SLED_ROW])):
+                              ('coin', coin(), palettes[SLED_ROW]),
+                              ('ball', nugget(8, 8, 0), palettes[BALL_ROW]),
+                              ('ball-icon', nugget(ICON_D, ICON_SIZE), palettes[BALL_ROW])):
         write_png(os.path.join(HERE, f'{name}.png'), len(img[0]), len(img), 3, img, colors)
 
 
