@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Turn a curtain image from Retro Diffusion into a curtain set for a stage.
+"""Turn a curtain image from Retro Diffusion into a curtain set for a level.
 
   curtain.py in.png out.bin [--preview out.png]
 

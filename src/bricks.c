@@ -12,22 +12,20 @@
    the brick, by BREAK_OVER above and below. */
 #define BREAK_STEPS 4
 #define BREAK_OVER 4
+#define BREAK_SIZE MODE5_SIZE(BRICK_W, BRICK_H + 2 * BREAK_OVER)
+#define NUGGET_LEFT (BRICK_W / 2 - 4) /* its nugget's left edge, from the brick's: 8 wide in the middle */
 
-/* Stage 1, white only, with half a brick of space at each wall. W is a
-   white brick and . is no brick. */
-#define STAGE1_COLS 4
-#define STAGE1_ROWS 4
-#define STAGE1_MARGIN (BRICK_W / 2)
-static const char stage1[] =
-    "WWWW"
-    "WWWW"
-    "WWWW"
-    "WWWW";
+/* Level 1 is 4 by 4 white bricks, with half a brick of space at each
+   wall. Until the levels are designed, each one after it is a column
+   wider, up to LEVEL_COLS_MAX. */
+#define LEVEL1_COLS 4
+#define LEVEL1_ROWS 4
+#define LEVEL1_MARGIN (BRICK_W / 2)
+#define LEVEL_COLS_MAX 10
 
-_Static_assert(STAGE1_COLS * STAGE1_ROWS <= BRICKS_MAX, "Stage 1 has too many bricks.");
-_Static_assert(sizeof stage1 - 1 == STAGE1_COLS * STAGE1_ROWS, "Stage 1 layout is the wrong size.");
-_Static_assert((STAGE1_COLS * BRICK_W + 2 * STAGE1_MARGIN) % 8 == 0,
-               "The frame needs a playfield a multiple of 8 wide.");
+_Static_assert(LEVEL_COLS_MAX * LEVEL1_ROWS <= BRICKS_MAX, "A level has too many bricks.");
+_Static_assert(BRICK_W % (BEAM_W / 2) == 0 && 2 * LEVEL1_MARGIN % (BEAM_W / 2) == 0,
+               "The frame's beam needs a playfield a multiple of BEAM_W / 2 wide.");
 
 uint8_t bricks_cols;
 uint8_t bricks_margin;
@@ -50,11 +48,11 @@ static unsigned brick_sprite(uint8_t i)
     return XRAM_BRICKS + i * sizeof(mode5_csprite_t);
 }
 
-/* Sets the size of the stage, before the frame goes up around it. */
-void bricks_layout(void)
+/* Sets the size of a level, from 1, before the frame goes up around it. */
+void bricks_layout(uint8_t level)
 {
-    bricks_cols = STAGE1_COLS;
-    bricks_margin = STAGE1_MARGIN;
+    bricks_cols = LEVEL1_COLS + level - 1 < LEVEL_COLS_MAX ? LEVEL1_COLS + level - 1 : LEVEL_COLS_MAX;
+    bricks_margin = LEVEL1_MARGIN;
 }
 
 /* A brick still breaking counts its nugget now, and its sprite is hidden. */
@@ -77,12 +75,12 @@ void bricks_start(int16_t left, int16_t top)
 
     bricks_finish();
     bricks_left = 0;
-    brick_count = STAGE1_COLS * STAGE1_ROWS;
+    brick_count = bricks_cols * LEVEL1_ROWS;
     for (i = 0; i < brick_count; i++)
     {
-        brick_x[i] = left + (i % STAGE1_COLS) * BRICK_W;
-        brick_y[i] = top + (i / STAGE1_COLS) * BRICK_H;
-        brick_alive[i] = stage1[i] != '.';
+        brick_x[i] = left + (i % bricks_cols) * BRICK_W;
+        brick_y[i] = top + (i / bricks_cols) * BRICK_H;
+        brick_alive[i] = 1;
         brick_color[i] = BRICK_WHITE;
         brick_breaking[i] = 0;
         sprite_set(brick_sprite(i), XRAM_BRICK_IMAGE, XRAM_PALETTE_BRICK(brick_color[i]),
@@ -103,7 +101,8 @@ static uint8_t brick_overlaps(uint8_t i, int16_t x, int16_t y, uint8_t w, uint8_
 }
 
 /* Breaks every brick that overlaps the box, and returns how many broke.
-   A broken brick is gone at once, and its sprite shows the break. */
+   A broken brick is gone at once, and its sprite shows the break, with a
+   crunch, and a chime for its nugget. */
 uint8_t bricks_hit(int16_t x, int16_t y, uint8_t w, uint8_t h)
 {
     uint8_t i, hits = 0;
@@ -125,12 +124,15 @@ uint8_t bricks_hit(int16_t x, int16_t y, uint8_t w, uint8_t h)
         bricks_left--;
         hits++;
         sprite_set(brick_sprite(i), BREAK_IMAGE(0), XRAM_PALETTE_BRICK(brick_color[i]),
-                   MODE5_SIZE(BRICK_W, BRICK_H + 2 * BREAK_OVER));
+                   BREAK_SIZE);
         sprite_move(brick_sprite(i), brick_x[i], brick_y[i] - BREAK_OVER);
         DEBUG_LOG("brick %u, %u left\n", i, bricks_left);
     }
     if (hits)
+    {
         sfx_play(SFX_BREAK, bricks_hit_left + BRICK_W / 2);
+        sfx_play(SFX_NUGGET, bricks_hit_left + BRICK_W / 2);
+    }
     return hits;
 }
 
@@ -161,7 +163,7 @@ void bricks_step(void)
         {
             brick_breaking[i] = 0;
             sprite_hide(brick_sprite(i));
-            nuggets_spawn(brick_x[i] + BRICK_W / 2 - 4, brick_y[i], brick_color[i]);
+            nuggets_spawn(brick_x[i] + NUGGET_LEFT, brick_y[i], brick_color[i]);
         }
     }
 }

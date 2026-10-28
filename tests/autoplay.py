@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""Plays stage 1 in the emulator, to check the ball and the bricks.
+"""Plays level 1 in the emulator, to check the ball and the bricks.
 
   autoplay.py [--miss N] [--frames N] rom.rp6502
 
 The bot reads the ball and the paddle sprites each step and steers the
 paddle under the ball with the arrow keys. With --miss N it lets the first
 N balls fall. Every step it checks that the ball stays inside the playfield
-and never moves more than 3 px a step. It stops at the end of the stage,
-reports how the stage ended, checks a nugget landed for each broken brick,
-then chooses Play on the end-of-stage menu and checks that the stage starts
+and never moves farther a step than its speed, TUNE_BALL_SPEED, rounded up
+to a whole pixel. It stops at the end of the level,
+reports how the level ended, checks a nugget landed for each broken brick,
+then chooses Play on the end-of-level menu and checks that the level starts
 again. It runs on a Release ROM too.
 
 Exits 0 when every check passes.
@@ -36,7 +37,7 @@ def main():
     play_top = sym['BEAM_H']
     paddle_y, paddle_w = sym['TUNE_PADDLE_Y'], game.ram('paddle_width')
     ball = sym['BALL_SIZE']
-    bricks = sym['STAGE1_COLS'] * sym['STAGE1_ROWS']
+    bricks = sym['LEVEL1_COLS'] * sym['LEVEL1_ROWS']
     balls = sym['TUNE_BALLS']
 
     def predict(x, y, dx, dy):
@@ -88,7 +89,8 @@ def main():
                 # next frame shows it two steps on. The ball always moves at
                 # least a pixel down or up a step, so a frame where it did not
                 # is one of those.
-                limit = 6 if prev[4] == 0 else 3
+                most = -(-sym['TUNE_BALL_SPEED'] // 256)  # in whole px, a step
+                limit = 2 * most if prev[4] == 0 else most
                 check(abs(dx) <= limit and abs(dy) <= limit,
                       f'ball jumped from {prev[0]},{prev[1]} to {x},{y} at step {step}')
                 if dy < 0 and prev[2] > 0 and y > paddle_y - ball - 8:
@@ -112,38 +114,36 @@ def main():
             held = want
         game.run()
     else:
-        fail(f'the stage did not end in {args.frames} steps')
+        fail(f'the level did not end in {args.frames} steps')
 
-    left = game.ram('bricks_left')
-    message = next((m for m in ('STAGE CLEAR', 'OUT OF BALLS', 'OUT OF ENERGY')
-                    if game.shows(m)), None)
-    print(f'stage over after {step} steps: {message!r}, {left} bricks left, '
-          f'{launches} launches, {hits} paddle hits, energy {game.ram("energy", 2)}')
-    if message == 'OUT OF ENERGY':
-        check(left and game.ram('energy', 2) == 0, 'the stage ends when the energy runs out')
-    elif left:
-        check(message == 'OUT OF BALLS', 'out of balls is shown')
-        check(launches == balls, 'the stage ends when the last ball is lost')
-    else:
-        check(message == 'STAGE CLEAR', 'stage clear is shown')
-    check(game.shows('UPGRADES') and game.shows('PLAY'), 'the end-of-stage menu is shown')
-    if message != 'OUT OF ENERGY':
+    left, energy = game.ram('bricks_left'), game.ram('energy', 2)
+    how = 'cleared' if not left else 'out of energy' if not energy else 'out of balls'
+    print(f'level over after {step} steps: {how}, {left} bricks left, '
+          f'{launches} launches, {hits} paddle hits, energy {energy}')
+    if how == 'out of balls':
+        check(launches == balls, 'the level ends when the last ball is lost')
+    if how == 'cleared':
+        game.talk_ok()  # the dwarf with the coin, before the menu
+    title = {'cleared': 'LEVEL COMPLETE', 'out of energy': 'OUT OF FUEL', 'out of balls': 'OUT OF BALLS'}[how]
+    check(game.shows(title) and game.shows('UPGRADES') and game.shows('REPLAY'),
+          f'the menu says {title} when the level ends')
+    if how != 'out of energy':
         images = set()
         for _ in range(30):
             game.run()
             images.add(game.sprites('XRAM_JET_SPRITES', 1)[0][2])
-        check(len(images) > 1, 'the flames still burn after the stage ends')
+        check(len(images) > 1, 'the flames still burn after the level ends')
     game.run(90)
     check(game.shown('XRAM_BRICKS', bricks) == left, 'a sprite for each brick left')
     counted = game.ram('nuggets', 2)
     check(counted == bricks - left, f'a nugget for each broken brick, {counted} of {bricks - left}')
 
-    # Play starts the stage again.
+    # Replay starts the level again.
     if held:
         game.cmd(f'release {held}')
-    game.menu_choose('PLAY', wait=False)
+    game.menu_choose('REPLAY', wait=False)
     game.run(5)
-    check(game.ram('game_state') == sym['STATE_PLAY'], 'the stage starts again')
+    check(game.ram('game_state') == sym['STATE_PLAY'], 'the level starts again')
     check(game.ram('bricks_left') == bricks, 'the bricks come back')
     check(game.shown('XRAM_BRICKS', bricks) == bricks, 'the brick sprites come back')
     check(game.ram('balls') == balls, 'the balls come back')

@@ -14,11 +14,12 @@
 #define BALL_SIZE 8
 
 /* The count of balls is at the bottom left, the ball and then its digits,
-   and the energy gauge at the right edge. */
+   and the energy gauge at the right edge, clear of the right post of the
+   widest level, which ends at 312. */
 #define BALLS_X 4
 #define BALLS_Y 227
 #define BALLS_MAX 99
-#define GAUGE_X 306
+#define GAUGE_X 312
 #define GAUGE_Y 64
 
 #define BALL_DOCKED 0 /* on the paddle, waiting for launch */
@@ -79,7 +80,7 @@ void play_start(void)
 }
 
 /* Launches the ball steeply, the way the paddle last moved. The first
-   launch of a stage starts the energy draining. */
+   launch of a level starts the energy draining. */
 static void ball_launch(void)
 {
     balls--;
@@ -202,7 +203,7 @@ static void cheats_step(void)
 }
 #endif
 
-/* When the energy runs out, the paddle sputters and falls, and the stage
+/* When the energy runs out, the paddle sputters and falls, and the level
    ends when it is gone. A ball in flight plays on until then, but a lost
    one is not replaced. */
 uint8_t play_step(void)
@@ -228,7 +229,7 @@ uint8_t play_step(void)
         if (!bricks_left)
         {
             ball_state = BALL_GONE;
-            DEBUG_LOG("stage cleared\n");
+            DEBUG_LOG("level cleared\n");
             return PLAY_CLEARED;
         }
         if (PX(ball_y) >= SCREEN_H)
@@ -256,7 +257,7 @@ uint8_t play_step(void)
     return PLAY_ON;
 }
 
-/* After the stage ends, the flames still burn, a falling paddle still
+/* After the level ends, the flames still burn, a falling paddle still
    falls off the screen, and the last nuggets still fly to the panel. The
    nuggets step before the bricks, so a new one stays where its brick was
    until the next step. */

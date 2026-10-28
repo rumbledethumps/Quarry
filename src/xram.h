@@ -3,6 +3,9 @@
 #ifndef XRAM_H
 #define XRAM_H
 
+#include <backdrop.h>
+#include <carts.h>
+#include <menus.h>
 #include <rp6502.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -289,37 +292,78 @@ typedef struct
 
 #define TEXT_COLS 40
 #define TEXT_ROWS 30
-#define TILE_MAP_COLS 21 /* one more than the canvas, to scroll the tiles */
-#define TILE_MAP_ROWS 15
 
+#define SPRITE_BYTES sizeof(mode5_csprite_t) /* for the tests, which step through the lists */
 #define BRICKS_MAX 48
 #define BRICK_COLORS 1 /* white */
 #define JETS_MAX 3 /* under one sled */
 #define ENERGY_SEGMENTS 12
 #define NUGGETS_MAX 16 /* in flight at once */
-#define MENU_SPRITES 25
+#define MENU_SPRITES 46
+#define CURSOR_SIZE 12 /* each of its 4 corners, square */
 #define COUNT_DIGITS 5 /* of a nugget count */
 #define BALL_DIGITS 2  /* of the count of balls */
 
-/* Background tiles of the title and the upgrade screens, 16x16, in the
-   order of art/tiles.png. The wall tiles are no longer drawn. */
-#define TILE_ROCK 9 /* the first of TILE_ROCKS kinds of rock */
-#define TILE_ROCKS 8
-#define TILES_COUNT (TILE_ROCK + TILE_ROCKS)
+/* The panels of the upgrade screen hang from a rail and slide across it.
+   They are a map of 8-bit tiles on plane 1, PANEL_MAP_COLS across and
+   PANEL_ROWS down, the top row for the hangers: each panel is PANEL_COLS
+   wide, side by side, and the art of their frames leaves the gap between
+   them. art/panels.py makes the tiles, their palette and the map of the
+   frames, and writes build/panels.h. */
+#define PANELS 4
+#define PANEL_COLS 20
+#define PANEL_PITCH PANEL_COLS
+#define PANEL_MAP_COLS (PANELS * PANEL_PITCH)
+#define PANEL_ROWS 19
+#define PANEL_Y 16 /* the top of the hangers */
 
-/* The texture behind a stage's playfield, from art/texture.py: a bitmap at
+/* The level select is a train of mine carts along the bottom: a map of
+   4-bit tiles on plane 1 too, on the scanlines under the panels, which
+   slides on its own. Each cart is CART_COLS cells with its coupling, and
+   CART_ROWS down. art/carts.py makes the tiles and their palette, and the
+   padlock over a locked level, whole and in halves, and writes
+   build/carts.h. */
+#define CARTS_MAX 10
+#define CART_COLS 5
+#define CART_ROWS CART_CELL_ROWS
+#define CART_MAP_COLS (CARTS_MAX * CART_COLS)
+/* The top of the carts' cells, so the track their wheels sit on, at
+   CART_Y + CART_FOOT, is a little up from the foot of the screen. */
+#define CART_Y 191
+#define CART_TILES_MAX 64
+
+/* The backdrop of the upgrade screen, from art/backdrop.py, on plane 0:
+   a workshop wall in three bands of 16x16 tiles, each with its own palette,
+   tiles and map, which build/backdrop.h sizes. The top and the bottom show,
+   in 15 colors, and the middle is behind the panels, in 4 grays. */
+#define BACKDROP_BANDS 3
+
+/* The pictures of the panels nearest the middle, each up to PICTURE_BYTES:
+   the three that show, and the next one the way the rail moves, which
+   loads before it slides into view. For now a picture is a flat sled. */
+#define PICTURE_SLOTS 4
+#define PICTURE_BYTES 1024
+
+/* The texture behind a level's playfield, from art/texture.py: a bitmap at
    2 bits a pixel that wraps. */
 #define TEXTURE_W 320
 #define TEXTURE_H 240
 
-/* The frame of the playfield, from art/screen.py: a post POST_W wide on
-   each side, in POST_SPRITES pieces 64 rows tall, the cap beam BEAM_H tall
-   across the top, in up to BEAM_SPRITES pieces 64 columns wide, and a cap
-   over each post. Behind them are a knee brace in each top corner and a
-   machine on the right wall. */
-#define POST_W 8
-#define POST_SPRITES 4
+/* The frame of the playfield, a frame set from art/frames.py: a post
+   POST_W wide on each side, in POST_SPRITES pieces POST_H rows tall, the
+   cap beam BEAM_H tall across the top, in up to BEAM_SPRITES pieces BEAM_W
+   columns wide and an end piece half as wide, and a cap over each post. A
+   set's post shows some of its columns, from its inside, and the rest are
+   clear. A playfield is a multiple of BEAM_W / 2 wide, so the beam always
+   ends on a whole piece or an end piece, and a frame's art repeats every
+   12 or every 8, so it joins itself at every piece. Behind them are a knee
+   brace in each top corner, and a machine on the right wall, from
+   art/screen.py. */
+#define POST_W 20
+#define POST_H 48
+#define POST_SPRITES 5
 #define BEAM_H 16
+#define BEAM_W 48
 #define BEAM_SPRITES 6
 #define BRACE_SIZE 32
 #define MACHINE_W 24
@@ -334,7 +378,7 @@ typedef struct
 #define CURTAIN_BYTES (CURTAIN_W * CURTAIN_H / 2)
 
 /* The sleds that art/sled.py draws, one for each width of TUNE_WIDTHS, up
-   to SLEDS. A sled's images are the sled level, 8 rows, then tilted 1 and
+   to SLEDS. A sled's images are the sled flat, 8 rows, then tilted 1 and
    2 px in 8 to the right as it falls, SLED_TILT_ROWS each, all its width
    rounded up to 4 wide. Each sled has a slot of SLED_SLOT bytes, which
    art/sled.py gives too. */
@@ -364,19 +408,41 @@ typedef struct
 #define ENERGY_EMPTY 3
 #define ENERGY_BOTTOM 4
 
-typedef MODE2_TILE(4, 16) tile_t;
+/* A dwarf with something to say, from art/talk.py. He and his speech
+   bubble take the menus' place in XRAM, as the two never show together:
+   the dwarf a portrait DWARF_SIZE square, in up to DWARF_PIECES sprites
+   on plane 2 in his own colors, and the bubble a map of 2-bit tiles on
+   plane 2's fill, BUBBLE_COLS by up to BUBBLE_ROWS, in place of the
+   menus. */
+#define DWARF_SIZE 80
+#define DWARF_PIECES 3
+#define DWARF_BYTES 2816
+#define BUBBLE_COLS 28
+#define BUBBLE_ROWS 10
+#define BUBBLE_TILES 48
+
+typedef MODE2_TILE(8, 8) panel_tile_t;
+typedef MODE2_TILE(4, 8) cart_tile_t;
+typedef MODE2_TILE(4, 8) menu_tile_t;
+typedef MODE2_TILE(2, 8) bubble_tile_t;
 typedef MODE5_CUSTOM_IMAGE(4, 24, 8) brick_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 24, 16) break_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 8, 8) piece_image_t;
+typedef MODE5_CUSTOM_IMAGE(4, CURSOR_SIZE, CURSOR_SIZE) cursor_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 8, 12) jet_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 8, 12) digit_image_t;
+#define JET_IMAGE_BYTES sizeof(jet_image_t) /* these two for the tests */
+#define DIGIT_IMAGE_BYTES sizeof(digit_image_t)
 typedef MODE5_CUSTOM_IMAGE(4, 8, 8) energy_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 64, 64) logo_image_t; /* a third of art/logo.png */
-typedef MODE5_CUSTOM_IMAGE(4, POST_W, 64) post_image_t;
-typedef MODE5_CUSTOM_IMAGE(4, 64, BEAM_H) beam_image_t;
+typedef MODE5_CUSTOM_IMAGE(4, POST_W, POST_H) post_image_t;
+typedef MODE5_CUSTOM_IMAGE(4, BEAM_W, BEAM_H) beam_image_t;
+typedef MODE5_CUSTOM_IMAGE(4, BEAM_W / 2, BEAM_H) beam_end_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, POST_W, BEAM_H) cap_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, BRACE_SIZE, BRACE_SIZE) brace_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, MACHINE_W, MACHINE_H) machine_image_t;
+typedef MODE5_CUSTOM_IMAGE(4, 16, 16) lock_image_t;
+typedef MODE5_CUSTOM_IMAGE(4, 8, 16) half_lock_image_t;
 
 /* The palettes, in the order of the rows of art/palettes.png. */
 typedef struct
@@ -385,10 +451,11 @@ typedef struct
     uint16_t bricks[BRICK_COLORS][16]; /* bricks and nuggets, a palette a color */
     uint16_t fx[16];                   /* smoke and the energy gauge */
     uint16_t logo[16];
-    uint16_t sled[16];    /* the sleds, their jets, the frame, and the digits */
+    uint16_t sled[16];    /* the sleds, their jets, the digits, and the coin */
     uint16_t texture[16]; /* the first 4, loaded with each curtain set */
     uint16_t curtain[16]; /* loaded with each curtain set */
-    uint16_t shade[16];   /* the sled row at half, for the braces and the machine */
+    uint16_t shade[16];   /* the sled row at half, for the machine and a dim sled */
+    uint16_t holo[16];    /* the cursor of the upgrade screen and the menus, which shimmers */
 } palettes_t;
 
 /* Plane 0 sprites, in front of the texture and behind the bricks, back to
@@ -409,39 +476,121 @@ typedef struct
     mode5_csprite_t ball;
     mode5_csprite_t sled;
     mode5_csprite_t jets[JETS_MAX];
-    mode5_csprite_t smoke[2];
+    mode5_csprite_t smoke[JETS_MAX]; /* a puff under each jet */
 } actors_t;
 
-/* Plane 2 sprites, over the menu text: the gauge, the counts with their
-   nugget or ball, the nuggets in flight, and the upgrade screen's
-   pictures. */
+/* Plane 2 sprites, over the menus: the gauge, the counts with their
+   nugget or ball, the nuggets in flight, the upgrade screen's pictures,
+   and last, over them all, the holographic cursor's 4 corners. */
 typedef struct
 {
     mode5_csprite_t energy[1 + ENERGY_SEGMENTS + 1]; /* top, segments, bottom */
+    mode5_csprite_t coin_icon;
+    mode5_csprite_t coin_digits[COUNT_DIGITS];
     mode5_csprite_t nugget_icons[BRICK_COLORS];
     mode5_csprite_t nugget_digits[BRICK_COLORS][COUNT_DIGITS];
     mode5_csprite_t ball_icon;
     mode5_csprite_t ball_digits[BALL_DIGITS];
     mode5_csprite_t nuggets[NUGGETS_MAX]; /* in flight */
     mode5_csprite_t menu[MENU_SPRITES];   /* the upgrade screen's pictures */
+    mode5_csprite_t dwarf[DWARF_PIECES];  /* over the counts, when he talks */
+    mode5_csprite_t cursor[4];
 } hud_t;
+
+/* A band of the backdrop, as ROM:backdrop holds it. */
+#define BACKDROP_BAND(band)                                       \
+    struct                                                        \
+    {                                                             \
+        uint16_t palette[1 << BACKDROP_##band##_BPP];             \
+        MODE2_TILE(BACKDROP_##band##_BPP, 16) tiles[BACKDROP_##band##_TILES]; \
+        uint8_t map[BACKDROP_##band##_ROWS][BACKDROP_COLS];       \
+    }
 
 /* The art of the upgrade screen. */
 typedef struct
 {
-    tile_t tiles[TILES_COUNT];
-    uint8_t sled_images[SLEDS][SLED_SLOT];
-    uint8_t tile_map[TILE_MAP_ROWS][TILE_MAP_COLS]; /* an odd size, so last */
+    BACKDROP_BAND(TOP) top; /* these three, as ROM:backdrop holds them */
+    BACKDROP_BAND(MIDDLE) middle;
+    BACKDROP_BAND(BOTTOM) bottom;
+    uint8_t backdrop_sprites[BACKDROP_SPRITE_BYTES]; /* the cogs' frames and the steam's */
+    uint8_t pictures[PICTURE_SLOTS][PICTURE_BYTES];
+    uint16_t panel_palette[256]; /* these three, as ROM:panels holds them */
+    panel_tile_t panel_tiles[256];
+    uint8_t panels[PANEL_ROWS][PANEL_MAP_COLS];
+    uint16_t cart_palette[16]; /* these five, as ROM:carts holds them */
+    uint16_t lock_palette[16];
+    lock_image_t lock_image;
+    half_lock_image_t lock_halves[2];
+    cart_tile_t cart_tiles[CART_TILES_MAX];
+    uint8_t cart_map[CART_ROWS][CART_MAP_COLS];
 } menu_art_t;
 
-/* The art of the title and of a stage: the texture and a curtain set, then
-   the title's logo or the stage's sled. */
+/* A frame set, as ROM:frame1 and on hold it: its palette, the same colors
+   darkened for the braces, then its pieces. The beam's end piece is its
+   first BEAM_W / 2 columns. */
+typedef struct
+{
+    uint16_t palette[16];
+    uint16_t shade[16];
+    uint8_t shows; /* how many of the post's columns show */
+    uint8_t unused;
+    post_image_t post;
+    beam_image_t beam;
+    beam_end_image_t beam_end;
+    cap_image_t cap;
+    brace_image_t brace;
+} frame_set_t;
+
+/* A piece of a dwarf: where it goes, from his top left, and its image,
+   from the start of his. */
+typedef struct
+{
+    int16_t x, y;
+    uint16_t image;
+    uint8_t size; /* MODE5_SIZE */
+    uint8_t unused;
+} dwarf_piece_t;
+
+/* Where a dwarf and his bubble stand once they are in, how many rows the
+   bubble has, the cell of its OK and the OK's two tiles, which go in when
+   it shows, and the pieces of the dwarf. */
+typedef struct
+{
+    int16_t dwarf_x, dwarf_y;
+    int16_t bubble_x, bubble_y;
+    uint8_t rows;
+    uint8_t ok_col, ok_row;
+    uint8_t ok_tiles[2];
+    uint8_t pieces;
+    dwarf_piece_t piece[DWARF_PIECES];
+} talk_head_t;
+
+/* What a dwarf says, as ROM:talk1 and on hold it: its head, then his
+   colors and his image, then the bubble's 4 colors, its tiles and its
+   map. */
+typedef struct
+{
+    talk_head_t head;
+    uint16_t palette[16];
+    uint8_t images[DWARF_BYTES];
+    uint16_t bubble_palette[4];
+    bubble_tile_t bubble_tiles[BUBBLE_TILES];
+    uint8_t bubble_map[BUBBLE_ROWS][BUBBLE_COLS];
+} talk_t;
+
+/* The art of the title and of a level: the texture and a curtain set, the
+   level's sled, then the title's logo or, in its place, the level's frame
+   set. Each screen loads its own when it starts. */
 typedef struct
 {
     uint8_t texture[TEXTURE_H][TEXTURE_W / 4];
     uint8_t curtains[2][CURTAIN_BYTES];
-    uint8_t sled_images[SLED_SLOT]; /* the sled of a stage */
-    logo_image_t logo_images[3];    /* the title's logo */
+    uint8_t sled_images[SLED_SLOT]; /* the sled of a level */
+    union
+    {
+        logo_image_t logo_images[3]; /* the title's logo */
+        frame_set_t frame;           /* a level's frame set */
+    };
 } cave_art_t;
 
 typedef struct
@@ -449,27 +598,37 @@ typedef struct
     keyboard_t keyboard;
     gamepad_t gamepad;
     psg_t psg;
-    mode2_config_t tile_config;
+    mode2_config_t backdrop_configs[BACKDROP_BANDS];
     mode3_config_t texture_config;
-    mode1_config_t text_config;
+    mode2_config_t menu_config;
+    mode2_config_t talk_config; /* the bubble, on plane 2 in the menus' place */
+    mode2_config_t panel_config;
+    mode2_config_t cart_config;
     palettes_t palettes;
     scenery_t scenery;
     mode5_csprite_t bricks[BRICKS_MAX];
     actors_t actors;
     hud_t hud;
-    mode1_4bpp_data_t text[TEXT_ROWS][TEXT_COLS];
+    union
+    {
+        struct
+        {
+            uint8_t menu_map[TEXT_ROWS][TEXT_COLS]; /* the menus' tiles, a byte a cell */
+            uint16_t menu_palette[16];              /* these two, as ROM:menus holds them */
+            menu_tile_t menu_tiles[MENU_TILES];
+        };
+        talk_t talk; /* a dwarf talking, in the menus' place */
+    };
     brick_image_t brick_image;
     break_image_t break_images[BREAK_FRAMES];
     piece_image_t nugget_image;
     piece_image_t ball_image;
+    piece_image_t coin_image;
+    cursor_image_t cursor_image;
     jet_image_t jet_images[JET_FRAMES];
     piece_image_t smoke_images[SMOKE_FRAMES];
     energy_image_t energy_images[5];
     digit_image_t digit_images[10];
-    post_image_t post_image;
-    beam_image_t beam_image;
-    cap_image_t cap_image;
-    brace_image_t brace_image;
     machine_image_t machine_image;
     union
     {
@@ -481,9 +640,12 @@ typedef struct
 #define XRAM_KEYBOARD offsetof(xram_layout_t, keyboard)
 #define XRAM_GAMEPAD offsetof(xram_layout_t, gamepad)
 #define XRAM_PSG offsetof(xram_layout_t, psg)
-#define XRAM_TILE_CONFIG offsetof(xram_layout_t, tile_config)
+#define XRAM_BACKDROP_CONFIG(band) (offsetof(xram_layout_t, backdrop_configs) + (band) * sizeof(mode2_config_t))
 #define XRAM_TEXTURE_CONFIG offsetof(xram_layout_t, texture_config)
-#define XRAM_TEXT_CONFIG offsetof(xram_layout_t, text_config)
+#define XRAM_MENU_CONFIG offsetof(xram_layout_t, menu_config)
+#define XRAM_TALK_CONFIG offsetof(xram_layout_t, talk_config)
+#define XRAM_PANEL_CONFIG offsetof(xram_layout_t, panel_config)
+#define XRAM_CART_CONFIG offsetof(xram_layout_t, cart_config)
 #define XRAM_PALETTES offsetof(xram_layout_t, palettes)
 #define XRAM_PALETTE_MAIN offsetof(xram_layout_t, palettes.main)
 #define XRAM_PALETTE_BRICKS offsetof(xram_layout_t, palettes.bricks)
@@ -494,6 +656,7 @@ typedef struct
 #define XRAM_PALETTE_TEXTURE offsetof(xram_layout_t, palettes.texture)
 #define XRAM_PALETTE_CURTAIN offsetof(xram_layout_t, palettes.curtain)
 #define XRAM_PALETTE_SHADE offsetof(xram_layout_t, palettes.shade)
+#define XRAM_PALETTE_HOLO offsetof(xram_layout_t, palettes.holo)
 #define XRAM_SCENERY offsetof(xram_layout_t, scenery)
 #define XRAM_BRACE_SPRITES offsetof(xram_layout_t, scenery.braces)
 #define XRAM_MACHINE_SPRITE offsetof(xram_layout_t, scenery.machine)
@@ -509,44 +672,77 @@ typedef struct
 #define XRAM_SMOKE_SPRITES offsetof(xram_layout_t, actors.smoke)
 #define XRAM_HUD offsetof(xram_layout_t, hud)
 #define XRAM_ENERGY_SPRITES offsetof(xram_layout_t, hud.energy)
+#define XRAM_COIN_ICON offsetof(xram_layout_t, hud.coin_icon)
+#define XRAM_COIN_DIGITS offsetof(xram_layout_t, hud.coin_digits)
 #define XRAM_NUGGET_ICONS offsetof(xram_layout_t, hud.nugget_icons)
 #define XRAM_NUGGET_DIGITS offsetof(xram_layout_t, hud.nugget_digits)
 #define XRAM_BALL_ICON offsetof(xram_layout_t, hud.ball_icon)
 #define XRAM_BALL_DIGITS offsetof(xram_layout_t, hud.ball_digits)
 #define XRAM_NUGGET_SPRITES offsetof(xram_layout_t, hud.nuggets)
 #define XRAM_MENU_SPRITES offsetof(xram_layout_t, hud.menu)
-#define XRAM_TEXT offsetof(xram_layout_t, text)
+#define XRAM_DWARF_SPRITES offsetof(xram_layout_t, hud.dwarf)
+#define XRAM_CURSOR_SPRITES offsetof(xram_layout_t, hud.cursor)
+#define XRAM_MENU_MAP offsetof(xram_layout_t, menu_map)
+#define XRAM_MENU_PALETTE offsetof(xram_layout_t, menu_palette)
+#define XRAM_MENU_TILES offsetof(xram_layout_t, menu_tiles)
+#define XRAM_TALK offsetof(xram_layout_t, talk)
+#define XRAM_DWARF_PALETTE offsetof(xram_layout_t, talk.palette)
+#define XRAM_DWARF_IMAGES offsetof(xram_layout_t, talk.images)
+#define XRAM_BUBBLE_PALETTE offsetof(xram_layout_t, talk.bubble_palette)
+#define XRAM_BUBBLE_TILES offsetof(xram_layout_t, talk.bubble_tiles)
+#define XRAM_BUBBLE_MAP offsetof(xram_layout_t, talk.bubble_map)
 #define XRAM_BRICK_IMAGE offsetof(xram_layout_t, brick_image)
 #define XRAM_BREAK_IMAGES offsetof(xram_layout_t, break_images)
 #define XRAM_NUGGET_IMAGE offsetof(xram_layout_t, nugget_image)
 #define XRAM_BALL_IMAGE offsetof(xram_layout_t, ball_image)
+#define XRAM_COIN_IMAGE offsetof(xram_layout_t, coin_image)
+#define XRAM_CURSOR_IMAGE offsetof(xram_layout_t, cursor_image)
 #define XRAM_JET_IMAGES offsetof(xram_layout_t, jet_images)
 #define XRAM_SMOKE_IMAGES offsetof(xram_layout_t, smoke_images)
 #define XRAM_ENERGY_IMAGES offsetof(xram_layout_t, energy_images)
 #define XRAM_DIGIT_IMAGES offsetof(xram_layout_t, digit_images)
-#define XRAM_POST_IMAGE offsetof(xram_layout_t, post_image)
-#define XRAM_BEAM_IMAGE offsetof(xram_layout_t, beam_image)
-#define XRAM_CAP_IMAGE offsetof(xram_layout_t, cap_image)
-#define XRAM_BRACE_IMAGE offsetof(xram_layout_t, brace_image)
 #define XRAM_MACHINE_IMAGE offsetof(xram_layout_t, machine_image)
 #define XRAM_ART offsetof(xram_layout_t, art)
-#define XRAM_TILES offsetof(xram_layout_t, art.menu.tiles)
-#define XRAM_SLED_IMAGES offsetof(xram_layout_t, art.menu.sled_images)
-#define XRAM_TILE_MAP offsetof(xram_layout_t, art.menu.tile_map)
+#define XRAM_BACKDROP offsetof(xram_layout_t, art.menu.top)
+#define XRAM_BAND_PALETTE(band) offsetof(xram_layout_t, art.menu.band.palette)
+#define XRAM_BAND_TILES(band) offsetof(xram_layout_t, art.menu.band.tiles)
+#define XRAM_BAND_MAP(band) offsetof(xram_layout_t, art.menu.band.map)
+#define XRAM_BACKDROP_SPRITES offsetof(xram_layout_t, art.menu.backdrop_sprites)
+#define XRAM_PICTURE(slot) (offsetof(xram_layout_t, art.menu.pictures) + (slot) * PICTURE_BYTES)
+#define XRAM_PANEL_PALETTE offsetof(xram_layout_t, art.menu.panel_palette)
+#define XRAM_PANEL_TILES offsetof(xram_layout_t, art.menu.panel_tiles)
+#define XRAM_PANELS offsetof(xram_layout_t, art.menu.panels)
+#define XRAM_CART_PALETTE offsetof(xram_layout_t, art.menu.cart_palette)
+#define XRAM_CART_TILES offsetof(xram_layout_t, art.menu.cart_tiles)
+#define XRAM_LOCK_PALETTE offsetof(xram_layout_t, art.menu.lock_palette)
+#define XRAM_LOCK_IMAGE offsetof(xram_layout_t, art.menu.lock_image)
+#define XRAM_LOCK_HALVES offsetof(xram_layout_t, art.menu.lock_halves)
+#define XRAM_CART_MAP offsetof(xram_layout_t, art.menu.cart_map)
 #define XRAM_TEXTURE offsetof(xram_layout_t, art.cave.texture)
 #define XRAM_CURTAINS offsetof(xram_layout_t, art.cave.curtains)
-#define XRAM_STAGE_SLED offsetof(xram_layout_t, art.cave.sled_images)
+#define XRAM_FRAME offsetof(xram_layout_t, art.cave.frame)
+#define XRAM_FRAME_PALETTE offsetof(xram_layout_t, art.cave.frame.palette)
+#define XRAM_FRAME_SHADE offsetof(xram_layout_t, art.cave.frame.shade)
+#define XRAM_FRAME_SHOWS offsetof(xram_layout_t, art.cave.frame.shows)
+#define XRAM_POST_IMAGE offsetof(xram_layout_t, art.cave.frame.post)
+#define XRAM_BEAM_IMAGE offsetof(xram_layout_t, art.cave.frame.beam)
+#define XRAM_BEAM_END offsetof(xram_layout_t, art.cave.frame.beam_end)
+#define XRAM_CAP_IMAGE offsetof(xram_layout_t, art.cave.frame.cap)
+#define XRAM_BRACE_IMAGE offsetof(xram_layout_t, art.cave.frame.brace)
+#define XRAM_LEVEL_SLED offsetof(xram_layout_t, art.cave.sled_images)
 #define XRAM_LOGO_IMAGES offsetof(xram_layout_t, art.cave.logo_images)
 
 MODE5_PALETTE_CHECK(palettes_t);
 
+#define PALETTES_BYTES sizeof(palettes_t) /* for tests/assets.py */
+
 PSG_PAGE_CHECK(XRAM_PSG);
 
-/* video_init() hides every sprite from XRAM_SCENERY up to XRAM_TEXT, and
+/* video_init() hides every sprite from XRAM_SCENERY up to XRAM_MENU_MAP, and
    plane 0 draws the scenery and the bricks as one list. */
 _Static_assert(XRAM_BRICKS == XRAM_SCENERY + sizeof(scenery_t), "The bricks must follow the scenery.");
-_Static_assert(XRAM_TEXT == XRAM_BRICKS + (BRICKS_MAX * sizeof(mode5_csprite_t) +
-                                           sizeof(actors_t) + sizeof(hud_t)),
-               "The sprite lists must lie together, before the text.");
+_Static_assert(XRAM_MENU_MAP == XRAM_BRICKS + (BRICKS_MAX * sizeof(mode5_csprite_t) +
+                                               sizeof(actors_t) + sizeof(hud_t)),
+               "The sprite lists must lie together, before the menus' map.");
 
 #endif

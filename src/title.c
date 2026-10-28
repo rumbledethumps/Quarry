@@ -1,5 +1,6 @@
 #include "title.h"
 #include "bricks.h"
+#include "cursor.h"
 #include "frame.h"
 #include "input.h"
 #include "save.h"
@@ -20,18 +21,18 @@
 
 /* The progress box is as wide as the menu, one line tall, low enough that
    the question to start over, which takes the menu's place, clears it. */
-#define PROGRESS_TOP 21
+#define PROGRESS_TOP 23
 
-/* How far the save has come: the stages cleared and the upgrade levels
+/* How far the save has come: the levels cleared and the upgrade ranks
    bought, out of all of them. */
 static uint8_t progress(void)
 {
-    uint16_t done = stages_unlocked - 1, all = STAGES - 1;
+    uint16_t done = levels_cleared, all = LEVELS;
     uint8_t u;
 
     for (u = 0; u < UPGRADES; u++)
     {
-        done += upgrade_levels[u];
+        done += upgrade_ranks[u];
         all += upgrades_max(u);
     }
     return all ? done * 100 / all : 0;
@@ -42,10 +43,9 @@ static void progress_draw(const menu_t *menu)
     uint8_t left = menu->center - MENU_COLS / 2, done = progress();
 
     video_box(left, PROGRESS_TOP, left + MENU_COLS - 1, PROGRESS_TOP + 2, menu->frame);
-    video_text(left + 2, PROGRESS_TOP + 1, "PROGRESS", TEXT_COLOR, BOX_FILL);
-    video_number(left + 11, PROGRESS_TOP + 1, done, 3, TEXT_COLOR, BOX_FILL);
-    video_text(left + 11 + (done >= 100 ? 3 : done >= 10 ? 2 : 1), PROGRESS_TOP + 1, "%", TEXT_COLOR,
-               BOX_FILL);
+    video_text(left + 3, PROGRESS_TOP + 1, "PROGRESS");
+    video_number(left + 12, PROGRESS_TOP + 1, done, 3);
+    video_text(left + 12 + (done >= 100 ? 3 : done >= 10 ? 2 : 1), PROGRESS_TOP + 1, "%");
 }
 
 /* The title screen, with the progress box under the menu, which the
@@ -55,8 +55,9 @@ void title_open(const menu_t *menu)
     uint8_t i;
 
     video_hide_sprites();
+    cursor_hide();
     scene_title();
-    video_text_clear();
+    menu_clear();
     frame_curtains(LOGO_X, LOGO_X + LOGO_W);
     for (i = 0; i < 3; i++)
     {

@@ -8,7 +8,7 @@
 #define SFX_WALL 1     /* the ball off a wall */
 #define SFX_BRICK 2    /* the ball off a brick */
 #define SFX_BREAK 3    /* a brick breaking */
-#define SFX_NUGGET 4   /* a nugget landing in the panel */
+#define SFX_NUGGET 4   /* a chime for the nugget out of a brick breaking */
 #define SFX_LOST 5     /* a ball falling off the screen */
 #define SFX_LOW 6      /* the energy turning low */
 #define SFX_LOW_BEEP 7 /* the energy still low */
@@ -16,7 +16,10 @@
 #define SFX_FALL 9     /* the paddle falling */
 #define SFX_BUY 10     /* an upgrade bought */
 #define SFX_MOVE 11    /* a menu's pick moving */
-#define SFX_COUNT 12
+#define SFX_RATTLE 12  /* the lock of a level newly open shaking */
+#define SFX_SNAP 13    /* the lock breaking */
+#define SFX_UNLOCK 14  /* the level's button lighting up */
+#define SFX_COUNT 15
 
 #define SFX_CENTER 160 /* a sound from the middle of the screen */
 

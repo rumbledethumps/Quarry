@@ -17,14 +17,15 @@ from game import Game, check
 
 MOVES = [('d', 'right'), ('a', 'left'), ('right', 'right'), ('left', 'left'),
          ('kp6', 'right'), ('kp4', 'left')]
-LAUNCH_KEYS = ['space', 'enter', 'kp0', 'kpenter', 'w', 'up', 'kp8']
-LAUNCH_BUTTONS = [(0, 'a'), (0, 'b'), (0, 'x'), (1, 'y'), (0, 'up')]
+LAUNCH_KEYS = ['space', 'enter', 'lctrl', 'rctrl', 'kp0', 'kpenter']
+LAUNCH_BUTTONS = [(0, 'a'), (0, 'b'), (0, 'x'), (1, 'y')]
 
 
 def main():
     state = os.path.join(tempfile.mkdtemp(), 'controls.state')
     game = Game()
     num_lock = 1 << game.sym['KEYBOARD_NUM_LOCK']  # in the first byte of the key bitmap
+    start_balls = game.sym['TUNE_BALLS']
 
     # Enter held from boot, as when it loaded the game, does not choose on the
     # title screen.
@@ -35,12 +36,16 @@ def main():
     game.run(5)
     check(game.ram('game_state') == game.sym['STATE_TITLE'], 'a key held from boot does not choose')
 
-    # Nor does a choose held into play launch.
+    # Nor does a choose held into play get past the dwarf's welcome, which
+    # takes the input while he is up, or launch once he has gone.
     game.cmd('press enter')
     game.until('game_state', 'STATE_PLAY')
-    game.run(30)
+    game.until('talk_state', 'TALK_READY', 120)
+    game.run(10)
     game.cmd('release enter')
     game.run(5)
+    check(game.ram('talk_state') == game.sym['TALK_READY'], 'a key held into play does not pass the dwarf')
+    game.talk_ok()
     game.cmd('expect-not "launch"')
 
     game.run(2)
@@ -91,34 +96,39 @@ def main():
     for key in LAUNCH_KEYS:
         game.cmd(f'state load "{state}"')
         game.cmd(f'press {key}')
-        game.wait('launch, 4 balls left', 5)
+        game.wait(f'launch, {start_balls - 1} balls left', 5)
         game.cmd(f'release {key}')
         print(f'ok: {key} launches')
     for pad, button in LAUNCH_BUTTONS:
         game.cmd(f'state load "{state}"')
         game.cmd(f'pad {pad} press {button}')
-        game.wait('launch, 4 balls left', 5)
+        game.wait(f'launch, {start_balls - 1} balls left', 5)
         game.cmd(f'pad {pad} release {button}')
         print(f'ok: gamepad {pad + 1} button {button} launches')
-    game.cmd(f'state load "{state}"')
-    game.cmd('pad 1 stick 0 -128 0 0')
-    game.wait('launch, 4 balls left', 5)
-    game.cmd('pad 1 stick 0 0 0 0')
-    print('ok: gamepad 2 left stick up launches')
+    # Up doesn't launch, from a key or a gamepad.
+    for press, release in [('press w', 'release w'), ('press up', 'release up'),
+                           ('press kp8', 'release kp8'), ('pad 0 press up', 'pad 0 release up'),
+                           ('pad 1 stick 0 -128 0 0', 'pad 1 stick 0 0 0 0')]:
+        game.cmd(f'state load "{state}"')
+        game.cmd(press)
+        game.run(10)
+        game.cmd('expect-not "launch"')
+        game.cmd(release)
+    print('ok: up does not launch')
 
     # A held launch control launches only once, even when the ball is back
     # on the paddle while it is still held.
     game.cmd(f'state load "{state}"')
     game.cmd('press space')
-    game.wait('launch, 4 balls left', 5)
+    game.wait(f'launch, {start_balls - 1} balls left', 5)
     game.run(10)
     game.poke('ball_state', 0)
     game.run(30)
-    game.cmd('expect-not "launch, 3 balls left"')
+    game.cmd(f'expect-not "launch, {start_balls - 2} balls left"')
     game.cmd('release space')
     game.run(2)
     game.cmd('press space')
-    game.wait('launch, 3 balls left', 5)
+    game.wait(f'launch, {start_balls - 2} balls left', 5)
     game.cmd('release space')
     print('ok: a held launch launches once')
 

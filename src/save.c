@@ -8,22 +8,39 @@
 #include <string.h>
 #include <unistd.h>
 
-/* One save, one file: the nugget counts of each color, the upgrade levels
-   and the stages unlocked. It starts with a tag that names its layout, so
-   a save of another layout is not read as this one. */
+/* One save, one file: the nugget counts of each color, the coins, the
+   upgrade ranks, the levels cleared, the level picked to play, the
+   highest level the upgrade screen has shown open, and the talks of the
+   dwarves already seen. It starts with a tag that names its layout, so a
+   save of another layout is not read as this one. */
 #define SAVE_PATH "SAVE:quarry.save"
-#define SAVE_TAG "QRY1"
+#define SAVE_TAG "QRY4"
 
 typedef struct
 {
     char tag[4];
     uint16_t nuggets[BRICK_COLORS];
+    uint16_t coins;
     uint8_t upgrades[UPGRADES];
-    uint8_t stages_unlocked;
+    uint8_t levels_cleared;
+    uint8_t level_picked;
+    uint8_t levels_shown;
+    uint8_t talks_seen;
 } save_t;
 
+#define SAVE_BYTES sizeof(save_t) /* for tests/saves.py */
+
 uint8_t save_exists;
-uint8_t stages_unlocked = 1;
+uint8_t levels_cleared;
+uint8_t level_picked = 1;
+uint8_t levels_shown = 1;
+uint8_t talks_seen;
+
+/* The levels that can be played: every one cleared, and the next. */
+uint8_t save_levels_open(void)
+{
+    return levels_cleared < LEVELS ? levels_cleared + 1 : LEVELS;
+}
 
 /* Reads the save into the game. Returns whether there was a good one; a
    missing, short or strange file is no save, and changes nothing. */
@@ -38,15 +55,20 @@ uint8_t save_load(void)
         return 0;
     n = read(fd, &s, sizeof s);
     close(fd);
-    if (n != sizeof s || memcmp(s.tag, SAVE_TAG, sizeof s.tag) ||
-        s.stages_unlocked < 1 || s.stages_unlocked > STAGES)
+    if (n != sizeof s || memcmp(s.tag, SAVE_TAG, sizeof s.tag) || s.levels_cleared > LEVELS ||
+        s.level_picked < 1 || s.level_picked > LEVELS || s.level_picked > s.levels_cleared + 1 ||
+        s.levels_shown < 1 || s.levels_shown > LEVELS)
         return 0;
     for (i = 0; i < UPGRADES; i++)
         if (s.upgrades[i] > upgrades_max(i))
             return 0;
     memcpy(nuggets, s.nuggets, sizeof nuggets);
-    memcpy(upgrade_levels, s.upgrades, sizeof upgrade_levels);
-    stages_unlocked = s.stages_unlocked;
+    coins = s.coins;
+    memcpy(upgrade_ranks, s.upgrades, sizeof upgrade_ranks);
+    levels_cleared = s.levels_cleared;
+    level_picked = s.level_picked;
+    levels_shown = s.levels_shown;
+    talks_seen = s.talks_seen;
     save_exists = 1;
     DEBUG_LOG("loaded\n");
     return 1;
@@ -66,8 +88,12 @@ void save_write(void)
         uint16_t pending = play_pending(i);
         s.nuggets[i] = nuggets[i] > 0xFFFF - pending ? 0xFFFF : nuggets[i] + pending;
     }
-    memcpy(s.upgrades, upgrade_levels, sizeof s.upgrades);
-    s.stages_unlocked = stages_unlocked;
+    s.coins = coins;
+    memcpy(s.upgrades, upgrade_ranks, sizeof s.upgrades);
+    s.levels_cleared = levels_cleared;
+    s.level_picked = level_picked;
+    s.levels_shown = levels_shown;
+    s.talks_seen = talks_seen;
     fd = open(SAVE_PATH, O_WRONLY | O_CREAT | O_TRUNC);
     if (fd < 0)
     {
@@ -81,12 +107,17 @@ void save_write(void)
     DEBUG_LOG("saved\n");
 }
 
-/* Starts over: no nuggets, no upgrades, only stage 1, and replaces the
-   save with that. */
+/* Starts over: no nuggets, no coins, no upgrades, no level cleared,
+   level 1 picked and shown open, and no talk seen, and replaces the save
+   with that. */
 void save_new_game(void)
 {
     memset(nuggets, 0, sizeof nuggets);
-    memset(upgrade_levels, 0, sizeof upgrade_levels);
-    stages_unlocked = 1;
+    coins = 0;
+    memset(upgrade_ranks, 0, sizeof upgrade_ranks);
+    levels_cleared = 0;
+    level_picked = 1;
+    levels_shown = 1;
+    talks_seen = 0;
     save_write();
 }

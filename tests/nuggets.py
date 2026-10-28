@@ -6,15 +6,13 @@
 Needs a Debug ROM, which logs the game's events. Reads the sprites and the
 text from XRAM. Checks the break frames, that each nugget flies a straight
 line to its line in the panel, the count there, and that the count lasts
-from stage to stage. Exits 0 when every check passes.
+from level to level. Exits 0 when every check passes.
 """
 
 import os
 import tempfile
 
-from game import SPRITE, Game, check
-
-BREAK_SIZE = 0x35  # MODE5_SIZE(24, 16)
+from game import Game, check
 
 
 def off_line(x0, y0, x1, y1, x, y):
@@ -27,15 +25,17 @@ def main():
     game = Game()
     sym = game.sym
     step = sym['TUNE_NUGGET_SPEED']
-    BRICKS_Y, ICON_X, ICON_Y = sym['TUNE_BRICKS_Y'], sym['ICON_X'], sym['ICON_TOP']
+    # The white nugget's line is under the coins' line.
+    BRICKS_Y, ICON_X, ICON_Y = sym['TUNE_BRICKS_Y'], sym['ICON_X'], sym['ICON_TOP'] + sym['LINE_H']
     count = lambda: game.count('XRAM_NUGGET_DIGITS', sym['COUNT_DIGITS'])
-    BRICKS = sym['STAGE1_COLS'] * sym['STAGE1_ROWS']
+    BRICKS = sym['LEVEL1_COLS'] * sym['LEVEL1_ROWS']
     HIDDEN_Y = sym['SPRITE_HIDDEN_Y']
     NUGGETS = sym['NUGGETS_MAX']  # in flight at once
     game.new_game()
     game.run(5)
 
-    check(game.sprite('XRAM_NUGGET_ICONS') == (ICON_X, ICON_Y), 'the nugget icon is at the top left')
+    check(game.sprite('XRAM_COIN_ICON') == (ICON_X, sym['ICON_TOP']), 'the coin icon is at the top left')
+    check(game.sprite('XRAM_NUGGET_ICONS') == (ICON_X, ICON_Y), 'the nugget icon is under it')
     flights = sym['XRAM_NUGGET_SPRITES']
     bricks = sym['XRAM_BRICKS']
     check(game.ram('nuggets', 2) == 0, 'no nuggets at the start')
@@ -49,12 +49,12 @@ def main():
     game.wait('brick', 300)
     game.run(1)
     sizes = game.sizes(bricks, BRICKS)
-    broken = [i for i, s in enumerate(sizes) if s == BREAK_SIZE]
+    broken = [i for i, s in enumerate(sizes) if s == sym['BREAK_SIZE']]
     check(broken, 'a broken brick shows its break')
-    first = bricks + broken[0] * SPRITE
+    first = bricks + broken[0] * sym['SPRITE_BYTES']
     bx = game.sprites(first, 1)[0][0]
-    middles = [game.sprites(bricks + i * SPRITE, 1)[0][0] + 8 for i in broken]
-    by = game.sprites(first, 1)[0][1] + 4
+    middles = [game.sprites(bricks + i * sym['SPRITE_BYTES'], 1)[0][0] + sym['NUGGET_LEFT'] for i in broken]
+    by = game.sprites(first, 1)[0][1] + sym['BREAK_OVER']  # the brick's own top
     shot = os.path.join(tempfile.mkdtemp(), 'shot.png')
     images, paths, lit = [], {}, []
     in_flight_count = None
@@ -72,7 +72,7 @@ def main():
             rows = game.screen(shot)
             floor = rows[150][160]
             lit.append(sum(rows[yy][xx] != floor
-                           for yy in range(by, by + 8) for xx in range(bx, bx + 24)))
+                           for yy in range(by, by + sym['BRICK_H']) for xx in range(bx, bx + sym['BRICK_W'])))
         if len(flying) == len(broken) and in_flight_count is None:
             in_flight_count = game.ram('nuggets', 2)
         if game.ram('nuggets', 2) >= len(broken) and frame > 20:
@@ -80,12 +80,12 @@ def main():
         game.run(1)
     check(min(lit) > 0, f'a nugget takes the place of its brick with no empty frame between: {lit}')
     check(in_flight_count == 0, 'nothing counts while the nuggets are still in flight')
-    check(len(images) == 2, f'the break shows 2 frames, saw {len(images)}')
+    check(len(images) == sym['BREAK_FRAMES'], f'the break shows {sym["BREAK_FRAMES"]} frames, saw {len(images)}')
     check(game.sprites(first, 1)[0][1] == HIDDEN_Y, 'the broken brick is gone after its break')
     check(paths, 'a nugget flew')
     for slot, path in paths.items():
         x0, y0 = path[0]
-        check(x0 in middles and BRICKS_Y <= y0 < BRICKS_Y + 5 * 8,
+        check(x0 in middles and BRICKS_Y <= y0 < BRICKS_Y + sym['LEVEL1_ROWS'] * sym['BRICK_H'],
               f'nugget {slot} starts in the middle of a broken brick, at {x0},{y0}')
         for (ax, ay), (cx, cy) in zip(path, path[1:]):
             check(max(abs(cx - ax), abs(cy - ay)) == step,
@@ -103,14 +103,14 @@ def main():
     check(landed == len(broken), f'each nugget that lands counts, {landed} of {len(broken)}')
     check(count() == landed, 'the count shows them')
 
-    # The count lasts into the next stage, and keeps counting there.
+    # The count lasts into the next level, and keeps counting there.
     game.wait('ball lost', 3000)
     game.paused_poke([('balls', 0, 1), ('ball_state', 1, 1)])
     game.wait('out of balls', 600)
     before = game.ram('nuggets', 2)
-    game.menu_choose('PLAY')
+    game.menu_choose('REPLAY')
     game.run(5)
-    check(game.ram('nuggets', 2) == before, 'the count lasts into the next stage')
+    check(game.ram('nuggets', 2) == before, 'the count lasts into the next level')
     check(count() == before, 'the count shows it')
     game.cmd('press space')
     game.wait('launch', 5)
@@ -120,7 +120,7 @@ def main():
     after = game.ram('nuggets', 2)
     check(after > before, 'and keeps counting')
     check(count() == after, 'the count shows the new count')
-    print(f'counted {before} in the first stage, {after} after a nugget in the next')
+    print(f'counted {before} in the first level, {after} after a nugget in the next')
     game.close()
     print('PASS')
 

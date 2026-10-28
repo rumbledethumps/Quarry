@@ -60,11 +60,26 @@ static const note_t buy_notes[] = {
     NOTE(1047, 0, 8, TRIANGLE, 4, 0x20, 0xF6),
     END,
 };
-static const note_t move_notes[] = {NOTE(1568, 0, 1, SQUARE, 0, 0x60, 0xF1), END};
+/* The clicks decay to silence in a few ms, but hold their gate 2 steps:
+   the PSG runs apart from the video, and can miss a gate held only one. */
+static const note_t move_notes[] = {NOTE(1568, 0, 2, SQUARE, 0, 0x60, 0xF1), END};
+static const note_t rattle_notes[] = {NOTE(2093, 0, 2, SQUARE, 0, 0x70, 0xF1), END};
+static const note_t snap_notes[] = {
+    NOTE(3000, -60, 4, NOISE, 2, 0x20, 0xF3),
+    NOTE(262, 0, 3, SQUARE, 3, 0x40, 0xF4),
+    END,
+};
+static const note_t unlock_notes[] = {
+    NOTE(1319, 0, 3, TRIANGLE, 1, 0x20, 0x20),
+    NOTE(1760, 0, 3, TRIANGLE, 1, 0x20, 0x20),
+    NOTE(2637, 0, 10, TRIANGLE, 5, 0x20, 0xF6),
+    END,
+};
 
 static const note_t *const sounds[SFX_COUNT] = {
     paddle_notes, wall_notes, brick_notes, break_notes, nugget_notes, lost_notes,
     low_notes, low_beep_notes, sputter_notes, fall_notes, buy_notes, move_notes,
+    rattle_notes, snap_notes, unlock_notes,
 };
 
 typedef struct
@@ -118,7 +133,7 @@ void sfx_init(void)
 /* Plays an effect from x across the screen, panned left to right. */
 void sfx_play(uint8_t sound, int16_t x)
 {
-    uint8_t i, best = 0, now;
+    uint8_t i, best = 0;
     int16_t pan = (x - SFX_CENTER) / 4;
     voice_t *v;
 
@@ -131,19 +146,14 @@ void sfx_play(uint8_t sound, int16_t x)
             best = i;
     }
     v = &voices[best];
-    now = !v->note && v->quiet;
     v->pan = PSG_PAN(pan < -63 ? -63 : pan > 63 ? 63 : pan);
     v->age = 0;
     v->note = sounds[sound];
-    if (now)
-        note_start(best);
-    else
-    {
-        /* The channel was let go only now, or is taken: it starts on the
-           next step, after a step of silence. */
-        gate_off(best);
-        v->left = 0;
-    }
+    /* It starts on the next step, so each note holds its gate for whole
+       steps however late in a step it was played. A channel that was
+       busy gets the step of silence first. */
+    gate_off(best);
+    v->left = 0;
     DEBUG_LOG("sfx %u\n", sound);
 }
 

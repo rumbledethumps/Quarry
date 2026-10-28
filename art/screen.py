@@ -3,19 +3,20 @@
 
   screen.py
 
-Writes art/post.png, art/beam.png, art/cap.png, art/brace.png,
-art/machine.png, art/digits.png and art/energy.png. Run it after a change
-to the drawing here, then touch up any of them by hand.
+Writes art/machine.png, art/digits.png, art/energy.png, art/coin.png and
+art/cursor.png. Run it after a change to the drawing here, then touch up
+any of them by hand. The frame of the playfield comes from art/frames.py.
 
-The frame is a post on each side of the playfield and the cap beam across
-the top. The inner face of a post and the underside of the beam are where
-the ball bounces, so each is a bright line. Each piece is drawn for the left
-side, and the right side shows it with MODE5_HFLIP. The braces and the
-machine stand behind the ball. The digits are 6x8 with a 1 px outline, in
-8x12 sprites. The energy gauge is a placeholder until its redesign.
+The machine is drawn for the left wall, stands behind the ball, and the
+right wall shows it with MODE5_HFLIP. The digits are 6x8 with a 1 px
+outline, in 8x12 sprites. The energy gauge is a placeholder until its
+redesign.
 
-The frame, the machine and the digits use the sled row of art/palettes.png,
-and the gauge the fx row.
+The machine, the digits and the coin use the sled row of
+art/palettes.png, the gauge the fx row, and the cursor the holo row.
+The coin is a placeholder: a plain gold disc. The cursor is one corner of the
+holographic outline of the upgrade screen and the menus, and MODE5_HFLIP and
+MODE5_VFLIP turn it for the other three.
 """
 
 import os
@@ -23,7 +24,7 @@ import os
 from rd2png import rgba, write_png
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SLED_ROW, FX_ROW = 4, 2
+SLED_ROW, FX_ROW, HOLO_ROW = 4, 2, 8
 
 # The sled row, by index.
 OUT, G0, TAIL, G1, Y1, G2, RED, G3, ORANGE, Y2, Y3, Y4, Y5, CREAM = range(1, 15)
@@ -31,63 +32,6 @@ OUT, G0, TAIL, G1, Y1, G2, RED, G3, ORANGE, Y2, Y3, Y4, Y5, CREAM = range(1, 15)
 
 def grid(w, h):
     return [[0] * w for _ in range(h)]
-
-
-def post():
-    """A 64-row stretch of the left post, the inner face on the right, with a
-    hydraulic section."""
-    rows = grid(8, 64)
-    faces = [OUT, G0, Y1, Y3, Y3, Y4, Y3, Y5]
-    piston = [OUT, G0, G1, G2, G3, G3, G2, Y5]
-    for y in range(64):
-        rows[y] = list(piston if 40 <= y < 56 else faces)
-        if y in (39, 56):
-            rows[y] = [OUT] * 7 + [Y5]  # the collars of the piston
-    for y in (8, 24):
-        rows[y][3] = Y1  # bolts
-    return rows
-
-
-def beam():
-    """64 columns of the cap beam, which repeat every 8."""
-    rows = grid(64, 16)
-    plain = {0: OUT, 1: G1, 2: G2, 3: G1, 4: OUT, 11: OUT, 12: G1, 13: G0, 14: Y3, 15: Y5}
-    for y in range(16):
-        for x in range(64):
-            rows[y][x] = plain[y] if y in plain else (OUT if (x + y) % 8 < 4 else Y3)
-    return rows
-
-
-def cap():
-    """The bracket over the left post, where the beam ends."""
-    rows = grid(8, 16)
-    for y in range(16):
-        for x in range(8):
-            rows[y][x] = OUT if y == 0 or x == 0 else (G2 if x == 1 else G1)
-        rows[y][7] = Y5  # the inner face of the post runs up to the corner
-    rows[15] = [OUT] + [Y5] * 7  # and the underside of the beam runs over it
-    for y in (4, 11):
-        rows[y][4] = G3  # bolts
-    return rows
-
-
-def brace():
-    """A 45 degree knee brace from the left post up to the beam, with a
-    bolted plate at each end."""
-    rows = grid(32, 32)
-    shades = {-3: OUT, -2: G3, -1: G2, 0: G2, 1: G1, 2: G0, 3: OUT}
-    for y in range(32):
-        for x in range(32):
-            d = x + y - 31
-            if d in shades:
-                rows[y][x] = shades[d]
-    for px, py in ((0, 25), (25, 0)):
-        for y in range(py, py + 7):
-            for x in range(px, px + 7):
-                edge = x in (px, px + 6) or y in (py, py + 6)
-                rows[y][x] = OUT if edge else G1
-        rows[py + 3][px + 3] = G3
-    return rows
 
 
 def machine():
@@ -168,17 +112,62 @@ def gauge():
     return [[c for piece in pieces for c in piece[y]] for y in range(8)]
 
 
+def coin():
+    """The placeholder coin, 8x8: a gold disc with a dark outline, lit from
+    the upper left."""
+    shape = ['..####..',
+             '.#hhhh#.',
+             '#hHffff#',
+             '#hffffr#',
+             '#hffffr#',
+             '#hffffr#',
+             '.#rrrr#.',
+             '..####..']
+    colors = {'.': 0, '#': OUT, 'h': Y4, 'H': Y5, 'f': Y3, 'r': Y1}
+    return [[colors[c] for c in line] for line in shape]
+
+
+def cursor(n=11, size=12):
+    """The top left corner of the cursor, size x size, in the holo row: a
+    bright bracket whose arms fade out. It is drawn at 8 px below, and its
+    lines are stretched along their length to n px across, each pixel the
+    color at the same place along the line, so it keeps its fade and its
+    taper, the inner line shorter than the outer."""
+    shape = ['44444321',
+             '4333210.',
+             '43......',
+             '42......',
+             '31......',
+             '21......',
+             '1.......']
+    g = [[0 if c == '.' else int(c) for c in line] for line in shape]
+    lines = (([g[0][x] for x in range(8)], 0, 0, 0, 8),            # outer, across
+             ([g[y][0] for y in range(7)], 0, 0, 1, 7),            # outer, down
+             ([g[1][x] for x in range(1, 6)], 1, 1, 0, 5),         # inner, across
+             ([g[y][1] for y in range(1, 6)], 1, 1, 1, 5))         # inner, down
+    img = [[0] * size for _ in range(size)]
+    for line, x, y, down, length in lines:
+        stretched = round(n * length / 8)
+        for s in range(stretched):
+            c = line[s * len(line) // stretched]
+            if down:
+                img[y + s][x] = c
+            else:
+                img[y][x + s] = c
+    return img
+
+
 def strip(frames):
     return [[c for frame in frames for c in frame[y]] for y in range(len(frames[0]))]
 
 
 def main():
     _, _, palettes = rgba(os.path.join(HERE, 'palettes.png'))
-    sled, fx = palettes[SLED_ROW], palettes[FX_ROW]
+    sled, fx, holo = palettes[SLED_ROW], palettes[FX_ROW], palettes[HOLO_ROW]
     for name, rows, colors in (
-        ('post', post(), sled), ('beam', beam(), sled), ('cap', cap(), sled),
-        ('brace', brace(), sled), ('machine', machine(), sled),
+        ('machine', machine(), sled),
         ('digits', strip([digit(c) for c in '0123456789']), sled), ('energy', gauge(), fx),
+        ('coin', coin(), sled), ('cursor', cursor(), holo),
     ):
         write_png(os.path.join(HERE, f'{name}.png'), len(rows[0]), len(rows), 3, rows, colors)
 

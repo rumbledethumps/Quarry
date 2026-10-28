@@ -1,5 +1,6 @@
 #include <rp6502.h>
 #include "bricks.h"
+#include "cursor.h"
 #include "debug.h"
 #include "frame.h"
 #include "input.h"
@@ -10,18 +11,21 @@
 #include "scene.h"
 #include "sfx.h"
 #include "shop.h"
+#include "talk.h"
 #include "title.h"
 #include "tuning.h"
 #include "upgrades.h"
 #include "video.h"
 
-/* Steps after a stage ends before the menu takes a choice, so a press
+/* Steps after a level ends before the menu takes a choice, so a press
    meant for the last ball doesn't choose. */
-#define STAGE_OVER_WAIT 60
+#define LEVEL_OVER_WAIT 60
+/* And after a dwarf, so a second press meant for him doesn't choose. */
+#define TALK_OVER_WAIT 20
 
 /* game_state */
 #define STATE_PLAY 1
-#define STATE_MENU 2    /* the end-of-stage menu */
+#define STATE_MENU 2    /* the menu when a level ends */
 #define STATE_SHOP 3    /* the upgrade screen */
 #define STATE_TITLE 4
 #define STATE_CONFIRM 5 /* yes or no to a new game over the save */
@@ -29,12 +33,15 @@
 
 /* The menus. The items of each are numbered from 1, as menu_step()
    returns them. */
-static const char *const end_items[] = {"UPGRADES", "PLAY"};
+static const char *const end_items[] = {"UPGRADES", "REPLAY", "MAIN MENU"};
 #define END_UPGRADES 1
-#define END_PLAY 2
-static const char *const pause_items[] = {"CONTINUE", "EXIT"};
-#define PAUSE_CONTINUE 1
-#define PAUSE_EXIT 2
+#define END_REPLAY 2
+#define END_MAIN_MENU 3
+static const char *const pause_items[] = {"RESUME", "UPGRADES", "RESTART", "MAIN MENU"};
+#define PAUSE_RESUME 1
+#define PAUSE_UPGRADES 2
+#define PAUSE_RESTART 3
+#define PAUSE_MAIN_MENU 4
 static const char *const title_items[] = {"RESUME", "NEW GAME"};
 #define TITLE_RESUME 1
 #define TITLE_NEW_GAME 2
@@ -43,71 +50,94 @@ static const char *const confirm_items[] = {"YES", "NO"};
 #define CONFIRM_NO 2
 
 /* The question to start over takes the title menu's place. */
-static const menu_t pause_menu = {20, 11, BOX_COLOR, "PAUSED", pause_items, 2};
-static const menu_t title_menu = {20, 11, BOX_FILL, 0, title_items, 2};
-static const menu_t confirm_menu = {20, 11, BOX_COLOR, "START OVER?", confirm_items, 2};
-static menu_t end_menu = {20, 11, BOX_COLOR, 0, end_items, 2};
+static const menu_t pause_menu = {20, 7, BOX_TAPE, "PAUSED", pause_items, 4};
+static const menu_t title_menu = {20, 11, BOX_PLAIN, 0, title_items, 2};
+static const menu_t confirm_menu = {20, 11, BOX_TAPE, "START OVER?", confirm_items, 2};
+/* The menu when a level ends says how, by what play_step() returned, from
+   PLAY_CLEARED. */
+static const menu_t end_menus[] = {
+    {20, 9, BOX_TAPE, "LEVEL COMPLETE", end_items, 3},
+    {20, 9, BOX_TAPE, "OUT OF BALLS", end_items, 3},
+    {20, 9, BOX_TAPE, "OUT OF FUEL", end_items, 3},
+};
+_Static_assert(PLAY_OUT == PLAY_CLEARED + 1 && PLAY_NO_ENERGY == PLAY_CLEARED + 2, "end_menus is in order.");
 
 static uint8_t game_state;
-static uint8_t paused_state; /* what the pause menu came from */
-static uint8_t paused_pick;  /* the pick of the end-of-stage menu under it */
-static uint8_t stage = 1;
-static uint8_t stage_set; /* the playfield shows a stage ready to play */
+static uint8_t level = 1; /* the level being played, from 1 */
+static uint8_t level_how; /* how it ended, as play_step() returned */
 
-/* Lays out the stage, centers the playfield with its frame and curtains,
+/* Lays out the level, centers the playfield with its frame and curtains,
    and sets up the paddle and every ball, ready to play. It starts from no
-   sprites and the stage's own art, so nothing is left of another screen. */
-static void stage_setup(void)
+   sprites and the level's own art, so nothing is left of another screen. */
+static void level_setup(void)
 {
     int16_t width;
 
     video_hide_sprites();
-    scene_stage(upgrade_levels[UPGRADE_WIDTH]);
+    cursor_hide();
+    scene_level(upgrade_ranks[UPGRADE_WIDTH]);
     play_init();
-    bricks_layout();
+    bricks_layout(level);
     width = bricks_cols * BRICK_W + 2 * bricks_margin;
     play_left = (SCREEN_W - width) / 2;
     play_right = play_left + width;
     frame_start(play_left, play_right);
-    video_text_clear();
+    menu_clear();
     bricks_start(play_left + bricks_margin, TUNE_BRICKS_Y);
     nuggets_start(1);
     play_start();
-    stage_set = 1;
 }
 
-/* A stage starts, and the game saves. */
-static void stage_play(void)
+/* A level starts, set up from the start, and the game saves. The first
+   level of a game starts with a dwarf's welcome. */
+static void level_play(void)
 {
-    if (stage_set)
-        menu_close();
-    else
-        stage_setup();
-    stage_set = 0;
+    menu_close();
+    level_setup();
     game_state = STATE_PLAY;
+    talk_once(TALK_WELCOME);
     save_write();
-    DEBUG_LOG("stage start\n");
+    DEBUG_LOG("level %u start\n", level);
 }
 
-/* Clearing a stage unlocks the next, which Play starts. Otherwise Play
-   starts the same stage again. The game saves. */
-static void stage_end(uint8_t how)
+/* The menu when a level ends, which waits wait steps before it takes a
+   choice. */
+static void end_menu(uint8_t wait)
 {
-    if (how == PLAY_CLEARED && stage < STAGES)
+    menu_open(&end_menus[level_how - PLAY_CLEARED], END_UPGRADES - 1, 0, wait);
+}
+
+/* The first clear of a level earns a coin and opens the next, which the
+   upgrade screen then picks, and a dwarf hands the coin over before the
+   menu opens. The game saves. */
+static void level_end(uint8_t how)
+{
+    level_how = how;
+    if (how == PLAY_CLEARED && level > levels_cleared)
     {
-        if (stage == stages_unlocked)
-            stages_unlocked++;
-        stage++;
+        levels_cleared = level;
+        level_picked = save_levels_open();
+        coins_add();
+        talk_queue(TALK_COIN);
+        DEBUG_LOG("coin for level %u\n", level);
     }
-    end_menu.title = how == PLAY_CLEARED ? "STAGE CLEAR"
-                     : how == PLAY_OUT   ? "OUT OF BALLS"
-                                         : "OUT OF ENERGY";
-    menu_open(&end_menu, END_UPGRADES - 1, 0, STAGE_OVER_WAIT);
+    else
+        end_menu(LEVEL_OVER_WAIT);
     game_state = STATE_MENU;
     save_write();
 }
 
-/* Resume is grayed out until there is a save. */
+/* The last dwarf has gone: the menu waiting for him opens, or the upgrade
+   screen's cursor comes back. */
+static void talk_over(void)
+{
+    if (game_state == STATE_MENU)
+        end_menu(TALK_OVER_WAIT);
+    else if (game_state == STATE_SHOP)
+        shop_resume();
+}
+
+/* Resume is left off until there is a save. */
 static void title_show(void)
 {
     title_open(&title_menu);
@@ -117,40 +147,37 @@ static void title_show(void)
     DEBUG_LOG("title\n");
 }
 
-/* Play from the highest stage unlocked. */
-static void game_start(void)
+/* The upgrade screen, on its upgrades from a level, or on its level select
+   from the title. */
+static void shop_show(uint8_t on)
 {
-    stage = stages_unlocked;
-    stage_setup();
-    stage_play();
+    shop_open(on);
+    game_state = STATE_SHOP;
 }
 
-/* Pausing saves. The menu goes over whatever was on the screen, but for
-   the pictures of the upgrade screen, which would show over it. */
+/* A new game starts at once on level 1. */
+static void new_game(void)
+{
+    save_new_game();
+    level = 1;
+    level_play();
+}
+
+/* Pausing saves, and the menu goes over the level. */
 static void pause_open(void)
 {
     save_write();
-    paused_state = game_state;
-    if (game_state == STATE_MENU)
-        paused_pick = menu_picked();
-    else if (game_state == STATE_SHOP)
-        shop_hide();
-    menu_open(&pause_menu, PAUSE_CONTINUE - 1, 0, 0);
+    menu_open(&pause_menu, PAUSE_RESUME - 1, 0, 0);
     game_state = STATE_PAUSE;
     DEBUG_LOG("paused\n");
 }
 
-/* Takes the pause menu away and puts back what was under it. */
 static void pause_close(void)
 {
     menu_close();
-    game_state = paused_state;
-    paused_state = 0;
-    if (game_state == STATE_MENU)
-        menu_open(&end_menu, paused_pick, 0, 0);
-    else if (game_state == STATE_SHOP)
-        shop_open();
-    DEBUG_LOG("continue\n");
+    cursor_hide();
+    game_state = STATE_PLAY;
+    DEBUG_LOG("resume\n");
 }
 
 static void wait_vsync(void)
@@ -162,63 +189,81 @@ static void wait_vsync(void)
     last = ria_vsync();
 }
 
-/* The title screen first. Then play, and the end-of-stage menu: Upgrades
-   opens the upgrade screen, whose Back sets up the next stage behind the
-   menu with the upgrades on the paddle, and Play plays. Esc or Start
-   pauses at any time, and Exit there goes back to the title screen. */
+/* The title screen first. Resume opens the upgrade screen, where a level
+   begins, and New Game begins level 1. When a level ends, its menu goes
+   to the upgrade screen, plays it again, or goes to the title. Esc pauses
+   a level, with the same choices and Restart. There is no way out of the
+   game: every menu leads to another screen. */
 int main(void)
 {
-    /* The panel frames are line-drawing glyphs from code page 437. */
-    ria_attr_set(437, RIA_ATTR_CODE_PAGE);
+    uint8_t talked = 0; /* whether a dwarf talked the step before */
+
     video_init();
+    scene_menus();
     input_init();
     sfx_init();
     save_load();
-    video_start();
     title_show();
 
     for (;;)
     {
         wait_vsync();
-        if (game_state != STATE_TITLE && game_state != STATE_CONFIRM && game_state != STATE_SHOP &&
-            paused_state != STATE_SHOP)
+        cursor_draw();
+        menu_draw();
+        talk_draw();
+        if (game_state == STATE_PLAY || game_state == STATE_MENU || game_state == STATE_PAUSE)
             play_draw();
+        else if (game_state == STATE_SHOP)
+            shop_draw();
         input_read();
         sfx_step();
-        if ((input_pressed & INPUT_PAUSE) && game_state <= STATE_SHOP)
+        if (talk_step())
         {
-            pause_open();
+            /* A dwarf takes the input, and the screen under him carries on. */
+            if (game_state == STATE_PLAY || game_state == STATE_MENU)
+                play_idle();
+            else if (game_state == STATE_SHOP)
+                shop_idle();
+            talked = 1;
+            cursor_step();
             continue;
+        }
+        if (talked)
+        {
+            talked = 0;
+            talk_over();
         }
         switch (game_state)
         {
         case STATE_PLAY:
         {
-            uint8_t how = play_step();
+            uint8_t how;
+            if (input_pressed & INPUT_PAUSE)
+            {
+                pause_open();
+                break;
+            }
+            how = play_step();
             if (how != PLAY_ON)
-                stage_end(how);
+                level_end(how);
             break;
         }
         case STATE_MENU:
             play_idle();
             switch (menu_step())
             {
-            case END_PLAY:
-                stage_play();
-                break;
             case END_UPGRADES:
                 play_finish();
-                shop_open();
-                game_state = STATE_SHOP;
+                shop_show(SHOP_ON_UPGRADES);
                 break;
-            }
-            break;
-        case STATE_SHOP:
-            if (shop_step())
-            {
-                stage_setup();
-                menu_open(&end_menu, END_PLAY - 1, 0, 0);
-                game_state = STATE_MENU;
+            case END_REPLAY:
+                play_finish();
+                level_play();
+                break;
+            case END_MAIN_MENU:
+                play_finish();
+                title_show();
+                break;
             }
             break;
         case STATE_PAUSE:
@@ -227,15 +272,34 @@ int main(void)
             else
                 switch (menu_step())
                 {
-                case PAUSE_CONTINUE:
+                case PAUSE_RESUME:
                     pause_close();
                     break;
-                case PAUSE_EXIT:
+                case PAUSE_UPGRADES:
                     play_finish();
-                    paused_state = 0;
+                    shop_show(SHOP_ON_UPGRADES);
+                    break;
+                case PAUSE_RESTART:
+                    play_finish();
+                    level_play();
+                    break;
+                case PAUSE_MAIN_MENU:
+                    play_finish();
                     title_show();
                     break;
                 }
+            break;
+        case STATE_SHOP:
+            switch (shop_step())
+            {
+            case SHOP_BEGIN:
+                level = level_picked;
+                level_play();
+                break;
+            case SHOP_TITLE:
+                title_show();
+                break;
+            }
             break;
         case STATE_TITLE:
             title_step();
@@ -243,7 +307,7 @@ int main(void)
             {
             case TITLE_RESUME:
                 save_load();
-                game_start();
+                shop_show(SHOP_ON_LEVELS);
                 break;
             case TITLE_NEW_GAME:
                 if (save_exists)
@@ -253,20 +317,17 @@ int main(void)
                     game_state = STATE_CONFIRM;
                 }
                 else
-                {
-                    save_new_game();
-                    game_start();
-                }
+                    new_game();
                 break;
             }
             break;
         case STATE_CONFIRM:
-            switch (menu_step())
+            /* Esc is No. */
+            switch (input_pressed & INPUT_PAUSE ? CONFIRM_NO : menu_step())
             {
             case CONFIRM_YES:
                 DEBUG_LOG("new game\n");
-                save_new_game();
-                game_start();
+                new_game();
                 break;
             case CONFIRM_NO:
                 menu_close();
@@ -276,5 +337,6 @@ int main(void)
             }
             break;
         }
+        cursor_step();
     }
 }

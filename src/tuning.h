@@ -6,11 +6,11 @@
 #define TUNING_H
 
 /* Balls */
-#define TUNE_BALLS 5          /* balls at the start of a stage */
+#define TUNE_BALLS 5          /* balls at the start of a level */
 #define TUNE_BALL_SPEED 640   /* 2.5 px per step */
 
 /* Energy. A full bar holds this many steps of thrust, and it drains from
-   the first launch of a stage until the stage ends. */
+   the first launch of a level until the level ends. */
 #define TUNE_ENERGY 1440      /* 24 seconds */
 #define TUNE_ENERGY_DRAIN 1   /* per step */
 #define TUNE_ENERGY_LOW 288   /* the bar turns orange: the last 4.8 seconds */
@@ -29,8 +29,8 @@
 /* Paddle */
 #define TUNE_PADDLE_Y 208     /* hover height, the top of the paddle */
 
-/* Upgrades, paid in white nuggets. Each level of an upgrade has its
-   value, starting with the value before any upgrade, and each level after
+/* Upgrades, paid in white nuggets. Each rank of an upgrade has its
+   value, starting with the value before any upgrade, and each rank after
    the first has its cost. The build draws a sled for each width, with
    its jets. */
 #define TUNE_WIDTHS {20, 23, 26, 29, 32, 35, 38, 41, 44, 47, 50} /* px, 64 at most */
