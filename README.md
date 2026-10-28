@@ -42,7 +42,8 @@ as its rock walls are. The paddle floats on thrusters. The energy bar drains fro
 launch, and when it is empty the paddle falls and the stage ends. Each
 brick you break turns into a nugget that flies to the counts at the top
 left. The first clear of a stage earns a coin, and opens the next stage.
-When a stage ends, go to the upgrade screen, replay the stage, or go to
+When a stage ends, its menu says how, STAGE COMPLETE, OUT OF BALLS or
+OUT OF FUEL, and goes to the upgrade screen, replays the stage, or goes to
 the main menu. Esc in a stage pauses it, with Restart too. The menus are
 framed in marching caution tape, and the upgrade screen's holographic
 cursor picks in them.

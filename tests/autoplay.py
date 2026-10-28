@@ -120,8 +120,9 @@ def main():
           f'{launches} launches, {hits} paddle hits, energy {energy}')
     if how == 'out of balls':
         check(launches == balls, 'the stage ends when the last ball is lost')
-    check(game.shows('CHOOSE') and game.shows('UPGRADES') and game.shows('REPLAY'),
-          'the menu is shown when the stage ends')
+    title = {'cleared': 'STAGE COMPLETE', 'out of energy': 'OUT OF FUEL', 'out of balls': 'OUT OF BALLS'}[how]
+    check(game.shows(title) and game.shows('UPGRADES') and game.shows('REPLAY'),
+          f'the menu says {title} when the stage ends')
     if how != 'out of energy':
         images = set()
         for _ in range(30):

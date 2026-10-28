@@ -50,7 +50,14 @@ static const char *const confirm_items[] = {"YES", "NO"};
 static const menu_t pause_menu = {20, 7, BOX_TAPE, "PAUSED", pause_items, 4};
 static const menu_t title_menu = {20, 11, BOX_PLAIN, 0, title_items, 2};
 static const menu_t confirm_menu = {20, 11, BOX_TAPE, "START OVER?", confirm_items, 2};
-static const menu_t end_menu = {20, 9, BOX_TAPE, "CHOOSE", end_items, 3};
+/* The menu when a stage ends says how, by what play_step() returned, from
+   PLAY_CLEARED. */
+static const menu_t end_menus[] = {
+    {20, 9, BOX_TAPE, "STAGE COMPLETE", end_items, 3},
+    {20, 9, BOX_TAPE, "OUT OF BALLS", end_items, 3},
+    {20, 9, BOX_TAPE, "OUT OF FUEL", end_items, 3},
+};
+_Static_assert(PLAY_OUT == PLAY_CLEARED + 1 && PLAY_NO_ENERGY == PLAY_CLEARED + 2, "end_menus is in order.");
 
 static uint8_t game_state;
 static uint8_t stage = 1; /* the stage being played, from 1 */
@@ -98,7 +105,7 @@ static void stage_end(uint8_t how)
         coins_add();
         DEBUG_LOG("coin for stage %u\n", stage);
     }
-    menu_open(&end_menu, END_UPGRADES - 1, 0, STAGE_OVER_WAIT);
+    menu_open(&end_menus[how - PLAY_CLEARED], END_UPGRADES - 1, 0, STAGE_OVER_WAIT);
     game_state = STATE_MENU;
     save_write();
 }
