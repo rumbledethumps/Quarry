@@ -103,6 +103,17 @@ add_custom_command(
     VERBATIM
 )
 
+# The tiles of the menus: the panels' font and the frame of caution tape
+# and steel, and menus.h, which gives their tile numbers.
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/menus.bin ${CMAKE_CURRENT_BINARY_DIR}/menus.h
+    COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/art/menus.py ${CMAKE_CURRENT_BINARY_DIR}/menus.bin
+        ${CMAKE_CURRENT_BINARY_DIR}/menus.h --preview ${CMAKE_CURRENT_BINARY_DIR}/menus.png
+    DEPENDS art/menus.py art/panel_font.py art/panels.py art/rd2png.py
+    VERBATIM
+)
+
 # A sled for each width of src/tuning.h, drawn by art/sled.py, which also
 # writes them to look at in sleds/ in the build folder.
 add_custom_command(
@@ -132,6 +143,7 @@ rp6502_asset(quarry XRAM(XRAM_BRACE_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/brace.bin
 rp6502_asset(quarry XRAM(XRAM_MACHINE_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/machine.bin)
 rp6502_asset(quarry XRAM(XRAM_COIN_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/coin.bin)
 rp6502_asset(quarry XRAM(XRAM_CURSOR_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/cursor.bin)
+rp6502_asset(quarry XRAM(XRAM_MENU_PALETTE) ${CMAKE_CURRENT_BINARY_DIR}/menus.bin)
 # The art of each screen, which the screen loads when it starts.
 rp6502_asset(quarry backdrop ${CMAKE_CURRENT_BINARY_DIR}/backdrop.bin)
 rp6502_asset(quarry logo ${CMAKE_CURRENT_BINARY_DIR}/logo.bin)
@@ -153,6 +165,7 @@ rp6502_web(quarry CONFIG [[
 target_sources(quarry PRIVATE
     src/machines.c
     src/bricks.c
+    src/cursor.c
     src/energy.c
     src/frame.c
     src/input.c
@@ -171,6 +184,7 @@ target_sources(quarry PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}/backdrop.h
     ${CMAKE_CURRENT_BINARY_DIR}/panels.h
     ${CMAKE_CURRENT_BINARY_DIR}/carts.h
+    ${CMAKE_CURRENT_BINARY_DIR}/menus.h
 )
 target_include_directories(quarry PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 

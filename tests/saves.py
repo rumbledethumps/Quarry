@@ -5,7 +5,7 @@
 
 Needs a Debug ROM, which logs the game's events. Every run of the emulator
 here keeps its saves in a folder of the test's own. Reads the save file
-itself, and the menus from the text cells in XRAM. Exits 0 when every
+itself, and the menus from their map in XRAM. Exits 0 when every
 check passes.
 """
 
@@ -17,8 +17,6 @@ from game import Game, check, rom, save_dir
 SAVE = 'quarry.save'
 TAG = b'QRY3'
 TITLE_ITEMS = ['RESUME', 'NEW GAME']
-PICKED = 0x1E  # MODE1_BG_FG(BOX_FILL, PICK_COLOR)
-DIM = 0x14     # MODE1_BG_FG(BOX_FILL, DIM_COLOR)
 
 
 def read_save(folder):
@@ -34,38 +32,29 @@ def read_save(folder):
 
 
 class Title:
-    """Reads the title menu, title_menu in src/main.c, where src/menu.c draws
-    it: no title line, so its items start a row under its top edge, each in
-    a frame ITEM_ROWS tall, 2 columns in from the box, with its text centered
-    a row down."""
+    """Reads the title menu, title_menu in src/main.c: the item picked, from
+    src/menu.c, and whether Resume is on it, which it is only with a save."""
 
     def __init__(self, game):
         self.game = game
-        center, top = game.ram('title_menu'), game.ram('title_menu+1')
-        rows = [top + 1 + i * game.sym['ITEM_ROWS'] for i in range(len(TITLE_ITEMS))]
-        self.frames = {item: (center - game.sym['MENU_COLS'] // 2 + 2, row)
-                       for item, row in zip(TITLE_ITEMS, rows)}
-        self.texts = {item: (center - len(item) // 2, row + 1) for item, row in zip(TITLE_ITEMS, rows)}
-        check(game.text(*self.texts['NEW GAME'], 8) == 'NEW GAME', 'the title menu is up')
+        check(game.shows('NEW GAME'), 'the title menu is up')
 
     def picked(self):
-        picks = [item for item, cell in self.frames.items() if self.game.color(*cell) == PICKED]
-        check(len(picks) == 1, f'one item of the title menu is picked: {picks}')
-        return picks[0]
+        return TITLE_ITEMS[self.game.ram('picked')]
 
-    def resume_dim(self):
-        return self.game.color(*self.texts['RESUME']) == DIM
+    def resume_off(self):
+        return not self.game.shows('RESUME')
 
 
 def main():
     folder = save_dir()
 
-    # A first run, with no save: Resume is grayed out and can't be picked,
-    # and New Game starts at once.
+    # A first run, with no save: Resume is left off the menu, and New Game
+    # starts at once.
     game = Game()
     game.boot()
     title = Title(game)
-    check(title.resume_dim(), 'Resume is grayed out with no save')
+    check(title.resume_off(), 'Resume is left off with no save')
     check(title.picked() == 'NEW GAME', 'New Game is picked')
     game.tap('up')
     check(title.picked() == 'NEW GAME', 'up from New Game stays, as Resume cannot be picked')
@@ -88,9 +77,13 @@ def main():
     saved = read_save(folder)
     check(saved and saved[0] == broken, f'pausing saves a nugget for each broken brick, {saved} for {broken}')
     ball = 'XRAM_BALL_SPRITE'
+    tape = f'XRAM_MENU_PALETTE+{game.sym["MENU_TAPE"] * 2}'
     where, energy = game.sprite(ball), game.ram('energy', 2)
     game.run(30)
     check(game.sprite(ball) == where and game.ram('energy', 2) == energy, 'nothing moves while paused')
+    stripes = game.xram(tape, 8)
+    game.run(game.sym['TAPE_STEPS'] * 2)  # two places of four, so never all the way round
+    check(game.xram(tape, 8) != stripes, 'but the caution tape marches')
     game.tap('escape')
     game.until('game_state', 'STATE_PLAY', 10)
     game.run(10)
@@ -160,7 +153,7 @@ def main():
     game.until('game_state', 'STATE_TITLE', 60)
     game.run(5)
     title = Title(game)
-    check(not title.resume_dim() and title.picked() == 'RESUME', 'Resume is there now, and picked')
+    check(not title.resume_off() and title.picked() == 'RESUME', 'Resume is there now, and picked')
     game.close()
 
     # Another run, as when the player comes back: Resume brings back the
@@ -233,7 +226,7 @@ def main():
     open(os.path.join(folder, SAVE), 'wb').write(b'NOPE, not a save')
     game = Game()
     game.boot()
-    check(Title(game).resume_dim(), 'a bad save file is no save')
+    check(Title(game).resume_off(), 'a bad save file is no save')
     game.close()
     print('ok: a bad save is ignored')
 

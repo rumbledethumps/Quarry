@@ -41,7 +41,9 @@ launch, and when it is empty the paddle falls and the stage ends. Each
 brick you break turns into a nugget that flies to the counts at the top
 left. The first clear of a stage earns a coin, and opens the next stage.
 When a stage ends, go to the upgrade screen, replay the stage, or go to
-the main menu. Esc in a stage pauses it, with Restart too.
+the main menu. Esc in a stage pauses it, with Restart too. The menus are
+framed in marching caution tape, and the upgrade screen's holographic
+cursor picks in them.
 
 The upgrade screen is coming together. Panels hang from a rail, one for
 each upgrade, and slide left and right; the one in the middle lights up,
@@ -52,8 +54,8 @@ the screen shows it: the lock shakes, breaks, and its button lights. Stages 2 to
 wider each time.
 
 The game saves when a stage starts or ends, when it pauses, and when an
-upgrade is bought, in `SAVE:quarry.save`. Resume on the title screen opens
-the upgrade screen from there. New Game starts over at stage 1, and
+upgrade is bought, in `SAVE:quarry.save`. Resume on the title screen,
+there once there is a save, opens the upgrade screen from there. New Game starts over at stage 1, and
 replaces the save.
 
 ## Building

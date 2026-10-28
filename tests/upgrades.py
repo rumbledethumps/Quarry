@@ -17,7 +17,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'
 from panels import FONT  # noqa: E402
 
 END_ITEMS = ['UPGRADES', 'REPLAY', 'MAIN MENU']
-PICKED = 0x1E  # MODE1_BG_FG(BOX_FILL, PICK_COLOR), the frame of the item picked
 
 
 def tuning(game):
@@ -40,13 +39,15 @@ def main():
 
     def end_picked():
         """The item picked on the menu when a stage ends, end_menu in
-        src/main.c: a title, then each item in a frame ITEM_ROWS tall."""
-        center, top = game.ram('end_menu'), game.ram('end_menu+1')
-        col = center - sym['MENU_COLS'] // 2 + 2
-        picks = [item for i, item in enumerate(END_ITEMS)
-                 if game.color(col, top + 3 + i * sym['ITEM_ROWS']) == PICKED]
-        check(len(picks) == 1, f'one item of the menu is picked: {picks}')
-        return picks[0]
+        src/main.c."""
+        return END_ITEMS[game.ram('picked')]
+
+    def cursor_on_item(menu, item):
+        """Whether the holographic cursor's top left corner is at the item
+        of a menu with a title, as src/menu.c places it."""
+        center, top = game.ram(menu), game.ram(f'{menu}+1')
+        row = top + sym['HEAD_ROWS'] + item * sym['ITEM_ROWS']
+        return game.sprite('XRAM_CURSOR_SPRITES') == ((center - sym['MENU_COLS'] // 2 + 2) * 8, row * 8)
 
     def panel_tiles(p, row):
         """The tiles inside panel p, on a row of its map."""
@@ -78,6 +79,7 @@ def main():
     check(game.ram('game_state') == sym['STATE_MENU'], 'the menu opens when the stage ends')
     check(all(game.shows(w) for w in ['CHOOSE'] + END_ITEMS), 'it shows CHOOSE and its items')
     check(end_picked() == 'UPGRADES', 'UPGRADES is picked')
+    check(cursor_on_item('end_menu', 0), 'and the cursor is on it at once')
     game.tap('space')
     game.run(10)
     check(game.ram('game_state') == sym['STATE_MENU'], 'a choice right away is not taken')
@@ -225,6 +227,9 @@ def main():
     # Esc asks to go back to the title, and Esc again doesn't.
     game.tap('escape')
     check(game.shows('RETURN TO TITLE?'), 'Esc asks to go back to the title')
+    check(not cursor_on_item('begin_menu', 0), 'the cursor slides to the question')
+    settle()
+    check(cursor_on_item('begin_menu', 0), 'and comes to its YES')
     game.tap('escape')
     check(not game.shows('RETURN TO TITLE?'), 'Esc again does not')
 

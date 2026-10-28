@@ -5,6 +5,7 @@
 
 #include <backdrop.h>
 #include <carts.h>
+#include <menus.h>
 #include <rp6502.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -297,7 +298,7 @@ typedef struct
 #define JETS_MAX 3 /* under one sled */
 #define ENERGY_SEGMENTS 12
 #define NUGGETS_MAX 16 /* in flight at once */
-#define MENU_SPRITES 50
+#define MENU_SPRITES 46
 #define COUNT_DIGITS 5 /* of a nugget count */
 #define BALL_DIGITS 2  /* of the count of balls */
 
@@ -399,6 +400,7 @@ typedef struct
 
 typedef MODE2_TILE(8, 8) panel_tile_t;
 typedef MODE2_TILE(4, 8) cart_tile_t;
+typedef MODE2_TILE(4, 8) menu_tile_t;
 typedef MODE5_CUSTOM_IMAGE(4, 24, 8) brick_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 24, 16) break_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 8, 8) piece_image_t;
@@ -425,7 +427,7 @@ typedef struct
     uint16_t texture[16]; /* the first 4, loaded with each curtain set */
     uint16_t curtain[16]; /* loaded with each curtain set */
     uint16_t shade[16];   /* the sled row at half, for the braces and the machine */
-    uint16_t holo[16];    /* the cursor of the upgrade screen, which shimmers */
+    uint16_t holo[16];    /* the cursor of the upgrade screen and the menus, which shimmers */
 } palettes_t;
 
 /* Plane 0 sprites, in front of the texture and behind the bricks, back to
@@ -449,9 +451,9 @@ typedef struct
     mode5_csprite_t smoke[2];
 } actors_t;
 
-/* Plane 2 sprites, over the menu text: the gauge, the counts with their
-   nugget or ball, the nuggets in flight, and the upgrade screen's
-   pictures. */
+/* Plane 2 sprites, over the menus: the gauge, the counts with their
+   nugget or ball, the nuggets in flight, the upgrade screen's pictures,
+   and last, over them all, the holographic cursor's 4 corners. */
 typedef struct
 {
     mode5_csprite_t energy[1 + ENERGY_SEGMENTS + 1]; /* top, segments, bottom */
@@ -463,6 +465,7 @@ typedef struct
     mode5_csprite_t ball_digits[BALL_DIGITS];
     mode5_csprite_t nuggets[NUGGETS_MAX]; /* in flight */
     mode5_csprite_t menu[MENU_SPRITES];   /* the upgrade screen's pictures */
+    mode5_csprite_t cursor[4];
 } hud_t;
 
 /* A band of the backdrop, as ROM:backdrop holds it. */
@@ -510,7 +513,7 @@ typedef struct
     psg_t psg;
     mode2_config_t backdrop_configs[BACKDROP_BANDS];
     mode3_config_t texture_config;
-    mode1_config_t text_config;
+    mode2_config_t menu_config;
     mode2_config_t panel_config;
     mode2_config_t cart_config;
     palettes_t palettes;
@@ -518,7 +521,9 @@ typedef struct
     mode5_csprite_t bricks[BRICKS_MAX];
     actors_t actors;
     hud_t hud;
-    mode1_4bpp_data_t text[TEXT_ROWS][TEXT_COLS];
+    uint8_t menu_map[TEXT_ROWS][TEXT_COLS]; /* the menus' tiles, a byte a cell */
+    uint16_t menu_palette[16];              /* these two, as art/menus.py writes them */
+    menu_tile_t menu_tiles[MENU_TILES];
     brick_image_t brick_image;
     break_image_t break_images[BREAK_FRAMES];
     piece_image_t nugget_image;
@@ -546,7 +551,7 @@ typedef struct
 #define XRAM_PSG offsetof(xram_layout_t, psg)
 #define XRAM_BACKDROP_CONFIG(band) (offsetof(xram_layout_t, backdrop_configs) + (band) * sizeof(mode2_config_t))
 #define XRAM_TEXTURE_CONFIG offsetof(xram_layout_t, texture_config)
-#define XRAM_TEXT_CONFIG offsetof(xram_layout_t, text_config)
+#define XRAM_MENU_CONFIG offsetof(xram_layout_t, menu_config)
 #define XRAM_PANEL_CONFIG offsetof(xram_layout_t, panel_config)
 #define XRAM_CART_CONFIG offsetof(xram_layout_t, cart_config)
 #define XRAM_PALETTES offsetof(xram_layout_t, palettes)
@@ -583,7 +588,10 @@ typedef struct
 #define XRAM_BALL_DIGITS offsetof(xram_layout_t, hud.ball_digits)
 #define XRAM_NUGGET_SPRITES offsetof(xram_layout_t, hud.nuggets)
 #define XRAM_MENU_SPRITES offsetof(xram_layout_t, hud.menu)
-#define XRAM_TEXT offsetof(xram_layout_t, text)
+#define XRAM_CURSOR_SPRITES offsetof(xram_layout_t, hud.cursor)
+#define XRAM_MENU_MAP offsetof(xram_layout_t, menu_map)
+#define XRAM_MENU_PALETTE offsetof(xram_layout_t, menu_palette)
+#define XRAM_MENU_TILES offsetof(xram_layout_t, menu_tiles)
 #define XRAM_BRICK_IMAGE offsetof(xram_layout_t, brick_image)
 #define XRAM_BREAK_IMAGES offsetof(xram_layout_t, break_images)
 #define XRAM_NUGGET_IMAGE offsetof(xram_layout_t, nugget_image)
@@ -624,11 +632,11 @@ MODE5_PALETTE_CHECK(palettes_t);
 
 PSG_PAGE_CHECK(XRAM_PSG);
 
-/* video_init() hides every sprite from XRAM_SCENERY up to XRAM_TEXT, and
+/* video_init() hides every sprite from XRAM_SCENERY up to XRAM_MENU_MAP, and
    plane 0 draws the scenery and the bricks as one list. */
 _Static_assert(XRAM_BRICKS == XRAM_SCENERY + sizeof(scenery_t), "The bricks must follow the scenery.");
-_Static_assert(XRAM_TEXT == XRAM_BRICKS + (BRICKS_MAX * sizeof(mode5_csprite_t) +
-                                           sizeof(actors_t) + sizeof(hud_t)),
-               "The sprite lists must lie together, before the text.");
+_Static_assert(XRAM_MENU_MAP == XRAM_BRICKS + (BRICKS_MAX * sizeof(mode5_csprite_t) +
+                                               sizeof(actors_t) + sizeof(hud_t)),
+               "The sprite lists must lie together, before the menus' map.");
 
 #endif

@@ -7,7 +7,7 @@
 void video_init(void)
 {
     mode3_config_t texture_config;
-    mode1_config_t text_config;
+    mode2_config_t menu_config;
 
     video_hide_sprites();
 
@@ -22,13 +22,13 @@ void video_init(void)
     texture_config.xram_palette_ptr = XRAM_PALETTE_TEXTURE;
     xram0_write(XRAM_TEXTURE_CONFIG, &texture_config, sizeof texture_config);
 
-    memset(&text_config, 0, sizeof text_config);
-    text_config.width_chars = TEXT_COLS;
-    text_config.height_chars = TEXT_ROWS;
-    text_config.xram_data_ptr = XRAM_TEXT;
-    text_config.xram_palette_ptr = XRAM_PALETTE_MAIN;
-    text_config.xram_font_ptr = 0xFFFF;
-    xram0_write(XRAM_TEXT_CONFIG, &text_config, sizeof text_config);
+    memset(&menu_config, 0, sizeof menu_config);
+    menu_config.width_tiles = TEXT_COLS;
+    menu_config.height_tiles = TEXT_ROWS;
+    menu_config.xram_data_ptr = XRAM_MENU_MAP;
+    menu_config.xram_palette_ptr = XRAM_MENU_PALETTE;
+    menu_config.xram_tile_ptr = XRAM_MENU_TILES;
+    xram0_write(XRAM_MENU_CONFIG, &menu_config, sizeof menu_config);
 }
 
 /* A blank canvas: every plane off, so nothing is left of the last screen,
@@ -39,20 +39,20 @@ void video_blank(void)
     xreg_vga_canvas(CANVAS_320X240);
 }
 
-/* The sprites and the text on a blank canvas. Planes, back to front:
+/* The sprites and the menus on a blank canvas. Planes, back to front:
    0: the backdrop of the upgrade screen, or the texture of the title and
       a stage, which each screen programs itself, with the scenery and the
       bricks over it.
    1: the upgrade screen's panels and carts, and the paddle, its flames
       and smoke, and the ball.
-   2: menu text, with the gauge, the counts and the upgrade screen's
-      pictures over it. */
+   2: the menus, with the gauge, the counts, the upgrade screen's
+      pictures and the holographic cursor over them. */
 void video_start(void)
 {
     xreg_vga_mode5(MODE5_CUSTOM, XRAM_SCENERY,
                    sizeof(scenery_t) / sizeof(mode5_csprite_t) + BRICKS_MAX, 0);
     xreg_vga_mode5(MODE5_CUSTOM, XRAM_ACTORS, sizeof(actors_t) / sizeof(mode5_csprite_t), 1);
-    xreg_vga_mode1(MODE1_4BPP, XRAM_TEXT_CONFIG, 2);
+    xreg_vga_mode2(MODE2_4BPP | MODE2_8X8, XRAM_MENU_CONFIG, 2);
     xreg_vga_mode5(MODE5_CUSTOM, XRAM_HUD, sizeof(hud_t) / sizeof(mode5_csprite_t), 2);
 }
 
@@ -62,17 +62,17 @@ void video_hide_sprites(void)
 {
     unsigned sprite;
 
-    for (sprite = XRAM_SCENERY; sprite < XRAM_TEXT; sprite += sizeof(mode5_csprite_t))
+    for (sprite = XRAM_SCENERY; sprite < XRAM_MENU_MAP; sprite += sizeof(mode5_csprite_t))
         sprite_set(sprite, XRAM_BALL_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(8, 8));
 }
 
-/* Blank cells are glyph 0 with transparent colors. */
+/* Every cell of the menus clear, tile 0. */
 void video_text_clear(void)
 {
-    xram0_set(XRAM_TEXT, 0, sizeof(((xram_layout_t *)0)->text));
+    xram0_set(XRAM_MENU_MAP, 0, sizeof(((xram_layout_t *)0)->menu_map));
 }
 
-/* Blank cells from left, top to right, bottom. */
+/* Clear cells from left, top to right, bottom. */
 void video_clear(uint8_t left, uint8_t top, uint8_t right, uint8_t bottom)
 {
     uint8_t row;
@@ -80,28 +80,28 @@ void video_clear(uint8_t left, uint8_t top, uint8_t right, uint8_t bottom)
     if (right < left || right >= TEXT_COLS || bottom >= TEXT_ROWS)
         return;
     for (row = top; row <= bottom; row++)
-        xram0_set(XRAM_TEXT + (row * TEXT_COLS + left) * sizeof(mode1_4bpp_data_t), 0,
-                  (right - left + 1) * sizeof(mode1_4bpp_data_t));
+        xram0_set(XRAM_MENU_MAP + row * TEXT_COLS + left, 0, right - left + 1);
 }
 
-/* Text in fg, on bg. */
-void video_text(uint8_t col, uint8_t row, const char *s, uint8_t fg, uint8_t bg)
+/* Text in the menus' font, on the inside of a box. A letter the font
+   doesn't have is a space. */
+void video_text(uint8_t col, uint8_t row, const char *s)
 {
-    mode1_4bpp_data_t cells[TEXT_COLS];
+    static const char font[] = MENU_FONT;
+    uint8_t cells[TEXT_COLS];
     uint8_t n = 0;
 
     while (s[n] && col + n < TEXT_COLS)
     {
-        cells[n].glyph_code = s[n];
-        cells[n].bg_fg_index = MODE1_BG_FG(bg, fg);
+        const char *at = strchr(font, s[n]);
+        cells[n] = MENU_TILE_GLYPH + (at && s[n] ? at - font : 0);
         n++;
     }
-    xram0_write(XRAM_TEXT + (row * TEXT_COLS + col) * sizeof(mode1_4bpp_data_t),
-                cells, n * sizeof(mode1_4bpp_data_t));
+    xram0_write(XRAM_MENU_MAP + row * TEXT_COLS + col, cells, n);
 }
 
 /* A number, left aligned in width cells, spaces after it. */
-void video_number(uint8_t col, uint8_t row, uint16_t n, uint8_t width, uint8_t fg, uint8_t bg)
+void video_number(uint8_t col, uint8_t row, uint16_t n, uint8_t width)
 {
     char text[6];
     uint8_t i, len = 0;
@@ -120,32 +120,29 @@ void video_number(uint8_t col, uint8_t row, uint16_t n, uint8_t width, uint8_t f
     while (len < width)
         text[len++] = ' ';
     text[len] = 0;
-    video_text(col, row, text, fg, bg);
+    video_text(col, row, text);
 }
 
-/* Draws a dark box with a frame in color, in text cells from left, top to
-   right, bottom. The frame is the line-drawing glyphs of code page 437. A
-   frame in BOX_FILL can't be seen. */
-void video_box(uint8_t left, uint8_t top, uint8_t right, uint8_t bottom, uint8_t color)
+/* A dark box in cells from left, top to right, bottom: framed in caution
+   tape and steel, or BOX_PLAIN, without. */
+void video_box(uint8_t left, uint8_t top, uint8_t right, uint8_t bottom, uint8_t frame)
 {
-    mode1_4bpp_data_t cells[TEXT_COLS];
+    uint8_t cells[TEXT_COLS];
     uint8_t row, col, n = right - left + 1;
 
     for (row = top; row <= bottom; row++)
     {
         for (col = 0; col < n; col++)
         {
-            uint8_t end = col == 0 ? 0 : col == n - 1 ? 2 : 1;
-            static const uint8_t top_glyphs[] = {0xDA, 0xC4, 0xBF};
-            static const uint8_t middle_glyphs[] = {0xB3, ' ', 0xB3};
-            static const uint8_t bottom_glyphs[] = {0xC0, 0xC4, 0xD9};
-            cells[col].glyph_code = row == top      ? top_glyphs[end]
-                                    : row == bottom ? bottom_glyphs[end]
-                                                    : middle_glyphs[end];
-            cells[col].bg_fg_index = MODE1_BG_FG(BOX_FILL, color);
+            /* The frame's tiles: the corners, then the edges, as art/menus.py
+               lays them out. */
+            uint8_t edge_row = row == top ? 0 : row == bottom ? 2 : 1;
+            uint8_t edge_col = col == 0 ? 0 : col == n - 1 ? 2 : 1;
+            static const uint8_t pieces[3][3] = {{0, 4, 1}, {6, 0xFF, 7}, {2, 5, 3}};
+            uint8_t piece = pieces[edge_row][edge_col];
+            cells[col] = frame == BOX_PLAIN || piece == 0xFF ? MENU_TILE_GLYPH : MENU_TILE_FRAME + piece;
         }
-        xram0_write(XRAM_TEXT + (row * TEXT_COLS + left) * sizeof(mode1_4bpp_data_t),
-                    cells, n * sizeof(mode1_4bpp_data_t));
+        xram0_write(XRAM_MENU_MAP + row * TEXT_COLS + left, cells, n);
     }
 }
 

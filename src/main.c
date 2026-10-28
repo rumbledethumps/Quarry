@@ -1,5 +1,6 @@
 #include <rp6502.h>
 #include "bricks.h"
+#include "cursor.h"
 #include "debug.h"
 #include "frame.h"
 #include "input.h"
@@ -46,10 +47,10 @@ static const char *const confirm_items[] = {"YES", "NO"};
 #define CONFIRM_NO 2
 
 /* The question to start over takes the title menu's place. */
-static const menu_t pause_menu = {20, 7, BOX_COLOR, "PAUSED", pause_items, 4};
-static const menu_t title_menu = {20, 11, BOX_FILL, 0, title_items, 2};
-static const menu_t confirm_menu = {20, 11, BOX_COLOR, "START OVER?", confirm_items, 2};
-static const menu_t end_menu = {20, 9, BOX_COLOR, "CHOOSE", end_items, 3};
+static const menu_t pause_menu = {20, 7, BOX_TAPE, "PAUSED", pause_items, 4};
+static const menu_t title_menu = {20, 11, BOX_PLAIN, 0, title_items, 2};
+static const menu_t confirm_menu = {20, 11, BOX_TAPE, "START OVER?", confirm_items, 2};
+static const menu_t end_menu = {20, 9, BOX_TAPE, "CHOOSE", end_items, 3};
 
 static uint8_t game_state;
 static uint8_t stage = 1; /* the stage being played, from 1 */
@@ -62,6 +63,7 @@ static void stage_setup(void)
     int16_t width;
 
     video_hide_sprites();
+    cursor_hide();
     scene_stage(upgrade_levels[UPGRADE_WIDTH]);
     play_init();
     bricks_layout(stage);
@@ -101,7 +103,7 @@ static void stage_end(uint8_t how)
     save_write();
 }
 
-/* Resume is grayed out until there is a save. */
+/* Resume is left off until there is a save. */
 static void title_show(void)
 {
     title_open(&title_menu);
@@ -137,6 +139,7 @@ static void pause_open(void)
 static void pause_close(void)
 {
     menu_close();
+    cursor_hide();
     game_state = STATE_PLAY;
     DEBUG_LOG("resume\n");
 }
@@ -157,8 +160,6 @@ static void wait_vsync(void)
    game: every menu leads to another screen. */
 int main(void)
 {
-    /* The panel frames are line-drawing glyphs from code page 437. */
-    ria_attr_set(437, RIA_ATTR_CODE_PAGE);
     video_init();
     input_init();
     sfx_init();
@@ -168,6 +169,8 @@ int main(void)
     for (;;)
     {
         wait_vsync();
+        cursor_draw();
+        menu_draw();
         if (game_state == STATE_PLAY || game_state == STATE_MENU || game_state == STATE_PAUSE)
             play_draw();
         else if (game_state == STATE_SHOP)
@@ -277,5 +280,6 @@ int main(void)
             }
             break;
         }
+        cursor_step();
     }
 }

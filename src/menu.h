@@ -3,19 +3,19 @@
 
 #include <stdint.h>
 
-/* A menu: a box of text cells with a title, if any, and items under it,
-   one picked. The box is MENU_COLS wide, centered on center. */
+/* A menu: a box of the menus' cells with a title, if any, and items under
+   it, one picked. The box is MENU_COLS wide, centered on center. */
 typedef struct
 {
     uint8_t center; /* the column in the middle of the box */
     uint8_t top;    /* the row of the box's top edge */
-    uint8_t frame;  /* the color of the box's frame */
+    uint8_t frame;  /* BOX_TAPE or BOX_PLAIN */
     const char *title;
     const char *const *items;
     uint8_t count;
 } menu_t;
 
-#define MENU_COLS 18
+#define MENU_COLS 20
 
 /* What menu_step() returns: no choice yet, or 1 for the first item. */
 #define MENU_NONE 0
@@ -23,7 +23,7 @@ typedef struct
 void menu_open(const menu_t *menu, uint8_t pick, uint8_t disabled, uint8_t wait);
 void menu_close(void);
 uint8_t menu_picked(void);
-uint8_t menu_bottom(const menu_t *menu);
 uint8_t menu_step(void);
+void menu_draw(void);
 
 #endif

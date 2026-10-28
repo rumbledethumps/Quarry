@@ -1,5 +1,6 @@
 #include "shop.h"
 #include "bricks.h"
+#include "cursor.h"
 #include "debug.h"
 #include "input.h"
 #include "machines.h"
@@ -40,20 +41,18 @@
 
 /* Each panel has PANEL_SPRITES sprites: its picture, then an icon for
    each of up to 4 currencies of its cost, then the trolley over each of
-   its hangers, which rides the rail. The cursor's 4 corners follow,
-   then the two halves of the lock that breaks, then the padlocks of the
-   carts. The cart picked is open and in the middle, so the locked ones are
+   its hangers, which rides the rail. The two halves of the lock that
+   breaks follow, then the padlocks of the carts. The cart picked is open and in the middle, so the locked ones are
    all to its right, and no more than LOCKS of them show. */
 #define PANEL_SPRITES (PICTURE_SPRITES + 4 + PANEL_HANGERS)
 #define PICTURE_SPRITES 4
 #define TROLLEY_SPRITES (PICTURE_SPRITES + 4) /* a panel's first trolley */
 #define LOCKS 4
 #define PANEL_SPRITE(p, i) SPRITE((p) * PANEL_SPRITES + (i))
-#define CURSOR_SPRITE(i) SPRITE(PANELS * PANEL_SPRITES + (i))
-#define HALF_SPRITE(i) SPRITE(PANELS * PANEL_SPRITES + 4 + (i))
-#define LOCK_SPRITE(i) SPRITE(PANELS * PANEL_SPRITES + 4 + 2 + (i))
+#define HALF_SPRITE(i) SPRITE(PANELS * PANEL_SPRITES + (i))
+#define LOCK_SPRITE(i) SPRITE(PANELS * PANEL_SPRITES + 2 + (i))
 
-_Static_assert(PANELS * PANEL_SPRITES + 4 + 2 + LOCKS <= MENU_SPRITES, "MENU_SPRITES is too few.");
+_Static_assert(PANELS * PANEL_SPRITES + 2 + LOCKS <= MENU_SPRITES, "MENU_SPRITES is too few.");
 
 /* The unlock of a stage newly open: a wait, the lock shaking harder and
    harder, then it breaks, and its halves fly apart and fall away. Their
@@ -117,8 +116,8 @@ _Static_assert(CART_TILES <= CART_TILES_MAX, "CART_TILES_MAX in xram.h is too fe
 
 static const char *const yes_no[] = {"YES", "NO"};
 static char begin_title[] = "BEGIN LEVEL 00?";
-static const menu_t begin_menu = {20, 11, BOX_COLOR, begin_title, yes_no, 2};
-static const menu_t title_menu = {20, 11, BOX_COLOR, "RETURN TO TITLE?", yes_no, 2};
+static const menu_t begin_menu = {20, 11, BOX_TAPE, begin_title, yes_no, 2};
+static const menu_t title_menu = {20, 11, BOX_TAPE, "RETURN TO TITLE?", yes_no, 2};
 
 static uint8_t panel_picked; /* the panel in the middle */
 static uint8_t cursor_on;     /* ON_RAIL or ON_STAGES */
@@ -127,14 +126,11 @@ static int16_t panel_scroll; /* how far the panels have slid, in px */
 static int16_t cart_scroll;  /* how far the carts have slid, in px */
 static int16_t drawn_cart_scroll;
 static uint8_t locks_dirty; /* the padlocks to show have changed */
-static int16_t cursor[4], cursor_to[4]; /* left, top, right, bottom */
-static uint8_t steps;
 static uint8_t panel_lit[PANELS]; /* whether each panel's contents are lit */
 
 /* What shop_draw() has to do: draw the pictures again, from scratch, or
-   move them and the panels to scroll, and move the cursor. */
+   move them and the panels to scroll. */
 static uint8_t pictures_dirty;
-static uint8_t cursor_dirty;
 static int16_t drawn_scroll;
 static int16_t picture_x[PANELS * PANEL_SPRITES]; /* from the panel's left */
 static uint8_t picture_shown[PANELS * PANEL_SPRITES];
@@ -509,19 +505,10 @@ static void carts_move(void)
 static void cursor_aim(void)
 {
     if (cursor_on == ON_RAIL)
-    {
-        cursor_to[0] = PANEL_LEFT - 3;
-        cursor_to[1] = PANEL_Y + TOP_ROW * 8 - 3;
-        cursor_to[2] = PANEL_LEFT + PANEL_COLS * 8 + 3;
-        cursor_to[3] = PANEL_Y + (panel_heights[panel_picked] + 1) * 8 + 3;
-    }
+        cursor_place(PANEL_LEFT - 3, PANEL_Y + TOP_ROW * 8 - 3, PANEL_LEFT + PANEL_COLS * 8 + 3,
+                     PANEL_Y + (panel_heights[panel_picked] + 1) * 8 + 3);
     else
-    {
-        cursor_to[0] = CART_LEFT - 3;
-        cursor_to[1] = CART_Y + CART_RIM - 3;
-        cursor_to[2] = CART_LEFT + CART_W + 3;
-        cursor_to[3] = CART_Y + CART_FOOT + 3;
-    }
+        cursor_place(CART_LEFT - 3, CART_Y + CART_RIM - 3, CART_LEFT + CART_W + 3, CART_Y + CART_FOOT + 3);
 }
 
 /* Steps a value a quarter of the way to where it is going, at least a
@@ -533,42 +520,6 @@ static int16_t ease(int16_t now, int16_t to)
     if (!step)
         step = to > now ? 1 : to < now ? -1 : 0;
     return now + step;
-}
-
-/* The cursor's corners: one image, flipped for each corner. */
-static void cursor_set(void)
-{
-    static const uint8_t flips[] = {0, MODE5_HFLIP, MODE5_VFLIP, MODE5_HFLIP | MODE5_VFLIP};
-    uint8_t i;
-
-    for (i = 0; i < 4; i++)
-    {
-        sprite_set(CURSOR_SPRITE(i), XRAM_CURSOR_IMAGE, XRAM_PALETTE_HOLO, MODE5_SIZE(8, 8));
-        sprite_attributes(CURSOR_SPRITE(i), flips[i]);
-    }
-}
-
-static void cursor_move(void)
-{
-    uint8_t i;
-
-    for (i = 0; i < 4; i++)
-        sprite_move(CURSOR_SPRITE(i), i & 1 ? cursor[2] - 8 : cursor[0], i & 2 ? cursor[3] - 8 : cursor[1]);
-}
-
-/* The cursor shimmers: its two brightest colors pulse. */
-static void shimmer(void)
-{
-    static const uint16_t bright[] = {
-        COLOR_FROM_RGBA(200, 251, 255, 255), COLOR_FROM_RGBA(150, 240, 255, 255),
-        COLOR_FROM_RGBA(110, 220, 245, 255), COLOR_FROM_RGBA(150, 240, 255, 255)};
-    static const uint16_t middle[] = {
-        COLOR_FROM_RGBA(79, 216, 240, 255), COLOR_FROM_RGBA(60, 190, 220, 255),
-        COLOR_FROM_RGBA(40, 160, 200, 255), COLOR_FROM_RGBA(60, 190, 220, 255)};
-    uint8_t phase = steps / 6 % 4;
-
-    xram0_poke16(XRAM_PALETTE_HOLO + 4 * sizeof(uint16_t), bright[phase]);
-    xram0_poke16(XRAM_PALETTE_HOLO + 3 * sizeof(uint16_t), middle[phase]);
 }
 
 /* The lock over the plate of the cart being unlocked, in two halves. */
@@ -708,8 +659,9 @@ static void icons_hide(void)
         sprite_hide(PANEL_SPRITE(panel_picked, i));
 }
 
-/* A question over the screen. The pictures and the cursor would show over
-   its box, so they hide until it goes. */
+/* A question over the screen. The cost icons of the panel in the middle
+   would show over its box, so they hide until it goes. The cursor slides
+   into it, and back out after. */
 static void ask(uint8_t what)
 {
     if (what == ASK_BEGIN)
@@ -729,7 +681,8 @@ static void unask(void)
 {
     menu_close();
     asking = ASK_NONE;
-    pictures_dirty = cursor_dirty = 1;
+    pictures_dirty = 1;
+    cursor_aim();
 }
 
 void shop_open(void)
@@ -738,6 +691,7 @@ void shop_open(void)
 
     scene_menu();
     video_hide_sprites();
+    cursor_hide();
     input_repeat_stop();
     video_text_clear();
     nuggets_start(1);
@@ -763,11 +717,7 @@ void shop_open(void)
     machines_start();
     carts_draw();
     cursor_aim();
-    for (p = 0; p < 4; p++)
-        cursor[p] = cursor_to[p];
-    cursor_set();
-    cursor_move();
-    pictures_dirty = cursor_dirty = 0;
+    pictures_dirty = 0;
     carts_move();
     if (unlocking)
         lock_start();
@@ -776,16 +726,14 @@ void shop_open(void)
     DEBUG_LOG("upgrades\n");
 }
 
-/* At the start of a frame: the cursor shimmers, the panels, their
-   pictures and the cursor move to where shop_step() put them, and then the
-   panel picked lights and the one it was dims, last, as that takes the
-   longest, so nothing moves while the frame is drawn. While a question is
-   up, nothing moves. */
+/* At the start of a frame: the panels and their pictures move to where
+   shop_step() put them, and then the panel picked lights and the one it
+   was dims, last, as that takes the longest, so nothing moves while the
+   frame is drawn. While a question is up, nothing moves but the cursor. */
 void shop_draw(void)
 {
     uint8_t p;
 
-    shimmer();
     machines_draw();
     if (!asking)
     {
@@ -795,11 +743,9 @@ void shop_draw(void)
             pictures_move();
         if (cart_scroll != drawn_cart_scroll || locks_dirty)
             carts_move();
-        if (cursor_dirty)
-            cursor_move();
         if (lock_dirty)
             lock_move();
-        pictures_dirty = cursor_dirty = lock_dirty = 0;
+        pictures_dirty = lock_dirty = 0;
     }
     for (p = 0; p < PANELS; p++)
         if (panel_lit[p] != (p == panel_picked))
@@ -815,7 +761,6 @@ uint8_t shop_step(void)
 {
     uint8_t moved = 0, repeated, i;
 
-    steps++;
     machines_step();
 #ifndef NDEBUG
     cheats_step();
@@ -903,11 +848,5 @@ uint8_t shop_step(void)
     }
     panel_scroll = ease(panel_scroll, panel_picked * PANEL_STEP);
     cart_scroll = ease(cart_scroll, (stage_picked - 1) * CART_STEP);
-    for (i = 0; i < 4; i++)
-        if (cursor[i] != cursor_to[i])
-        {
-            cursor[i] = ease(cursor[i], cursor_to[i]);
-            cursor_dirty = 1;
-        }
     return SHOP_STAY;
 }

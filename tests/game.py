@@ -15,8 +15,9 @@ TUNE_ENERGY or XRAM_PSG, and each variable, such as paddle_x. Script
 commands take the same names, and expressions of them, wherever they take
 a number, as in "wait game_state STATE_PLAY", so a test holds no addresses
 and no copies of the game's numbers. Text on the
-screen is read from the text cells at XRAM_TEXT, which are glyph and color
-bytes, and the sprites from their lists in XRAM.
+screen is read from the menus' map at XRAM_MENU_MAP, a tile a byte, each
+tile from MENU_TILE_GLYPH a letter of the panels' font, and the sprites
+from their lists in XRAM.
 
 The script's frames do not line up with the game's steps, so a read of the
 game's RAM can land in the middle of a step, after it moves the ball across
@@ -34,6 +35,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', 'tools'))
 sys.path.insert(0, os.path.join(HERE, '..', 'art'))
 import rp6502  # noqa: E402
+from panels import FONT  # noqa: E402
 from png2bin import read_png  # noqa: E402
 
 SPRITE = 10  # sizeof(mode5_csprite_t)
@@ -171,24 +173,17 @@ class Game(rp6502.Emu):
                          for _, y, image in self.sprites(first, sprites) if y != hidden)
         return int(digits) if digits else None
 
-    def cell(self, col, row):
-        """The XRAM address of the text cell at col, row."""
-        return self.sym['XRAM_TEXT'] + (row * self.sym['TEXT_COLS'] + col) * 2
-
-    def text(self, col, row, count):
-        """count characters of text from col, row."""
-        data = self.xram(self.cell(col, row), count * 2)
-        return data[::2].decode('ascii', 'replace').replace('\0', ' ')
-
-    def color(self, col, row):
-        """The color byte of the text cell at col, row: the background in
-        the high nibble and the foreground in the low one."""
-        return self.xram(self.cell(col, row) + 1, 1)[0]
+    def letters(self, tiles):
+        """The menus' tiles as text: a letter for each glyph, and a space
+        for anything else."""
+        first = self.sym['MENU_TILE_GLYPH']
+        return ''.join(FONT[t - first] if 0 <= t - first < len(FONT) else ' ' for t in tiles)
 
     def shows(self, text):
-        """Whether the text is anywhere on the text plane."""
-        data = self.xram('XRAM_TEXT', self.sym['TEXT_COLS'] * self.sym['TEXT_ROWS'] * 2)
-        return text.encode() in data[::2]
+        """Whether the text is anywhere in the menus."""
+        cols = self.sym['TEXT_COLS']
+        data = self.xram('XRAM_MENU_MAP', cols * self.sym['TEXT_ROWS'])
+        return any(text in self.letters(data[r:r + cols]) for r in range(0, len(data), cols))
 
     def screen(self, path):
         """The screen, as rows of RGB tuples."""

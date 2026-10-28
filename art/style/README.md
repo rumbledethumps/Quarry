@@ -328,6 +328,27 @@ in two.
   sleepers in the panels' graphite at `CART_Y` plus the cart's foot, so it
   follows the carts if they move.
 
+### The Menus
+
+The menus are boxes in a 4-bit tile layer of 8x8 cells on plane 2, with
+16 colors of their own, over everything but plane 2's sprites. A box is
+dark navy inside, with its text in the panels' font, and framed in black
+and yellow caution tape set in gray steel: from the outside in, a black
+outline, a light steel edge, 4 px of tape, a dark steel edge, and a black
+line. A menu stops play, and the tape says so. Its stripes run at 45
+degrees, 4 px of each color, and march along the frame while the menu
+shows, as the tape's 4 palette entries turn round.
+
+- `art/menus.py` builds the tiles: a glyph for each letter of the font,
+  and the frame's 4 corners and 4 edges, whose stripes join from cell to
+  cell.
+- The holographic cursor of the upgrade screen picks in the menus too, a
+  cell in from the frame and as tall as the item. On the upgrade screen it
+  slides into a question and back out; elsewhere it appears at once.
+- Nothing is grayed out: an item that doesn't apply is left off.
+- The title's boxes are plain, with no tape, until the title is
+  redesigned.
+
 ## Rules for both
 
 - The light comes from the upper left.
@@ -350,7 +371,7 @@ darkest first. Each class of art gets a row of its own:
 
 | Row | Used by |
 | --- | --- |
-| main | the text and the menus, and the ball |
+| main | the ball |
 | bricks | one per ore: the brick, its break frames, its nugget, and its nugget sprite |
 | fx | the smoke and the energy gauge |
 | logo | the title logo |
@@ -358,9 +379,9 @@ darkest first. Each class of art gets a row of its own:
 | texture | the texture behind the playfield, its first 4 colors, loaded with each curtain set |
 | curtain | the curtain set of the stage, loaded with it |
 | shade | the sled row at 60%, for the braces and the machine behind the ball |
-| holo | the holographic cursor of the upgrade screen, whose colors shimmer |
+| holo | the holographic cursor of the upgrade screen and the menus, whose colors shimmer |
 
-The upgrade panels have a palette of their own, 256 colors, outside these rows, since they are a tile layer.
+The upgrade panels have a palette of their own, 256 colors, outside these rows, since they are a tile layer, and so do the menus, 16 colors.
 
 A jet's nozzle and its flame are one sprite, so the flames share the sled
 row. Every curtain set brings its own palette into the one curtain row.
