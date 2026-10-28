@@ -92,9 +92,6 @@ def cart(heaped):
             for y in range(top, RIM):
                 img[y][x] = ORE2 if (x * 7 + y * 3) % 5 == 0 else ORE
             img[top][x] = shades[0]
-        for x, y in ((9, 8), (14, 6), (19, 6), (23, 9), (12, 10), (17, 9)):
-            img[y][x] = ORE2
-            img[y - 1][x - 1] = ORE
     return img
 
 
