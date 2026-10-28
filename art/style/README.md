@@ -163,12 +163,14 @@ and cut to the game's sizes by `art/frames.py`.
   the edge it hits.
 - A post is 16 wide and the beam 16 tall. Where the art is wider, plain
   columns or rows of its web are left out, never a rivet or an edge.
-- A post is two images of 64 rows that alternate down the screen, and the
-  beam is pieces 64 wide, the last ending at the right post over the one
-  before it, by a multiple of 8, so the width between the outer faces of
-  the posts must be a multiple of 8. Retro Diffusion spaces rivets
-  unevenly, so each is one 8 px cell of its art, a rivet and its plate,
-  repeated: the rivets fall every 8, and every join lines up.
+- A post is two images of 64 rows that alternate down the screen, so its
+  art repeats every 128 rows, or 64. The beam is pieces 64 wide from the
+  left post, and the last is as wide as what is left, from the beam's own
+  first columns, so its art repeats every 64 and runs on across every
+  piece; the width between the outer faces of the posts must be a
+  multiple of 8. Retro Diffusion spaces rivets unevenly, so a girder's
+  post and beam are each one 8 px cell of its art, a rivet and its plate,
+  repeated: the rivets fall every 8.
 - The knee braces stand behind the ball and are barely there, so nobody
   takes one for something to bounce off: the set's colors darkened,
   without the rock or the shadows around them. Nothing behind the ball is

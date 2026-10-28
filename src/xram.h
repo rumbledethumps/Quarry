@@ -500,13 +500,16 @@ typedef struct
 
 /* A frame set, as ROM:frame1 and on hold it: its palette, the same colors
    darkened for the braces, then its pieces. The post is two images that
-   alternate down the screen. */
+   alternate down the screen. The beam ends on a piece of its first 8, 16
+   and on to 56 columns, each an image, one after the other. */
+#define BEAM_ENDS_BYTES (BEAM_H * 2 * 7 * 8)
 typedef struct
 {
     uint16_t palette[16];
     uint16_t shade[16];
     post_image_t post[2];
     beam_image_t beam;
+    uint8_t beam_ends[BEAM_ENDS_BYTES];
     cap_image_t cap;
     brace_image_t brace;
 } frame_set_t;
@@ -642,6 +645,8 @@ typedef struct
 #define XRAM_FRAME_SHADE offsetof(xram_layout_t, art.cave.frame.shade)
 #define XRAM_POST_IMAGE(half) (offsetof(xram_layout_t, art.cave.frame.post) + (half) * sizeof(post_image_t))
 #define XRAM_BEAM_IMAGE offsetof(xram_layout_t, art.cave.frame.beam)
+#define XRAM_BEAM_END(width) \
+    (offsetof(xram_layout_t, art.cave.frame.beam_ends) + BEAM_H * 2 * ((width) / 8) * ((width) / 8 - 1))
 #define XRAM_CAP_IMAGE offsetof(xram_layout_t, art.cave.frame.cap)
 #define XRAM_BRACE_IMAGE offsetof(xram_layout_t, art.cave.frame.brace)
 #define XRAM_STAGE_SLED offsetof(xram_layout_t, art.cave.sled_images)

@@ -70,14 +70,15 @@ void frame_curtains(int16_t left, int16_t right)
 
 /* The frame around a playfield from left to right, and the rest around it.
    The width between the outer faces of the posts must be a multiple of 8:
-   the last piece of the beam ends at the right post, over the one before
-   it, and art/frames.py cuts the beam to join itself at those overlaps.
-   The post's two images alternate down the screen. */
+   the beam is pieces 64 wide from the left post, and the last is as wide as
+   what is left, an image of the beam's first columns, so the beam's art
+   carries on across every piece. The post's two images alternate down the
+   screen. */
 void frame_start(int16_t left, int16_t right)
 {
     int16_t outer = left - POST_W;
-    int16_t width = right - left + 2 * POST_W;
-    uint8_t i, beams = (width + 63) / 64;
+    int16_t far = right + POST_W;
+    uint8_t i;
 
     piece(SCENERY(braces, 0), XRAM_BRACE_IMAGE, XRAM_FRAME_SHADE, MODE5_SIZE(BRACE_SIZE, BRACE_SIZE),
           left, BEAM_H, 0);
@@ -95,12 +96,14 @@ void frame_start(int16_t left, int16_t right)
     }
     for (i = 0; i < BEAM_SPRITES; i++)
     {
-        unsigned sprite = SCENERY(beam, i);
-        sprite_set(sprite, XRAM_BEAM_IMAGE, XRAM_FRAME_PALETTE, MODE5_SIZE(64, BEAM_H));
-        if (i + 1 < beams)
-            sprite_move(sprite, outer + i * 64, 0);
-        else if (i + 1 == beams)
-            sprite_move(sprite, outer + width - 64, 0);
+        int16_t x = outer + i * 64;
+        uint8_t w = far - x < 64 ? far - x : 64;
+
+        if (x >= far)
+            sprite_hide(SCENERY(beam, i));
+        else
+            piece(SCENERY(beam, i), w == 64 ? XRAM_BEAM_IMAGE : XRAM_BEAM_END(w), XRAM_FRAME_PALETTE,
+                  MODE5_SIZE(w, BEAM_H), x, 0, 0);
     }
     piece(SCENERY(caps, 0), XRAM_CAP_IMAGE, XRAM_FRAME_PALETTE, MODE5_SIZE(POST_W, BEAM_H), outer, 0, 0);
     piece(SCENERY(caps, 1), XRAM_CAP_IMAGE, XRAM_FRAME_PALETTE, MODE5_SIZE(POST_W, BEAM_H), right, 0, 1);
