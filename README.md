@@ -56,7 +56,8 @@ workshop whose cogs turn and whose vent puffs steam, their trolleys riding
 the rail; their pictures are still stand-ins. Down goes to a train of mine
 carts on a track, a cart for each stage, where the button begins the stage
 picked. A stage newly open is still locked the first time the screen shows
-it: the padlock on its cart shakes and breaks, and its number lights.
+it: the screen opens on the stage just cleared, the padlock on the next
+cart shakes and breaks, and the train slides over to the new stage, picked.
 Stages 2 to 10 are stand-ins: stage 1 a column wider each time.
 
 A new game starts with a cartoon dwarf miner coming up in the lower left

@@ -279,12 +279,16 @@ def main():
     check(game.ram('coins', 2) == 1, 'no coin for clearing it again')
     game.menu_choose('UPGRADES')
     game.run(5)
-    check(game.ram('stage_picked') == 2, 'the upgrade screen picks stage 2, just opened')
+    check(game.ram('stage_picked') == 1 and game.ram('cart_scroll', 2) == 0,
+          'the upgrade screen opens on stage 1, just cleared')
     lock = sym['XRAM_MENU_SPRITES'] + sym['PANELS'] * sym['PANEL_SPRITES'] * SPRITE  # its halves, then the padlocks
-    check(game.ram('unlocking') == 2 and game.shown(lock, 2) == 2, 'and its lock shows, to break')
+    check(game.ram('unlocking') == 2 and game.shown(lock, 2) == 2, 'and the lock of stage 2 shows, to break')
     check(game.shown(lock + 2 * SPRITE, 4) == 4, 'with padlocks on the 4 carts locked after it')
     game.wait('unlocked 2', 200)
-    check(game.ram('stages_shown') == 2 and game.ram('unlocking') == 0, 'the lock breaks, and stage 2 shows open')
+    check(game.ram('stages_shown') == 2 and game.ram('unlocking') == 0 and game.ram('stage_picked') == 2,
+          'the lock breaks, and stage 2 shows open, picked')
+    game.run(40)
+    check(game.ram('cart_scroll', 2) == sym['CART_STEP'], 'and the train slides over to it')
     game.tap('down')
     game.tap('space')
     check(game.shows('BEGIN LEVEL 2?'), 'and asks to begin stage 2')

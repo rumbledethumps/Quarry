@@ -54,13 +54,14 @@
 
 _Static_assert(PANELS * PANEL_SPRITES + 2 + LOCKS <= MENU_SPRITES, "MENU_SPRITES is too few.");
 
-/* The unlock of a stage newly open: a wait, the lock shaking harder and
-   harder, then it breaks, and its halves fly apart and fall away. Their
-   speeds are in 1/16 px a step. */
+/* The unlock of a stage newly open, on the cart beside the stage just
+   cleared, which is picked: a wait, the lock shaking harder and harder,
+   then it breaks, and its halves fly apart and fall away. Then the new
+   stage is picked, with a chime, and the train slides over to it. The
+   halves' speeds are in 1/16 px a step. */
 #define UNLOCK_WAIT 20
 #define UNLOCK_SHAKE 60
 #define UNLOCK_FALL 45
-#define UNLOCK_CHIME 8 /* steps after it breaks */
 #define HALF_DX 24
 #define HALF_DY -40
 #define HALF_GRAVITY 4
@@ -560,20 +561,21 @@ static void lock_move(void)
         sprite_move(HALF_SPRITE(i), cart_x(unlocking) + half_x[i] / 16 + shake, half_y[i] / 16);
 }
 
-/* Ends an unlock at once, the stage shown open. */
+/* Ends an unlock at once: the stage shows open, and is picked. */
 static void unlock_finish(void)
 {
     sprite_hide(HALF_SPRITE(0));
     sprite_hide(HALF_SPRITE(1));
-    stages_shown = unlocking;
+    stages_shown = stage_picked = unlocking;
     unlocking = 0;
     lock_dirty = 0;
     carts_draw();
+    cursor_aim();
 }
 
 /* A step of the unlock: the shake rattles, the break snaps and shows the
-   button lit, the halves fall, and a chime plays. At the end the screen
-   has shown the stage open, and the game saves. */
+   stage's number, and the halves fall. At the end the stage is picked, with
+   a chime, and the game saves. */
 static void unlock_step(void)
 {
     uint8_t t = unlock_steps++, i;
@@ -587,8 +589,6 @@ static void unlock_step(void)
         stages_shown = unlocking;
         carts_draw();
     }
-    if (t == UNLOCK_WAIT + UNLOCK_SHAKE + UNLOCK_CHIME)
-        sfx_play(SFX_UNLOCK, cart_x(unlocking));
     if (t > UNLOCK_WAIT + UNLOCK_SHAKE)
         for (i = 0; i < 2; i++)
         {
@@ -598,6 +598,7 @@ static void unlock_step(void)
         }
     if (t == UNLOCK_WAIT + UNLOCK_SHAKE + UNLOCK_FALL)
     {
+        sfx_play(SFX_UNLOCK, cart_x(unlocking));
         unlock_finish();
         save_write();
         DEBUG_LOG("unlocked %u\n", stages_shown);
@@ -635,7 +636,8 @@ static void cheats_step(void)
         stages_cleared++;
         if (save_stages_open() > stages_shown)
         {
-            stage_picked = unlocking = save_stages_open();
+            unlocking = save_stages_open();
+            stage_picked = unlocking - 1;
             lock_start();
         }
     }
@@ -706,6 +708,8 @@ void shop_open(uint8_t on)
     cursor_on = on;
     asking = ASK_NONE;
     unlocking = save_stages_open() > stages_shown ? save_stages_open() : 0;
+    if (unlocking)
+        stage_picked = unlocking - 1;
     panel_scroll = panel_picked * PANEL_STEP;
     cart_scroll = (stage_picked - 1) * CART_STEP;
     /* The map comes lit. Every panel dims but the one picked. */
@@ -776,6 +780,7 @@ uint8_t shop_step(void)
     if (unlocking)
     {
         unlock_step();
+        cart_scroll = ease(cart_scroll, (stage_picked - 1) * CART_STEP);
         return SHOP_STAY;
     }
     if (asking)
