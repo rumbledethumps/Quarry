@@ -120,23 +120,36 @@ def main():
     game.run(20)
     game.paused_poke([('bricks_left', 0, 1)])
     game.wait('stage cleared', 10)
+    game.run(1)
+    game.cmd('expect-not "menu UPGRADES"')  # the end menu, as menu_open() logs it
     talk('TALK_COIN')
     game.run(30)
     check(not game.shows('STAGE COMPLETE'), 'the dwarf with the coin comes before the menu')
     game.talk_ok()
-    game.run(2)
     check(game.shows('STAGE COMPLETE') and game.shown(cursor, 4) == 4, 'then the menu, with the cursor')
+    game.tap('space')
+    check(game.ram('game_state') == sym['STATE_MENU'], 'which takes no choice at once')
     print('ok: the coin, then the menu')
 
     # The upgrade screen: as stage 2 unlocks, a dwarf says what that means,
     # and the unlock goes on under him. Then another says what the screen is
     # for. The cursor is off until each OK, and comes back to the rail after.
+    game.run(sym['TALK_OVER_WAIT'])
     game.tap('space')  # UPGRADES
     game.until('game_state', 'STATE_SHOP', 60)
     talk('TALK_UNLOCK')
     check(game.shown(cursor, 4) == 0, 'no cursor while he comes in')
+    icon = sym['XRAM_MENU_SPRITES'] + (game.ram('panel_picked') * sym['PANEL_SPRITES'] + sym['PICTURE_SPRITES']) * 10
+    check(game.shown(icon, 1) == 0, "nor the cost icon that would show over his bubble")
+    game.until('talk_state', 'TALK_READY', 120)
+    art = open(os.path.join(os.path.dirname(os.path.dirname(rom())), f'talk{sym["TALK_UNLOCK"]}.bin'), 'rb').read()
+    art = art[:sym['XRAM_BUBBLE_PALETTE'] - sym['XRAM_TALK']]  # his head, colors and image
     game.wait('unlocked 2', 200)
+    game.run(20)
     check(game.ram('talk_state') == sym['TALK_READY'], 'the unlock goes on while he talks')
+    check(game.xram('XRAM_TALK', len(art)) == art, 'and nothing writes over him')
+    corner = game.sprite(cursor)
+    check(corner[1] > 120, f'the cursor stays on his OK, not the rail, as the new stage is picked: {corner}')
     game.tap('space')
     check(game.shown(cursor, 4) == 0, 'the cursor goes with his OK')
     talk('TALK_UPGRADES')
@@ -144,6 +157,7 @@ def main():
     game.talk_ok()
     game.run(2)
     check(game.ram('cursor_on') == sym['ON_RAIL'] and game.shown(cursor, 4) == 4, 'then it comes back to the rail')
+    check(game.shown(icon, 1) == 1, 'and the cost icon comes back')
     print('ok: the unlock, the upgrade screen, and the cursor back')
 
     # The next first clear has a coin but no more of the upgrade screen's.
@@ -159,7 +173,7 @@ def main():
     game.wait('stage cleared', 10)
     talk('TALK_COIN')
     game.talk_ok()
-    game.menu_choose('UPGRADES', wait=False)
+    game.menu_choose('UPGRADES')
     game.wait('unlocked 3', 200)
     check(game.ram('talk_state') == sym['TALK_OFF'], 'the unlock and the screen are told of once')
     print('PASS')

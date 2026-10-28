@@ -20,6 +20,8 @@
 /* Steps after a stage ends before the menu takes a choice, so a press
    meant for the last ball doesn't choose. */
 #define STAGE_OVER_WAIT 60
+/* And after a dwarf, so a second press meant for him doesn't choose. */
+#define TALK_OVER_WAIT 20
 
 /* game_state */
 #define STATE_PLAY 1
@@ -130,7 +132,7 @@ static void stage_end(uint8_t how)
 static void talk_over(void)
 {
     if (game_state == STATE_MENU)
-        end_menu(0);
+        end_menu(TALK_OVER_WAIT);
     else if (game_state == STATE_SHOP)
         shop_resume();
 }

@@ -383,9 +383,10 @@ static void pictures_draw(uint8_t p)
         sprite_attributes(PANEL_SPRITE(p, 0), MODE5_HDOUBLE | MODE5_VDOUBLE);
         sprite_move(PANEL_SPRITE(p, 0), x + PANEL_COLS * 4 - BRICK_W, top + (PICTURE_H - 2 * BRICK_H) / 2);
     }
-    if (p < UPGRADES && upgrades_cost(p))
+    if (p < UPGRADES && upgrades_cost(p) && !talk_busy())
     {
-        /* In the first cell of the cost's row, as panel_draw() centers it. */
+        /* In the first cell of the cost's row, as panel_draw() centers it,
+           but not while a dwarf talks, as it would show over his bubble. */
         char number[6];
         uint8_t first = (PANEL_INSIDE - 2 - (put_number(number, upgrades_cost(p)) - number)) / 2;
         sprite_set(PANEL_SPRITE(p, PICTURE_SPRITES), XRAM_NUGGET_IMAGE, XRAM_PALETTE_BRICK(BRICK_WHITE),
@@ -714,6 +715,11 @@ void shop_open(uint8_t on)
     unlocking = save_stages_open() > stages_shown ? save_stages_open() : 0;
     if (unlocking)
         stage_picked = unlocking - 1;
+    /* The first unlock has a dwarf say what it means, and the first time
+       here another says what the screen is for. */
+    if (unlocking == 2)
+        talk_once(TALK_UNLOCK);
+    talk_once(TALK_UPGRADES);
     panel_scroll = panel_picked * PANEL_STEP;
     cart_scroll = (stage_picked - 1) * CART_STEP;
     /* The map comes lit. Every panel dims but the one picked. */
@@ -732,11 +738,6 @@ void shop_open(uint8_t on)
         sprite_set(LOCK_SPRITE(p), XRAM_LOCK_IMAGE, XRAM_LOCK_PALETTE, MODE5_SIZE(16, 16));
     machines_start();
     carts_draw();
-    /* The first unlock has a dwarf say what it means, and the first time
-       here another says what the screen is for. */
-    if (unlocking == 2)
-        talk_once(TALK_UNLOCK);
-    talk_once(TALK_UPGRADES);
     cursor_aim();
     pictures_dirty = 0;
     carts_move();
@@ -759,9 +760,10 @@ void shop_idle(void)
     cart_scroll = ease(cart_scroll, (stage_picked - 1) * CART_STEP);
 }
 
-/* The last dwarf has gone, and the cursor comes back. */
+/* The last dwarf has gone, and the cursor and the cost icons come back. */
 void shop_resume(void)
 {
+    pictures_dirty = 1;
     cursor_aim();
 }
 
