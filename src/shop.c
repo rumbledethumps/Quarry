@@ -96,15 +96,12 @@ static const char *const panel_titles[PANELS] = {"WIDER SLED", "FASTER SLED", "M
 /* The stages are a train of mine carts along the bottom, the one picked
    in the middle, its number lit. A cart is 4 cells across, with its
    coupling after it: a heap of ore for a stage cleared, the rim, the body
-   with the number plate in its middle two cells, and the wheels. Its top
-   two rows come with the heap and without. The track
-   under them is text cells of code page 437, for now. */
+   with the number plate in its middle two cells, and the wheels, as
+   art/carts.py lays them out. Its top two rows come with the heap and
+   without. The track under them is in the backdrop. */
 #define CART_W 32
 #define CART_STEP (CART_COLS * 8)
 #define CART_LEFT ((SCREEN_W - CART_W) / 2)
-#define CART_TOP 10 /* the rim, under any heap */
-#define PLATE_ROW 2
-#define TRACK_ROW ((CART_Y + CART_ROWS * 8) / 8)
 
 _Static_assert(STAGES <= CARTS_MAX, "CARTS_MAX in xram.h is too few for the stages.");
 _Static_assert(CART_TILES <= CART_TILES_MAX, "CART_TILES_MAX in xram.h is too few.");
@@ -462,7 +459,7 @@ static void carts_draw(void)
                 cells[r][c] = 0;
         for (r = 1; r < CART_ROWS; r++)
             for (c = 0; c < 4; c++)
-                if (r != PLATE_ROW || c == 0 || c == 3)
+                if (r != CART_PLATE_ROW || c == 0 || c == 3)
                     cells[r][c] = t++;
         if (s <= stages_cleared && s <= open)
             for (c = 0; c < 4; c++)
@@ -472,17 +469,17 @@ static void carts_draw(void)
             }
         if (s > open)
         {
-            cells[PLATE_ROW][1] = CART_TILE_PLATE;
-            cells[PLATE_ROW][2] = CART_TILE_PLATE;
+            cells[CART_PLATE_ROW][1] = CART_TILE_PLATE;
+            cells[CART_PLATE_ROW][2] = CART_TILE_PLATE;
         }
         else
         {
             uint8_t digits = s == stage_picked ? CART_TILE_DIGIT : CART_TILE_DIM;
-            cells[PLATE_ROW][1] = digits + s / 10;
-            cells[PLATE_ROW][2] = digits + s % 10;
+            cells[CART_PLATE_ROW][1] = digits + s / 10;
+            cells[CART_PLATE_ROW][2] = digits + s % 10;
         }
         if (s < STAGES)
-            cells[CART_ROWS - 1][4] = CART_TILE_COUPLING;
+            cells[CART_COUPLING_ROW][4] = CART_TILE_COUPLING;
         for (r = 0; r < CART_ROWS; r++)
             xram0_write(XRAM_CART_MAP + r * CART_MAP_COLS + (s - 1) * CART_COLS, cells[r], CART_COLS);
     }
@@ -521,9 +518,9 @@ static void cursor_aim(void)
     else
     {
         cursor_to[0] = CART_LEFT - 3;
-        cursor_to[1] = CART_Y + CART_TOP - 3;
+        cursor_to[1] = CART_Y + CART_RIM - 3;
         cursor_to[2] = CART_LEFT + CART_W + 3;
-        cursor_to[3] = CART_Y + CART_ROWS * 8 + 3;
+        cursor_to[3] = CART_Y + CART_FOOT + 3;
     }
 }
 
@@ -581,7 +578,7 @@ static void lock_start(void)
 
     for (i = 0; i < 2; i++)
     {
-        sprite_set(HALF_SPRITE(i), XRAM_LOCK_HALVES + i * sizeof(half_lock_image_t), XRAM_CART_PALETTE,
+        sprite_set(HALF_SPRITE(i), XRAM_LOCK_HALVES + i * sizeof(half_lock_image_t), XRAM_LOCK_PALETTE,
                    MODE5_SIZE(8, 16));
         half_x[i] = (CART_LOCK_LEFT + i * 8) * 16;
         half_y[i] = (CART_Y + CART_LOCK_TOP) * 16;
@@ -743,14 +740,6 @@ void shop_open(void)
     video_hide_sprites();
     input_repeat_stop();
     video_text_clear();
-    {
-        char track[TEXT_COLS + 1];
-        uint8_t i;
-        for (i = 0; i < TEXT_COLS; i++)
-            track[i] = '\xCD';
-        track[TEXT_COLS] = 0;
-        video_text(0, TRACK_ROW, track, BOX_COLOR, CLEAR);
-    }
     nuggets_start(1);
     cursor_on = ON_RAIL;
     asking = ASK_NONE;
@@ -770,7 +759,7 @@ void shop_open(void)
     pictures_load();
     pictures_place();
     for (p = 0; p < LOCKS; p++)
-        sprite_set(LOCK_SPRITE(p), XRAM_LOCK_IMAGE, XRAM_CART_PALETTE, MODE5_SIZE(16, 16));
+        sprite_set(LOCK_SPRITE(p), XRAM_LOCK_IMAGE, XRAM_LOCK_PALETTE, MODE5_SIZE(16, 16));
     machines_start();
     carts_draw();
     cursor_aim();

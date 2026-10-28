@@ -34,7 +34,9 @@ panels hang from is drawn across it instead: a steel I-beam in the panels'
 graphite, its foot flange just over PANEL_Y, where the hangers start. A
 trolley rides the beam over each hanger, a sprite that moves with its
 panel, in TROLLEY_FRAMES frames as its wheels turn, in the top band's
-palette.
+palette. The carts' track is drawn along the floor too, a steel rail on
+sleepers, its head at CART_Y in src/xram.h and CART_FOOT in art/carts.py,
+where their wheels are.
 
 out.bin is each band in turn, top to bottom: its palette, 16 colors for a
 4-bit band or 4 for the 2-bit one, as png2bin.py writes a palette row, its
@@ -52,6 +54,7 @@ import re
 import struct
 from collections import Counter
 
+from carts import FOOT as CART_FOOT
 from curtain import reduce
 from panels import COLS as PANEL_COLS, LAYOUTS, PAD
 from rd2png import rgba, write_png
@@ -219,6 +222,25 @@ def draw_rail(art, top):
                     art[top + y][x + 1] = rail_color('light' if y in (1, 10) else rows[y])
 
 
+def draw_track(art, top):
+    """The track from row top: the rail's head, lit along the top where the
+    wheels roll, its web and its foot, and a sleeper under it every 16 px,
+    and the rail's shadow on the floor."""
+    rows = ['out', 'shine', 'light', 'mid', 'out', 'dark', 'steel', 'out']
+    for x in range(W):
+        for y, name in enumerate(rows):
+            art[top + y][x] = rail_color(name)
+        sleeper = 3 <= x % 16 < 13
+        for y in range(len(rows), len(rows) + 4):
+            if top + y >= H:
+                break
+            if sleeper:
+                edge = x % 16 in (3, 12) or y == len(rows) + 3
+                art[top + y][x] = rail_color('out' if edge else 'dark' if y > len(rows) else 'steel')
+            elif y == len(rows):
+                art[top + y][x] = tuple(v // 2 for v in art[top + y][x])
+
+
 def trolley_frames():
     """The trolley, TROLLEY_W by TROLLEY_H, from a row over the beam: two
     wheels on the foot flange, a side plate in safety paint over their
@@ -277,10 +299,12 @@ def main():
         art[y] = art[y + TRUSS_H][:]
     darker = lambda c: tuple(round(v * d) for v, d in zip(c, DARKEN))
     rail_top = define('PANEL_Y') - 2 - RAIL_H
+    track_top = define('CART_Y') + CART_FOOT
     cogs = []
     for f in range(GEAR_FRAMES):
         frame = [[darker(c) for c in row] for row in gears_frame(art, f)]
         draw_rail(frame, rail_top)
+        draw_track(frame, track_top)
         cogs.append(frame)
     art = cogs[0]
     trolleys = trolley_frames()
@@ -296,6 +320,8 @@ def main():
         counts = Counter(c for row in art[top:bottom] for c in row)
         if i == 0:  # the trolleys' colors, kept
             counts.update({c: 4096 for img in trolleys for row in img for c in row if c})
+        else:  # and the track's
+            counts.update({c: 4096 for c in {rail_color(n) for n in ('out', 'shine', 'light', 'mid', 'dark', 'steel')}})
         maps[i] = reduce(counts, BANDS[i][2])
     pool = set(maps[ends[0]].values()) | set(maps[ends[1]].values())
     for i in range(len(BANDS)):

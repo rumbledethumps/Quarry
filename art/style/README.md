@@ -297,20 +297,36 @@ the vent and thin out. Both are plane 0 sprites over the bottom band.
 ### The Mine Carts
 
 The stage select is a train of mine carts on a track along the foot of the
-upgrade screen, the picked one in the middle. `art/carts.py` draws them
-for now, in frame 1's steel, in a 4-bit tile layer of 16 colors: each cart
-is 4 cells by 4, with its coupling in a fifth. The stage's number is on a
-plate in the cart's middle two cells, lit on the cart picked. A locked
-stage's plate is blank under a padlock, a 16x16 sprite in the carts'
-palette, its body over the plate and its shackle over the rim; it comes
-in two halves too, to break in two. The track is as far from the foot of
-the screen as the panels' rail is from its top.
+upgrade screen, the picked one in the middle. Each cart is 4 cells across
+by 5 down, in a 4-bit tile layer of 16 colors, with its coupling in a
+fifth cell at its axles. The stage's number is on a plate in the cart's
+middle two cells, lit on the cart picked. A locked stage's plate is blank
+under a padlock, a 16x16 sprite with its own 16 colors, its body over the
+plate and its shackle over the rim; it comes in two halves too, to break
+in two.
 
+- `art/cart.png` is the cart, from `rd_pro__default`, 32x24, four at a
+  time, `remove_bg`: "A small sturdy ore mine cart seen straight from the
+  side: a riveted graphite steel tub with slightly sloped sides and a
+  thick rolled rim, a safety-yellow band along the rim, a plain dark
+  rectangular plate in the middle of its side, two small spoked steel
+  wheels underneath, empty, scuffed but clean and well maintained, light
+  from the upper left, on a plain white background". `art/carts.py` draws
+  its own plate over the art's, wide enough for two digits, and the heap.
+- `art/padlock.png` is the padlock, the same way at 16x16: "A heavy
+  industrial padlock seen straight from the front: a squat safety-yellow
+  steel body with a dark keyhole in its middle and a thick polished steel
+  shackle on top, a dark outline, light from the upper left, on a plain
+  white background". The builder clears the white inside its shackle and
+  outlines its foot.
 - The number sits in the middle of the cart, across and down, never a
-  pixel off. The cart stands low in its cells for it, its rim on the
-  third line of its second row, with the wheels at the foot on the track.
-- A stage cleared carries a small heap of ore, half a row high, down onto
-  the rim. A cart's top two rows come with the heap and without.
+  pixel off: rim to foot, the cart is centered on it, so the cart stands
+  low in its cells, and its wheels need a fifth row.
+- A stage cleared carries a small heap of ore over the rim. A cart's top
+  two rows come with the heap and without.
+- The track is in the backdrop: `art/backdrop.py` draws a steel rail on
+  sleepers in the panels' graphite at `CART_Y` plus the cart's foot, so it
+  follows the carts if they move.
 
 ## Rules for both
 

@@ -87,18 +87,19 @@ add_custom_command(
     COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/art/backdrop.py ${CMAKE_CURRENT_BINARY_DIR}/backdrop.bin
         ${CMAKE_CURRENT_BINARY_DIR}/backdrop.h --preview ${CMAKE_CURRENT_BINARY_DIR}/backdrop.png
-    DEPENDS art/backdrop.py art/curtain.py art/panels.py art/rd2png.py art/backdrop.png src/xram.h
+    DEPENDS art/backdrop.py art/carts.py art/curtain.py art/panels.py art/rd2png.py art/backdrop.png src/xram.h
     VERBATIM
 )
 
 # The mine carts of the stage select and the padlock of a locked stage,
-# from art/carts.py, and carts.h, which gives their tile numbers.
+# from art/cart.png and art/padlock.png, and carts.h, which gives their tile
+# numbers and the places on a cart.
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/carts.bin ${CMAKE_CURRENT_BINARY_DIR}/carts.h
     COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/art/carts.py ${CMAKE_CURRENT_BINARY_DIR}/carts.bin
         ${CMAKE_CURRENT_BINARY_DIR}/carts.h --preview ${CMAKE_CURRENT_BINARY_DIR}/carts.png
-    DEPENDS art/carts.py art/panel_font.py art/panels.py art/rd2png.py
+    DEPENDS art/carts.py art/cart.png art/padlock.png art/curtain.py art/panel_font.py art/panels.py art/rd2png.py
     VERBATIM
 )
 

@@ -4,6 +4,7 @@
 #define XRAM_H
 
 #include <backdrop.h>
+#include <carts.h>
 #include <rp6502.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -321,11 +322,11 @@ typedef struct
    build/carts.h. */
 #define CARTS_MAX 10
 #define CART_COLS 5
-#define CART_ROWS 4
+#define CART_ROWS CART_CELL_ROWS
 #define CART_MAP_COLS (CARTS_MAX * CART_COLS)
-/* The top of the carts' cells. Their wheels sit on the track, as far from
-   the foot of the screen as the panels' rail is from its top. */
-#define CART_Y 194
+/* The top of the carts' cells, so the track their wheels sit on, at
+   CART_Y + CART_FOOT, is a little up from the foot of the screen. */
+#define CART_Y 191
 #define CART_TILES_MAX 64
 
 /* The backdrop of the upgrade screen, from art/backdrop.py, on plane 0:
@@ -484,7 +485,8 @@ typedef struct
     uint16_t panel_palette[256]; /* these three, as ROM:panels holds them */
     panel_tile_t panel_tiles[256];
     uint8_t panels[PANEL_ROWS][PANEL_MAP_COLS];
-    uint16_t cart_palette[16]; /* these four, as ROM:carts holds them */
+    uint16_t cart_palette[16]; /* these five, as ROM:carts holds them */
+    uint16_t lock_palette[16];
     lock_image_t lock_image;
     half_lock_image_t lock_halves[2];
     cart_tile_t cart_tiles[CART_TILES_MAX];
@@ -609,6 +611,7 @@ typedef struct
 #define XRAM_PANELS offsetof(xram_layout_t, art.menu.panels)
 #define XRAM_CART_PALETTE offsetof(xram_layout_t, art.menu.cart_palette)
 #define XRAM_CART_TILES offsetof(xram_layout_t, art.menu.cart_tiles)
+#define XRAM_LOCK_PALETTE offsetof(xram_layout_t, art.menu.lock_palette)
 #define XRAM_LOCK_IMAGE offsetof(xram_layout_t, art.menu.lock_image)
 #define XRAM_LOCK_HALVES offsetof(xram_layout_t, art.menu.lock_halves)
 #define XRAM_CART_MAP offsetof(xram_layout_t, art.menu.cart_map)
