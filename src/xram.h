@@ -521,12 +521,15 @@ typedef struct
 
 #define LEVEL_SPRITES (sizeof(level_sprites_t) / sizeof(mode5_csprite_t))
 
-/* Plane 2 sprites, over the menus: the gauge, the counts with their
-   nugget or ball, the nuggets in flight, the upgrade screen's pictures,
-   and last, over them all, the holographic cursor's 4 corners. */
+/* Plane 2 sprites, over the menus, back to front, as a plane draws its
+   list: the gauge, the upgrade screen's pictures and trolleys, which
+   slide under the counts, the counts with their nugget, coin or ball, the
+   nuggets in flight, a dwarf, and last, over them all, the holographic
+   cursor's 4 corners. */
 typedef struct
 {
     mode5_csprite_t energy[1 + ENERGY_SEGMENTS + 1]; /* top, segments, bottom */
+    mode5_csprite_t menu[MENU_SPRITES];   /* the upgrade screen's pictures */
     mode5_csprite_t coin_icon;
     mode5_csprite_t coin_digits[COUNT_DIGITS];
     mode5_csprite_t nugget_icons[BRICK_COLORS];
@@ -534,7 +537,6 @@ typedef struct
     mode5_csprite_t ball_icon;
     mode5_csprite_t ball_digits[BALL_DIGITS];
     mode5_csprite_t nuggets[NUGGETS_MAX]; /* in flight */
-    mode5_csprite_t menu[MENU_SPRITES];   /* the upgrade screen's pictures */
     mode5_csprite_t dwarf[DWARF_PIECES];  /* over the counts, when he talks */
     mode5_csprite_t cursor[4];
 } hud_t;
