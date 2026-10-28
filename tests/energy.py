@@ -108,6 +108,8 @@ def main():
     game.run(6)
     puff = smoke_pixels(game, shot, x - 4, x + 32, top - 8, top + 16)
     check(puff > 10, f'a puff of smoke where the paddle gave up, {puff} pixels')
+    jets = game.ram('sled_jets')
+    check(game.shown('XRAM_SMOKE_SPRITES', sym['JETS_MAX']) == jets, f'a puff for each of its {jets} jets')
     game.run(10)
     check(game.sizes(pieces, 1)[0] >> 4 == sym['SLED_TILT_ROWS'] // 4 - 1,
           'the falling sled shows its tilted picture')

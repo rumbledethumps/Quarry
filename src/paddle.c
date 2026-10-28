@@ -26,8 +26,9 @@ static const uint8_t flame_cycle[8] = {0, 1, 2, 2, 1, 2, 1, 1};
    here, and its nozzle alone on the others. */
 static const uint8_t sputter_pattern[8] = {0xB2, 0x4C, 0x91, 0x0A, 0x48, 0x02, 0x20, 0x01};
 
-/* The puff of smoke shows each frame for SMOKE_STEPS steps, and rises a
-   pixel every SMOKE_RISE steps. */
+/* When the paddle gives up, a puff of smoke comes out of each jet. It
+   shows each frame for SMOKE_STEPS steps, and rises a pixel every
+   SMOKE_RISE steps. */
 #define SMOKE_STEPS 10
 #define SMOKE_RISE 4
 
@@ -140,7 +141,7 @@ void paddle_start(void)
                MODE5_SIZE(SLED_IMAGE_W(paddle_width), 8));
     for (i = 0; i < JETS_MAX; i++)
         sprite_set(JET_SPRITE(i), JET_IMAGE(JET_NOZZLE), XRAM_PALETTE_SLED, MODE5_SIZE(8, 12));
-    for (i = 0; i < 2; i++)
+    for (i = 0; i < JETS_MAX; i++)
         sprite_set(SMOKE_SPRITE(i), SMOKE_IMAGE(0), XRAM_PALETTE_FX, MODE5_SIZE(8, 8));
     paddle_moved = 1;
 }
@@ -246,14 +247,14 @@ static void smoke_draw(void)
 {
     uint8_t i, frame = state_steps / SMOKE_STEPS;
 
-    for (i = 0; i < 2; i++)
+    for (i = 0; i < JETS_MAX; i++)
     {
-        if (paddle_state != PADDLE_FALLING || frame >= SMOKE_FRAMES)
+        if (paddle_state != PADDLE_FALLING || frame >= SMOKE_FRAMES || i >= sled_jets)
         {
             sprite_hide(SMOKE_SPRITE(i));
             continue;
         }
-        sprite_move(SMOKE_SPRITE(i), smoke_x + i * (paddle_width - 8),
+        sprite_move(SMOKE_SPRITE(i), smoke_x + jet_x(paddle_width, sled_jets, i) - 4,
                     smoke_y - state_steps / SMOKE_RISE);
         xram0_poke16(SMOKE_SPRITE(i) + offsetof(mode5_csprite_t, xram_sprite_ptr), SMOKE_IMAGE(frame));
     }

@@ -458,7 +458,7 @@ typedef struct
     mode5_csprite_t ball;
     mode5_csprite_t sled;
     mode5_csprite_t jets[JETS_MAX];
-    mode5_csprite_t smoke[2];
+    mode5_csprite_t smoke[JETS_MAX]; /* a puff under each jet */
 } actors_t;
 
 /* Plane 2 sprites, over the menus: the gauge, the counts with their
