@@ -263,5 +263,6 @@ endif()
 # generators on the 6502, for speed and for how even they are. Its ROM is
 # rng.rp6502, to run on the hardware.
 add_executable(rng)
-target_sources(rng PRIVATE spikes/rng.c)
+target_sources(rng PRIVATE spikes/rng.c spikes/rng-asm.s)
+set_source_files_properties(spikes/rng-asm.s PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
 rp6502_executable(rng DATA default RESET default)

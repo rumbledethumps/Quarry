@@ -3,7 +3,8 @@
    read the console.
 
    Each generator is seeded once from the RIA's lrand, as the game would,
-   and gives 16 bits a call. Its speed is how many calls it makes in
+   and gives 16 bits a call. xorshift16 is here twice, in C and by hand in
+   rng-asm.s, and the two are checked to give the same numbers. Its speed is how many calls it makes in
    RUN_MS by clock(), less the time the loop takes calling a generator
    that does nothing. Its evenness is from SAMPLES calls:
    - chi lo and chi hi, the chi-square of its low and high bytes over 256
@@ -54,6 +55,10 @@ static uint16_t gen_xorshift16(void)
     return xs16;
 }
 
+/* The same by hand, in rng-asm.s. */
+uint16_t xs16_state;
+uint16_t xorshift16_asm(void);
+
 /* Marsaglia's xorshift on 32 bits, (13, 17, 5), its low 16. */
 static uint32_t xs32;
 static uint16_t gen_xorshift32(void)
@@ -96,6 +101,7 @@ static const algorithm_t algorithms[] = {
     {"lrand", gen_lrand, 8},
     {"rand", gen_rand, 7},
     {"xorshift16", gen_xorshift16, 8},
+    {"xorshift16 asm", xorshift16_asm, 8},
     {"xorshift32", gen_xorshift32, 8},
     {"lfsr16", gen_lfsr16, 8},
     {"lcg32", gen_lcg32, 8},
@@ -143,7 +149,7 @@ int main(void)
     long seed = ria_attr_get(RIA_ATTR_LRAND);
 
     srand((unsigned)seed);
-    xs16 = (uint16_t)seed | 1;
+    xs16 = xs16_state = (uint16_t)seed | 1;
     xs32 = (uint32_t)seed | 1;
     lfsr = (uint16_t)(seed >> 16) | 1;
     lcg = (uint32_t)seed;
@@ -152,9 +158,12 @@ int main(void)
     printf("Speed: calls in %u ms, less the loop's own time.\n", RUN_MS);
     printf("Evenness: %u calls. Chi-square: about 210 to 300 is fine.\n", SAMPLES);
     printf("Runs of the low byte's top bit: about 12800, give or take 80.\n\n");
+    for (a = 0; a < 200 && gen_xorshift16() == xorshift16_asm(); a++)
+        ;
+    printf("xorshift16 by hand %s the C one.\n\n", a == 200 ? "matches" : "DOES NOT MATCH");
     base = ns_per_call(gen_none);
     printf("The loop alone: %lu.%lu us a call\n\n", base / 1000, base % 1000 / 100);
-    printf("%-12s %9s %7s %7s %8s %7s\n", "", "us/call", "chi lo", "chi hi", "chi pair", "runs");
+    printf("%-14s %7s %7s %7s %8s %7s\n", "", "us/call", "chi lo", "chi hi", "chi pair", "runs");
     for (a = 0; a < ALGORITHMS; a++)
     {
         const algorithm_t *alg = &algorithms[a];
@@ -181,7 +190,7 @@ int main(void)
             last = low;
             bit = low >> 7;
         }
-        printf("%-12s %5lu.%lu %7lu %7lu %8lu %7u\n", alg->name, ns / 1000, ns % 1000 / 100,
+        printf("%-14s %5lu.%lu %7lu %7lu %8lu %7u\n", alg->name, ns / 1000, ns % 1000 / 100,
                chi(lo, SAMPLES / 256), chi(hi, SAMPLES / 256), chi(pairs, (SAMPLES - 1) / 256), runs + 1);
     }
     printf("\nDone.\n");
