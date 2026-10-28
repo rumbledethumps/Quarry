@@ -90,7 +90,7 @@ def main():
         x0, y0 = path[0]
         # It may have taken its first step by the first frame it is seen.
         check(any(abs(x0 - m) <= step for m in middles) and
-              BRICKS_Y - step <= y0 < BRICKS_Y + sym['LEVEL1_ROWS'] * sym['BRICK_H'],
+              BRICKS_Y - step <= y0 < BRICKS_Y + sym['LEVEL1_ROWS'] * (sym['BRICK_H'] + sym['BRICK_GAP']),
               f'nugget {slot} starts in the middle of a broken brick, at {x0},{y0}')
         for (ax, ay), (cx, cy) in zip(path, path[1:]):
             check(max(abs(cx - ax), abs(cy - ay)) == step,

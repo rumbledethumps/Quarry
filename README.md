@@ -70,8 +70,8 @@ carts on a track, a cart for each level, where the button begins the level
 picked. A level newly open is still locked the first time the screen shows
 it: the screen opens on the level just cleared, the padlock on the next
 cart shakes and breaks, and the train slides over to the new level, picked.
-Level 1 is 4 by 4 gray bricks, and level 2 the same with red ones in the
-middle of its top two rows. Levels 3 to 10 are stand-ins: gray, a column
+The bricks sit a pixel apart. Level 1 is 4 by 4 gray bricks, and level 2
+the same with red ones in the middle of its top two rows. Levels 3 to 10 are stand-ins: gray, a column
 wider each time.
 
 A new game starts with a cartoon dwarf miner coming up in the lower left

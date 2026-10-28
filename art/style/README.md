@@ -95,7 +95,8 @@ of them by rule, and nothing is touched up by hand:
 
 - **Brick:** 24x8 with no gap of its own, its face the plain color and a
   1 px bevel all round, light on the top and the left, dark on the bottom
-  and the right. Widths are multiples of 4.
+  and the right. Widths are multiples of 4. The game sets bricks 1 px
+  apart, across and down.
 - **Cracks:** sprites over the brick, so they flip either way: black lines
   with a gray lip under them, in sets of three, a brick a quarter, a half
   and three quarters broken. The first stays inside the face, the second
@@ -107,7 +108,8 @@ of them by rule, and nothing is touched up by hand:
   with a dark outline: 7 px across as it flies, and as tall as the digits
   beside its count.
 - **Coin:** the same circle as the big nugget, in the sled row's gold,
-  beveled, with a square hole cut in the middle.
+  beveled, with a square hole cut in the middle, clear inside an outline
+  of its own, as every edge is outlined.
 
 ### Behind the Playfield
 

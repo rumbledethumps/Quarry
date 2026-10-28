@@ -80,7 +80,7 @@ static void level_setup(void)
         bricks_shuffle();
     play_init();
     bricks_layout(level);
-    width = bricks_cols * BRICK_W + 2 * bricks_margin;
+    width = bricks_width;
     play_left = (SCREEN_W - width) / 2;
     play_right = play_left + width;
     frame_start(play_left, play_right);

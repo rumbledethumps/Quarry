@@ -30,7 +30,9 @@
 #define CHUNK_GRAVITY 2
 #define CHUNK_SUB 16
 
-/* Level 1 is 4 by 4 bricks, with half a brick of space at each wall. */
+/* Level 1 is 4 by 4 bricks. A playfield is half a brick wider at each wall
+   than its bricks would be with no gaps, and the bricks, with their gaps,
+   in the middle of it. */
 #define LEVEL1_COLS 4
 #define LEVEL1_ROWS 4
 #define LEVEL1_MARGIN (BRICK_W / 2)
@@ -62,6 +64,7 @@ static const char *const designs[] = {
 static const uint8_t brick_hits[BRICK_COLORS] = TUNE_BRICK_HITS;
 
 uint8_t bricks_cols;
+int16_t bricks_width;
 uint8_t bricks_margin;
 uint8_t bricks_left;
 int16_t bricks_hit_left;
@@ -117,7 +120,8 @@ void bricks_layout(uint8_t level)
 
     design = level <= DESIGNS ? designs[level - 1] : 0;
     bricks_cols = design ? LEVEL1_COLS : cols < LEVEL_COLS_MAX ? cols : LEVEL_COLS_MAX;
-    bricks_margin = LEVEL1_MARGIN;
+    bricks_width = bricks_cols * BRICK_W + 2 * LEVEL1_MARGIN;
+    bricks_margin = (bricks_width - bricks_cols * (BRICK_W + BRICK_GAP) + BRICK_GAP) / 2;
 }
 
 /* New cracks for every brick, picked at random as the screen opens: each
@@ -158,8 +162,8 @@ void bricks_start(int16_t left, int16_t top)
     brick_count = bricks_cols * LEVEL1_ROWS;
     for (i = 0; i < brick_count; i++)
     {
-        brick_x[i] = left + (i % bricks_cols) * BRICK_W;
-        brick_y[i] = top + (i / bricks_cols) * BRICK_H;
+        brick_x[i] = left + (i % bricks_cols) * (BRICK_W + BRICK_GAP);
+        brick_y[i] = top + (i / bricks_cols) * (BRICK_H + BRICK_GAP);
         brick_alive[i] = 1;
         brick_color[i] = design ? design[i] - '0' : BRICK_GRAY;
         brick_damage[i] = 0;

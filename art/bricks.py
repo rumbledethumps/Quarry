@@ -205,7 +205,8 @@ def nugget(d=7, size=8):
 def coin(d=ICON_D, size=ICON_SIZE):
     """The same circle, as big as the digits, beveled: its rim lit on the
     upper left and shaded on the lower right, and the hole in the middle
-    the other way round, as it is cut in."""
+    the other way round, as it is cut in. The hole is clear, inside an
+    outline of its own."""
     inside, edge, mid = circle(d, size)
     img = [[0] * size for _ in range(size)]
     for x, y in edge:
@@ -213,12 +214,15 @@ def coin(d=ICON_D, size=ICON_SIZE):
     half = d / 5
     hole = {(x, y) for x, y in inside
             if (max(abs(x - mid), abs(y - mid)) if HOLE == 'square' else abs(x - mid) + abs(y - mid)) <= half}
+    near = lambda x, y, ring: any((x + ax, y + ay) in ring for ax, ay in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+    for x, y in hole:
+        if any((x + ax, y + ay) not in hole for ax, ay in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+            img[y][x] = OUT  # the hole is outlined, as the coin is
     for x, y in inside - hole:
         toward = (x - mid) + (y - mid)  # below 0 faces the light
-        near = lambda ring: any((x + ax, y + ay) in ring for ax, ay in ((1, 0), (-1, 0), (0, 1), (0, -1)))
-        if near(edge):
+        if near(x, y, edge):
             img[y][x] = Y4 if toward < 0 else Y1 if toward > 0 else Y3
-        elif near(hole):
+        elif near(x, y, hole):
             img[y][x] = Y1 if toward < 0 else Y5 if toward > 0 else Y2
         else:
             img[y][x] = Y3
