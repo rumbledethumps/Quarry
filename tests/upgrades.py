@@ -55,7 +55,7 @@ def main():
 
     def panel_tiles(p, row):
         """The tiles inside panel p, on a row of its map."""
-        cols, left = sym['PANEL_MAP_COLS'], p * sym['PANEL_PITCH'] + sym['PANEL_BORDER']
+        cols, left = sym['PANEL_MAP_COLS'], p % sym['PANEL_SLOTS'] * sym['PANEL_PITCH'] + sym['PANEL_BORDER']
         return game.xram(sym['XRAM_PANELS'] + row * cols + left, sym['PANEL_INSIDE'])
 
     def panel(p, row):

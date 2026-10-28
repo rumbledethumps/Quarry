@@ -3,6 +3,7 @@
 #include "video.h"
 #include "xram.h"
 #include <fcntl.h>
+#include <panels.h>
 #include <rp6502.h>
 #include <stdio.h>
 #include <string.h>
@@ -37,7 +38,9 @@ _Static_assert(CURTAIN_SETS <= 9 && TEXTURES <= 9 && FRAME_SETS <= 9, "An asset'
    checks the assets against. A curtain set holds its palette, then the 4
    colors of the texture, then the curtains. */
 #define BACKDROP_BYTES (XRAM_PICTURE(0) - XRAM_BACKDROP)
-#define PANELS_BYTES (XRAM_CART_PALETTE - XRAM_PANEL_PALETTE)
+#define PANEL_ART_BYTES (XRAM_PANELS - XRAM_PANEL_PALETTE) /* the palette and the tiles */
+#define PANEL_FRAME_BYTES (PANEL_ROWS * PANEL_COLS)
+#define PANELS_BYTES (PANEL_ART_BYTES + PANEL_LAYOUTS * PANEL_FRAME_BYTES)
 #define CARTS_BYTES (XRAM_CART_TILES + CART_TILES * sizeof(cart_tile_t) - XRAM_CART_PALETTE)
 #define MENUS_BYTES (XRAM_MENU_TILES + MENU_TILES * sizeof(menu_tile_t) - XRAM_MENU_PALETTE)
 #define LOGO_BYTES sizeof(((xram_layout_t *)0)->art.cave.logo_images)
@@ -115,10 +118,10 @@ static void backdrop_band(uint8_t band, unsigned palette, unsigned tiles, unsign
 }
 
 /* The upgrade screen's art and its layers: the backdrop for plane 0, in
-   its three bands, and for plane 1 the panels from PANEL_Y and the carts
-   from CART_Y, which the upgrade screen slides and fills in: the panels'
-   palette, tiles and the map of their frames, and the carts' palette and
-   tiles. Nothing shows until scene_menu_show(), once the upgrade screen
+   its three bands, and for plane 1 the panels from PANEL_Y, their map
+   wrapping, and the carts from CART_Y, which the upgrade screen slides and
+   fills in: the panels' palette and tiles, and the carts' palette and
+   tiles. The panels' frames load into their map as they come near. Nothing shows until scene_menu_show(), once the upgrade screen
    has put everything in its place. */
 void scene_menu(void)
 {
@@ -134,8 +137,9 @@ void scene_menu(void)
                   BACKDROP_MIDDLE_Y, BACKDROP_MIDDLE_ROWS);
     backdrop_band(2, XRAM_BAND_PALETTE(bottom), XRAM_BAND_TILES(bottom), XRAM_BAND_MAP(bottom),
                   BACKDROP_BOTTOM_Y, BACKDROP_BOTTOM_ROWS);
-    load("ROM:panels", 0, XRAM_PANEL_PALETTE, PANELS_BYTES);
+    load("ROM:panels", 0, XRAM_PANEL_PALETTE, PANEL_ART_BYTES);
     memset(&config, 0, sizeof config);
+    config.x_wrap = true;
     config.y_pos_px = PANEL_Y;
     config.width_tiles = PANEL_MAP_COLS;
     config.height_tiles = PANEL_ROWS;
@@ -145,6 +149,7 @@ void scene_menu(void)
     xram0_write(XRAM_PANEL_CONFIG, &config, sizeof config);
     load("ROM:carts", 0, XRAM_CART_PALETTE, CARTS_BYTES);
     xram0_set(XRAM_CART_MAP, 0, sizeof(((xram_layout_t *)0)->art.menu.cart_map));
+    config.x_wrap = false;
     config.y_pos_px = CART_Y;
     config.width_tiles = CART_MAP_COLS;
     config.height_tiles = CART_ROWS;
@@ -252,6 +257,24 @@ void scene_curtains(int8_t step)
 {
     curtain_set = (curtain_set + CURTAIN_SETS + step) % CURTAIN_SETS;
     curtains_load();
+}
+
+/* The frame of panel p of the upgrade screen into the map, from the
+   column at, in place of what was there. */
+void scene_panel_frame(uint8_t p, unsigned at)
+{
+    int fd = open("ROM:panels", O_RDONLY);
+    uint8_t row;
+
+    if (fd < 0)
+    {
+        DEBUG_LOG("no ROM:panels\n");
+        return;
+    }
+    lseek(fd, PANEL_ART_BYTES + (long)p * PANEL_FRAME_BYTES, SEEK_SET);
+    for (row = 0; row < PANEL_ROWS; row++)
+        read_xram(at + row * PANEL_MAP_COLS, PANEL_COLS, fd);
+    close(fd);
 }
 
 /* The flat sled of a rank of the width upgrade into a slot of the upgrade

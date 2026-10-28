@@ -22,8 +22,10 @@ it to few tiles; it hardly varies in frame 1. The outer ring comes once,
 and stays lit.
 
 out.bin is the palette, 256 colors as png2bin.py writes a palette row, then
-256 tiles of 64 bytes, then the tile map of every panel's frame, row by
-row, PANELS * 20 cells across and 19 down, the top row for the hangers.
+256 tiles of 64 bytes, then the tile map of each panel's frame, one after
+another, row by row, 20 cells across and 19 down, the top row for the
+hangers, which the game copies into a slot of its map as the panel comes
+near.
 out.h gives the tile numbers and the height of each panel. Only the Python
 standard library is used.
 """
@@ -269,8 +271,8 @@ def main():
         data += struct.pack('<H', (b >> 3) << 11 | (g >> 3) << 6 | (r >> 3) | (32 if a else 0))
     for t in tiles + [tuple([None] * 64)] * (256 - len(tiles)):
         data += bytes(index[c] if c is not None else 0 for c in t)
-    for row in range(ROWS):
-        for grid in maps:
+    for grid in maps:
+        for row in range(ROWS):
             for entry in (grid[row] if row < len(grid) else ['clear'] * COLS):
                 data.append(0 if entry == 'clear' else 1 if entry == 'plate' else
                             1 + entry[1] if isinstance(entry, tuple) and entry[0] == 'content' else

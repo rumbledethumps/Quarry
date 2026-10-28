@@ -301,7 +301,7 @@ typedef struct
 #define JETS_MAX 3 /* under one sled */
 #define ENERGY_SEGMENTS 12
 #define NUGGETS_MAX 16 /* in flight at once */
-#define MENU_SPRITES 50
+#define MENU_SPRITES 40
 #define LOCKS 4 /* padlocks on the carts of the levels after the one picked */
 #define CURSOR_SIZE 12 /* each of its 4 corners, square */
 #define COUNT_DIGITS 5 /* of a nugget count */
@@ -310,15 +310,18 @@ typedef struct
 #define BALL_DIGITS 2  /* of the count of balls */
 
 /* The panels of the upgrade screen hang from a rail and slide across it.
-   They are a map of 8-bit tiles on plane 1, PANEL_MAP_COLS across and
-   PANEL_ROWS down, the top row for the hangers: each panel is PANEL_COLS
-   wide, side by side, and the art of their frames leaves the gap between
-   them. art/panels.py makes the tiles, their palette and the map of the
-   frames, and writes build/panels.h. */
+   They are a map of 8-bit tiles on plane 1, PANEL_ROWS down, the top row
+   for the hangers, and PANEL_MAP_COLS across, which wraps: PANEL_SLOTS
+   slots PANEL_COLS wide, side by side, panel p in slot p % PANEL_SLOTS,
+   which holds the four around the one picked, so any number of panels
+   need no more. The art of their frames leaves the gap between them.
+   art/panels.py makes the tiles, their palette and each panel's frame,
+   and writes build/panels.h. */
 #define PANELS 5
 #define PANEL_COLS 20
 #define PANEL_PITCH PANEL_COLS
-#define PANEL_MAP_COLS (PANELS * PANEL_PITCH)
+#define PANEL_SLOTS 4 /* the panels around the one picked, each in a slot of the map */
+#define PANEL_MAP_COLS (PANEL_SLOTS * PANEL_PITCH)
 #define PANEL_ROWS 19
 #define PANEL_Y 16 /* the top of the hangers */
 
@@ -553,9 +556,9 @@ typedef struct
     BACKDROP_BAND(BOTTOM) bottom;
     uint8_t backdrop_sprites[BACKDROP_SPRITE_BYTES]; /* the cogs' frames and the steam's */
     uint8_t pictures[PICTURE_SLOTS][PICTURE_BYTES];
-    uint16_t panel_palette[256]; /* these three, as ROM:panels holds them */
+    uint16_t panel_palette[256]; /* these two, as ROM:panels holds them, then its frames */
     panel_tile_t panel_tiles[256];
-    uint8_t panels[PANEL_ROWS][PANEL_MAP_COLS];
+    uint8_t panels[PANEL_ROWS][PANEL_MAP_COLS]; /* the slots */
     uint16_t cart_palette[16]; /* these five, as ROM:carts holds them */
     uint16_t lock_palette[16];
     lock_image_t lock_image;
