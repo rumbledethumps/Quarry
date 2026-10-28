@@ -409,8 +409,8 @@ typedef struct
    more broken. */
 #define CRACK_W 16
 #define CRACK_H 8
-#define CRACK_SETS 10
-#define CRACK_STATES 6
+#define CRACK_SETS 6
+#define CRACK_STATES 10
 #define CRACKS_MAX 48 /* a sprite each, over the bricks */
 
 /* A brick breaks into chunks that fly, CHUNK_IMAGES of them in
