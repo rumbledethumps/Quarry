@@ -244,6 +244,7 @@ uint8_t play_step(void)
             else
             {
                 ball_state = BALL_GONE;
+                paddle_leave();
                 DEBUG_LOG("out of balls\n");
                 return PLAY_OUT;
             }

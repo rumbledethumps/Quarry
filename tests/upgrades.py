@@ -81,6 +81,7 @@ def main():
     game.wait('out of balls', 3000)
     game.run(2)
     check(game.ram('game_state') == sym['STATE_MENU'], 'the menu opens when the level ends')
+    check(game.ram('paddle_state') == sym['PADDLE_LEAVING'], 'and out of balls, the sled flies home')
     check(all(game.shows(w) for w in ['OUT OF BALLS'] + END_ITEMS), 'it says OUT OF BALLS, with its items')
     check(end_picked() == 'UPGRADES', 'UPGRADES is picked')
     check(cursor_on_item('end_menus', 0), 'and the cursor is on it at once')

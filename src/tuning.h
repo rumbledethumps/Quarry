@@ -19,8 +19,8 @@
 #define TUNE_SPUTTER_STEPS 45 /* how long the flames sputter */
 #define TUNE_FALL_GRAVITY 20  /* the falling paddle speeds up this much each step */
 
-/* The level cleared, the paddle flies home, down off the screen under its
-   own power, speeding up gently to its speed. */
+/* The level cleared or out of balls, the paddle flies home, down off the
+   screen under its own power, speeding up gently to its speed. */
 #define TUNE_LEAVE_ACCEL 4
 #define TUNE_LEAVE_SPEED 192  /* 0.75 px per step */
 

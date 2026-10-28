@@ -42,8 +42,9 @@ The playfield is framed in gray steel the ball bounces off, riveted
 girders or an open truss, a frame set picked at random for each new level,
 as its rock walls are. The paddle floats on thrusters. The energy bar
 drains from the first launch, and when it is empty the paddle falls and
-the level ends. When the last brick breaks, the paddle flies home, down
-off the screen under its own power.
+the level ends. When the last brick breaks, or the last ball is lost, the
+paddle flies home, down off the screen under its own power: only out of
+fuel does it fall.
 
 The bricks are plain colors, gray, red, green, blue and gold, which stay
 apart with any kind of color blindness. Gray breaks in one hit, red in

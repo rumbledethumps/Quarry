@@ -146,8 +146,9 @@ void paddle_start(void)
     paddle_moved = 1;
 }
 
-/* The level is cleared: a hovering paddle flies home, down off the screen
-   under its own power, level, its flames burning. */
+/* The level is cleared, or the last ball is lost: a hovering paddle flies
+   home, down off the screen under its own power, level, its flames
+   burning. Only out of energy does it fall. */
 void paddle_leave(void)
 {
     if (paddle_state != PADDLE_HOVER)

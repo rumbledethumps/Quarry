@@ -132,7 +132,7 @@ def main():
         for _ in range(30):
             game.run()
             images.add(game.sprites('XRAM_JET_SPRITES', 1)[0][2])
-        check(len(images) > 1, 'the flames still burn after the level ends')
+        check(len(images) > 1, 'the flames still burn as the sled flies home')
     game.run(90)
     check(game.shown('XRAM_BRICKS', bricks) == left, 'a sprite for each brick left')
     counted = game.ram('nuggets', 2)
