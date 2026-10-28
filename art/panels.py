@@ -278,6 +278,12 @@ def main():
         f.write(data)
 
     font_c = ''.join('\\x10' if c == '\x10' else c for c in FONT)
+    # The middle of each hanger's bar, from a panel's left, which the rail's
+    # trolleys ride over. Every panel hangs from the same places.
+    hangers = {tuple((4 + i) * 8 + 4 for i, ch in enumerate(layout['top']) if ch == 'H') for layout in LAYOUTS}
+    if len(hangers) != 1:
+        raise SystemExit('panels: the panels hang from different places, and their trolleys would not match')
+    hangers = hangers.pop()
     with open(args.header, 'w') as f:
         f.write('/* Made by art/panels.py. The tiles of the upgrade screen\'s panels. */\n\n'
                 '#ifndef PANELS_H\n#define PANELS_H\n\n'
@@ -290,7 +296,9 @@ def main():
                 f'#define PANEL_TILE_FRAMES {frame_first} /* the first tile of the outer rings, which stay lit */\n'
                 f'#define PANEL_TILES {len(tiles)}\n'
                 f'#define PANEL_LAYOUTS {len(LAYOUTS)}\n'
-                f'#define PANEL_HEIGHTS {{{", ".join(str(l["rows"]) for l in LAYOUTS)}}}\n\n'
+                f'#define PANEL_HEIGHTS {{{", ".join(str(l["rows"]) for l in LAYOUTS)}}}\n'
+                f'#define PANEL_HANGERS {len(hangers)}\n'
+                f'#define PANEL_HANGER_X {{{", ".join(str(x) for x in hangers)}}} /* the middle of each, from a panel\'s left */\n\n'
                 '#endif\n')
 
     print(f'panels: {2 * count} tiles of contents, {2 * len(rings)} of inner rings, {len(frames)} of outer, '

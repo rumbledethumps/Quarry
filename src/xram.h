@@ -296,7 +296,7 @@ typedef struct
 #define JETS_MAX 3 /* under one sled */
 #define ENERGY_SEGMENTS 12
 #define NUGGETS_MAX 16 /* in flight at once */
-#define MENU_SPRITES 42
+#define MENU_SPRITES 50
 #define COUNT_DIGITS 5 /* of a nugget count */
 #define BALL_DIGITS 2  /* of the count of balls */
 

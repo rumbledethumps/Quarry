@@ -5,10 +5,10 @@
 
 The backdrop is art/backdrop.png, a workshop wall from Retro Diffusion,
 320x240, on plane 0 behind everything, in three bands of 16x16 tiles, each
-with a palette of its own: the top, the ceiling's truss, in 15 colors; the
-middle, plain wall behind the panels, in 4 grays at 2 bits a pixel; and the
-bottom, the machinery along the floor, in 15 colors, with the red and the
-yellow. Everything is darkened, and a little cool, so the steel of the
+with a palette of its own: the top, the rail across the top, in 15 colors,
+with its trolleys'; the middle, plain wall behind the panels, in 4 grays
+at 2 bits a pixel; and the bottom, the machinery along the floor, in 15
+colors, with the red and the yellow. Everything is darkened, and a little cool, so the steel of the
 panels and the carts stands out in front of it.
 
 The middle's grays are the nearest of the top's and the bottom's colors to
@@ -28,12 +28,20 @@ The steam drawn in art/backdrop.png comes and goes: it is painted out, and
 STEAM_FRAMES sprites of it, from its own pixels, grow from the vent, then
 thin out and go.
 
+The art's truss across the top is too coarse for the strip of it that
+shows over the panels, so the wall below takes its place, and the rail the
+panels hang from is drawn across it instead: a steel I-beam in the panels'
+graphite, its foot flange just over PANEL_Y, where the hangers start. A
+trolley rides the beam over each hanger, a sprite that moves with its
+panel, in TROLLEY_FRAMES frames as its wheels turn, in the top band's
+palette.
+
 out.bin is each band in turn, top to bottom: its palette, 16 colors for a
 4-bit band or 4 for the 2-bit one, as png2bin.py writes a palette row, its
 tiles, the left pixel of each byte in its high bits, and its map, a byte a
 cell, row by row. Then the sprites, 4-bit in the bottom band's palette:
 each frame of the cogs, in two sprites, top and bottom, then each frame of
-the steam. out.h gives the sizes and the places. Only the Python standard
+the steam. then each frame of the trolley. out.h gives the sizes and the places. Only the Python standard
 library is used.
 """
 
@@ -53,7 +61,7 @@ DARKEN = (0.58, 0.6, 0.66)  # red, green and blue, darker and a little cool
 W, H, TILE = 320, 240, 16
 COLS = W // TILE
 # The bands: the scanline each starts at, its bits a pixel, and its colors.
-BANDS = ((0, 4, 15), (32, 2, 4), (128, 4, 15))
+BANDS = ((0, 4, 15), (16, 2, 4), (128, 4, 15))
 # The steam drawn in the art, painted out: a box around it, and the
 # lightness past which a pixel in it is steam.
 STEAM_BOX = (80, 180, 100, 208)
@@ -66,6 +74,14 @@ GEARS = (dict(x=0, y=158, radius=22, teeth=11, spokes=6, turn=1),
          dict(x=16, y=199, radius=21, teeth=10, spokes=0, turn=-1))
 GEAR_FRAMES = 4
 FRONT = ((23, 130, 52, 169), (0, 204, 48, 224))  # the box and the plate in front of the cogs
+TRUSS_H = 56  # the art's truss and what hangs from it, which the wall under it replaces
+# The rail and its trolleys, in the panels' graphite, a little darker.
+RAIL_SHADE = 0.85
+RAIL_COLORS = dict(out=(0, 0, 0), dark=(42, 47, 51), steel=(68, 72, 77), mid=(89, 96, 100),
+                   light=(141, 154, 157), shine=(185, 201, 206), paint=(214, 158, 38), paint2=(140, 96, 26))
+RAIL_H = 14     # rows of the beam, which ends 2 over PANEL_Y
+RAIL_JOINT = 64  # px between the joints of its plates
+TROLLEY_W, TROLLEY_H, TROLLEY_FRAMES = 16, 20, 4
 # The cogs' colors, from the art: outline, the dark behind them and in
 # their holes, a shade, the steel, and its highlight.
 OUTLINE, BEHIND, SHADE, STEEL, LIGHT = (8, 8, 12), (23, 23, 28), (49, 51, 55), (73, 79, 81), (110, 118, 120)
@@ -180,6 +196,59 @@ def steam_frames(art):
     return frames
 
 
+def rail_color(name):
+    return tuple(round(v * RAIL_SHADE) for v in RAIL_COLORS[name])
+
+
+def draw_rail(art, top):
+    """The I-beam across art from row top: its top flange, its web in the
+    shadow of the flange, with a rivet every 16 px, and its foot flange,
+    lit where the trolleys roll, and its shadow on the wall."""
+    rows = ['out', 'shine', 'mid', 'out', 'out', 'dark', 'steel', 'dark', 'dark', 'out', 'shine', 'mid', 'steel', 'out']
+    for x in range(W):
+        for y, name in enumerate(rows):
+            art[top + y][x] = rail_color(name)
+        art[top + RAIL_H][x] = tuple(v // 2 for v in art[top + RAIL_H][x])
+        if x % 16 == 8:
+            art[top + 6][x] = rail_color('light')
+            art[top + 7][x] = rail_color('out')
+        if x % RAIL_JOINT == RAIL_JOINT // 2:
+            for y in range(1, RAIL_H - 1):
+                if rows[y] != 'out':
+                    art[top + y][x] = rail_color('out')
+                    art[top + y][x + 1] = rail_color('light' if y in (1, 10) else rows[y])
+
+
+def trolley_frames():
+    """The trolley, TROLLEY_W by TROLLEY_H, from a row over the beam: two
+    wheels on the foot flange, a side plate in safety paint over their
+    axles, and a link down past PANEL_Y, onto the top of the hanger. Frame
+    f turns the wheels' spokes an eighth of a turn more."""
+    frames = []
+    for f in range(TROLLEY_FRAMES):
+        img = [[None] * TROLLEY_W for _ in range(TROLLEY_H)]
+        for cx in (4, 11):
+            for y in range(TROLLEY_H):
+                for x in range(TROLLEY_W):
+                    dx, dy = x + 0.5 - (cx + 0.5), y + 0.5 - 6.5
+                    d = math.hypot(dx, dy)
+                    if d < 3.6:
+                        a = math.atan2(dy, dx) - f * math.pi / 4
+                        spoke = abs(math.sin(a)) * d < 0.7
+                        img[y][x] = 'out' if d > 2.8 else 'dark' if spoke or d < 1 else 'mid'
+        for y in range(7, 12):
+            for x in range(2, 14):
+                edge = y in (7, 11) or x in (2, 13)
+                img[y][x] = 'out' if edge else 'paint' if y < 10 else 'paint2'
+        for x in (4, 11):
+            img[8][x] = 'shine'
+        for y in range(12, TROLLEY_H):
+            for x in range(6, 10):
+                img[y][x] = 'out' if x in (6, 9) else 'light' if x == 7 else 'mid'
+        frames.append([[rail_color(c) if c else None for c in row] for row in img])
+    return frames
+
+
 def hidden_cells():
     """The cells always behind the panel in the middle while the panels are
     still: inside its frame, of the shortest panel."""
@@ -204,9 +273,17 @@ def main():
     art = [[p[:3] for p in row] for row in pixels]
     steam = steam_frames(art)
     paint_out_steam(art)
+    for y in range(TRUSS_H):
+        art[y] = art[y + TRUSS_H][:]
     darker = lambda c: tuple(round(v * d) for v, d in zip(c, DARKEN))
-    cogs = [[[darker(c) for c in row] for row in gears_frame(art, f)] for f in range(GEAR_FRAMES)]
+    rail_top = define('PANEL_Y') - 2 - RAIL_H
+    cogs = []
+    for f in range(GEAR_FRAMES):
+        frame = [[darker(c) for c in row] for row in gears_frame(art, f)]
+        draw_rail(frame, rail_top)
+        cogs.append(frame)
     art = cogs[0]
+    trolleys = trolley_frames()
     steam = [[[darker(c) if c else None for c in row] for row in img] for img in steam]
 
     # Each band's colors: the top's and the bottom's first, then the middle's
@@ -216,7 +293,10 @@ def main():
     spans = [(top, BANDS[i + 1][0] if i + 1 < len(BANDS) else H) for i, (top, _, _) in enumerate(BANDS)]
     for i in ends:
         top, bottom = spans[i]
-        maps[i] = reduce(Counter(c for row in art[top:bottom] for c in row), BANDS[i][2])
+        counts = Counter(c for row in art[top:bottom] for c in row)
+        if i == 0:  # the trolleys' colors, kept
+            counts.update({c: 4096 for img in trolleys for row in img for c in row if c})
+        maps[i] = reduce(counts, BANDS[i][2])
     pool = set(maps[ends[0]].values()) | set(maps[ends[1]].values())
     for i in range(len(BANDS)):
         if i in ends:
@@ -274,19 +354,26 @@ def main():
         for line in grid:
             data += bytes(line)
         sizes.append((top, bits, len(tiles), len(grid)))
+        if i == 0:
+            first = (palette, to)
         last = (palette, to)
 
-    # The sprites, in the bottom band's palette.
-    palette, to = last
-    nearest = {}
+    # The sprites, in the bottom band's palette, but for the trolleys, in the
+    # top's.
+    def pens(palette, to):
+        nearest = {}
 
-    def pen(c):
-        if c is None:
-            return 0
-        if c not in nearest:
-            nearest[c] = palette.index(to[c]) if c in to else \
-                min(range(1, len(palette)), key=lambda i: palette[i] and sum((a - b) ** 2 for a, b in zip(palette[i], c)))
-        return nearest[c]
+        def pen(c):
+            if c is None:
+                return 0
+            if c not in nearest:
+                nearest[c] = palette.index(to[c]) if c in to else \
+                    min(range(1, len(palette)),
+                        key=lambda i: palette[i] and sum((a - b) ** 2 for a, b in zip(palette[i], c)))
+            return nearest[c]
+        return pen
+
+    pen = pens(*last)
 
     def image(rows):
         return b''.join(bytes(row[x] << 4 | row[x + 1] for x in range(0, len(row), 2)) for row in rows)
@@ -302,8 +389,13 @@ def main():
         for a, b in ((gy0, split), (split, gy1)):
             sprites += image([[pen(cogs[f][y][x]) if (x, y) in moving else 0 for x in range(gx0, gx1)]
                               for y in range(a, b)])
+    steam_at = len(sprites)
     for img in steam:
         sprites += image([[pen(c) for c in row] for row in img])
+    trolley_at = len(sprites)
+    top_pen = pens(*first)
+    for img in trolleys:
+        sprites += image([[top_pen(c) for c in row] for row in img])
     data += sprites
     with open(args.output, 'wb') as f:
         f.write(data)
@@ -330,6 +422,12 @@ def main():
                 f'#define BACKDROP_STEAM_W {sx1 - sx}\n'
                 f'#define BACKDROP_STEAM_H {sy1 - sy}\n'
                 f'#define BACKDROP_STEAM_FRAMES {STEAM_FRAMES}\n'
+                f'#define BACKDROP_STEAM_AT {steam_at} /* its first frame, in the sprites\' bytes */\n'
+                f'#define BACKDROP_TROLLEY_W {TROLLEY_W} /* over each hanger, from 2 rows over the rail */\n'
+                f'#define BACKDROP_TROLLEY_H {TROLLEY_H}\n'
+                f'#define BACKDROP_TROLLEY_Y {rail_top - 1}\n'
+                f'#define BACKDROP_TROLLEY_FRAMES {TROLLEY_FRAMES}\n'
+                f'#define BACKDROP_TROLLEY_AT {trolley_at}\n'
                 f'#define BACKDROP_SPRITE_BYTES {len(sprites)}\n'
                 '\n#endif\n')
     print('backdrop: ' + ', '.join(f'{tiles} tiles of {bits} bits from {top}' for top, bits, tiles, _ in sizes)

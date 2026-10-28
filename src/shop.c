@@ -28,9 +28,10 @@
    breaks, and its number lights.
 
    The panels are 8-bit tiles on plane 1, and the carts 4-bit tiles on its
-   scanlines below them, each sliding on its own, and the panels' pictures
-   and the carts' padlocks are plane 2 sprites that move with them. Only the panels' contents dim:
-   the frames stay lit. The counts down the left stay in front of them.
+   scanlines below them, each sliding on its own, and the panels' pictures,
+   the trolleys their hangers ride the rail on, and the carts' padlocks are
+   plane 2 sprites that move with them. The rail is in the backdrop. Only
+   the panels' contents dim: the frames stay lit. The counts down the left stay in front of them.
    shop_step() works out where everything goes, and shop_draw() moves it
    there at the start of the next frame, so nothing moves while the frame
    is drawn. */
@@ -38,12 +39,14 @@
 #define SPRITE(i) (XRAM_MENU_SPRITES + (i) * sizeof(mode5_csprite_t))
 
 /* Each panel has PANEL_SPRITES sprites: its picture, then an icon for
-   each of up to 4 currencies of its cost. The cursor's 4 corners follow,
+   each of up to 4 currencies of its cost, then the trolley over each of
+   its hangers, which rides the rail. The cursor's 4 corners follow,
    then the two halves of the lock that breaks, then the padlocks of the
    carts. The cart picked is open and in the middle, so the locked ones are
    all to its right, and no more than LOCKS of them show. */
-#define PANEL_SPRITES 8
+#define PANEL_SPRITES (PICTURE_SPRITES + 4 + PANEL_HANGERS)
 #define PICTURE_SPRITES 4
+#define TROLLEY_SPRITES (PICTURE_SPRITES + 4) /* a panel's first trolley */
 #define LOCKS 4
 #define PANEL_SPRITE(p, i) SPRITE((p) * PANEL_SPRITES + (i))
 #define CURSOR_SPRITE(i) SPRITE(PANELS * PANEL_SPRITES + (i))
@@ -82,6 +85,7 @@ _Static_assert(PANELS * PANEL_SPRITES + 4 + 2 + LOCKS <= MENU_SPRITES, "MENU_SPR
 #define EFFECT_ROW 12
 #define COST_ROW 14
 static const uint8_t panel_heights[PANELS] = PANEL_HEIGHTS; /* the rows of each frame */
+static const uint8_t hanger_x[PANEL_HANGERS] = PANEL_HANGER_X;  /* from a panel's left */
 
 _Static_assert(PANEL_LAYOUTS == PANELS, "art/panels.py needs a layout for each panel.");
 
@@ -105,7 +109,6 @@ static const char flicker[] = "110001000011";
 #define CART_TOP 10 /* the rim, under any heap */
 #define PLATE_ROW 2
 #define TRACK_ROW ((CART_Y + CART_ROWS * 8) / 8)
-#define RAIL_ROW 1
 
 _Static_assert(STAGES <= CARTS_MAX, "CARTS_MAX in xram.h is too few for the stages.");
 _Static_assert(CART_TILES <= CART_TILES_MAX, "CART_TILES_MAX in xram.h is too few.");
@@ -310,6 +313,13 @@ static int16_t panel_x(uint8_t p)
     return PANEL_LEFT + p * PANEL_STEP - panel_scroll;
 }
 
+/* The image of a trolley at x, its wheels turned for where it is. */
+static unsigned trolley_image(int16_t x)
+{
+    return XRAM_BACKDROP_SPRITES + BACKDROP_TROLLEY_AT +
+           (x / 2 & (BACKDROP_TROLLEY_FRAMES - 1)) * (BACKDROP_TROLLEY_W * BACKDROP_TROLLEY_H / 2);
+}
+
 /* Whether panel p's picture is in its slot. The width and speed panels'
    pictures are the sled of the width bought. */
 static uint8_t picture_ready(uint8_t p)
@@ -345,6 +355,13 @@ static void pictures_draw(uint8_t p)
 
     for (i = 0; i < PANEL_SPRITES; i++)
         sprite_hide(PANEL_SPRITE(p, i));
+    for (i = 0; i < PANEL_HANGERS; i++)
+    {
+        int16_t tx = x + hanger_x[i] - BACKDROP_TROLLEY_W / 2;
+        sprite_set(PANEL_SPRITE(p, TROLLEY_SPRITES + i), trolley_image(tx), XRAM_BAND_PALETTE(top),
+                   MODE5_SIZE(BACKDROP_TROLLEY_W, BACKDROP_TROLLEY_H));
+        sprite_move(PANEL_SPRITE(p, TROLLEY_SPRITES + i), tx, BACKDROP_TROLLEY_Y);
+    }
     if (p == UPGRADE_WIDTH || p == UPGRADE_SPEED)
     {
         uint8_t level = upgrade_levels[UPGRADE_WIDTH];
@@ -413,8 +430,12 @@ static void pictures_move(void)
     for (p = 0; p < PANELS; p++)
         for (i = 0; i < PANEL_SPRITES; i++)
             if (picture_shown[p * PANEL_SPRITES + i])
-                xram0_poke16(PANEL_SPRITE(p, i) + offsetof(mode5_csprite_t, x_pos_px),
-                             panel_x(p) + picture_x[p * PANEL_SPRITES + i]);
+            {
+                int16_t x = panel_x(p) + picture_x[p * PANEL_SPRITES + i];
+                xram0_poke16(PANEL_SPRITE(p, i) + offsetof(mode5_csprite_t, x_pos_px), x);
+                if (i >= TROLLEY_SPRITES)
+                    xram0_poke16(PANEL_SPRITE(p, i) + offsetof(mode5_csprite_t, xram_sprite_ptr), trolley_image(x));
+            }
     drawn_scroll = panel_scroll;
 }
 
@@ -687,10 +708,13 @@ static void cheats_step(void)
 
 static void sprites_hide(void)
 {
-    uint8_t i;
+    uint8_t p, i;
 
-    for (i = 0; i < PANELS * PANEL_SPRITES + 4; i++)
-        sprite_hide(SPRITE(i));
+    for (p = 0; p < PANELS; p++)
+        for (i = 0; i < TROLLEY_SPRITES; i++)
+            sprite_hide(PANEL_SPRITE(p, i));
+    for (i = 0; i < 4; i++)
+        sprite_hide(CURSOR_SPRITE(i));
 }
 
 /* A question over the screen. The pictures and the cursor would show over
@@ -726,13 +750,12 @@ void shop_open(void)
     scene_menu();
     video_text_clear();
     {
-        char rail[TEXT_COLS + 1];
+        char track[TEXT_COLS + 1];
         uint8_t i;
         for (i = 0; i < TEXT_COLS; i++)
-            rail[i] = '\xCD';
-        rail[TEXT_COLS] = 0;
-        video_text(0, RAIL_ROW, rail, BOX_COLOR, CLEAR);
-        video_text(0, TRACK_ROW, rail, BOX_COLOR, CLEAR);
+            track[i] = '\xCD';
+        track[TEXT_COLS] = 0;
+        video_text(0, TRACK_ROW, track, BOX_COLOR, CLEAR);
     }
     nuggets_start(1);
     cursor_on = ON_RAIL;

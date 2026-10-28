@@ -1,12 +1,11 @@
 #include "machines.h"
-#include "sfx.h"
 #include "video.h"
 #include "xram.h"
 #include <rp6502.h>
 
 /* What moves in the upgrade screen's backdrop: the two cogs at the left of
    the floor turn all the time, and now and then the vent by the piston
-   lets out a puff of steam, with a hiss. They are plane 0 sprites over the
+   lets out a puff of steam, quietly. They are plane 0 sprites over the
    backdrop, in the slots of a stage's curtains, which this screen doesn't
    have, and in the bottom band's palette. art/backdrop.py draws their
    frames. */
@@ -15,8 +14,7 @@
 #define STEAM_SPRITE GEAR_SPRITE(2)
 #define GEAR_FRAME_BYTES (BACKDROP_GEARS_W * (BACKDROP_GEARS_H1 + BACKDROP_GEARS_H2) / 2)
 #define GEAR_IMAGE(f, half) (XRAM_BACKDROP_SPRITES + (f) * GEAR_FRAME_BYTES + (half) * BACKDROP_GEARS_W * BACKDROP_GEARS_H1 / 2)
-#define STEAM_IMAGE(f) \
-    (XRAM_BACKDROP_SPRITES + BACKDROP_GEAR_FRAMES * GEAR_FRAME_BYTES + (f) * BACKDROP_STEAM_W * BACKDROP_STEAM_H / 2)
+#define STEAM_IMAGE(f) (XRAM_BACKDROP_SPRITES + BACKDROP_STEAM_AT + (f) * BACKDROP_STEAM_W * BACKDROP_STEAM_H / 2)
 
 #define GEAR_STEPS 8  /* a frame of the cogs */
 #define STEAM_STEPS 5 /* a frame of the steam */
@@ -70,7 +68,6 @@ void machines_step(void)
     else if (!--steam_wait)
     {
         steam_steps = 1;
-        sfx_play(SFX_HISS, BACKDROP_STEAM_X);
         dirty = 1;
     }
 }

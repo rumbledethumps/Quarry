@@ -74,12 +74,10 @@ static const note_t unlock_notes[] = {
     END,
 };
 
-static const note_t hiss_notes[] = {NOTE(5000, -30, 18, NOISE, 6, 0x83, 0xA6), END};
-
 static const note_t *const sounds[SFX_COUNT] = {
     paddle_notes, wall_notes, brick_notes, break_notes, nugget_notes, lost_notes,
     low_notes, low_beep_notes, sputter_notes, fall_notes, buy_notes, move_notes,
-    rattle_notes, snap_notes, unlock_notes, hiss_notes,
+    rattle_notes, snap_notes, unlock_notes,
 };
 
 typedef struct

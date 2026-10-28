@@ -241,14 +241,21 @@ graphite steel with no yellow: there is nothing to be careful of here.
 
 ### The Backdrop
 
-Behind the upgrade screen is a workshop wall: a steel truss across the
-top, plain dark wall and a few gray pipes in the middle, and machinery
-along the floor, behind the carts. It is one picture, `art/backdrop.png`,
-in three bands of 16x16 tiles on plane 0, each with a palette of its own:
+Behind the upgrade screen is a workshop wall: the rail the panels hang
+from across the top, plain dark wall and a few gray pipes in the middle,
+and machinery along the floor, behind the carts. It is one picture,
+`art/backdrop.png`, in three bands of 16x16 tiles on plane 0, each with a
+palette of its own:
 
-- The top, 32 px, the truss, in 15 colors. This is where the rail and the
-  panels' hangers go, so its colors are free for them.
-- The middle, behind the panels, in 4 grays at 2 bits a pixel, the nearest
+- The top, 16 px, the rail, in 15 colors, shared with the trolleys. The
+  art's own truss was too coarse for the strip of it that shows over the
+  panels, so the wall from under it takes its place, and `art/backdrop.py`
+  draws the rail over it: a steel I-beam in the panels' graphite, a little
+  darker, with a rivet every 16 px and a plate joint every 64, its foot
+  flange just over `PANEL_Y`, so it follows the panels if they move. A
+  trolley rides it over each hanger, two wheels on the foot flange and a
+  side plate in safety paint, and its wheels turn as the panels slide.
+- The middle, from 16, behind the panels, in 4 grays at 2 bits a pixel, the nearest
   of the top's and the bottom's colors, so the bands join without a seam.
   It shows only between the panels and beside the first and the last, so
   it needs no color: nothing red or yellow belongs up there. The cells
@@ -259,7 +266,8 @@ in three bands of 16x16 tiles on plane 0, each with a palette of its own:
 
 `art/backdrop.py` darkens it, a little cool, so the panels and the carts
 stand out in front. The two cogs at the left of the floor turn all the
-time, and now and then the vent by the piston puffs steam, with a hiss:
+time, and now and then the vent by the piston puffs steam, without a
+sound, which would wear thin:
 the builder draws the cogs anew over the art's own, in four frames a tooth
 apart, and cuts the steam drawn in the art into five frames that grow from
 the vent and thin out. Both are plane 0 sprites over the bottom band.
