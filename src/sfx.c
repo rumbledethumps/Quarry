@@ -60,8 +60,8 @@ static const note_t buy_notes[] = {
     NOTE(1047, 0, 8, TRIANGLE, 4, 0x20, 0xF6),
     END,
 };
-/* The clicks decay to silence in a few ms, but hold their gate 2 steps, so
-   a PSG that looks at its gates less often than every step still sees them. */
+/* The clicks decay to silence in a few ms, but hold their gate 2 steps:
+   the PSG runs apart from the video, and can miss a gate held only one. */
 static const note_t move_notes[] = {NOTE(1568, 0, 2, SQUARE, 0, 0x60, 0xF1), END};
 static const note_t rattle_notes[] = {NOTE(2093, 0, 2, SQUARE, 0, 0x70, 0xF1), END};
 static const note_t snap_notes[] = {
