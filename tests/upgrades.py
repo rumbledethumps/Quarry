@@ -44,10 +44,13 @@ def main():
 
     def cursor_on_item(menu, item):
         """Whether the holographic cursor's top left corner is at the item
-        of a menu with a title, as src/menu.c places it."""
+        of a menu with a title, as src/menu.c places it, or out from it as
+        far as it breathes, up to 2 px."""
         center, top = game.ram(menu), game.ram(f'{menu}+1')
         row = top + sym['HEAD_ROWS'] + item * sym['ITEM_ROWS']
-        return game.sprite('XRAM_CURSOR_SPRITES') == ((center - sym['MENU_COLS'] // 2 + 2) * 8, row * 8)
+        x, y = game.sprite('XRAM_CURSOR_SPRITES')
+        out = (center - sym['MENU_COLS'] // 2 + 2) * 8 - x
+        return out == row * 8 - y and 0 <= out <= 2
 
     def panel_tiles(p, row):
         """The tiles inside panel p, on a row of its map."""

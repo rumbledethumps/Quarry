@@ -5,22 +5,30 @@
 /* The holographic cursor: four bright corners around what is picked, on
    the upgrade screen or in a menu on any screen. Placed while it shows, it
    slides to its new place, fast and then settling; placed while hidden, it
-   appears there at once. Its two brightest colors pulse all the while. Its
-   sprites are the last of plane 2's, over everything. cursor_step() moves
+   appears there at once. All the while, it breathes, its corners drifting
+   out and back, and its two brightest colors pulse. Its sprites are the
+   last of plane 2's, over everything. cursor_step() moves
    it, and cursor_draw() puts it there at the start of the next frame, so
    it doesn't move while the frame is drawn. */
 
 #define CORNER(i) (XRAM_CURSOR_SPRITES + (i) * sizeof(mode5_csprite_t))
 
+/* How far out the corners are, in px, for each BEAT steps of a breath.
+   The shimmer takes 4 beats, so a breath holds 3 of them. */
+#define BEAT 6
+static const uint8_t breath[] = {0, 0, 1, 1, 2, 2, 2, 2, 1, 1, 0, 0};
+
 static int16_t at[4], to[4]; /* left, top, right, bottom */
 static uint8_t shown, dirty, steps;
+static uint8_t out; /* how far out the corners were put */
 
 static void corners_move(void)
 {
     uint8_t i;
 
+    out = breath[steps / BEAT];
     for (i = 0; i < 4; i++)
-        sprite_move(CORNER(i), i & 1 ? at[2] - 8 : at[0], i & 2 ? at[3] - 8 : at[1]);
+        sprite_move(CORNER(i), i & 1 ? at[2] + out - 8 : at[0] - out, i & 2 ? at[3] + out - 8 : at[1] - out);
 }
 
 /* Steps a value a quarter of the way to where it is going, at least a
@@ -75,7 +83,8 @@ void cursor_step(void)
 {
     uint8_t i;
 
-    steps++;
+    if (++steps == sizeof breath * BEAT)
+        steps = 0;
     if (!shown)
         return;
     for (i = 0; i < 4; i++)
@@ -86,7 +95,8 @@ void cursor_step(void)
         }
 }
 
-/* At the start of a frame: the cursor shimmers, and moves to where it got. */
+/* At the start of a frame: the cursor shimmers, and moves to where it got
+   and as far out as its breath has it. */
 void cursor_draw(void)
 {
     static const uint16_t bright[] = {
@@ -95,13 +105,13 @@ void cursor_draw(void)
     static const uint16_t middle[] = {
         COLOR_FROM_RGBA(79, 216, 240, 255), COLOR_FROM_RGBA(60, 190, 220, 255),
         COLOR_FROM_RGBA(40, 160, 200, 255), COLOR_FROM_RGBA(60, 190, 220, 255)};
-    uint8_t phase = steps / 6 % 4;
+    uint8_t phase = steps / BEAT % 4;
 
     if (!shown)
         return;
     xram0_poke16(XRAM_PALETTE_HOLO + 4 * sizeof(uint16_t), bright[phase]);
     xram0_poke16(XRAM_PALETTE_HOLO + 3 * sizeof(uint16_t), middle[phase]);
-    if (!dirty)
+    if (!dirty && out == breath[steps / BEAT])
         return;
     dirty = 0;
     corners_move();
