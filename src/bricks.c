@@ -22,8 +22,8 @@
 #define STAGE_COLS_MAX 10
 
 _Static_assert(STAGE_COLS_MAX * STAGE1_ROWS <= BRICKS_MAX, "A stage has too many bricks.");
-_Static_assert(BRICK_W % 8 == 0 && 2 * STAGE1_MARGIN == BRICK_W,
-               "The frame needs a playfield a multiple of 8 wide.");
+_Static_assert(BRICK_W % (BEAM_W / 2) == 0 && 2 * STAGE1_MARGIN % (BEAM_W / 2) == 0,
+               "The frame's beam needs a playfield a multiple of BEAM_W / 2 wide.");
 
 uint8_t bricks_cols;
 uint8_t bricks_margin;

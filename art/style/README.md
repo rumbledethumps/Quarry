@@ -154,24 +154,26 @@ tape. They are drawn like the rest of the screen: crisp line art, a dark
 outline around every piece, a bright flange along each edge, and evenly
 spaced rivets. Used but maintained, never damaged: no cracks, dents, or
 gouges. They come in frame sets, and each new stage picks one at random,
-as it picks its curtains; a stage played again keeps its frame. Each set
-is Retro Diffusion's, drawn at the game's scale in `art/frames/frame-n.png`
-and cut to the game's sizes by `art/frames.py`.
+as it picks its curtains; a stage played again keeps its frame. Each set's
+art is in `art/frames/frame-n.png`, drawn at the game's scale by Retro
+Diffusion or by hand, and `art/frames.py` cuts it to the game's sizes.
 
 - The ball bounces off bright steel: the dark outline of a post or the
-  beam, with its bright flange just inside. No rubber strip or shadow on
+  beam, with bright steel just inside it. No rubber strip or shadow on
   the edge it hits.
-- A post shows 16 or 20 of its sprite's 20 columns, from its inside, and
-  the beam is 16 tall, so the ball bounces where it always has. Where the
+- A post shows up to 20 columns, from its inside, and the beam is 16
+  tall, so the ball bounces where it always has. Where the
   art is wider, plain columns or rows of its web are left out, and where
   it is narrower, plain ones repeat, never a rivet, a brace or an edge.
-- A post is two images of 64 rows that alternate down the screen, so its
-  art repeats every 128 rows, or 64. The beam runs between the posts,
-  butting into each, never behind one, in pieces 64 wide from the left
-  post; the last is as wide as what is left, from the beam's own first
-  columns, so its art repeats every 64 and runs on across every piece; the
-  width between the posts must be a multiple of 8. Nothing passes through
-  anything else: a cap tops each post with its own steel. Retro Diffusion spaces rivets unevenly, so a girder's
+- A post is one image 48 rows tall, down the screen again and again. The
+  beam runs between the posts, butting into each, never behind one, in
+  pieces 48 wide from the left post, and where a playfield leaves half a
+  piece, an end piece of the beam's first 24 columns. Every playfield is a
+  multiple of 24 wide, so a frame's art repeats every 8, 12, 16 or 24 and
+  joins itself at every piece, and art that repeats every 12 or 24 fits a
+  whole number of times between the posts of every stage, so it ends the
+  same at both. Nothing passes through anything else: a cap tops each post
+  with its own steel. Retro Diffusion spaces rivets unevenly, so a girder's
   post and beam are each one 8 px cell of its art, a rivet and its plate,
   repeated: the rivets fall every 8.
 - The knee braces stand behind the ball and are barely there, so nobody
@@ -180,15 +182,17 @@ and cut to the game's sizes by `art/frames.py`.
   brighter than the machine on the right wall, and `art/frames.py` stops
   the build if a brace is.
 - Set 1 is a riveted girder showing 16, its knee braces gusset plates.
-- Set 2 is an open truss of welded steel bars showing 20, X bracing in
+- Set 2 is an open truss of welded steel bars showing 18, X bracing in
   square cells that the rock shows through, like lighting truss built
-  heavy for construction. Its towers run on up past the top of the
-  screen, and its beam's top chord runs off the top of it. Its uprights
-  are 3 wide, so its cells repeat every 16, and a beam that ends half a
-  cell short ends on an upright and a stub of its bottom chord rather than
-  half an X. Its inner chords are a column wider than its outer, for the
-  edge the ball hits. Its art was drawn on green, which goes clear, and
-  turned to the girder's cool gray.
+  heavy for construction, drawn by hand in `art/frames/frame-2.png`. A bay
+  is 12: a bar 2 wide between outlines, then an X in an 8x8 opening, each
+  stroke outlined on both sides. Its chords are 5 wide, an outline, three
+  of steel and an outline, each lit on its outer side, so a tower is the
+  same inside and out, and a pixel heavier than its bars. The beam is the tower laid on its side, each bay from
+  half an upright to half an upright, so every stage's beam ends the same
+  at both towers, and its top chord runs off the top of the screen; the
+  towers run on up past it. Its brace is the gusset Retro Diffusion drew
+  for the truss it was chosen from, gone gray.
 - The concepts in `art/style/ref/frame-*.png` hold more looks for the next
   sets, such as the mine shaft frames of D1, D3 and D4.
 
@@ -443,8 +447,8 @@ That is 8 rows and the ores, so 24 rows are left for ores.
 | ball, ball sprite of the count | 8x8 |
 | digit | 8x12 sprite, a 6x8 digit with its outline |
 | texture | 320x240 at 2 bits a pixel |
-| post | 20 wide, 16 or 20 of it showing, 128 tall in two images of 64 |
-| cap beam | 16 tall, in pieces 64 wide and an end piece, and a cap 20x16 over each post |
+| post | 20 wide, up to 20 of it showing, in pieces 48 tall |
+| cap beam | 16 tall, in pieces 48 wide and an end piece 24 wide, and a cap 20x16 over each post |
 | brace | 32x32 |
 | machine | 24x40 |
 | sled | the widths of `TUNE_WIDTHS`, up to 64, rounded up to 4 for the sprite; 8 tall, then its two tilts, 24 tall each |
@@ -592,21 +596,23 @@ The prompts that made them, all RD Pro, with no seed returned:
   concept smaller with it as a reference goes muddy: a reference at half
   size passes its noise on, and one of only a corner gets a close-up of
   the beam.
-- `art/frames/frame-2.png`, `rd_pro__default`, 80x76, the last of four,
-  with no reference: "Seen straight on, a heavy-duty open steel truss frame
-  like construction scaffolding: an open lattice tower down the far left
-  edge and another down the far right edge, each a fifth of the image's
+- Set 2's truss, `rd_pro__default`, 128x120, the first of four, with no
+  reference, "Seen straight on, a heavy-duty open steel truss frame like
+  construction scaffolding: an open lattice tower down the far left edge
+  and another down the far right edge, each an eighth of the image's
   width, two square steel tube chords with X-shaped cross bracing bars
   welded between them in square cells so you can see right through,
-  joined across the very top by a matching open truss beam with X bracing,
-  as tall as the towers are wide, welded gusset plates where they meet,
-  grey steel with a crisp dark outline around every bar, smooth flat
+  joined across the very top by a matching open truss beam with X
+  bracing, as tall as the towers are wide, welded gusset plates where they
+  meet, grey steel with a crisp dark outline around every bar, smooth flat
   shading, used but well maintained, no rust, no cracks, no damage, light
   from the upper left, on a plain flat pure green background that shows
-  through every gap and fills the whole middle". It drew a corner, which
-  is all the cut needs. The same prompt at 128x120 drew the frame that set
-  2 was chosen from, its towers 25 wide; at 64 and 68 the X bracing turned
-  to mush. Retro Diffusion would not draw strips 16 wide to repeat.
+  through every gap and fills the whole middle", was the look chosen. Its
+  towers came out 25 wide. The same prompt, with each tower a fifth of the
+  image's width, drew towers 19 wide at 80x76
+  but with uneven bays, at 64 and 68 the bracing turned to mush, and
+  Retro Diffusion would not draw strips 16 wide to repeat. So the truss
+  is drawn by hand in its look, with only the gusset of the 80x76 take.
 - `ui-kit.png`, `rd_pro__ui_panel`, 256x256: "Control panel parts for
   heavy modern mining machinery: riveted graphite steel panels with
   safety-yellow trim, chunky industrial push buttons and toggle switches,

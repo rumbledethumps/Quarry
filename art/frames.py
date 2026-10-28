@@ -1,40 +1,40 @@
 #!/usr/bin/env python3
-"""Cut a frame set for the playfield from Retro Diffusion's art, as art/style/README.md describes it.
+"""Cut a frame set for the playfield from its art, as art/style/README.md describes it.
 
   frames.py n out.bin [--preview out.png]
 
-A frame set's art is in art/frames/: frame-n.png, a whole frame as Retro
+A frame set's art is art/frames/frame-n.png: a whole frame as Retro
 Diffusion drew it, a post down each side and a beam across the top with a
-knee brace in each top corner, and for some sets the post and the beam
-drawn again as strips that repeat, frame-n-post.png and frame-n-beam.png.
-CUTS gives each piece's image and its columns and rows: the post's from
+knee brace in each top corner, or a sheet of a post, a beam and a brace
+drawn by hand. CUTS gives each piece's columns and rows: the post's from
 the outside in, then down it, and the beam's along it, then from the top
 down. Each ends on its edge where the ball bounces, its dark outline with
-the bright flange just inside. Plain columns or rows of steel are left out
+bright steel just inside. Plain columns or rows of steel are left out
 where the art is wider than the game's, or repeated where it is narrower,
-never a rivet, a brace or an edge. A post shows 16 or 20 columns, from its
-inside, and None for its first columns leaves them clear; the frame lays
-itself out by how many show. A set drawn on green has its gaps clear, so
-the rock shows through: a pixel clearly greener than gray is a gap, and
-the rest are turned to the cool gray of steel, each as bright as it was,
-so no green or rusty brown is left in it.
+never a rivet, a brace or an edge. A post shows up to 20 columns, from
+its inside, and None for its first columns leaves them clear; the
+curtains tuck under it by how many show. A set drawn on green has its
+gaps clear, so the rock shows through: a pixel clearly greener than gray
+is a gap, and the rest are turned to the cool gray of steel, each as
+bright as it was, so no green or rusty brown is left in it.
 
-The post is two sprite images of 64 rows that alternate down the screen,
-128 rows in all. The beam is pieces 64 wide from the left post, and the
-last is as wide as what is left, a multiple of 8, so the beam's first 8,
-16 and on to 56 columns come too, each an image. So a post must repeat
-every 128 rows, or 64, and a beam every 64 columns. Retro Diffusion spaces
-rivets unevenly, so a girder's post or beam is one cell of its art, a
-rivet and the plate around it, 8 long, repeated; a strip drawn to repeat
-is used as it is. The brace is behind the ball, in the set's colors at
-SHADE, without the rock or the shadows around it, and no brighter than the
-brightest of the machine on the right wall, so it never looks like
-something to bounce off.
+The post is one sprite image 48 rows tall, down the screen again and
+again, and the beam pieces 48 wide from the left post, then if a
+playfield leaves half a piece, an end piece of its first 24 columns. A
+playfield is a multiple of 24 wide, so a post or a beam repeats every 8,
+12, 16 or 24 and joins itself at every piece, and one that repeats every
+12 or 24 fits a whole number of times between the posts of any stage, so
+it ends the same at both. Retro Diffusion spaces rivets unevenly, so a
+girder's post or beam is one cell of its art, a rivet and the plate
+around it, 8 long, repeated. The brace is behind the ball, in the set's
+colors at SHADE, without the rock or the shadows around it, and no
+brighter than the brightest of the machine on the right wall, so it
+never looks like something to bounce off.
 
 out.bin is a frame_set_t of src/xram.h: the set's palette, 16 colors as
 png2bin.py writes a palette row, the same colors at SHADE for the brace,
-how many of the post's columns show and a spare byte, then the post's two
-halves, the beam, its ends, the cap and the brace,
+how many of the post's columns show and a spare byte, then the post, the
+beam, its end piece, the cap and the brace,
 each a 4-bit image with the left pixel of each pair in the high nibble. Only the Python standard
 library is used.
 """
@@ -48,39 +48,36 @@ from curtain import reduce
 from rd2png import rgba, write_png
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-POST_W, BEAM_H, BRACE = 20, 16, 32
+POST_W, POST_H, BEAM_W, BEAM_H, BRACE = 20, 48, 48, 16, 32
 SHADE = 0.4  # the brace's colors, of the set's
 DIM = 66  # in the brace, darker than this is rock or shadow, and goes clear
 
 # Each set: for each piece, its image, then its columns and its rows.
 _GIRDER = list(range(0, 8)) + list(range(10, 18))  # two plain columns of the web out
-_TRUSS = list(range(7, 24)) + [23, 24, 25]  # its inner chord a column wider, to show 20
-_BAY = [38, 38, 38] + list(range(39, 51)) + [37]  # an upright, 3 wide, and the X after it
 
 
 def _cell(start):
-    """8 rows or columns from start, a rivet and the plate after it, 16 times."""
-    return [start + i % 8 for i in range(128)]
+    """8 rows or columns from start, a rivet and the plate after it, 6 times."""
+    return [start + i % 8 for i in range(48)]
 
 
 CUTS = {
     1: {  # a riveted steel girder, showing 16
         'on green': False,
         'post': ('frame-1.png', [None] * 4 + _GIRDER, _cell(63)),
-        'beam': ('frame-1.png', _cell(34)[:64], _GIRDER),
+        'beam': ('frame-1.png', _cell(34), _GIRDER),
         'cap': ('frame-1.png', [None] * 4 + _GIRDER, _GIRDER),
         'brace': ('frame-1.png', range(18, 18 + BRACE), range(18, 18 + BRACE)),
     },
-    2: {  # an open truss of welded bars with X bracing, showing 20; its beam's
-        # top chord is off the top of the screen, and its uprights are 3 wide
+    2: {  # an open truss of welded bars with X bracing, showing 18, drawn by hand, a 12 px
+        # bay of it 4 times over; the beam is the tower laid on its side, its
+        # top chord off the top of the screen, from half an upright to half an
+        # upright; the brace is the gusset Retro Diffusion drew for its truss
         'on green': True,
-        'post': ('frame-2.png', _TRUSS, [55 + i % 16 for i in range(128)]),
-        'beam': ('frame-2.png', _BAY * 4, list(range(7, 23))),
-        'cap': ('frame-2.png', _TRUSS, list(range(55, 71))),  # the tower runs on up
-        # A beam half a bay short ends on an upright and its bottom chord, its
-        # web open, rather than half an X.
-        'tail': ('frame-2.png', [38, 38, 38, 39], 45, range(1, 12)),
-        'brace': ('frame-2.png', range(26, 26 + BRACE), range(23, 23 + BRACE)),
+        'post': ('frame-2.png', [None] * 2 + list(range(18)), list(range(48))),
+        'beam': ('frame-2.png', list(range(24, 72)), list(range(2, 18))),
+        'cap': ('frame-2.png', [None] * 2 + list(range(18)), list(range(16))),
+        'brace': ('frame-2.png', range(24, 24 + BRACE), range(24, 24 + BRACE)),
     },
 }
 
@@ -117,39 +114,15 @@ def cut(n):
     beam = piece('beam', gap)
     cap = piece('cap', gap)
     brace = piece('brace', lambda c: gap(c) or luma(c) < DIM)
-    assert len(post) == 128 and len(post[0]) == POST_W and len(beam) == BEAM_H and len(beam[0]) == 64
+    assert len(post) == POST_H and len(post[0]) == POST_W and len(beam) == BEAM_H and len(beam[0]) == BEAM_W
     assert len(cap) == BEAM_H and len(cap[0]) == POST_W
     return post, beam, cap, brace
-
-
-def beam_ends(n, beam):
-    """The beam's end pieces, 8 to 56 wide: its first columns, or for a set
-    with a tail, those that end half a bay short ending on the tail
-    instead: an upright, then a column with its web rows open, 8 in all."""
-    ends = [[row[:w] for row in beam] for w in range(8, 64, 8)]
-    if 'tail' not in CUTS[n]:
-        return ends
-    path, upright, open_col, web = CUTS[n]['tail']
-    _, _, px = rgba(os.path.join(HERE, 'frames', path))
-    rows = CUTS[n]['beam'][2]
-    tint = gray if CUTS[n]['on green'] else (lambda c: c)
-    clear = green if CUTS[n]['on green'] else (lambda c: False)
-
-    def color(x, y):
-        c = px[y][x][:3]
-        return None if clear(c) else tint(c)
-    tail = [[color(x, y) for x in upright] + [None if i in web else color(open_col, y)] * (8 - len(upright))
-            for i, y in enumerate(rows)]
-    return [[row[:w - 8] + t for row, t in zip(beam, tail)] if w % 16 == 8 else end
-            for w, end in zip(range(8, 64, 8), ends)]
 
 
 def shows(n):
     """How many of the set's post's columns show, from its inside."""
     cols = CUTS[n]['post'][1]
-    count = sum(1 for x in cols if x is not None)
-    assert count % 4 == 0, f'set {n} shows {count} columns, not a multiple of 4'
-    return count
+    return sum(1 for x in cols if x is not None)
 
 
 def machine_luma():
@@ -175,7 +148,14 @@ def main():
     args = parser.parse_args()
 
     pieces = cut(args.n)
-    counts = Counter(c for img in pieces for row in img for c in row if c)
+    # The colors weighed as a post of 128 rows and a beam of 64 columns
+    # would weigh them, the girder's rivet cells 16 and 8 times over.
+    counts = Counter()
+    for img, weight in zip(pieces, (8, 4, 3, 3)):
+        for row in img:
+            for c in row:
+                if c:
+                    counts[c] += weight
     to = reduce(counts, 15)
     colors = sorted(set(to.values()), key=luma)
     index = {c: colors.index(to[c]) + 1 for c in to}
@@ -194,8 +174,8 @@ def main():
             data += struct.pack('<H', (b >> 3) << 11 | (g >> 3) << 6 | (r >> 3) | (32 if c else 0))
     data += bytes([shows(args.n), 0])
     post, beam, cap, brace = pieces
-    ends = beam_ends(args.n, beam)
-    for img in [post, beam] + ends + [cap, brace]:
+    end = [row[:BEAM_W // 2] for row in beam]
+    for img in (post, beam, end, cap, brace):
         data += packed(img, index)
     with open(args.output, 'wb') as f:
         f.write(data)
@@ -215,12 +195,11 @@ def main():
         post, beam, cap, brace = pieces
         put(brace, left, BEAM_H, dim=True)
         put(brace, right - BRACE, BEAM_H, flip=True, dim=True)
-        for y in range(0, h, 64):
-            half = post[y % 128:y % 128 + 64]
-            put(half, left - POST_W, y)
-            put(half, right, y, flip=True)
-        for x in range(left, right, 64):
-            put(beam if right - x >= 64 else ends[(right - x) // 8 - 1], x, 0)
+        for y in range(0, h, POST_H):
+            put(post, left - POST_W, y)
+            put(post, right, y, flip=True)
+        for x in range(left, right, BEAM_W):
+            put(beam if right - x >= BEAM_W else end, x, 0)
         put(cap, left - POST_W, 0)
         put(cap, right, 0, flip=True)
         write_png(args.preview, w, h, 2, [[v for c in row for v in c] for row in out])

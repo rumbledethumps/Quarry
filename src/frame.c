@@ -70,11 +70,10 @@ void frame_curtains(int16_t left, int16_t right)
 
 /* The frame around a playfield from left to right, and the rest around it.
    The posts' outer faces are as far out as the frame set's posts show. The
-   beam runs between the posts, in pieces 64 wide from the left one, and
-   the last is as wide as what is left, an image of the beam's first
-   columns, so the beam's art carries on across every piece; the width
-   between the posts must be a multiple of 8. The post's two images
-   alternate down the screen, and a cap tops each. */
+   beam runs between the posts, in pieces BEAM_W wide from the left one,
+   and if half a piece is left, the end piece, the beam's first columns, so
+   the beam's art carries on across every piece; the width between the
+   posts must be a multiple of BEAM_W / 2. A cap tops each post. */
 void frame_start(int16_t left, int16_t right)
 {
     uint8_t shows, i;
@@ -89,21 +88,21 @@ void frame_start(int16_t left, int16_t right)
     frame_curtains(left - shows + CURTAIN_UNDER, right + shows - CURTAIN_UNDER);
     for (i = 0; i < POST_SPRITES; i++)
     {
-        piece(SCENERY(posts, i), XRAM_POST_IMAGE(i & 1), XRAM_FRAME_PALETTE, MODE5_SIZE(POST_W, 64),
-              left - POST_W, i * 64, 0);
-        piece(SCENERY(posts, POST_SPRITES + i), XRAM_POST_IMAGE(i & 1), XRAM_FRAME_PALETTE,
-              MODE5_SIZE(POST_W, 64), right, i * 64, 1);
+        piece(SCENERY(posts, i), XRAM_POST_IMAGE, XRAM_FRAME_PALETTE, MODE5_SIZE(POST_W, POST_H),
+              left - POST_W, i * POST_H, 0);
+        piece(SCENERY(posts, POST_SPRITES + i), XRAM_POST_IMAGE, XRAM_FRAME_PALETTE,
+              MODE5_SIZE(POST_W, POST_H), right, i * POST_H, 1);
     }
     for (i = 0; i < BEAM_SPRITES; i++)
     {
-        int16_t x = left + i * 64;
-        uint8_t w = right - x < 64 ? right - x : 64;
+        int16_t x = left + i * BEAM_W;
 
         if (x >= right)
             sprite_hide(SCENERY(beam, i));
+        else if (right - x < BEAM_W)
+            piece(SCENERY(beam, i), XRAM_BEAM_END, XRAM_FRAME_PALETTE, MODE5_SIZE(BEAM_W / 2, BEAM_H), x, 0, 0);
         else
-            piece(SCENERY(beam, i), w == 64 ? XRAM_BEAM_IMAGE : XRAM_BEAM_END(w), XRAM_FRAME_PALETTE,
-                  MODE5_SIZE(w, BEAM_H), x, 0, 0);
+            piece(SCENERY(beam, i), XRAM_BEAM_IMAGE, XRAM_FRAME_PALETTE, MODE5_SIZE(BEAM_W, BEAM_H), x, 0, 0);
     }
     piece(SCENERY(caps, 0), XRAM_CAP_IMAGE, XRAM_FRAME_PALETTE, MODE5_SIZE(POST_W, BEAM_H), left - POST_W, 0, 0);
     piece(SCENERY(caps, 1), XRAM_CAP_IMAGE, XRAM_FRAME_PALETTE, MODE5_SIZE(POST_W, BEAM_H), right, 0, 1);
