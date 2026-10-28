@@ -3,11 +3,12 @@
 #include "xram.h"
 
 /* The frame of a playfield and what stands around it, all plane 0 sprites
-   in front of the texture. The posts and the cap beam are where the ball
-   bounces: the inner face of a post is the edge of the playfield, and the
-   underside of the beam its top. Outside the posts are the curtains, the
-   rock of a curtain set. Behind the ball are a knee brace in each top
-   corner and a machine on the right wall, in the shade palette, the
+   in front of the texture. The posts and the cap beam, of the stage's
+   frame set, are where the ball bounces: the bright inner face of a post
+   is the edge of the playfield, and the underside of the beam its top.
+   Outside the posts are the curtains, the rock of a curtain set. Behind
+   the ball are a knee brace in each top corner, in the frame set's colors
+   darkened, and a machine on the right wall, in the shade palette, the
    sled's colors darker, so they stay in the background. Each piece is
    drawn for the left side, and MODE5_HFLIP turns it for the right. */
 
@@ -68,39 +69,41 @@ void frame_curtains(int16_t left, int16_t right)
 }
 
 /* The frame around a playfield from left to right, and the rest around it.
-   The width between the outer faces of the posts must be a multiple of 8,
-   so the pieces of the beam line up. */
+   The width between the outer faces of the posts must be a multiple of 8:
+   the last piece of the beam ends at the right post, over the one before
+   it, and art/frames.py cuts the beam to join itself at those overlaps.
+   The post's two images alternate down the screen. */
 void frame_start(int16_t left, int16_t right)
 {
     int16_t outer = left - POST_W;
     int16_t width = right - left + 2 * POST_W;
     uint8_t i, beams = (width + 63) / 64;
 
-    piece(SCENERY(braces, 0), XRAM_BRACE_IMAGE, XRAM_PALETTE_SHADE, MODE5_SIZE(BRACE_SIZE, BRACE_SIZE),
+    piece(SCENERY(braces, 0), XRAM_BRACE_IMAGE, XRAM_FRAME_SHADE, MODE5_SIZE(BRACE_SIZE, BRACE_SIZE),
           left, BEAM_H, 0);
-    piece(SCENERY(braces, 1), XRAM_BRACE_IMAGE, XRAM_PALETTE_SHADE, MODE5_SIZE(BRACE_SIZE, BRACE_SIZE),
+    piece(SCENERY(braces, 1), XRAM_BRACE_IMAGE, XRAM_FRAME_SHADE, MODE5_SIZE(BRACE_SIZE, BRACE_SIZE),
           right - BRACE_SIZE, BEAM_H, 1);
     piece(SCENERY(machine, 0), XRAM_MACHINE_IMAGE, XRAM_PALETTE_SHADE, MODE5_SIZE(MACHINE_W, MACHINE_H),
           right - MACHINE_W, MACHINE_Y, 1);
     frame_curtains(outer + CURTAIN_UNDER, right + POST_W - CURTAIN_UNDER);
     for (i = 0; i < POST_SPRITES; i++)
     {
-        piece(SCENERY(posts, i), XRAM_POST_IMAGE, XRAM_PALETTE_SLED, MODE5_SIZE(POST_W, 64),
+        piece(SCENERY(posts, i), XRAM_POST_IMAGE(i & 1), XRAM_FRAME_PALETTE, MODE5_SIZE(POST_W, 64),
               outer, i * 64, 0);
-        piece(SCENERY(posts, POST_SPRITES + i), XRAM_POST_IMAGE, XRAM_PALETTE_SLED,
+        piece(SCENERY(posts, POST_SPRITES + i), XRAM_POST_IMAGE(i & 1), XRAM_FRAME_PALETTE,
               MODE5_SIZE(POST_W, 64), right, i * 64, 1);
     }
     for (i = 0; i < BEAM_SPRITES; i++)
     {
         unsigned sprite = SCENERY(beam, i);
-        sprite_set(sprite, XRAM_BEAM_IMAGE, XRAM_PALETTE_SLED, MODE5_SIZE(64, BEAM_H));
+        sprite_set(sprite, XRAM_BEAM_IMAGE, XRAM_FRAME_PALETTE, MODE5_SIZE(64, BEAM_H));
         if (i + 1 < beams)
             sprite_move(sprite, outer + i * 64, 0);
         else if (i + 1 == beams)
             sprite_move(sprite, outer + width - 64, 0);
     }
-    piece(SCENERY(caps, 0), XRAM_CAP_IMAGE, XRAM_PALETTE_SLED, MODE5_SIZE(POST_W, BEAM_H), outer, 0, 0);
-    piece(SCENERY(caps, 1), XRAM_CAP_IMAGE, XRAM_PALETTE_SLED, MODE5_SIZE(POST_W, BEAM_H), right, 0, 1);
+    piece(SCENERY(caps, 0), XRAM_CAP_IMAGE, XRAM_FRAME_PALETTE, MODE5_SIZE(POST_W, BEAM_H), outer, 0, 0);
+    piece(SCENERY(caps, 1), XRAM_CAP_IMAGE, XRAM_FRAME_PALETTE, MODE5_SIZE(POST_W, BEAM_H), right, 0, 1);
     frame_lamp(0);
 }
 

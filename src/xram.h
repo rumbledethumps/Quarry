@@ -347,12 +347,12 @@ typedef struct
 #define TEXTURE_W 320
 #define TEXTURE_H 240
 
-/* The frame of the playfield, from art/screen.py: a post POST_W wide on
-   each side, in POST_SPRITES pieces 64 rows tall, the cap beam BEAM_H tall
-   across the top, in up to BEAM_SPRITES pieces 64 columns wide, and a cap
-   over each post. Behind them are a knee brace in each top corner and a
-   machine on the right wall. */
-#define POST_W 8
+/* The frame of the playfield, a frame set from art/frames.py: a post
+   POST_W wide on each side, in POST_SPRITES pieces 64 rows tall, the cap
+   beam BEAM_H tall across the top, in up to BEAM_SPRITES pieces 64 columns
+   wide, and a cap over each post. Behind them are a knee brace in each top
+   corner, and a machine on the right wall, from art/screen.py. */
+#define POST_W 16
 #define POST_SPRITES 4
 #define BEAM_H 16
 #define BEAM_SPRITES 6
@@ -425,10 +425,10 @@ typedef struct
     uint16_t bricks[BRICK_COLORS][16]; /* bricks and nuggets, a palette a color */
     uint16_t fx[16];                   /* smoke and the energy gauge */
     uint16_t logo[16];
-    uint16_t sled[16];    /* the sleds, their jets, the frame, and the digits */
+    uint16_t sled[16];    /* the sleds, their jets, the digits, and the coin */
     uint16_t texture[16]; /* the first 4, loaded with each curtain set */
     uint16_t curtain[16]; /* loaded with each curtain set */
-    uint16_t shade[16];   /* the sled row at half, for the braces and the machine */
+    uint16_t shade[16];   /* the sled row at half, for the machine and a dim sled */
     uint16_t holo[16];    /* the cursor of the upgrade screen and the menus, which shimmers */
 } palettes_t;
 
@@ -498,14 +498,32 @@ typedef struct
     uint8_t cart_map[CART_ROWS][CART_MAP_COLS];
 } menu_art_t;
 
-/* The art of the title and of a stage: the texture and a curtain set, then
-   the title's logo or the stage's sled. */
+/* A frame set, as ROM:frame1 and on hold it: its palette, the same colors
+   darkened for the braces, then its pieces. The post is two images that
+   alternate down the screen. */
+typedef struct
+{
+    uint16_t palette[16];
+    uint16_t shade[16];
+    post_image_t post[2];
+    beam_image_t beam;
+    cap_image_t cap;
+    brace_image_t brace;
+} frame_set_t;
+
+/* The art of the title and of a stage: the texture and a curtain set, the
+   stage's sled, then the title's logo or, in its place, the stage's frame
+   set. Each screen loads its own when it starts. */
 typedef struct
 {
     uint8_t texture[TEXTURE_H][TEXTURE_W / 4];
     uint8_t curtains[2][CURTAIN_BYTES];
     uint8_t sled_images[SLED_SLOT]; /* the sled of a stage */
-    logo_image_t logo_images[3];    /* the title's logo */
+    union
+    {
+        logo_image_t logo_images[3]; /* the title's logo */
+        frame_set_t frame;           /* a stage's frame set */
+    };
 } cave_art_t;
 
 typedef struct
@@ -536,10 +554,6 @@ typedef struct
     piece_image_t smoke_images[SMOKE_FRAMES];
     energy_image_t energy_images[5];
     digit_image_t digit_images[10];
-    post_image_t post_image;
-    beam_image_t beam_image;
-    cap_image_t cap_image;
-    brace_image_t brace_image;
     machine_image_t machine_image;
     union
     {
@@ -604,10 +618,6 @@ typedef struct
 #define XRAM_SMOKE_IMAGES offsetof(xram_layout_t, smoke_images)
 #define XRAM_ENERGY_IMAGES offsetof(xram_layout_t, energy_images)
 #define XRAM_DIGIT_IMAGES offsetof(xram_layout_t, digit_images)
-#define XRAM_POST_IMAGE offsetof(xram_layout_t, post_image)
-#define XRAM_BEAM_IMAGE offsetof(xram_layout_t, beam_image)
-#define XRAM_CAP_IMAGE offsetof(xram_layout_t, cap_image)
-#define XRAM_BRACE_IMAGE offsetof(xram_layout_t, brace_image)
 #define XRAM_MACHINE_IMAGE offsetof(xram_layout_t, machine_image)
 #define XRAM_ART offsetof(xram_layout_t, art)
 #define XRAM_BACKDROP offsetof(xram_layout_t, art.menu.top)
@@ -627,6 +637,13 @@ typedef struct
 #define XRAM_CART_MAP offsetof(xram_layout_t, art.menu.cart_map)
 #define XRAM_TEXTURE offsetof(xram_layout_t, art.cave.texture)
 #define XRAM_CURTAINS offsetof(xram_layout_t, art.cave.curtains)
+#define XRAM_FRAME offsetof(xram_layout_t, art.cave.frame)
+#define XRAM_FRAME_PALETTE offsetof(xram_layout_t, art.cave.frame.palette)
+#define XRAM_FRAME_SHADE offsetof(xram_layout_t, art.cave.frame.shade)
+#define XRAM_POST_IMAGE(half) (offsetof(xram_layout_t, art.cave.frame.post) + (half) * sizeof(post_image_t))
+#define XRAM_BEAM_IMAGE offsetof(xram_layout_t, art.cave.frame.beam)
+#define XRAM_CAP_IMAGE offsetof(xram_layout_t, art.cave.frame.cap)
+#define XRAM_BRACE_IMAGE offsetof(xram_layout_t, art.cave.frame.brace)
 #define XRAM_STAGE_SLED offsetof(xram_layout_t, art.cave.sled_images)
 #define XRAM_LOGO_IMAGES offsetof(xram_layout_t, art.cave.logo_images)
 

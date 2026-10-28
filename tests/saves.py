@@ -110,18 +110,20 @@ def main():
     check(read_save(folder) and read_save(folder)[0] == broken, f'a stage ending saves, {broken} nuggets')
 
     # Esc does nothing on the menu when a stage ends. Replay plays the stage
-    # again, which saves, with its curtains and texture as they were.
+    # again, which saves, with its curtains, texture and frame as they were.
     game.run(70)
     game.tap('escape')
     game.run(5)
     check(game.ram('game_state') == game.sym['STATE_MENU'] and not game.shows('PAUSED'),
           'Esc does nothing on the menu')
     os.remove(os.path.join(folder, SAVE))
-    cave = game.ram('curtain_set'), game.xram('XRAM_TEXTURE_CONFIG', 8)
+    def look():
+        """The stage's curtain set, its texture's place, and its frame set's colors."""
+        return game.ram('curtain_set'), game.xram('XRAM_TEXTURE_CONFIG', 8), game.xram('XRAM_FRAME_PALETTE', 32)
+    cave = look()
     game.menu_choose('REPLAY', wait=False)
     check(read_save(folder) is not None, 'the stage starting saves')
-    check((game.ram('curtain_set'), game.xram('XRAM_TEXTURE_CONFIG', 8)) == cave,
-          'the stage played again keeps its curtains and its texture')
+    check(look() == cave, 'the stage played again keeps its curtains, its texture and its frame')
 
     # Restart from the pause menu starts the stage over, and keeps them too.
     game.paused_poke([('bricks_left', 3, 1)])
@@ -133,8 +135,7 @@ def main():
     game.until('game_state', 'STATE_PLAY', 30)
     check(game.ram('bricks_left') == game.sym['STAGE1_COLS'] * game.sym['STAGE1_ROWS'],
           'Restart starts the stage over')
-    check((game.ram('curtain_set'), game.xram('XRAM_TEXTURE_CONFIG', 8)) == cave,
-          'with its curtains and texture')
+    check(look() == cave, 'with its curtains, texture and frame')
     print('ok: Replay and Restart')
 
     # A purchase on the upgrade screen saves. Esc there asks to go back to

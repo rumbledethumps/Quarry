@@ -29,10 +29,6 @@ quarry_art(smoke.bin image smoke.png --tile 8x8)
 quarry_art(energy.bin image energy.png --tile 8x8)
 quarry_art(logo.bin image logo.png --tile 64x64)
 quarry_art(digits.bin image digits.png --tile 8x12)
-quarry_art(post.bin image post.png)
-quarry_art(beam.bin image beam.png)
-quarry_art(cap.bin image cap.png)
-quarry_art(brace.bin image brace.png)
 quarry_art(machine.bin image machine.png)
 quarry_art(coin.bin image coin.png)
 quarry_art(cursor.bin image cursor.png)
@@ -62,6 +58,21 @@ foreach(n RANGE 1 ${QUARRY_CURTAIN_SETS})
             ${CMAKE_CURRENT_SOURCE_DIR}/art/curtain.py ${CMAKE_CURRENT_SOURCE_DIR}/art/curtains/curtain-${n}.png
             ${CMAKE_CURRENT_BINARY_DIR}/curtain${n}.bin --preview ${CMAKE_CURRENT_BINARY_DIR}/curtain${n}.png
         DEPENDS art/curtain.py art/rd2png.py art/png2bin.py art/curtains/curtain-${n}.png
+        VERBATIM
+    )
+endforeach()
+
+# Each frame set of the playfield, cut by art/frames.py from art/frames/,
+# as ROM:frame1 and on. art/frames.py also writes frame<n>.png to look at.
+set(QUARRY_FRAME_SETS 1)
+foreach(n RANGE 1 ${QUARRY_FRAME_SETS})
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/frame${n}.bin
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/art/frames.py ${n} ${CMAKE_CURRENT_BINARY_DIR}/frame${n}.bin
+            --preview ${CMAKE_CURRENT_BINARY_DIR}/frame${n}.png
+        DEPENDS art/frames.py art/curtain.py art/rd2png.py art/png2bin.py art/frames/frame-${n}.png
+            art/machine.png art/palettes.png
         VERBATIM
     )
 endforeach()
@@ -136,10 +147,6 @@ rp6502_asset(quarry XRAM(XRAM_JET_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/jet.bin)
 rp6502_asset(quarry XRAM(XRAM_SMOKE_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/smoke.bin)
 rp6502_asset(quarry XRAM(XRAM_ENERGY_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/energy.bin)
 rp6502_asset(quarry XRAM(XRAM_DIGIT_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/digits.bin)
-rp6502_asset(quarry XRAM(XRAM_POST_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/post.bin)
-rp6502_asset(quarry XRAM(XRAM_BEAM_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/beam.bin)
-rp6502_asset(quarry XRAM(XRAM_CAP_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/cap.bin)
-rp6502_asset(quarry XRAM(XRAM_BRACE_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/brace.bin)
 rp6502_asset(quarry XRAM(XRAM_MACHINE_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/machine.bin)
 rp6502_asset(quarry XRAM(XRAM_COIN_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/coin.bin)
 rp6502_asset(quarry XRAM(XRAM_CURSOR_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/cursor.bin)
@@ -155,6 +162,9 @@ foreach(texture IN LISTS QUARRY_TEXTURES)
 endforeach()
 foreach(n RANGE 1 ${QUARRY_CURTAIN_SETS})
     rp6502_asset(quarry curtain${n} ${CMAKE_CURRENT_BINARY_DIR}/curtain${n}.bin)
+endforeach()
+foreach(n RANGE 1 ${QUARRY_FRAME_SETS})
+    rp6502_asset(quarry frame${n} ${CMAKE_CURRENT_BINARY_DIR}/frame${n}.bin)
 endforeach()
 rp6502_executable(quarry DATA default RESET default)
 rp6502_web(quarry CONFIG [[

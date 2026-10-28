@@ -86,8 +86,9 @@ at four faint levels.
 In front of the texture, behind the ball, stand the supports and the
 machines of the mine:
 
-- a 45 degree knee brace in each top corner, from the post up to the beam,
-  bolted at each end, heavy and a little cartoonish;
+- a knee brace in each top corner, from the post up to the beam, the frame
+  set's own, so dark it is barely there, and nobody takes it for something
+  to bounce off;
 - a machine bolted to the inside of the right wall. It is not explained.
   It hints that it powers the energy gauge. Upgrades may add more machines
   along the walls.
@@ -136,6 +137,8 @@ upgrade screen.
   chevrons.
 - Used but maintained: scuffs and worn paint on the edges and corners.
   Rust, dents, and grime that read as neglect are out.
+- Nothing looks broken or dangerous: no cracks, bends, gouges, or missing
+  rivets and bolts. Competent engineers built it and keep it up.
 - Built for someone who gets their hands dirty and does a professional
   job. It looks heavy, solid, and dependable.
 - The ball is part of the kit: forged steel.
@@ -145,17 +148,39 @@ References: `ref/sled-kit.png` for the sled and its parts,
 
 ### The Frame
 
-The posts and the cap beam are industrial too, a mine's post-and-cap set
-in the sled's yellow and graphite, from `art/screen.py`. The inner face of
-each post and the underside of the beam are bright lines, where the ball
-bounces. A post has a hydraulic section every 64 rows, the beam a hazard
-band, and a bracket caps each post where the beam ends. The beam is
-pieces 64 wide that repeat every 8 px, so the width between the outer
-faces of the posts must be a multiple of 8. `art/screen.py` also draws
-the braces, the machine, the digits, and the placeholder gauge. The
-braces and the machine use the shade row, so their brightness is set
-there, not in their pictures. Run it
-after a change there, then touch up any piece by hand.
+The posts and the cap beam are steel girders, gray, with no yellow and
+no hazard stripes, so the frame never competes with the menus' caution
+tape. They are drawn like the rest of the screen: crisp line art, a dark
+outline around every piece, a bright flange along each edge, and evenly
+spaced rivets. Used but maintained, never damaged: no cracks, dents, or
+gouges. They come in frame sets, and each new stage picks one at random,
+as it picks its curtains; a stage played again keeps its frame. Each set
+is Retro Diffusion's, drawn at the game's scale in `art/frames/frame-n.png`
+and cut to the game's sizes by `art/frames.py`.
+
+- The ball bounces off bright steel: the dark outline of a post or the
+  beam, with its bright flange just inside. No rubber strip or shadow on
+  the edge it hits.
+- A post is 16 wide and the beam 16 tall. Where the art is wider, plain
+  columns or rows of its web are left out, never a rivet or an edge.
+- A post is two images of 64 rows that alternate down the screen, and the
+  beam is pieces 64 wide, the last ending at the right post over the one
+  before it, by a multiple of 8, so the width between the outer faces of
+  the posts must be a multiple of 8. Retro Diffusion spaces rivets
+  unevenly, so each is one 8 px cell of its art, a rivet and its plate,
+  repeated: the rivets fall every 8, and every join lines up.
+- The knee braces stand behind the ball and are barely there, so nobody
+  takes one for something to bounce off: the set's colors darkened,
+  without the rock or the shadows around them. Nothing behind the ball is
+  brighter than the machine on the right wall, and `art/frames.py` stops
+  the build if a brace is.
+- Set 1 is a riveted girder, its knee braces gusset plates. The concepts
+  in `art/style/ref/frame-*.png` hold more looks for the next sets: the
+  lattices of B2 and B3 and the mine shaft frames of D1, D3 and D4.
+
+`art/screen.py` draws the machine, the digits, and the placeholder gauge.
+The machine uses the shade row, so its brightness is set there, not in its
+picture. Run it after a change there, then touch up any piece by hand.
 
 ### The Sled
 
@@ -382,13 +407,13 @@ darkest first. Each class of art gets a row of its own:
 | bricks | one per ore: the brick, its break frames, its nugget, and its nugget sprite |
 | fx | the smoke and the energy gauge |
 | logo | the title logo |
-| sled | the sleds, their jets and flames, the frame, the braces, the machine, the digits, and the coin |
+| sled | the sleds, their jets and flames, the machine, the digits, and the coin |
 | texture | the texture behind the playfield, its first 4 colors, loaded with each curtain set |
 | curtain | the curtain set of the stage, loaded with it |
-| shade | the sled row at 60%, for the braces and the machine behind the ball |
+| shade | the sled row at half, for the machine behind the ball and a dim sled |
 | holo | the holographic cursor of the upgrade screen and the menus, whose colors shimmer |
 
-The upgrade panels have a palette of their own, 256 colors, outside these rows, since they are a tile layer, and so do the menus, 16 colors.
+The upgrade panels have a palette of their own, 256 colors, outside these rows, since they are a tile layer, and so do the menus, 16 colors. Each frame set brings its own 16 colors, and the same darkened for its braces, with its pieces.
 
 A jet's nozzle and its flame are one sprite, so the flames share the sled
 row. Every curtain set brings its own palette into the one curtain row.
@@ -404,8 +429,8 @@ That is 8 rows and the ores, so 24 rows are left for ores.
 | ball, ball sprite of the count | 8x8 |
 | digit | 8x12 sprite, a 6x8 digit with its outline |
 | texture | 320x240 at 2 bits a pixel |
-| post | 8 wide, in pieces 64 tall |
-| cap beam | 16 tall, in pieces 64 wide, and a cap 8x16 over each post |
+| post | 16 wide, 128 tall in two images of 64 |
+| cap beam | 16 tall, in pieces 64 wide, and a cap 16x16 over each post |
 | brace | 32x32 |
 | machine | 24x40 |
 | sled | the widths of `TUNE_WIDTHS`, up to 64, rounded up to 4 for the sprite; 8 tall, then its two tilts, 24 tall each |
@@ -476,6 +501,9 @@ The blocks of the looks:
 | `ref/ore-blocks.png` | Matte ore rock and the pairing of each brick with its nugget. Eight candidate ores: limestone, gold-flecked sandstone, malachite in granite, iron ore, coal, silver in slate, rose quartz, and amber in basalt. Stage 1's white is the limestone. |
 | `ref/sled-kit.png` | The colors, the chevrons, the bolts, and the thrusters. Keep the scuffs and leave out the rust specks. Its tops are not flat: the new sled has the flat, overhanging top plate of [The Sled](#the-sled). |
 | `ref/ui-kit.png` | Graphite panels with yellow trim, gauges, and meters. Its vertical meter is a start for the energy gauge. |
+| `ref/frame-B2.png`, `ref/frame-B3.png` | Concepts for the playfield's frame: lattice towers of angle iron with X bracing, a zigzag truss beam, bolted gussets. Gray steel, see-through. |
+| `ref/frame-C1.png`, `ref/frame-C3.png` | Concepts for the frame: riveted I-beam columns, a riveted plate girder, gusset plates in the corners, in the panels' graphite steel. |
+| `ref/frame-D1.png`, `ref/frame-D3.png`, `ref/frame-D4.png` | Concepts for the frame: a mine shaft frame of plain steel posts, a crossbeam and knee braces. D1 drew a whole mine around it; only its frame counts. A first frame set redrawn from D3 at the game's scale came out muddy, its edges noise, and was dropped. |
 
 The prompts that made them, all RD Pro, with no seed returned:
 
@@ -503,6 +531,53 @@ The prompts that made them, all RD Pro, with no seed returned:
   graphite steel with black and yellow hazard chevrons, scuffed edges and
   worn paint but clean and well maintained, modern and slightly futuristic
   heavy machinery, light from the upper left, on a plain white background"
+- `frame-B2.png` and `frame-B3.png`, two of four, `rd_pro__default`,
+  256x240: "Seen straight on from the front, a sturdy steel lattice frame
+  inside a dark quarry pit: a tall narrow lattice tower of grey steel
+  angle iron on the far left edge and another on the far right edge, each
+  running the full height of the image and about a sixteenth of its
+  width, with criss-cross bracing between their two chords, joined across
+  the very top by a lattice truss girder with a zigzag web, bolted gusset
+  plates at the joints, a short diagonal brace in each top corner, dark
+  gunmetal grey steel, worn but well maintained, the inner edges straight
+  and clean, no yellow, no hazard stripes, the whole middle an empty flat
+  dark space, light from the upper left"
+- `frame-C1.png` and `frame-C3.png`, the same, with a 64x64 corner of
+  `panel-frame.png` as a reference: "Seen straight on from the front, a
+  heavy riveted steel frame inside a dark quarry pit: a tall riveted
+  I-beam column on the far left edge and another on the far right edge,
+  each running the full height of the image and about a sixteenth of its
+  width, joined across the very top by a heavy riveted plate girder, big
+  riveted gusset plates at the two top corners, dark graphite gunmetal
+  steel like the reference with seams, rivets and bolts, worn edges but
+  clean and well maintained, a thin bright bevel along the inner edges,
+  no yellow, no hazard stripes, the whole middle an empty flat dark space,
+  light from the upper left"
+- `frame-D1.png`, `frame-D3.png` and `frame-D4.png`, `rd_pro__platformer`,
+  256x240: "Seen straight on, an industrial steel mine shaft frame inside
+  a dark quarry: two tall steel posts at the far left and right edges
+  running the full height of the image, each about a sixteenth of its
+  width, joined across the very top by a steel crossbeam, the inside faces
+  of both posts and the underside of the crossbeam lined with thick dark
+  rubber bumper rails held on by bolts, cool grey steel, sturdy and worn
+  but well maintained, a short diagonal brace in each top corner, no
+  yellow, no hazard stripes, the whole middle an empty flat dark space,
+  light from the upper left"
+- `art/frames/frame-1.png`, `rd_pro__default`, 128x120, the last of four,
+  with no reference: "Seen straight on, a clean new steel girder frame: a
+  riveted steel I-beam column down the far left edge and another down the
+  far right edge, each an eighth of the image's width, joined across the
+  very top by a riveted steel I-beam as tall as the columns are wide, each
+  I-beam with a bright flange along both of its edges and one neat row of
+  evenly spaced round rivets down its middle, a small riveted gusset plate
+  in each top corner, cool grey steel with a crisp dark outline around
+  every piece, smooth flat shading, no scratches, no dents, no rust, no
+  damage, brand new and well maintained, light from the upper left, the
+  whole middle a plain flat black space". At this size it drew the
+  columns 18 wide, as it would a frame at the game's scale. Redrawing a
+  concept smaller with it as a reference goes muddy: a reference at half
+  size passes its noise on, and one of only a corner gets a close-up of
+  the beam.
 - `ui-kit.png`, `rd_pro__ui_panel`, 256x256: "Control panel parts for
   heavy modern mining machinery: riveted graphite steel panels with
   safety-yellow trim, chunky industrial push buttons and toggle switches,

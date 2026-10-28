@@ -14,11 +14,12 @@
 #define BALL_SIZE 8
 
 /* The count of balls is at the bottom left, the ball and then its digits,
-   and the energy gauge at the right edge. */
+   and the energy gauge at the right edge, clear of the right post of the
+   widest stage, which ends at 308. */
 #define BALLS_X 4
 #define BALLS_Y 227
 #define BALLS_MAX 99
-#define GAUGE_X 306
+#define GAUGE_X 310
 #define GAUGE_Y 64
 
 #define BALL_DOCKED 0 /* on the paddle, waiting for launch */

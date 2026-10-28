@@ -12,9 +12,10 @@
    when the screen starts. The upgrade screen has its backdrop, its panels
    and carts, and slots for the pictures of the panels near the middle,
    which load as the panels come near. The title has a texture, a curtain set and the logo, and a stage a
-   texture, a curtain set and its own sled. The texture and the curtain set
-   are picked at random only when the screen changes, so a stage played
-   again, or the next one, keeps its rock, and nobody sees it change. */
+   texture, a curtain set, a frame set and its own sled. The texture, the
+   curtain set and the frame set are picked at random only when the screen
+   changes, so a stage played again keeps its rock and its frame, and
+   nobody sees them change. */
 
 #define SCENE_MENU 1
 #define SCENE_STAGE 2
@@ -26,10 +27,14 @@
 #define CURTAIN_SETS 4 /* QUARRY_CURTAIN_SETS of CMakeLists.txt */
 #define TEXTURES 4
 
-_Static_assert(CURTAIN_SETS <= 9 && TEXTURES <= 9, "An asset's name has one digit.");
+/* The frame sets, ROM:frame1 and on, each a frame_set_t. */
+#define FRAME_SETS 1 /* QUARRY_FRAME_SETS of CMakeLists.txt */
+
+_Static_assert(CURTAIN_SETS <= 9 && TEXTURES <= 9 && FRAME_SETS <= 9, "An asset's name has one digit.");
 
 static uint8_t scene;
 static uint8_t curtain_set; /* the one shown, from 0 */
+static uint8_t frame_set;   /* the one a stage shows, from 0 */
 static uint8_t menu_shown;  /* whether the upgrade screen's planes are on */
 
 /* Waits for the start of the next frame. */
@@ -168,7 +173,8 @@ static void curtains_load(void)
 }
 
 /* A texture on plane 0, shown from a new place, and a curtain set, both
-   picked at random. The texture takes its colors from the curtain set. */
+   picked at random, and the frame set a stage shows, too. The texture
+   takes its colors from the curtain set. */
 static void cave(void)
 {
     char texture[] = "ROM:texture1";
@@ -178,6 +184,8 @@ static void cave(void)
     noise /= TEXTURES;
     curtain_set = noise % CURTAIN_SETS;
     noise /= CURTAIN_SETS;
+    frame_set = noise % FRAME_SETS;
+    noise /= FRAME_SETS;
     load(texture, 0, XRAM_TEXTURE, sizeof(((xram_layout_t *)0)->art.cave.texture));
     curtains_load();
     xram0_poke16(XRAM_TEXTURE_CONFIG + offsetof(mode3_config_t, x_pos_px), -(int16_t)(noise % TEXTURE_W));
@@ -197,14 +205,19 @@ void scene_title(void)
     load("ROM:logo", 0, XRAM_LOGO_IMAGES, sizeof(((xram_layout_t *)0)->art.cave.logo_images));
 }
 
-/* A stage: a cave, if it comes from another screen, and the sled of a
-   level of the width upgrade. */
+/* A stage: a cave and its frame set, if it comes from another screen, and
+   the sled of a level of the width upgrade. */
 void scene_stage(uint8_t sled_level)
 {
     if (scene_change(SCENE_STAGE))
     {
+        char frame[] = "ROM:frame1";
+
         video_start();
         cave();
+        frame[9] = '1' + frame_set;
+        load(frame, 0, XRAM_FRAME, sizeof(frame_set_t));
+        DEBUG_LOG("frame %u\n", frame_set + 1);
     }
     load("ROM:sleds", (long)sled_level * SLED_SLOT, XRAM_STAGE_SLED, SLED_SLOT);
 }
