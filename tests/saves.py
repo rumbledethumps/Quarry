@@ -208,6 +208,11 @@ def main():
     game.tap('space')
     game.until('game_state', 'STATE_CONFIRM', 10)
     check(game.shows('START OVER?'), 'it asks to start over')
+    game.tap('escape')
+    game.until('game_state', 'STATE_TITLE', 10)
+    check(not game.shows('START OVER?') and game.shows('NEW GAME'), 'Esc is No')
+    game.tap('space')  # NEW GAME, picked after Esc
+    game.until('game_state', 'STATE_CONFIRM', 10)
     game.tap('space')  # NO, picked first
     game.until('game_state', 'STATE_TITLE', 10)
     check(read_save(folder)[:3] == (left, 0, (1, 0)), 'No leaves the save')
@@ -220,7 +225,7 @@ def main():
     check(read_save(folder) == (0, 0, (0, 0), 0, 1, 1), 'Yes replaces the save with a new game')
     check(game.ram('nuggets', 2) == 0 and game.ram('paddle_width') == game.ram('widths'),
           'and starts over')
-    print('ok: New Game asked first, and No kept the save')
+    print('ok: New Game asked first, and Esc and No kept the save')
     game.close()
 
     # A save that isn't one is no save.

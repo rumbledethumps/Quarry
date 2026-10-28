@@ -268,7 +268,8 @@ int main(void)
             }
             break;
         case STATE_CONFIRM:
-            switch (menu_step())
+            /* Esc is No. */
+            switch (input_pressed & INPUT_PAUSE ? CONFIRM_NO : menu_step())
             {
             case CONFIRM_YES:
                 DEBUG_LOG("new game\n");
