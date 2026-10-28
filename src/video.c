@@ -31,7 +31,15 @@ void video_init(void)
     xram0_write(XRAM_TEXT_CONFIG, &text_config, sizeof text_config);
 }
 
-/* Planes, back to front:
+/* A blank canvas: every plane off, so nothing is left of the last screen,
+   such as the upgrade screen's panels on plane 1, and nothing shows until
+   the next one programs its planes. */
+void video_blank(void)
+{
+    xreg_vga_canvas(CANVAS_320X240);
+}
+
+/* The sprites and the text on a blank canvas. Planes, back to front:
    0: the backdrop of the upgrade screen, or the texture of the title and
       a stage, which each screen programs itself, with the scenery and the
       bricks over it.
@@ -41,7 +49,6 @@ void video_init(void)
       pictures over it. */
 void video_start(void)
 {
-    xreg_vga_canvas(CANVAS_320X240);
     xreg_vga_mode5(MODE5_CUSTOM, XRAM_SCENERY,
                    sizeof(scenery_t) / sizeof(mode5_csprite_t) + BRICKS_MAX, 0);
     xreg_vga_mode5(MODE5_CUSTOM, XRAM_ACTORS, sizeof(actors_t) / sizeof(mode5_csprite_t), 1);

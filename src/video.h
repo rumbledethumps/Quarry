@@ -21,6 +21,7 @@
 #define SPRITE_HIDDEN_Y -64
 
 void video_init(void);
+void video_blank(void);
 void video_start(void);
 void video_hide_sprites(void);
 void video_text_clear(void);

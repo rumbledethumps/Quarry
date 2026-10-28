@@ -739,9 +739,9 @@ void shop_open(void)
 {
     uint8_t p;
 
+    scene_menu();
     video_hide_sprites();
     input_repeat_stop();
-    scene_menu();
     video_text_clear();
     {
         char track[TEXT_COLS + 1];
@@ -783,6 +783,7 @@ void shop_open(void)
     if (unlocking)
         lock_start();
     save_write();
+    scene_menu_show(); /* only now, with everything in its place */
     DEBUG_LOG("upgrades\n");
 }
 

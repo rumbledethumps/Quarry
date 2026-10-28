@@ -30,16 +30,27 @@ _Static_assert(CURTAIN_SETS <= 9 && TEXTURES <= 9, "An asset's name has one digi
 
 static uint8_t scene;
 static uint8_t curtain_set; /* the one shown, from 0 */
+static uint8_t menu_shown;  /* whether the upgrade screen's planes are on */
+
+/* Waits for the start of the next frame. */
+static void next_frame(void)
+{
+    uint8_t vsync = ria_vsync();
+
+    while (ria_vsync() == vsync)
+        ;
+}
 
 /* A new screen starts on a blank canvas, so nothing is left of the last
-   one, such as the upgrade screen's panels on plane 1. Returns whether
-   the screen changed. */
+   one, at the start of a frame, so the last one shows whole until then.
+   Returns whether the screen changed. */
 static uint8_t scene_change(uint8_t to)
 {
     if (scene == to)
         return 0;
     scene = to;
-    video_start();
+    next_frame();
+    video_blank();
     return 1;
 }
 
@@ -66,10 +77,8 @@ static void load(const char *path, long offset, unsigned xaddr, unsigned count)
     close(fd);
 }
 
-/* A band of the backdrop on plane 0, from scanline top, rows of tiles down,
-   at 2 or 4 bits a pixel. */
-static void backdrop_band(uint8_t band, uint8_t bpp, unsigned palette, unsigned tiles, unsigned map, int16_t top,
-                          uint8_t rows)
+/* A band of the backdrop on plane 0, from scanline top, rows of tiles down. */
+static void backdrop_band(uint8_t band, unsigned palette, unsigned tiles, unsigned map, int16_t top, uint8_t rows)
 {
     mode2_config_t config;
 
@@ -81,14 +90,14 @@ static void backdrop_band(uint8_t band, uint8_t bpp, unsigned palette, unsigned 
     config.xram_palette_ptr = palette;
     config.xram_tile_ptr = tiles;
     xram0_write(XRAM_BACKDROP_CONFIG(band), &config, sizeof config);
-    xreg_vga_mode2((bpp == 2 ? MODE2_2BPP : MODE2_4BPP) | MODE2_16X16, XRAM_BACKDROP_CONFIG(band), 0, top,
-                   top + rows * 16);
 }
 
-/* The upgrade screen: the backdrop on plane 0, in its three bands, and on
-   plane 1 the panels from PANEL_Y and the carts from CART_Y, which the
-   upgrade screen slides and fills in: the panels' palette, tiles and the
-   map of their frames, and the carts' palette and tiles. */
+/* The upgrade screen's art and its layers: the backdrop for plane 0, in
+   its three bands, and for plane 1 the panels from PANEL_Y and the carts
+   from CART_Y, which the upgrade screen slides and fills in: the panels'
+   palette, tiles and the map of their frames, and the carts' palette and
+   tiles. Nothing shows until scene_menu_show(), once the upgrade screen
+   has put everything in its place. */
 void scene_menu(void)
 {
     mode2_config_t config;
@@ -96,12 +105,13 @@ void scene_menu(void)
     if (!scene_change(SCENE_MENU))
         return;
     load("ROM:backdrop", 0, XRAM_BACKDROP, XRAM_PICTURE(0) - XRAM_BACKDROP);
-    backdrop_band(0, BACKDROP_TOP_BPP, XRAM_BAND_PALETTE(top), XRAM_BAND_TILES(top), XRAM_BAND_MAP(top),
-                  BACKDROP_TOP_Y, BACKDROP_TOP_ROWS);
-    backdrop_band(1, BACKDROP_MIDDLE_BPP, XRAM_BAND_PALETTE(middle), XRAM_BAND_TILES(middle),
-                  XRAM_BAND_MAP(middle), BACKDROP_MIDDLE_Y, BACKDROP_MIDDLE_ROWS);
-    backdrop_band(2, BACKDROP_BOTTOM_BPP, XRAM_BAND_PALETTE(bottom), XRAM_BAND_TILES(bottom),
-                  XRAM_BAND_MAP(bottom), BACKDROP_BOTTOM_Y, BACKDROP_BOTTOM_ROWS);
+    menu_shown = 0;
+    backdrop_band(0, XRAM_BAND_PALETTE(top), XRAM_BAND_TILES(top), XRAM_BAND_MAP(top), BACKDROP_TOP_Y,
+                  BACKDROP_TOP_ROWS);
+    backdrop_band(1, XRAM_BAND_PALETTE(middle), XRAM_BAND_TILES(middle), XRAM_BAND_MAP(middle),
+                  BACKDROP_MIDDLE_Y, BACKDROP_MIDDLE_ROWS);
+    backdrop_band(2, XRAM_BAND_PALETTE(bottom), XRAM_BAND_TILES(bottom), XRAM_BAND_MAP(bottom),
+                  BACKDROP_BOTTOM_Y, BACKDROP_BOTTOM_ROWS);
     load("ROM:panels", 0, XRAM_PANEL_PALETTE, XRAM_CART_PALETTE - XRAM_PANEL_PALETTE);
     memset(&config, 0, sizeof config);
     config.y_pos_px = PANEL_Y;
@@ -111,7 +121,6 @@ void scene_menu(void)
     config.xram_palette_ptr = XRAM_PANEL_PALETTE;
     config.xram_tile_ptr = XRAM_PANEL_TILES;
     xram0_write(XRAM_PANEL_CONFIG, &config, sizeof config);
-    xreg_vga_mode2(MODE2_8BPP | MODE2_8X8, XRAM_PANEL_CONFIG, 1, PANEL_Y, PANEL_Y + PANEL_ROWS * 8);
     load("ROM:carts", 0, XRAM_CART_PALETTE, XRAM_CART_MAP - XRAM_CART_PALETTE);
     xram0_set(XRAM_CART_MAP, 0, sizeof(((xram_layout_t *)0)->art.menu.cart_map));
     config.y_pos_px = CART_Y;
@@ -121,6 +130,26 @@ void scene_menu(void)
     config.xram_palette_ptr = XRAM_CART_PALETTE;
     config.xram_tile_ptr = XRAM_CART_TILES;
     xram0_write(XRAM_CART_CONFIG, &config, sizeof config);
+}
+
+#define BAND_MODE(bpp) (((bpp) == 2 ? MODE2_2BPP : MODE2_4BPP) | MODE2_16X16)
+
+/* The upgrade screen shows, all at once, at the start of a frame, once
+   everything on it is in its place: its sprites and text, and its layers. */
+void scene_menu_show(void)
+{
+    if (menu_shown)
+        return;
+    menu_shown = 1;
+    next_frame();
+    video_start();
+    xreg_vga_mode2(BAND_MODE(BACKDROP_TOP_BPP), XRAM_BACKDROP_CONFIG(0), 0, BACKDROP_TOP_Y,
+                   BACKDROP_TOP_Y + BACKDROP_TOP_ROWS * 16);
+    xreg_vga_mode2(BAND_MODE(BACKDROP_MIDDLE_BPP), XRAM_BACKDROP_CONFIG(1), 0, BACKDROP_MIDDLE_Y,
+                   BACKDROP_MIDDLE_Y + BACKDROP_MIDDLE_ROWS * 16);
+    xreg_vga_mode2(BAND_MODE(BACKDROP_BOTTOM_BPP), XRAM_BACKDROP_CONFIG(2), 0, BACKDROP_BOTTOM_Y,
+                   BACKDROP_BOTTOM_Y + BACKDROP_BOTTOM_ROWS * 16);
+    xreg_vga_mode2(MODE2_8BPP | MODE2_8X8, XRAM_PANEL_CONFIG, 1, PANEL_Y, PANEL_Y + PANEL_ROWS * 8);
     xreg_vga_mode2(MODE2_4BPP | MODE2_8X8, XRAM_CART_CONFIG, 1, CART_Y, CART_Y + CART_ROWS * 8);
 }
 
@@ -161,7 +190,10 @@ static void cave(void)
 void scene_title(void)
 {
     if (scene_change(SCENE_TITLE))
+    {
+        video_start();
         cave();
+    }
     load("ROM:logo", 0, XRAM_LOGO_IMAGES, sizeof(((xram_layout_t *)0)->art.cave.logo_images));
 }
 
@@ -170,7 +202,10 @@ void scene_title(void)
 void scene_stage(uint8_t sled_level)
 {
     if (scene_change(SCENE_STAGE))
+    {
+        video_start();
         cave();
+    }
     load("ROM:sleds", (long)sled_level * SLED_SLOT, XRAM_STAGE_SLED, SLED_SLOT);
 }
 

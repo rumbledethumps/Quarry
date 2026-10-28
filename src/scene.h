@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 void scene_menu(void);
+void scene_menu_show(void);
 void scene_title(void);
 void scene_stage(uint8_t sled_level);
 void scene_curtains(int8_t step);
