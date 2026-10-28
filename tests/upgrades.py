@@ -323,9 +323,9 @@ def main():
 
     # Level 2 is level 1 with red bricks in the middle of its top two rows,
     # and tougher: the gray take two hits and the red three. Each hit cracks
-    # a red brick more, to the quarter broken nearest, and the third breaks
-    # it, into red chunks and a red nugget, whose line of the counts shows
-    # once it lands.
+    # a red brick more, by the steps of CRACK_STATES it is broken, rounded
+    # up, and the third breaks it, into red chunks and a red nugget, whose
+    # line of the counts shows once it lands.
     bricks, step = sym['LEVEL2_BRICKS'], sym['SPRITE_BYTES']
     gray, red = sym['XRAM_PALETTE_BRICKS'], sym['XRAM_PALETTE_BRICKS'] + 32 * sym['BRICK_RED']
     palette = lambda addr: struct.unpack('<H', game.xram(addr + 6, 2))[0]
@@ -339,15 +339,16 @@ def main():
     game.tap('space', 2)
     game.paused_poke([('ball_x', x + 8 << 8, 4), ('ball_y', sym['BEAM_H'] + 4 << 8, 4), ('ball_vx', 0, 2),
                       ('ball_vy', 512, 2)])
-    for hit, quarters in ((1, 1), (2, 3)):
+    for hit in (1, 2):
+        steps = -(-hit * sym['CRACK_STATES'] // 3)
         game.wait(f'cracked 1, {hit} of 3', 60)
         game.run(1)
         cx, cy, image, crack_palette, _, mode = struct.unpack('<hhHHBB',
                                                                game.xram(sym['XRAM_CRACK_SPRITES'] + step, step))
         state = (image - sym['XRAM_CRACK_IMAGES']) // sym['CRACK_IMAGE_BYTES'] % sym['CRACK_STATES'] + 1
-        check(x <= cx <= x + sym['BRICK_W'] - sym['CRACK_W'] and cy == y and state == quarters and
+        check(x <= cx <= x + sym['BRICK_W'] - sym['CRACK_W'] and cy == y and state == steps and
               mode & 3 == sym['MODE5_2BPP'] and crack_palette == red + 2 * sym['BRICK_CRACK_COLORS'],
-              f'hit {hit} cracks a red brick, {quarters} quarters broken')
+              f'hit {hit} cracks a red brick {steps} steps of {sym["CRACK_STATES"]}: it shows {state}')
     game.wait('brick 1,', 60)
     game.run(1)
     check(game.shown(sym['XRAM_CRACK_SPRITES'] + step, 1) == 0, 'the third breaks it, and its cracks are gone')

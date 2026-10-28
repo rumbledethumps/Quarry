@@ -177,18 +177,15 @@ static uint8_t brick_overlaps(uint8_t i, int16_t x, int16_t y, uint8_t w, uint8_
            y < brick_y[i] + BRICK_H && y + h > brick_y[i];
 }
 
-/* A brick's cracks, for the damage it has taken: the quarters of it
-   broken, to the nearest, 1 to CRACK_STATES. */
+/* A brick's cracks, for the damage it has taken: the steps of
+   CRACK_STATES it is broken, rounded up, so any damage cracks it, from 1
+   to CRACK_STATES while it stands. */
 static void cracks_show(uint8_t i)
 {
     uint8_t hits = brick_hits[i];
-    uint8_t state = (brick_damage[i] * 8 / hits + 1) / 2;
+    uint8_t state = (brick_damage[i] * CRACK_STATES + hits - 1) / hits;
     uint8_t k;
 
-    if (!state)
-        state = 1;
-    else if (state > CRACK_STATES)
-        state = CRACK_STATES;
     for (k = 0; k < CRACK_PIECES; k++)
     {
         uint8_t piece = i * CRACK_PIECES + k;

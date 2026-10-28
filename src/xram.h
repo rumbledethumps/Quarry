@@ -405,12 +405,12 @@ typedef struct
 
 /* The cracks over a brick, from art/bricks.py: pieces CRACK_W wide, as
    many as fit across it, each from one of CRACK_SETS sets, flipped either
-   way, a set an image for each of CRACK_STATES, a brick a quarter, a half
-   and three quarters broken. */
+   way, a set an image for each of CRACK_STATES, each step of a brick
+   more broken. */
 #define CRACK_W 16
 #define CRACK_H 8
-#define CRACK_SETS 16
-#define CRACK_STATES 3
+#define CRACK_SETS 10
+#define CRACK_STATES 6
 #define CRACKS_MAX 48 /* a sprite each, over the bricks */
 
 /* A brick breaks into chunks that fly, CHUNK_IMAGES of them in

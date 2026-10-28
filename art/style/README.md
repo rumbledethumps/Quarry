@@ -101,10 +101,12 @@ of them by rule, and nothing is touched up by hand:
   and the right. Widths are multiples of 4. Each level, in
   `levels/levels.py`, places its bricks, 2 px apart on levels 1 and 2.
 - **Cracks:** sprites over the brick, so they flip either way: black lines
-  with a gray lip under them, in sets of three, a brick a quarter, a half
-  and three quarters broken. The first stays inside the face, the second
-  reaches through the top bevel, and the third adds a crack up through the
-  bottom one.
+  with a gray lip under them, in sets of six, a step for each sixth of a
+  brick broken, rounded up, so any damage shows the first. One crack grows
+  from inside the brick, up and down, a little each step, to reach both
+  edges, through the bevels, at the last. A second starts beside it once
+  the brick has 59% left, and grows faster, to reach both edges at the
+  last too.
 - **Chunks:** rough lumps of the brick's colors, lit like it, that fly up
   and out when it breaks, fall, and turn over as they go.
 - **Nugget:** a sphere of the brick's color, lit from the upper left,
@@ -543,7 +545,7 @@ That is 8 rows and the 5 brick colors, so 19 rows are left.
 | Art | Size |
 | --- | --- |
 | brick | 24x8, 2 bits a pixel |
-| cracks | 16 sets of 3, 16x8, 2 bits a pixel, as many across a brick as fit |
+| cracks | 10 sets of 6, 16x8, 2 bits a pixel, as many across a brick as fit |
 | chunks | 16, 8x8, 2 bits a pixel |
 | nugget | 8x8 as it flies, and 10 across in a 12x12 sprite by its count |
 | coin | 10 across in a 12x12 sprite, by its count |
