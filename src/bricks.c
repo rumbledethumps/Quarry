@@ -12,6 +12,8 @@
    the brick, by BREAK_OVER above and below. */
 #define BREAK_STEPS 4
 #define BREAK_OVER 4
+#define BREAK_SIZE MODE5_SIZE(BRICK_W, BRICK_H + 2 * BREAK_OVER)
+#define NUGGET_LEFT (BRICK_W / 2 - 4) /* its nugget's left edge, from the brick's: 8 wide in the middle */
 
 /* Level 1 is 4 by 4 white bricks, with half a brick of space at each
    wall. Until the levels are designed, each one after it is a column
@@ -122,7 +124,7 @@ uint8_t bricks_hit(int16_t x, int16_t y, uint8_t w, uint8_t h)
         bricks_left--;
         hits++;
         sprite_set(brick_sprite(i), BREAK_IMAGE(0), XRAM_PALETTE_BRICK(brick_color[i]),
-                   MODE5_SIZE(BRICK_W, BRICK_H + 2 * BREAK_OVER));
+                   BREAK_SIZE);
         sprite_move(brick_sprite(i), brick_x[i], brick_y[i] - BREAK_OVER);
         DEBUG_LOG("brick %u, %u left\n", i, bricks_left);
     }
@@ -161,7 +163,7 @@ void bricks_step(void)
         {
             brick_breaking[i] = 0;
             sprite_hide(brick_sprite(i));
-            nuggets_spawn(brick_x[i] + BRICK_W / 2 - 4, brick_y[i], brick_color[i]);
+            nuggets_spawn(brick_x[i] + NUGGET_LEFT, brick_y[i], brick_color[i]);
         }
     }
 }

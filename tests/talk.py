@@ -57,7 +57,7 @@ def main():
     check(first[0][1] > second[0][1] and first[1] > second[1], f'they come in together: {first}, {second}')
     game.until('talk_state', 'TALK_WAIT', 30)
     game.run(1)
-    check([game.sprite(dwarf + i * 10) for i in range(count)] == [(dwarf_x + x, dwarf_y + y) for x, y, *_ in parts],
+    check([(x, y) for x, y, _ in game.sprites(dwarf, count)] == [(dwarf_x + x, dwarf_y + y) for x, y, *_ in parts],
           'the dwarf stops in his place')
     check(bubble() == bubble_x, 'and his bubble in its place')
     check(game.shown(cursor, 4) == 0 and game.xram(ok, 2) != bytes([ok0, ok1]), 'with no OK yet')

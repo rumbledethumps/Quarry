@@ -11,7 +11,7 @@
 
 #define JET_SPRITE(i) (XRAM_JET_SPRITES + (i) * sizeof(mode5_csprite_t))
 #define SMOKE_SPRITE(i) (XRAM_SMOKE_SPRITES + (i) * sizeof(mode5_csprite_t))
-#define JET_IMAGE(i) (XRAM_JET_IMAGES + (i) * sizeof(jet_image_t))
+#define JET_IMAGE(i) (XRAM_JET_IMAGES + (i) * JET_IMAGE_BYTES)
 #define SMOKE_IMAGE(i) (XRAM_SMOKE_IMAGES + (i) * sizeof(piece_image_t))
 
 /* The jets hang from the mount, under the plate and the mount. */

@@ -28,6 +28,8 @@ typedef struct
     uint8_t talks_seen;
 } save_t;
 
+#define SAVE_BYTES sizeof(save_t) /* for tests/saves.py */
+
 uint8_t save_exists;
 uint8_t levels_cleared;
 uint8_t level_picked = 1;

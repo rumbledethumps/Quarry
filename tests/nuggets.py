@@ -14,8 +14,6 @@ import tempfile
 
 from game import Game, check
 
-BREAK_SIZE = 0x35  # MODE5_SIZE(24, 16)
-
 
 def off_line(x0, y0, x1, y1, x, y):
     """How far x, y is from the line through x0, y0 and x1, y1, in pixels."""
@@ -51,12 +49,12 @@ def main():
     game.wait('brick', 300)
     game.run(1)
     sizes = game.sizes(bricks, BRICKS)
-    broken = [i for i, s in enumerate(sizes) if s == BREAK_SIZE]
+    broken = [i for i, s in enumerate(sizes) if s == sym['BREAK_SIZE']]
     check(broken, 'a broken brick shows its break')
     first = bricks + broken[0] * sym['SPRITE_BYTES']
     bx = game.sprites(first, 1)[0][0]
-    middles = [game.sprites(bricks + i * sym['SPRITE_BYTES'], 1)[0][0] + 8 for i in broken]
-    by = game.sprites(first, 1)[0][1] + 4
+    middles = [game.sprites(bricks + i * sym['SPRITE_BYTES'], 1)[0][0] + sym['NUGGET_LEFT'] for i in broken]
+    by = game.sprites(first, 1)[0][1] + sym['BREAK_OVER']  # the brick's own top
     shot = os.path.join(tempfile.mkdtemp(), 'shot.png')
     images, paths, lit = [], {}, []
     in_flight_count = None
@@ -74,7 +72,7 @@ def main():
             rows = game.screen(shot)
             floor = rows[150][160]
             lit.append(sum(rows[yy][xx] != floor
-                           for yy in range(by, by + 8) for xx in range(bx, bx + 24)))
+                           for yy in range(by, by + sym['BRICK_H']) for xx in range(bx, bx + sym['BRICK_W'])))
         if len(flying) == len(broken) and in_flight_count is None:
             in_flight_count = game.ram('nuggets', 2)
         if game.ram('nuggets', 2) >= len(broken) and frame > 20:
@@ -82,12 +80,12 @@ def main():
         game.run(1)
     check(min(lit) > 0, f'a nugget takes the place of its brick with no empty frame between: {lit}')
     check(in_flight_count == 0, 'nothing counts while the nuggets are still in flight')
-    check(len(images) == 2, f'the break shows 2 frames, saw {len(images)}')
+    check(len(images) == sym['BREAK_FRAMES'], f'the break shows {sym["BREAK_FRAMES"]} frames, saw {len(images)}')
     check(game.sprites(first, 1)[0][1] == HIDDEN_Y, 'the broken brick is gone after its break')
     check(paths, 'a nugget flew')
     for slot, path in paths.items():
         x0, y0 = path[0]
-        check(x0 in middles and BRICKS_Y <= y0 < BRICKS_Y + 5 * 8,
+        check(x0 in middles and BRICKS_Y <= y0 < BRICKS_Y + sym['LEVEL1_ROWS'] * sym['BRICK_H'],
               f'nugget {slot} starts in the middle of a broken brick, at {x0},{y0}')
         for (ax, ay), (cx, cy) in zip(path, path[1:]):
             check(max(abs(cx - ax), abs(cy - ay)) == step,

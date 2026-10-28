@@ -51,6 +51,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 POST_W, POST_H, BEAM_W, BEAM_H, BRACE = 20, 48, 48, 16, 32
 SHADE = 0.4  # the brace's colors, of the set's
 DIM = 66  # in the brace, darker than this is rock or shadow, and goes clear
+SLED_ROW, SHADE_ROW = 4, 7  # of art/palettes.png
 
 # Each set: for each piece, its image, then its columns and its rows.
 _GIRDER = list(range(0, 8)) + list(range(10, 18))  # two plain columns of the web out
@@ -129,7 +130,7 @@ def machine_luma():
     """The brightest the machine on the right wall gets: art/machine.png, in
     the sled row, as the shade row shows it."""
     _, _, palettes = rgba(os.path.join(HERE, 'palettes.png'))
-    sled, shade = palettes[4], palettes[7]
+    sled, shade = palettes[SLED_ROW], palettes[SHADE_ROW]
     _, _, img = rgba(os.path.join(HERE, 'machine.png'))
     shown = {shade[sled.index(p)][:3] for row in img for p in row if p[3]}
     return max(luma(c) for c in shown)

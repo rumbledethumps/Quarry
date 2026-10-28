@@ -118,8 +118,9 @@ ctest --test-dir build/llvm-mos/debug -R energy --output-on-failure
 - `autoplay` plays level 1 until it ends, and `autoplay-miss` loses every
   ball.
 - `assets` checks that each asset the art scripts write is the size of
-  what the game loads it into. It reads the files and `quarry.sym`, and
-  doesn't run the emulator.
+  what the game loads it into, and that the art scripts draw in the rows
+  of `art/palettes.png` the game has them in. It reads the files and
+  `quarry.sym`, and doesn't run the emulator.
 
 The tests other than autoplay and assets wait for the events that a Debug
 ROM logs, so a Release build has only those:

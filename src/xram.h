@@ -431,6 +431,8 @@ typedef MODE5_CUSTOM_IMAGE(4, 8, 8) piece_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, CURSOR_SIZE, CURSOR_SIZE) cursor_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 8, 12) jet_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 8, 12) digit_image_t;
+#define JET_IMAGE_BYTES sizeof(jet_image_t) /* these two for the tests */
+#define DIGIT_IMAGE_BYTES sizeof(digit_image_t)
 typedef MODE5_CUSTOM_IMAGE(4, 8, 8) energy_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 64, 64) logo_image_t; /* a third of art/logo.png */
 typedef MODE5_CUSTOM_IMAGE(4, POST_W, POST_H) post_image_t;

@@ -6,7 +6,8 @@
 The bot reads the ball and the paddle sprites each step and steers the
 paddle under the ball with the arrow keys. With --miss N it lets the first
 N balls fall. Every step it checks that the ball stays inside the playfield
-and never moves more than 3 px a step. It stops at the end of the level,
+and never moves farther a step than its speed, TUNE_BALL_SPEED, rounded up
+to a whole pixel. It stops at the end of the level,
 reports how the level ended, checks a nugget landed for each broken brick,
 then chooses Play on the end-of-level menu and checks that the level starts
 again. It runs on a Release ROM too.
@@ -88,7 +89,8 @@ def main():
                 # next frame shows it two steps on. The ball always moves at
                 # least a pixel down or up a step, so a frame where it did not
                 # is one of those.
-                limit = 6 if prev[4] == 0 else 3
+                most = -(-sym['TUNE_BALL_SPEED'] // 256)  # in whole px, a step
+                limit = 2 * most if prev[4] == 0 else most
                 check(abs(dx) <= limit and abs(dy) <= limit,
                       f'ball jumped from {prev[0]},{prev[1]} to {x},{y} at step {step}')
                 if dy < 0 and prev[2] > 0 and y > paddle_y - ball - 8:

@@ -11,24 +11,35 @@ check passes.
 
 import os
 import struct
+import sys
 
 from game import Game, check, rom, save_dir
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'tools'))
+from rp6502 import Symbols  # noqa: E402
 
 SAVE = 'quarry.save'
 TAG = b'QRY4'
 TITLE_ITEMS = ['RESUME', 'NEW GAME']
+SYM = Symbols(os.path.splitext(rom())[0] + '.sym')
+NO_RANKS = (0,) * SYM['UPGRADES']
+NEW_GAME = (0, 0, NO_RANKS, 0, 1, 1, 0)  # as read_save() gives it
 
 
 def read_save(folder):
-    """The save as (nuggets, coins, upgrade ranks, levels cleared, level
-    picked, levels shown open, talks seen), or None."""
+    """The save, save_t of src/save.c, as (white nuggets, coins, upgrade
+    ranks, levels cleared, level picked, levels shown open, talks seen), or
+    None."""
     path = os.path.join(folder, SAVE)
     if not os.path.exists(path):
         return None
     data = open(path, 'rb').read()
-    check(len(data) == 14 and data[:4] == TAG, f'the save is a good one: {data!r}')
-    nuggets, coins, width, speed, cleared, picked, shown, talks = struct.unpack('<HHBBBBBB', data[4:])
-    return nuggets, coins, (width, speed), cleared, picked, shown, talks
+    check(len(data) == SYM['SAVE_BYTES'] and data[:4] == TAG, f'the save is a good one: {data!r}')
+    colors, upgrades = SYM['BRICK_COLORS'], SYM['UPGRADES']
+    values = struct.unpack(f'<{colors}HH{upgrades}B4B', data[4:])
+    nuggets, coins = values[:colors], values[colors]
+    ranks, rest = values[colors + 1:colors + 1 + upgrades], values[colors + 1 + upgrades:]
+    return (nuggets[0], coins, ranks) + rest
 
 
 class Title:
@@ -60,7 +71,7 @@ def main():
     check(title.picked() == 'NEW GAME', 'up from New Game stays, as Resume cannot be picked')
     check(read_save(folder) is None, 'no save yet')
     game.new_game()
-    check(read_save(folder) == (0, 0, (0, 0), 0, 1, 1, 0), 'a level starting saves a new game')
+    check(read_save(folder) == NEW_GAME, 'a level starting saves a new game')
     print('ok: a new game, saved when the level starts')
 
     # Pausing saves the nuggets, with those still on their way, and holds
@@ -150,7 +161,7 @@ def main():
     left = 20 - game.ram('width_costs', 2)  # after the first width
     game.tap('enter')
     game.wait('bought width 1', 10)
-    check(read_save(folder)[:3] == (left, 0, (1, 0)), 'buying saves the upgrade bought')
+    check(read_save(folder)[:3] == (left, 0, (1,) + NO_RANKS[1:]), 'buying saves the upgrade bought')
     game.tap('escape')
     check(game.shows('RETURN TO TITLE?'), 'Esc asks to go back to the title')
     game.tap('space')  # YES
@@ -218,14 +229,14 @@ def main():
     game.until('game_state', 'STATE_CONFIRM', 10)
     game.tap('space')  # NO, picked first
     game.until('game_state', 'STATE_TITLE', 10)
-    check(read_save(folder)[:3] == (left, 0, (1, 0)), 'No leaves the save')
+    check(read_save(folder)[:3] == (left, 0, (1,) + NO_RANKS[1:]), 'No leaves the save')
     game.tap('space')  # NEW GAME, picked after No
     game.until('game_state', 'STATE_CONFIRM', 10)
     game.tap('up')     # YES
     game.tap('space')
     game.until('game_state', 'STATE_PLAY', 60)
     game.run(2)
-    check(read_save(folder) == (0, 0, (0, 0), 0, 1, 1, 0), 'Yes replaces the save with a new game')
+    check(read_save(folder) == NEW_GAME, 'Yes replaces the save with a new game')
     check(game.ram('talk_state') != game.sym['TALK_OFF'], 'and the dwarf welcomes the player again')
     check(game.ram('nuggets', 2) == 0 and game.ram('paddle_width') == game.ram('widths'),
           'and starts over')

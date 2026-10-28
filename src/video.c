@@ -223,7 +223,7 @@ void video_count(unsigned first, uint8_t sprites, int16_t x, int16_t y, uint16_t
     for (i = 0; i < sprites; i++)
     {
         unsigned sprite = first + i * sizeof(mode5_csprite_t);
-        sprite_set(sprite, XRAM_DIGIT_IMAGES + (i < len ? digits[len - 1 - i] : 0) * sizeof(digit_image_t),
+        sprite_set(sprite, XRAM_DIGIT_IMAGES + (i < len ? digits[len - 1 - i] : 0) * DIGIT_IMAGE_BYTES,
                    XRAM_PALETTE_SLED, MODE5_SIZE(8, 12));
         if (i < len)
             sprite_move(sprite, x + i * DIGIT_ADVANCE, y);

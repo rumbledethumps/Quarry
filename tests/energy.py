@@ -51,7 +51,7 @@ def main():
     check(bar(game, shot) == ['full'] * bar_segments, 'the bar starts full and yellow')
     x, y = game.px('paddle_x'), game.px('paddle_y')
     pieces, flames = 'XRAM_SLED_SPRITE', 'XRAM_JET_SPRITES'
-    nozzle = sym['XRAM_JET_IMAGES'] + sym['JET_NOZZLE'] * 8 * 12 // 2  # a jet with no flame
+    nozzle = sym['XRAM_JET_IMAGES'] + sym['JET_NOZZLE'] * sym['JET_IMAGE_BYTES']  # a jet with no flame
     check(game.sprite(pieces) == (x, y), 'the paddle is where it is in RAM')
     images = set()
     for _ in range(30):

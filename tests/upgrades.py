@@ -286,7 +286,8 @@ def main():
     sprite = lambda i: sym['XRAM_MENU_SPRITES'] + i * sym['SPRITE_BYTES']
     check(game.ram('unlocking') == 2 and game.shown(sprite(sym['HALF_SPRITES']), 2) == 2,
           'and the lock of level 2 shows, to break')
-    check(game.shown(sprite(sym['LOCK_SPRITES']), 4) == 4, 'with padlocks on the 4 carts locked after it')
+    check(game.shown(sprite(sym['LOCK_SPRITES']), sym['LOCKS']) == sym['LOCKS'],
+          'with padlocks on the carts locked after it')
     game.wait('unlocked 2', 200)
     check(game.ram('levels_shown') == 2 and game.ram('unlocking') == 0 and game.ram('level_picked') == 2,
           'the lock breaks, and level 2 shows open, picked')

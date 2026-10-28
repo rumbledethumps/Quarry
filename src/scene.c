@@ -37,7 +37,7 @@ _Static_assert(CURTAIN_SETS <= 9 && TEXTURES <= 9 && FRAME_SETS <= 9, "An asset'
    colors of the texture, then the curtains. */
 #define BACKDROP_BYTES (XRAM_PICTURE(0) - XRAM_BACKDROP)
 #define PANELS_BYTES (XRAM_CART_PALETTE - XRAM_PANEL_PALETTE)
-#define CARTS_BYTES (XRAM_CART_MAP - XRAM_CART_PALETTE)
+#define CARTS_BYTES (XRAM_CART_TILES + CART_TILES * sizeof(cart_tile_t) - XRAM_CART_PALETTE)
 #define MENUS_BYTES (XRAM_MENU_TILES + MENU_TILES * sizeof(menu_tile_t) - XRAM_MENU_PALETTE)
 #define LOGO_BYTES sizeof(((xram_layout_t *)0)->art.cave.logo_images)
 #define TEXTURE_BYTES sizeof(((xram_layout_t *)0)->art.cave.texture)

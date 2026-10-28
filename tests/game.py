@@ -183,7 +183,7 @@ class Game(rp6502.Emu):
 
     def count(self, first, sprites):
         """The number that the digit sprites of a count from first show."""
-        base, size = self.sym['XRAM_DIGIT_IMAGES'], 8 * 12 // 2  # sizeof(digit_image_t)
+        base, size = self.sym['XRAM_DIGIT_IMAGES'], self.sym['DIGIT_IMAGE_BYTES']
         hidden = self.sym['SPRITE_HIDDEN_Y']
         digits = ''.join(str((image - base) // size)
                          for _, y, image in self.sprites(first, sprites) if y != hidden)

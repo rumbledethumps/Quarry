@@ -25,6 +25,7 @@ def main():
     state = os.path.join(tempfile.mkdtemp(), 'controls.state')
     game = Game()
     num_lock = 1 << game.sym['KEYBOARD_NUM_LOCK']  # in the first byte of the key bitmap
+    start_balls = game.sym['TUNE_BALLS']
 
     # Enter held from boot, as when it loaded the game, does not choose on the
     # title screen.
@@ -95,13 +96,13 @@ def main():
     for key in LAUNCH_KEYS:
         game.cmd(f'state load "{state}"')
         game.cmd(f'press {key}')
-        game.wait('launch, 4 balls left', 5)
+        game.wait(f'launch, {start_balls - 1} balls left', 5)
         game.cmd(f'release {key}')
         print(f'ok: {key} launches')
     for pad, button in LAUNCH_BUTTONS:
         game.cmd(f'state load "{state}"')
         game.cmd(f'pad {pad} press {button}')
-        game.wait('launch, 4 balls left', 5)
+        game.wait(f'launch, {start_balls - 1} balls left', 5)
         game.cmd(f'pad {pad} release {button}')
         print(f'ok: gamepad {pad + 1} button {button} launches')
     # Up doesn't launch, from a key or a gamepad.
@@ -119,15 +120,15 @@ def main():
     # on the paddle while it is still held.
     game.cmd(f'state load "{state}"')
     game.cmd('press space')
-    game.wait('launch, 4 balls left', 5)
+    game.wait(f'launch, {start_balls - 1} balls left', 5)
     game.run(10)
     game.poke('ball_state', 0)
     game.run(30)
-    game.cmd('expect-not "launch, 3 balls left"')
+    game.cmd(f'expect-not "launch, {start_balls - 2} balls left"')
     game.cmd('release space')
     game.run(2)
     game.cmd('press space')
-    game.wait('launch, 3 balls left', 5)
+    game.wait(f'launch, {start_balls - 2} balls left', 5)
     game.cmd('release space')
     print('ok: a held launch launches once')
 
