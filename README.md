@@ -47,11 +47,14 @@ cursor picks in them.
 
 The upgrade screen is coming together. Panels hang from a rail, one for
 each upgrade, and slide left and right; the one in the middle lights up,
-and the button buys it. Left, right and the button repeat while held. The panels have their final frames and a stand-in
-font, and a backdrop of a workshop, whose cogs turn and whose vent puffs steam, with a rail the panels' trolleys ride; the pictures and the track are still stand-ins. Down goes to the row of stages, where the button
-begins the stage picked. A stage newly open is still locked the first time
-the screen shows it: the lock shakes, breaks, and its button lights. Stages 2 to 10 are stand-ins: stage 1 a column
-wider each time.
+and the button buys it. Left, right and the button repeat while held. The
+panels have their final frames and a stand-in font, and hang in front of a
+workshop whose cogs turn and whose vent puffs steam, their trolleys riding
+the rail; their pictures are still stand-ins. Down goes to a train of mine
+carts on a track, a cart for each stage, where the button begins the stage
+picked. A stage newly open is still locked the first time the screen shows
+it: the padlock on its cart shakes and breaks, and its number lights.
+Stages 2 to 10 are stand-ins: stage 1 a column wider each time.
 
 The game saves when a stage starts or ends, when it pauses, and when an
 upgrade is bought, in `SAVE:quarry.save`. Resume on the title screen,
