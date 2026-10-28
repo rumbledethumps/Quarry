@@ -7,8 +7,8 @@
 #include "xram.h"
 #include <string.h>
 
-/* A menu box: its frame, then, with a title, a gap, the title and a gap,
-   then each item ITEM_ROWS tall, its text in the middle row, then a gap and
+/* A menu box: its frame, then, with a title, a gap, the title and a thin
+   rule under it, then each item ITEM_ROWS tall, its text in the middle row, then a gap and
    the frame. An item that can't be chosen is left off. The holographic
    cursor goes round the item picked, and slides from item to item. While a
    menu shows, its tape marches. */
@@ -87,7 +87,10 @@ void menu_open(const menu_t *menu, uint8_t pick, uint8_t disabled, uint8_t wait)
         pick_step(1);
     video_box(menu->center - MENU_COLS / 2, menu->top, menu->center + MENU_COLS / 2 - 1, bottom(), menu->frame);
     if (menu->title)
+    {
         video_text(menu->center - strlen(menu->title) / 2, menu->top + 2, menu->title);
+        video_rule(menu->center - MENU_COLS / 2 + 2, menu->center + MENU_COLS / 2 - 3, menu->top + 3);
+    }
     for (i = 0; i < menu->count; i++)
         if (!(disabled & (1 << i)))
             video_text(menu->center - strlen(menu->items[i]) / 2, first_item_row() + place(i) * ITEM_ROWS + 1,

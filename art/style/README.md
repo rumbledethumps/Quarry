@@ -340,8 +340,10 @@ degrees, 4 px of each color, and march along the frame while the menu
 shows, as the tape's 4 palette entries turn round.
 
 - `art/menus.py` builds the tiles: a glyph for each letter of the font,
-  and the frame's 4 corners and 4 edges, whose stripes join from cell to
-  cell.
+  the frame's 4 corners and 4 edges, whose stripes join from cell to
+  cell, and the rule.
+- A menu's title is set off from its items by a thin rule of light steel
+  over its shadow, in the gap under it, two cells in from each side.
 - The holographic cursor of the upgrade screen picks in the menus too, a
   cell in from the frame and as tall as the item. On the upgrade screen it
   slides into a question and back out; elsewhere it appears at once.

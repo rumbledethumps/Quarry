@@ -11,12 +11,13 @@ light steel edge, the tape, a dark steel edge, and a black line. The
 tape's stripes run on 45 degrees, 4 px of each color, in TAPE palette
 entries by where they fall, so turning those entries round moves the
 stripes along: the tape marches. The frame comes as its 4 corners and its
-4 edges; the stripes join from cell to cell.
+4 edges; the stripes join from cell to cell. A thin rule of light steel
+over its shadow sets a menu's title off from its items.
 
 out.bin is the palette, 16 colors as png2bin.py writes a palette row, then
 the tiles, 32 bytes each, the left pixel of each pair in the high nibble:
 tile 0 clear, then a tile for each glyph of FONT, the space the box's
-inside, then the frame. out.h gives the tile numbers. Only the Python
+inside, then the frame, then the rule. out.h gives the tile numbers. Only the Python
 standard library is used.
 """
 
@@ -79,6 +80,15 @@ def frame(top, bottom, left, right):
     return cell
 
 
+def rule():
+    """A cell of the rule under a title: a line of light steel across its
+    middle, with a shadow under it."""
+    cell = [[FILL] * 8 for _ in range(8)]
+    cell[3] = [STEEL_LIGHT] * 8
+    cell[4] = [OUTLINE] * 8
+    return cell
+
+
 FRAMES = (('TL', True, False, True, False), ('TR', True, False, False, True),
           ('BL', False, True, True, False), ('BR', False, True, False, True),
           ('T', True, False, False, False), ('B', False, True, False, False),
@@ -96,6 +106,7 @@ def main():
     tiles += [glyph(ch) for ch in FONT]
     first_frame = len(tiles)
     tiles += [frame(*f[1:]) for f in FRAMES]
+    tiles.append(rule())
 
     data = bytearray()
     palette = PALETTE + [None] * (16 - len(PALETTE))
@@ -115,6 +126,7 @@ def main():
                 '#define MENU_TILE_GLYPH 1\n'
                 f'#define MENU_TILE_FRAME {first_frame} /* the corners, top left, top right, bottom left, '
                 'bottom right, then the top, bottom, left and right edges */\n'
+                f'#define MENU_TILE_RULE {len(tiles) - 1} /* under a title */\n'
                 f'#define MENU_TILES {len(tiles)}\n'
                 f'#define MENU_TAPE {TAPE} /* the first of the tape\'s palette entries */\n'
                 f'#define MENU_TAPE_PHASES {TAPE_PHASES}\n\n'

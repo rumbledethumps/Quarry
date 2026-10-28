@@ -123,6 +123,12 @@ void video_number(uint8_t col, uint8_t row, uint16_t n, uint8_t width)
     video_text(col, row, text);
 }
 
+/* A thin steel rule across the cells from left to right, on row. */
+void video_rule(uint8_t left, uint8_t right, uint8_t row)
+{
+    xram0_set(XRAM_MENU_MAP + row * TEXT_COLS + left, MENU_TILE_RULE, right - left + 1);
+}
+
 /* A dark box in cells from left, top to right, bottom: framed in caution
    tape and steel, or BOX_PLAIN, without. */
 void video_box(uint8_t left, uint8_t top, uint8_t right, uint8_t bottom, uint8_t frame)
