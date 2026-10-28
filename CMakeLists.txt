@@ -110,7 +110,7 @@ add_custom_command(
     COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/art/carts.py ${CMAKE_CURRENT_BINARY_DIR}/carts.bin
         ${CMAKE_CURRENT_BINARY_DIR}/carts.h --preview ${CMAKE_CURRENT_BINARY_DIR}/carts.png
-    DEPENDS art/carts.py art/cart.png art/padlock.png art/curtain.py art/panel_font.py art/panels.py art/rd2png.py
+    DEPENDS art/carts.py art/cart.png art/padlock.png art/curtain.py art/rd2png.py
     VERBATIM
 )
 

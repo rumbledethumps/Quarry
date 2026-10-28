@@ -383,6 +383,10 @@ in two.
 - The number sits in the middle of the cart, across and down, never a
   pixel off: rim to foot, the cart is centered on it, so the cart stands
   low in its cells, and its wheels need a fifth row.
+- The number is stencilled on, as a real cart's would be painted: bold
+  7x7 numerals of the carts' own, with a stencil's bridges, drawn by hand
+  in `art/carts.py`, in the rim's safety yellow with a dark shadow on the
+  cart picked, and a dull ochre on the rest.
 - A level cleared carries a small heap of ore over the rim. A cart's top
   two rows come with the heap and without.
 - The track is in the backdrop: `art/backdrop.py` draws a steel rail on
