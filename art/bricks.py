@@ -60,6 +60,7 @@ CRACK_W = 16
 CRACK_SETS = 6
 CRACK_STATES = 10
 SECOND_CRACK = 0.41  # how broken a brick is when its second crack starts: 59% left
+CRACK_SEED = 2  # picks the cracks' shapes, all their sets at once
 CHUNKS = 16
 ICON_D, ICON_SIZE = 10, 12  # the icons of the counts, as tall as the outlined digits
 HOLE = 'square'  # or 'diamond'
@@ -111,7 +112,8 @@ def crack(rng, left, right, down):
     grows: from the top edge down to the bottom, or the bottom up to the
     top, through both bevels, wandering across, and now and then a step
     sideways, with a short branch off it here and there, each coming a
-    little after the crack has passed it."""
+    little after the crack has passed it, and its mouth at the edge it
+    started from opening as it goes, to 3 wide."""
     x, dy = rng.randint(left, right), 1 if down else -1
     y = 0 if down else H - 1
     keyed = [(0, (x, y))]
@@ -131,6 +133,14 @@ def crack(rng, left, right, down):
         for j, (px, py) in enumerate(((bx + side, by + dy), (bx + 2 * side, by + dy))):
             if 0 < px < CRACK_W - 1 and 0 < py < H - 1:
                 keyed.append((at + 1.5 + j, (px, py)))
+    # Its mouth, where it started, opens as it grows: a pixel to one side
+    # of where it started, then one beside it a row in, then one to the
+    # other side, 3 wide at the edge by the end.
+    (mx, my), (nx, ny) = keyed[0][1], keyed[1][1]
+    side = rng.choice((-1, 1))
+    for when, (px, py) in ((0.35, (mx + side, my)), (0.6, (nx + side, ny)), (0.85, (mx - side, my))):
+        if 0 < px < CRACK_W - 1:
+            keyed.append((when * path, (px, py)))
     order = []
     for _, p in sorted(keyed, key=lambda kp: kp[0]):
         if p not in order:
@@ -159,7 +169,7 @@ def crack_set(seed):
     from the same edge, and in the rest from opposite edges. Each is black,
     with a gray lip under it where the light catches the edge. A crack too
     short to grow with every state is drawn again."""
-    rng = random.Random(seed)
+    rng = random.Random(CRACK_SEED * 1000 + seed)
     begins = math.ceil(CRACK_STATES * SECOND_CRACK)
     opposite = seed >= CRACK_SETS // 2
     later = CRACK_STATES - begins + 1
