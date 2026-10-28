@@ -82,7 +82,7 @@ static void stage_setup(void)
     play_left = (SCREEN_W - width) / 2;
     play_right = play_left + width;
     frame_start(play_left, play_right);
-    video_text_clear();
+    menu_clear();
     bricks_start(play_left + bricks_margin, TUNE_BRICKS_Y);
     nuggets_start(1);
     play_start();

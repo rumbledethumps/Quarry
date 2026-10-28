@@ -708,7 +708,7 @@ void shop_open(uint8_t on)
     video_hide_sprites();
     cursor_hide();
     input_repeat_stop();
-    video_text_clear();
+    menu_clear();
     nuggets_start(1);
     cursor_on = on;
     asking = ASK_NONE;

@@ -101,6 +101,15 @@ void menu_open(const menu_t *menu, uint8_t pick, uint8_t disabled, uint8_t wait)
     DEBUG_LOG("menu %s\n", menu->items[0]);
 }
 
+/* A new screen's menus: none up, and every cell clear. Each screen starts
+   with this, so no menu of the last one is left to march over whatever
+   takes its place in XRAM. */
+void menu_clear(void)
+{
+    shown = 0;
+    video_text_clear();
+}
+
 /* Erases the box, if it is shown, so what is under it shows again. The
    cursor stays, for whatever is picked next. */
 void menu_close(void)

@@ -57,7 +57,7 @@ void title_open(const menu_t *menu)
     video_hide_sprites();
     cursor_hide();
     scene_title();
-    video_text_clear();
+    menu_clear();
     frame_curtains(LOGO_X, LOGO_X + LOGO_W);
     for (i = 0; i < 3; i++)
     {

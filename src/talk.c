@@ -80,7 +80,7 @@ static void talk_start(void)
     uint8_t i;
 
     cursor_hide();
-    menu_close(); /* if one was left up, it stops marching over his art */
+    menu_close(); /* he takes the menus' place, so any menu goes */
     config.x_wrap = false;
     config.y_wrap = false;
     config.x_pos_px = SCREEN_W;
