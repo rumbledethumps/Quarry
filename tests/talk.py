@@ -124,9 +124,9 @@ def main():
     game.cmd('expect-not "menu UPGRADES"')  # the end menu, as menu_open() logs it
     talk('TALK_COIN')
     game.run(30)
-    check(not game.shows('STAGE COMPLETE'), 'the dwarf with the coin comes before the menu')
+    check(not game.shows('LEVEL COMPLETE'), 'the dwarf with the coin comes before the menu')
     game.talk_ok()
-    check(game.shows('STAGE COMPLETE') and game.shown(cursor, 4) == 4, 'then the menu, with the cursor')
+    check(game.shows('LEVEL COMPLETE') and game.shown(cursor, 4) == 4, 'then the menu, with the cursor')
     game.tap('space')
     check(game.ram('game_state') == sym['STATE_MENU'], 'which takes no choice at once')
     print('ok: the coin, then the menu')

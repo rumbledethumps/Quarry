@@ -56,7 +56,7 @@ static const menu_t confirm_menu = {20, 11, BOX_TAPE, "START OVER?", confirm_ite
 /* The menu when a stage ends says how, by what play_step() returned, from
    PLAY_CLEARED. */
 static const menu_t end_menus[] = {
-    {20, 9, BOX_TAPE, "STAGE COMPLETE", end_items, 3},
+    {20, 9, BOX_TAPE, "LEVEL COMPLETE", end_items, 3},
     {20, 9, BOX_TAPE, "OUT OF BALLS", end_items, 3},
     {20, 9, BOX_TAPE, "OUT OF FUEL", end_items, 3},
 };

@@ -8,13 +8,30 @@ and well looked after. Every new piece of art belongs to one of the two.
 The images in `ref/` set the look. Pass them as references when making new
 art, and compare new art against them.
 
+## The Words
+
+What the game calls things, on its screens and in what the dwarves say,
+always in capitals. The code calls a level a stage, and fuel energy.
+
+| Word | What it is |
+| --- | --- |
+| LEVEL | One playfield of bricks. Mines are dug in levels, each deeper than the last. Its cart on the upgrade screen begins it. |
+| BRICK | A block of rock, broken by the ball. |
+| NUGGET | The ore that comes out of a broken brick, and flies to the counts. Nuggets buy upgrades. |
+| COIN | One for the first clear of each level, never again. Coins will open the upgrades' next tiers. |
+| SLED | The paddle, which floats on its jets. |
+| FUEL | What the gauge on the right shows. When it runs out, the sled falls and the level ends. |
+| BALL | The ball, and the count of those left. |
+| UPGRADE | A panel on the upgrade screen's rail, and what it buys. |
+| CART | A level, on the train of mine carts under the rail. |
+
 ## The Screen
 
-A stage's playfield is framed in steel: a post on each side and a cap beam
+A level's playfield is framed in steel: a post on each side and a cap beam
 across the top, where the ball bounces. Outside the posts are the
-curtains, the rock walls of the quarry. Stage 1 is the narrowest, 4 bricks
+curtains, the rock walls of the quarry. Level 1 is the narrowest, 4 bricks
 across with half a brick of space at each wall. The widest is about 10
-bricks, with a little rock left on each side. Each stage is laid out
+bricks, with a little rock left on each side. Each level is laid out
 fresh, so the curtains never move while anyone watches.
 
 The counts float over the curtains, with no panels behind them:
@@ -29,8 +46,8 @@ The counts float over the curtains, with no panels behind them:
 
 The digits are sprites, 6x8 with a 1 px black outline, so they read over
 any rock or steel. Each digit's outline overlaps the last one's, so a
-5-digit count with its nugget is about 45 px wide. On the widest stages
-the counts reach into the playfield, and those stages leave them room.
+5-digit count with its nugget is about 45 px wide. On the widest levels
+the counts reach into the playfield, and those levels leave them room.
 
 Each screen has an XRAM layout of its own. The keyboard, the gamepads,
 the PSG, the sprite lists, and the small shared images stay put, and the
@@ -40,7 +57,7 @@ most of XRAM to itself.
 
 ## The Title
 
-The title has the same cave as a stage, with no frame: a texture behind
+The title has the same cave as a level, with no frame: a texture behind
 everything and a curtain set, both picked at random each time, with the
 curtains just outside the word QUARRY. Under the logo are the menu,
 RESUME and NEW GAME, and under it a box as wide as the menu with the
@@ -75,7 +92,7 @@ black: two octaves of Perlin noise, cut into four very dark colors of
 equal area, in large soft patches. `art/texture.py` makes it at build
 time. It is a mode 3 bitmap at 2 bits a pixel, the size of the screen,
 19 KB, and it wraps. There are four, one for each seed of
-`QUARRY_TEXTURE_SEEDS` in `CMakeLists.txt`, and each stage picks one at
+`QUARRY_TEXTURE_SEEDS` in `CMakeLists.txt`, and each level picks one at
 random and shows it from a random place, so it never seems to repeat. To
 add one, add a seed there and raise `TEXTURES` in `src/scene.c`.
 
@@ -96,7 +113,7 @@ machines of the mine:
 ### Curtain Sets
 
 A curtain set is one Retro Diffusion image, split into the two curtains.
-There can be many, and a stage picks one at random. To make one:
+There can be many, and a level picks one at random. To make one:
 
 1. Generate a 256x240 image with `rd_pro__default`, with
    `ref/old-logo-qu.png` as the reference, and this prompt: "Looking straight
@@ -153,8 +170,8 @@ no hazard stripes, so the frame never competes with the menus' caution
 tape. They are drawn like the rest of the screen: crisp line art, a dark
 outline around every piece, a bright flange along each edge, and evenly
 spaced rivets. Used but maintained, never damaged: no cracks, dents, or
-gouges. They come in frame sets, and each new stage picks one at random,
-as it picks its curtains; a stage played again keeps its frame. Each set's
+gouges. They come in frame sets, and each new level picks one at random,
+as it picks its curtains; a level played again keeps its frame. Each set's
 art is in `art/frames/frame-n.png`, drawn at the game's scale by Retro
 Diffusion or by hand, and `art/frames.py` cuts it to the game's sizes.
 
@@ -171,7 +188,7 @@ Diffusion or by hand, and `art/frames.py` cuts it to the game's sizes.
   piece, an end piece of the beam's first 24 columns. Every playfield is a
   multiple of 24 wide, so a frame's art repeats every 8, 12, 16 or 24 and
   joins itself at every piece, and art that repeats every 12 or 24 fits a
-  whole number of times between the posts of every stage, so it ends the
+  whole number of times between the posts of every level, so it ends the
   same at both. Nothing passes through anything else: a cap tops each post
   with its own steel. Retro Diffusion spaces rivets unevenly, so a girder's
   post and beam are each one 8 px cell of its art, a rivet and its plate,
@@ -189,7 +206,7 @@ Diffusion or by hand, and `art/frames.py` cuts it to the game's sizes.
   stroke outlined on both sides. Its chords are 5 wide, an outline, three
   of steel and an outline, each lit on its outer side, so a tower is the
   same inside and out, and a pixel heavier than its bars. The beam is the tower laid on its side, each bay from
-  half an upright to half an upright, so every stage's beam ends the same
+  half an upright to half an upright, so every level's beam ends the same
   at both towers, and its top chord runs off the top of the screen; the
   towers run on up past it. Its brace is the gusset Retro Diffusion drew
   for the truss it was chosen from, gone gray.
@@ -339,11 +356,11 @@ the vent and thin out. Both are plane 0 sprites over the bottom band.
 
 ### The Mine Carts
 
-The stage select is a train of mine carts on a track along the foot of the
+The level select is a train of mine carts on a track along the foot of the
 upgrade screen, the picked one in the middle. Each cart is 4 cells across
 by 5 down, in a 4-bit tile layer of 16 colors, with its coupling in a
-fifth cell at its axles. The stage's number is on a plate in the cart's
-middle two cells, lit on the cart picked. A locked stage's plate is blank
+fifth cell at its axles. The level's number is on a plate in the cart's
+middle two cells, lit on the cart picked. A locked level's plate is blank
 under a padlock, a 16x16 sprite with its own 16 colors, its body over the
 plate and its shackle over the rim; it comes in two halves too, to break
 in two.
@@ -365,7 +382,7 @@ in two.
 - The number sits in the middle of the cart, across and down, never a
   pixel off: rim to foot, the cart is centered on it, so the cart stands
   low in its cells, and its wheels need a fifth row.
-- A stage cleared carries a small heap of ore over the rim. A cart's top
+- A level cleared carries a small heap of ore over the rim. A cart's top
   two rows come with the heap and without.
 - The track is in the backdrop: `art/backdrop.py` draws a steel rail on
   sleepers in the panels' graphite at `CART_Y` plus the cart's foot, so it
@@ -409,10 +426,10 @@ button sends them back the way they came. Only one dwarf shows at a time,
 and the cursor is off while they come and go. They show when a screen
 opens, never in the middle of play, and the screen under them carries on:
 
-- the first stage of a new game starts with a welcome;
-- each first clear of a stage has a dwarf hand over its coin, before the
+- the first level of a new game starts with a welcome;
+- each first clear of a level has a dwarf hand over its coin, before the
   menu opens;
-- on the upgrade screen, as stage 2 unlocks, one says what an unlock
+- on the upgrade screen, as level 2 unlocks, one says what an unlock
   means, as the unlock goes on over the carts, and the first time there,
   another says what the screen is for, after any other.
 
@@ -477,7 +494,7 @@ darkest first. Each class of art gets a row of its own:
 | logo | the title logo |
 | sled | the sleds, their jets and flames, the machine, the digits, and the coin |
 | texture | the texture behind the playfield, its first 4 colors, loaded with each curtain set |
-| curtain | the curtain set of the stage, loaded with it |
+| curtain | the curtain set of the level, loaded with it |
 | shade | the sled row at half, for the machine behind the ball and a dim sled |
 | holo | the holographic cursor of the upgrade screen and the menus, whose colors shimmer |
 
@@ -568,7 +585,7 @@ The blocks of the looks:
 | `ref/rock-crop.png` | 64x64 of the rock of the first curtain set: how stone is drawn. A reference for a stone piece, such as the logo. Not for a curtain set: it is zoomed in, so the rock comes out too big. |
 | `ref/logo-stone.png` | The logo as Retro Diffusion made it, before `art/logo.py`: `rd_pro__typography`, 192x64, with `rock-crop.png` and `old-logo-qu.png` as references: "\"QUARRY\" in big bold blocky capital letters, carefully carved from solid stone by a master stonemason: clean even letterforms with crisp chiseled bevels and flat faces, every letter whole and unbroken, only a few small natural chips and fine hairline marks, all the letters the same warm weathered sandstone with subtle flecks like the reference rock, cool blue-grey stone only in the shadowed bevels, a dark outline and a dark shadow under the letters, light from the upper left, on a plain white background". One of three, and the one with moss, which `art/logo.py` turns to rock; the others were plainer, or cracked with stray dots. |
 | `ref/stone-wall.png` | The organic shapes of the curtains, and the warm sandstone turning to cool granite. It is too bright as it is. |
-| `ref/ore-blocks.png` | Matte ore rock and the pairing of each brick with its nugget. Eight candidate ores: limestone, gold-flecked sandstone, malachite in granite, iron ore, coal, silver in slate, rose quartz, and amber in basalt. Stage 1's white is the limestone. |
+| `ref/ore-blocks.png` | Matte ore rock and the pairing of each brick with its nugget. Eight candidate ores: limestone, gold-flecked sandstone, malachite in granite, iron ore, coal, silver in slate, rose quartz, and amber in basalt. Level 1's white is the limestone. |
 | `ref/sled-kit.png` | The colors, the chevrons, the bolts, and the thrusters. Keep the scuffs and leave out the rust specks. Its tops are not flat: the new sled has the flat, overhanging top plate of [The Sled](#the-sled). |
 | `ref/ui-kit.png` | Graphite panels with yellow trim, gauges, and meters. Its vertical meter is a start for the energy gauge. |
 | `ref/frame-B2.png`, `ref/frame-B3.png` | Concepts for the playfield's frame: lattice towers of angle iron with X bracing, a zigzag truss beam, bolted gussets. Gray steel, see-through. |

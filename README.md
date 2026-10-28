@@ -1,6 +1,6 @@
 # Quarry
 
-An incremental brick breaker for the Picocomputer 6502. Play a stage,
+An incremental brick breaker for the Picocomputer 6502. Play a level,
 collect nuggets from the bricks you break, spend them in an upgrade tree,
 and play again.
 
@@ -33,18 +33,18 @@ the title screen, Shift and Left or Right switch the curtains. A Debug
 build has cheats too: in play, Shift and Right adds a ball, Shift and Left
 takes one away, and Shift and Up or Down adds or takes away a segment of
 energy. On the upgrade screen, Shift and Right or Left raises or lowers the
-upgrade picked, for nothing, or, on the stages, opens the next stage or
+upgrade picked, for nothing, or, on the levels, opens the next level or
 locks the last one again.
 
 The playfield is framed in gray steel the ball bounces off, riveted
-girders or an open truss, a frame set picked at random for each new stage,
+girders or an open truss, a frame set picked at random for each new level,
 as its rock walls are. The paddle floats on thrusters. The energy bar drains from the first
-launch, and when it is empty the paddle falls and the stage ends. Each
+launch, and when it is empty the paddle falls and the level ends. Each
 brick you break turns into a nugget that flies to the counts at the top
-left. The first clear of a stage earns a coin, and opens the next stage.
-When a stage ends, its menu says how, STAGE COMPLETE, OUT OF BALLS or
-OUT OF FUEL, and goes to the upgrade screen, replays the stage, or goes to
-the main menu. Esc in a stage pauses it, with Restart too. The menus are
+left. The first clear of a level earns a coin, and opens the next level.
+When a level ends, its menu says how, LEVEL COMPLETE, OUT OF BALLS or
+OUT OF FUEL, and goes to the upgrade screen, replays the level, or goes to
+the main menu. Esc in a level pauses it, with Restart too. The menus are
 framed in marching caution tape, and the upgrade screen's holographic
 cursor picks in them.
 
@@ -54,11 +54,11 @@ and the button buys it. Left, right and the button repeat while held. The
 panels have their final frames and a stand-in font, and hang in front of a
 workshop whose cogs turn and whose vent puffs steam, their trolleys riding
 the rail; their pictures are still stand-ins. Down goes to a train of mine
-carts on a track, a cart for each stage, where the button begins the stage
-picked. A stage newly open is still locked the first time the screen shows
-it: the screen opens on the stage just cleared, the padlock on the next
-cart shakes and breaks, and the train slides over to the new stage, picked.
-Stages 2 to 10 are stand-ins: stage 1 a column wider each time.
+carts on a track, a cart for each level, where the button begins the level
+picked. A level newly open is still locked the first time the screen shows
+it: the screen opens on the level just cleared, the padlock on the next
+cart shakes and breaks, and the train slides over to the new level, picked.
+Levels 2 to 10 are stand-ins: level 1 a column wider each time.
 
 A new game starts with a cartoon dwarf miner coming up in the lower left
 corner, his speech bubble coming in beside him with a welcome, a stand-in
@@ -67,11 +67,11 @@ for each first clear, and on the upgrade screen to explain the first
 unlock and, the first time there, what the screen is for. More dwarves,
 and more for them to say, are coming.
 
-The game saves when a stage starts or ends, when it pauses, and when an
+The game saves when a level starts or ends, when it pauses, and when an
 upgrade is bought, in `SAVE:quarry.save`, with what the dwarves have
 already said. Resume on the title screen, there once there is a save,
-opens the upgrade screen from there, on its stage select; from a stage, it
-opens on the upgrades. New Game starts over at stage 1, and replaces the
+opens the upgrade screen from there, on its level select; from a level, it
+opens on the upgrades. New Game starts over at level 1, and replaces the
 save, once Yes answers whether to; Esc is No.
 
 ## Building
@@ -110,10 +110,10 @@ ctest --test-dir build/llvm-mos/debug -R energy --output-on-failure
 - `controls` works every key and gamepad control.
 - `energy` drains the energy bar and runs out of energy.
 - `nuggets` breaks bricks and follows their nuggets to the panel.
-- `upgrades` works the menu when a stage ends and the upgrade screen, and earns a coin.
+- `upgrades` works the menu when a level ends and the upgrade screen, and earns a coin.
 - `saves` works the title screen and the pause menu, and reads the save.
 - `sound` sets off every sound effect and reads the PSG's channels.
-- `autoplay` plays stage 1 until it ends, and `autoplay-miss` loses every
+- `autoplay` plays level 1 until it ends, and `autoplay-miss` loses every
   ball.
 
 The tests other than the two autoplay ones wait for the events that a

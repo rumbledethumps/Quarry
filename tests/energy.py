@@ -161,7 +161,7 @@ def main():
     game.run(2)
     check(game.shown(pieces, 1) == 0, 'the paddle fell off after the stage cleared')
     game.talk_ok()  # the dwarf with the coin for a first clear
-    check(game.shows('STAGE COMPLETE'), 'the menu says STAGE COMPLETE')
+    check(game.shows('LEVEL COMPLETE'), 'the menu says LEVEL COMPLETE')
     print('cleared while falling: the paddle still fell off the screen')
     game.close()
     print('PASS')
