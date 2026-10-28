@@ -356,19 +356,18 @@ typedef struct
 /* The frame of the playfield, a frame set from art/frames.py: a post
    POST_W wide on each side, in POST_SPRITES pieces POST_H rows tall, the
    cap beam BEAM_H tall across the top, in up to BEAM_SPRITES pieces BEAM_W
-   columns wide and an end piece half as wide, and a cap over each post. A
-   set's post shows some of its columns, from its inside, and the rest are
-   clear. A playfield is a multiple of BEAM_W / 2 wide, so the beam always
-   ends on a whole piece or an end piece, and a frame's art repeats every
-   12 or every 8, so it joins itself at every piece. Behind them are a knee
-   brace in each top corner, and a machine on the right wall, from
-   art/screen.py. */
+   columns wide, enough for a playfield as wide as the screen, and a cap
+   over each post. A set's post shows some of its columns, from its
+   inside, and the rest are clear. The beam's art repeats every few px,
+   and it runs behind the caps, so a playfield can be any width. Behind
+   them are a knee brace in each top corner, and a machine on the right
+   wall, from art/screen.py. */
 #define POST_W 20
 #define POST_H 48
 #define POST_SPRITES 5
 #define BEAM_H 16
 #define BEAM_W 48
-#define BEAM_SPRITES 6
+#define BEAM_SPRITES 7
 #define BRACE_SIZE 32
 #define MACHINE_W 24
 #define MACHINE_H 40
@@ -458,7 +457,6 @@ typedef MODE5_CUSTOM_IMAGE(4, 8, 8) energy_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 64, 64) logo_image_t; /* a third of art/logo.png */
 typedef MODE5_CUSTOM_IMAGE(4, POST_W, POST_H) post_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, BEAM_W, BEAM_H) beam_image_t;
-typedef MODE5_CUSTOM_IMAGE(4, BEAM_W / 2, BEAM_H) beam_end_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, POST_W, BEAM_H) cap_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, BRACE_SIZE, BRACE_SIZE) brace_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, MACHINE_W, MACHINE_H) machine_image_t;
@@ -566,17 +564,15 @@ typedef struct
 } menu_art_t;
 
 /* A frame set, as ROM:frame1 and on hold it: its palette, the same colors
-   darkened for the braces, then its pieces. The beam's end piece is its
-   first BEAM_W / 2 columns. */
+   darkened for the braces, then its pieces. */
 typedef struct
 {
     uint16_t palette[16];
     uint16_t shade[16];
-    uint8_t shows; /* how many of the post's columns show */
-    uint8_t unused;
+    uint8_t shows;  /* how many of the post's columns show */
+    uint8_t repeat; /* the px the beam's art repeats every, from its first column */
     post_image_t post;
     beam_image_t beam;
-    beam_end_image_t beam_end;
     cap_image_t cap;
     brace_image_t brace;
 } frame_set_t;
@@ -771,10 +767,9 @@ typedef struct
 #define XRAM_FRAME offsetof(xram_layout_t, art.cave.level.frame)
 #define XRAM_FRAME_PALETTE offsetof(xram_layout_t, art.cave.level.frame.palette)
 #define XRAM_FRAME_SHADE offsetof(xram_layout_t, art.cave.level.frame.shade)
-#define XRAM_FRAME_SHOWS offsetof(xram_layout_t, art.cave.level.frame.shows)
+#define XRAM_FRAME_SHOWS offsetof(xram_layout_t, art.cave.level.frame.shows) /* and the repeat after it */
 #define XRAM_POST_IMAGE offsetof(xram_layout_t, art.cave.level.frame.post)
 #define XRAM_BEAM_IMAGE offsetof(xram_layout_t, art.cave.level.frame.beam)
-#define XRAM_BEAM_END offsetof(xram_layout_t, art.cave.level.frame.beam_end)
 #define XRAM_CAP_IMAGE offsetof(xram_layout_t, art.cave.level.frame.cap)
 #define XRAM_BRACE_IMAGE offsetof(xram_layout_t, art.cave.level.frame.brace)
 #define XRAM_CRACK_IMAGES offsetof(xram_layout_t, art.cave.level.cracks)

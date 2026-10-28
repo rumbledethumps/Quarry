@@ -208,17 +208,16 @@ Diffusion or by hand, and `art/frames.py` cuts it to the game's sizes.
   tall, so the ball bounces where it always has. Where the
   art is wider, plain columns or rows of its web are left out, and where
   it is narrower, plain ones repeat, never a rivet, a brace or an edge.
-- A post is one image 48 rows tall, down the screen again and again. The
-  beam runs between the posts, butting into each, never behind one, in
-  pieces 48 wide from the left post, and where a playfield leaves half a
-  piece, an end piece of the beam's first 24 columns. Every playfield is a
-  multiple of 24 wide, so a frame's art repeats every 8, 12, 16 or 24 and
-  joins itself at every piece, and art that repeats every 12 or 24 fits a
-  whole number of times between the posts of every level, so it ends the
-  same at both. Nothing passes through anything else: a cap tops each post
-  with its own steel. Retro Diffusion spaces rivets unevenly, so a girder's
-  post and beam are each one 8 px cell of its art, a rivet and its plate,
-  repeated: the rivets fall every 8.
+- A post is one image 48 rows tall, down the screen again and again. A
+  playfield can be any width, to the pixel. The beam runs behind the
+  posts' caps, in pieces 48 wide, its art repeating every few px, 8 or 12,
+  from the middle of the screen, so it looks the same at both posts and
+  the posts can slide in and out over it. Each cap is solid across as
+  many of its inside columns as the beam's repeat, so the beam never
+  shows through it; a truss's cap is filled with its darkest steel behind
+  its bars. Retro Diffusion spaces rivets unevenly, so a girder's post and
+  beam are each one 8 px cell of its art, a rivet and its plate, repeated:
+  the rivets fall every 8, one at the middle of the screen.
 - The knee braces stand behind the ball and are barely there, so nobody
   takes one for something to bounce off: the set's colors darkened,
   without the rock or the shadows around them. Nothing behind the ball is
@@ -547,7 +546,7 @@ That is 8 rows and the 5 brick colors, so 19 rows are left.
 | digit | 8x12 sprite, a 6x8 digit with its outline |
 | texture | 320x240 at 2 bits a pixel |
 | post | 20 wide, up to 20 of it showing, in pieces 48 tall |
-| cap beam | 16 tall, in pieces 48 wide and an end piece 24 wide, and a cap 20x16 over each post |
+| cap beam | 16 tall, in pieces 48 wide, and a cap 20x16 over each post |
 | brace | 32x32 |
 | machine | 24x40 |
 | sled | the widths of `TUNE_WIDTHS`, up to 64, rounded up to 4 for the sprite; 8 tall, then its two tilts, 24 tall each |

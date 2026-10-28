@@ -20,7 +20,7 @@
 
 extern uint8_t bricks_cols;   /* the width of the level, in bricks */
 extern int16_t bricks_width;  /* of the playfield */
-extern uint8_t bricks_margin; /* the space between the left wall and the bricks */
+extern uint8_t bricks_margin; /* the room between each wall and the bricks */
 extern uint8_t bricks_left; /* bricks not yet broken */
 
 /* The box around the bricks the last bricks_hit() broke. */

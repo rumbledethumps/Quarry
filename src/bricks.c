@@ -30,9 +30,9 @@
 #define CHUNK_GRAVITY 2
 #define CHUNK_SUB 16
 
-/* Level 1 is 4 by 4 bricks. A playfield is half a brick wider at each wall
-   than its bricks would be with no gaps, and the bricks, with their gaps,
-   in the middle of it. */
+/* Level 1 is 4 by 4 bricks. A playfield is as wide as its bricks, with
+   their gaps, and its margin, the room for a ball between the bricks and
+   each wall. */
 #define LEVEL1_COLS 4
 #define LEVEL1_ROWS 4
 #define LEVEL1_MARGIN (BRICK_W / 2)
@@ -41,22 +41,28 @@
 _Static_assert(LEVEL_COLS_MAX * LEVEL1_ROWS <= BRICKS_MAX, "A level has too many bricks.");
 _Static_assert(BRICKS_MAX * CRACK_PIECES <= CRACKS_MAX, "Every brick needs its cracks.");
 _Static_assert(CHUNKS_MAX % CHUNKS_PER_BREAK == 0, "A break takes its chunks together.");
-_Static_assert(BRICK_W % (BEAM_W / 2) == 0 && 2 * LEVEL1_MARGIN % (BEAM_W / 2) == 0,
-               "The frame's beam needs a playfield a multiple of BEAM_W / 2 wide.");
 
-/* The levels designed so far, each LEVEL1_ROWS rows of LEVEL1_COLS bricks,
-   a digit a brick: its color, from BRICK_GRAY. The levels after them are
-   stand-ins, gray, a column wider each time, up to LEVEL_COLS_MAX. */
-static const char *const designs[] = {
-    "0000"
-    "0000"
-    "0000"
-    "0000",
+/* A level designed: its margin, in px, and LEVEL1_ROWS rows of
+   LEVEL1_COLS bricks, a digit a brick: its color, from BRICK_GRAY. */
+typedef struct
+{
+    uint8_t margin;
+    const char *bricks;
+} design_t;
 
-    "0110"
-    "0110"
-    "0000"
-    "0000",
+/* The levels designed so far. The levels after them are stand-ins, gray, a
+   column wider each time, up to LEVEL_COLS_MAX. */
+static const design_t designs[] = {
+    {LEVEL1_MARGIN,
+     "0000"
+     "0000"
+     "0000"
+     "0000"},
+    {LEVEL1_MARGIN,
+     "0110"
+     "0110"
+     "0000"
+     "0000"},
 };
 #define DESIGNS (sizeof designs / sizeof *designs)
 
@@ -74,7 +80,7 @@ int16_t bricks_hit_bottom;
 
 /* Bricks are sprites, so each one keeps its own position. */
 static uint8_t brick_count;
-static const char *design; /* the level's, or 0 for a stand-in */
+static const design_t *design; /* the level's, or 0 for a stand-in */
 static int16_t brick_x[BRICKS_MAX];
 static int16_t brick_y[BRICKS_MAX];
 static uint8_t brick_alive[BRICKS_MAX];
@@ -118,10 +124,10 @@ void bricks_layout(uint8_t level)
 {
     uint8_t cols = LEVEL1_COLS + level - 1;
 
-    design = level <= DESIGNS ? designs[level - 1] : 0;
+    design = level <= DESIGNS ? &designs[level - 1] : 0;
     bricks_cols = design ? LEVEL1_COLS : cols < LEVEL_COLS_MAX ? cols : LEVEL_COLS_MAX;
-    bricks_width = bricks_cols * BRICK_W + 2 * LEVEL1_MARGIN;
-    bricks_margin = (bricks_width - bricks_cols * (BRICK_W + BRICK_GAP) + BRICK_GAP) / 2;
+    bricks_margin = design ? design->margin : LEVEL1_MARGIN;
+    bricks_width = bricks_cols * (BRICK_W + BRICK_GAP) - BRICK_GAP + 2 * bricks_margin;
 }
 
 /* New cracks for every brick, picked at random as the screen opens: each
@@ -165,7 +171,7 @@ void bricks_start(int16_t left, int16_t top)
         brick_x[i] = left + (i % bricks_cols) * (BRICK_W + BRICK_GAP);
         brick_y[i] = top + (i / bricks_cols) * (BRICK_H + BRICK_GAP);
         brick_alive[i] = 1;
-        brick_color[i] = design ? design[i] - '0' : BRICK_GRAY;
+        brick_color[i] = design ? design->bricks[i] - '0' : BRICK_GRAY;
         brick_damage[i] = 0;
         sprite_set(brick_sprite(i), XRAM_BRICK_IMAGE, XRAM_PALETTE_BRICK(brick_color[i]),
                    MODE5_SIZE(BRICK_W, BRICK_H));
