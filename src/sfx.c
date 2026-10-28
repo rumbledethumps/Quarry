@@ -131,7 +131,7 @@ void sfx_init(void)
 /* Plays an effect from x across the screen, panned left to right. */
 void sfx_play(uint8_t sound, int16_t x)
 {
-    uint8_t i, best = 0, now;
+    uint8_t i, best = 0;
     int16_t pan = (x - SFX_CENTER) / 4;
     voice_t *v;
 
@@ -144,19 +144,14 @@ void sfx_play(uint8_t sound, int16_t x)
             best = i;
     }
     v = &voices[best];
-    now = !v->note && v->quiet;
     v->pan = PSG_PAN(pan < -63 ? -63 : pan > 63 ? 63 : pan);
     v->age = 0;
     v->note = sounds[sound];
-    if (now)
-        note_start(best);
-    else
-    {
-        /* The channel was let go only now, or is taken: it starts on the
-           next step, after a step of silence. */
-        gate_off(best);
-        v->left = 0;
-    }
+    /* It starts on the next step, so each note holds its gate for whole
+       steps however late in a step it was played. A channel that was
+       busy gets the step of silence first. */
+    gate_off(best);
+    v->left = 0;
     DEBUG_LOG("sfx %u\n", sound);
 }
 

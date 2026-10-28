@@ -44,7 +44,7 @@ When a stage ends, go to the upgrade screen, replay the stage, or go to
 the main menu. Esc in a stage pauses it, with Restart too.
 
 The upgrade screen is coming together. Panels hang from a rail, one for
-each upgrade, and slide left and right; the one in the middle flickers on,
+each upgrade, and slide left and right; the one in the middle lights up,
 and the button buys it. Left, right and the button repeat while held. The panels have their final frames and a stand-in
 font, and a backdrop of a workshop, whose cogs turn and whose vent puffs steam, with a rail the panels' trolleys ride; the pictures and the track are still stand-ins. Down goes to the row of stages, where the button
 begins the stage picked. A stage newly open is still locked the first time

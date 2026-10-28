@@ -18,8 +18,8 @@
 
 /* The upgrade screen, a working mock with stand-in art. Panels hang from
    a rail across the top, one for each upgrade, and slide along it, so the
-   one picked is always in the middle, lit, flickering on as it comes,
-   with the others dim to its sides. The stages are a train of mine carts
+   one picked is always in the middle, lit, with the others dim to its
+   sides. The stages are a train of mine carts
    along the bottom, which slides the same way. Up and down move the
    holographic cursor between the panels and the carts, and left and right
    move the pick, repeating while held. The button buys the upgrade picked,
@@ -93,10 +93,6 @@ _Static_assert(PANEL_LAYOUTS == PANELS, "art/panels.py needs a layout for each p
 static const char *const panel_titles[PANELS] = {"WIDER SLED", "FASTER SLED", "MORE ENERGY",
                                                  "SPECIAL BRICKS"};
 
-/* A panel coming to the middle flickers on, like a fluorescent tube: lit
-   or dim each step, then lit. */
-static const char flicker[] = "110001000011";
-
 /* The stages are a train of mine carts along the bottom, the one picked
    in the middle, its number lit. A cart is 4 cells across, with its
    coupling after it: a heap of ore for a stage cleared, the rim, the body
@@ -137,7 +133,6 @@ static uint8_t locks_dirty; /* the padlocks to show have changed */
 static int16_t cursor[4], cursor_to[4]; /* left, top, right, bottom */
 static uint8_t steps;
 static uint8_t panel_lit[PANELS]; /* whether each panel's contents are lit */
-static uint8_t flicker_steps;     /* into the flicker of the panel picked */
 
 /* What shop_draw() has to do: draw the pictures again, from scratch, or
    move them and the panels to scroll, and move the cursor. */
@@ -706,15 +701,14 @@ static void cheats_step(void)
 }
 #endif
 
-static void sprites_hide(void)
+/* The cost icons of the panel in the middle, which would show over a
+   question's box. Nothing else reaches it. */
+static void icons_hide(void)
 {
-    uint8_t p, i;
+    uint8_t i;
 
-    for (p = 0; p < PANELS; p++)
-        for (i = 0; i < TROLLEY_SPRITES; i++)
-            sprite_hide(PANEL_SPRITE(p, i));
-    for (i = 0; i < 4; i++)
-        sprite_hide(CURSOR_SPRITE(i));
+    for (i = PICTURE_SPRITES; i < TROLLEY_SPRITES; i++)
+        sprite_hide(PANEL_SPRITE(panel_picked, i));
 }
 
 /* A question over the screen. The pictures and the cursor would show over
@@ -729,7 +723,7 @@ static void ask(uint8_t what)
     }
     asking = what;
     input_repeat_stop();
-    sprites_hide();
+    icons_hide();
     menu_open(what == ASK_BEGIN ? &begin_menu : &title_menu, 0, 0, 0);
     DEBUG_LOG("asked %s\n", what == ASK_BEGIN ? "begin" : "title");
 }
@@ -763,14 +757,14 @@ void shop_open(void)
     unlocking = save_stages_open() > stages_shown ? save_stages_open() : 0;
     panel_scroll = panel_picked * PANEL_STEP;
     cart_scroll = (stage_picked - 1) * CART_STEP;
-    /* The map comes lit. Every panel dims, and the one picked flickers on. */
+    /* The map comes lit. Every panel dims but the one picked. */
     for (p = 0; p < PANELS; p++)
     {
         panel_lit[p] = 1;
         panel_draw(p);
-        panel_light(p, 0);
+        if (p != panel_picked)
+            panel_light(p, 0);
     }
-    flicker_steps = 0;
     for (p = 0; p < PICTURE_SLOTS; p++)
         slot_panel[p] = PANELS;
     pictures_load();
@@ -792,36 +786,37 @@ void shop_open(void)
     DEBUG_LOG("upgrades\n");
 }
 
-/* At the start of a frame: the cursor shimmers, and the panels, their
-   pictures and the cursor move to where shop_step() put them. While a
-   question is up, the pictures and the cursor stay hidden. */
+/* At the start of a frame: the cursor shimmers, the panels, their
+   pictures and the cursor move to where shop_step() put them, and then the
+   panel picked lights and the one it was dims, last, as that takes the
+   longest, so nothing moves while the frame is drawn. While a question is
+   up, nothing moves. */
 void shop_draw(void)
 {
+    uint8_t p;
+
     shimmer();
     machines_draw();
-    if (flicker_steps < sizeof flicker)
+    if (!asking)
     {
-        uint8_t on = flicker_steps + 1 == sizeof flicker || flicker[flicker_steps] == '1';
-        flicker_steps++;
-        if (on != panel_lit[panel_picked])
-        {
-            panel_light(panel_picked, on);
-            pictures_dirty = 1;
-        }
+        if (pictures_dirty)
+            pictures_place();
+        else if (panel_scroll != drawn_scroll)
+            pictures_move();
+        if (cart_scroll != drawn_cart_scroll || locks_dirty)
+            carts_move();
+        if (cursor_dirty)
+            cursor_move();
+        if (lock_dirty)
+            lock_move();
+        pictures_dirty = cursor_dirty = lock_dirty = 0;
     }
-    if (asking)
-        return;
-    if (pictures_dirty)
-        pictures_place();
-    else if (panel_scroll != drawn_scroll)
-        pictures_move();
-    if (cart_scroll != drawn_cart_scroll || locks_dirty)
-        carts_move();
-    if (cursor_dirty)
-        cursor_move();
-    if (lock_dirty)
-        lock_move();
-    pictures_dirty = cursor_dirty = lock_dirty = 0;
+    for (p = 0; p < PANELS; p++)
+        if (panel_lit[p] != (p == panel_picked))
+        {
+            panel_light(p, p == panel_picked);
+            pictures_dirty = 1; /* the pictures light or dim with it, next frame */
+        }
 }
 
 /* Returns SHOP_BEGIN when the stage picked is to begin, SHOP_TITLE to go
@@ -882,10 +877,8 @@ uint8_t shop_step(void)
         uint8_t right = repeated & INPUT_RIGHT;
         if (cursor_on == ON_RAIL && (right ? panel_picked + 1 < PANELS : panel_picked > 0))
         {
-            panel_light(panel_picked, 0);
             panel_picked += right ? 1 : -1;
             pictures_load();
-            flicker_steps = 0;
             pictures_dirty = 1;
             moved = 1;
         }
