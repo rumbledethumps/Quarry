@@ -8,7 +8,7 @@
 #define SFX_WALL 1     /* the ball off a wall */
 #define SFX_BRICK 2    /* the ball off a brick */
 #define SFX_BREAK 3    /* a brick breaking */
-#define SFX_NUGGET 4   /* a nugget landing in the panel */
+#define SFX_NUGGET 4   /* a chime for the nugget out of a brick breaking */
 #define SFX_LOST 5     /* a ball falling off the screen */
 #define SFX_LOW 6      /* the energy turning low */
 #define SFX_LOW_BEEP 7 /* the energy still low */

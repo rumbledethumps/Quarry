@@ -99,7 +99,8 @@ static uint8_t brick_overlaps(uint8_t i, int16_t x, int16_t y, uint8_t w, uint8_
 }
 
 /* Breaks every brick that overlaps the box, and returns how many broke.
-   A broken brick is gone at once, and its sprite shows the break. */
+   A broken brick is gone at once, and its sprite shows the break, with a
+   crunch, and a chime for its nugget. */
 uint8_t bricks_hit(int16_t x, int16_t y, uint8_t w, uint8_t h)
 {
     uint8_t i, hits = 0;
@@ -126,7 +127,10 @@ uint8_t bricks_hit(int16_t x, int16_t y, uint8_t w, uint8_t h)
         DEBUG_LOG("brick %u, %u left\n", i, bricks_left);
     }
     if (hits)
+    {
         sfx_play(SFX_BREAK, bricks_hit_left + BRICK_W / 2);
+        sfx_play(SFX_NUGGET, bricks_hit_left + BRICK_W / 2);
+    }
     return hits;
 }
 

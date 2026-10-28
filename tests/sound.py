@@ -61,19 +61,25 @@ def main():
     game.new_game()
     game.run(5)
 
-    # The ball off the bricks, and the bricks breaking, and the nuggets
-    # landing in the panel.
+    # The ball off the bricks, and the bricks breaking, with a chime for
+    # each nugget. With the ball back on the paddle, so nothing else
+    # breaks, the nuggets land in the counts without a sound.
     game.tap('space')
     played(game, BREAK, 300)
+    played(game, NUGGET, 5)
     played(game, BRICK, 5)
-    played(game, NUGGET, 120)
-    print('ok: brick, break and nugget')
+    game.paused_poke([('ball_state', sym['BALL_DOCKED'], 1)])
+    game.run(90)
+    game.cmd(f'expect-not "sfx {NUGGET}\\n"')
+    game.cmd('expect "nugget landed"')
+    print('ok: brick and break with a chime, and the nugget landing silent')
 
     # The ball off a wall and off the paddle, set up while paused.
     px = game.px('paddle_x')
     width = game.ram('paddle_width')
     game.paused_poke([('ball_x', (game.ram('play_left', 2) + 1) << 8, 4), ('ball_y', 150 << 8, 4),
-                       ('ball_vx', -600 & 0xFFFF, 2), ('ball_vy', 300, 2)])
+                       ('ball_vx', -600 & 0xFFFF, 2), ('ball_vy', 300, 2),
+                       ('ball_state', sym['BALL_FLYING'], 1)])
     played(game, WALL, 10)
     game.paused_poke([('ball_x', (px + width // 2 - 4) << 8, 4), ('ball_y', 190 << 8, 4),
                        ('ball_vx', 0, 2), ('ball_vy', 600, 2)])
