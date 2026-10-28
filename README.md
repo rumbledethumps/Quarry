@@ -60,7 +60,8 @@ Stages 2 to 10 are stand-ins: stage 1 a column wider each time.
 
 The game saves when a stage starts or ends, when it pauses, and when an
 upgrade is bought, in `SAVE:quarry.save`. Resume on the title screen,
-there once there is a save, opens the upgrade screen from there. New Game starts over at stage 1, and
+there once there is a save, opens the upgrade screen from there, on its
+stage select; from a stage, it opens on the upgrades. New Game starts over at stage 1, and
 replaces the save.
 
 ## Building

@@ -188,7 +188,7 @@ def main():
     game.until('game_state', 'STATE_SHOP', 120)
     check(game.ram('nuggets', 2) == left, 'Resume opens the upgrade screen with the nuggets')
     check(game.ram('upgrade_levels') == 1, 'and the upgrade')
-    game.tap('down')
+    check(game.ram('cursor_on') == game.sym['SHOP_ON_STAGES'], 'on the stage select, coming from the title')
     game.tap('space')
     game.tap('space')  # YES, begin the stage
     game.until('game_state', 'STATE_PLAY', 60)

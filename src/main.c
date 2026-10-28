@@ -113,9 +113,11 @@ static void title_show(void)
     DEBUG_LOG("title\n");
 }
 
-static void shop_show(void)
+/* The upgrade screen, on its upgrades from a stage, or on its stage select
+   from the title. */
+static void shop_show(uint8_t on)
 {
-    shop_open();
+    shop_open(on);
     game_state = STATE_SHOP;
 }
 
@@ -198,7 +200,7 @@ int main(void)
             {
             case END_UPGRADES:
                 play_finish();
-                shop_show();
+                shop_show(SHOP_ON_UPGRADES);
                 break;
             case END_REPLAY:
                 play_finish();
@@ -221,7 +223,7 @@ int main(void)
                     break;
                 case PAUSE_UPGRADES:
                     play_finish();
-                    shop_show();
+                    shop_show(SHOP_ON_UPGRADES);
                     break;
                 case PAUSE_RESTART:
                     play_finish();
@@ -251,7 +253,7 @@ int main(void)
             {
             case TITLE_RESUME:
                 save_load();
-                shop_show();
+                shop_show(SHOP_ON_STAGES);
                 break;
             case TITLE_NEW_GAME:
                 if (save_exists)

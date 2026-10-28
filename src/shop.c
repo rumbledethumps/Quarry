@@ -105,9 +105,9 @@ static const char *const panel_titles[PANELS] = {"WIDER SLED", "FASTER SLED", "M
 _Static_assert(STAGES <= CARTS_MAX, "CARTS_MAX in xram.h is too few for the stages.");
 _Static_assert(CART_TILES <= CART_TILES_MAX, "CART_TILES_MAX in xram.h is too few.");
 
-/* What the cursor is on. */
-#define ON_RAIL 0
-#define ON_STAGES 1
+/* What the cursor is on, as shop_open() takes it. */
+#define ON_RAIL SHOP_ON_UPGRADES
+#define ON_STAGES SHOP_ON_STAGES
 
 /* What is being asked, if anything. */
 #define ASK_NONE 0
@@ -686,7 +686,9 @@ static void unask(void)
     cursor_aim();
 }
 
-void shop_open(void)
+/* The upgrade screen, its cursor on the rail of panels or the stage
+   select, as on says. */
+void shop_open(uint8_t on)
 {
     uint8_t p;
 
@@ -696,7 +698,7 @@ void shop_open(void)
     input_repeat_stop();
     video_text_clear();
     nuggets_start(1);
-    cursor_on = ON_RAIL;
+    cursor_on = on;
     asking = ASK_NONE;
     unlocking = save_stages_open() > stages_shown ? save_stages_open() : 0;
     panel_scroll = panel_picked * PANEL_STEP;
