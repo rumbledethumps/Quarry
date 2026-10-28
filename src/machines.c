@@ -6,7 +6,7 @@
 /* What moves in the upgrade screen's backdrop: the two cogs at the left of
    the floor turn all the time, and now and then the vent by the piston
    lets out a puff of steam, quietly. They are plane 0 sprites over the
-   backdrop, in the slots of a stage's curtains, which this screen doesn't
+   backdrop, in the slots of a level's curtains, which this screen doesn't
    have, and in the bottom band's palette. art/backdrop.py draws their
    frames. */
 

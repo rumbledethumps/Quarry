@@ -117,7 +117,7 @@ def main():
     check(game.px('paddle_y') > top + 4, 'the paddle falls')
     game.wait('paddle gone', 120)
     game.run(2)
-    check(game.ram('game_state') != sym['STATE_PLAY'], 'the stage ends')
+    check(game.ram('game_state') != sym['STATE_PLAY'], 'the level ends')
     check(game.shows('OUT OF FUEL'), 'the menu says OUT OF FUEL')
     print(f'puff of {puff} smoke pixels, then the paddle fell off the screen')
 
@@ -146,7 +146,7 @@ def main():
     game.run(2)
     check(game.shows('OUT OF FUEL'), 'the menu says OUT OF FUEL again')
 
-    # The stage clears while the paddle falls: it still falls off the screen.
+    # The level clears while the paddle falls: it still falls off the screen.
     game.menu_choose('REPLAY')
     game.run(5)
     game.cmd('press space')
@@ -156,10 +156,10 @@ def main():
     game.wait('paddle falls', sym['TUNE_SPUTTER_STEPS'] + 10)
     check(game.ram('ball_state') == sym['BALL_FLYING'], 'the ball is still in flight')
     game.paused_poke([('bricks_left', 0, 1)])
-    game.wait('stage cleared', 5)
+    game.wait('level cleared', 5)
     game.wait('paddle gone', 120)
     game.run(2)
-    check(game.shown(pieces, 1) == 0, 'the paddle fell off after the stage cleared')
+    check(game.shown(pieces, 1) == 0, 'the paddle fell off after the level cleared')
     game.talk_ok()  # the dwarf with the coin for a first clear
     check(game.shows('LEVEL COMPLETE'), 'the menu says LEVEL COMPLETE')
     print('cleared while falling: the paddle still fell off the screen')

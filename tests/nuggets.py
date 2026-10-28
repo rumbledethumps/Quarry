@@ -6,7 +6,7 @@
 Needs a Debug ROM, which logs the game's events. Reads the sprites and the
 text from XRAM. Checks the break frames, that each nugget flies a straight
 line to its line in the panel, the count there, and that the count lasts
-from stage to stage. Exits 0 when every check passes.
+from level to level. Exits 0 when every check passes.
 """
 
 import os
@@ -30,7 +30,7 @@ def main():
     # The white nugget's line is under the coins' line.
     BRICKS_Y, ICON_X, ICON_Y = sym['TUNE_BRICKS_Y'], sym['ICON_X'], sym['ICON_TOP'] + sym['LINE_H']
     count = lambda: game.count('XRAM_NUGGET_DIGITS', sym['COUNT_DIGITS'])
-    BRICKS = sym['STAGE1_COLS'] * sym['STAGE1_ROWS']
+    BRICKS = sym['LEVEL1_COLS'] * sym['LEVEL1_ROWS']
     HIDDEN_Y = sym['SPRITE_HIDDEN_Y']
     NUGGETS = sym['NUGGETS_MAX']  # in flight at once
     game.new_game()
@@ -105,14 +105,14 @@ def main():
     check(landed == len(broken), f'each nugget that lands counts, {landed} of {len(broken)}')
     check(count() == landed, 'the count shows them')
 
-    # The count lasts into the next stage, and keeps counting there.
+    # The count lasts into the next level, and keeps counting there.
     game.wait('ball lost', 3000)
     game.paused_poke([('balls', 0, 1), ('ball_state', 1, 1)])
     game.wait('out of balls', 600)
     before = game.ram('nuggets', 2)
     game.menu_choose('REPLAY')
     game.run(5)
-    check(game.ram('nuggets', 2) == before, 'the count lasts into the next stage')
+    check(game.ram('nuggets', 2) == before, 'the count lasts into the next level')
     check(count() == before, 'the count shows it')
     game.cmd('press space')
     game.wait('launch', 5)
@@ -122,7 +122,7 @@ def main():
     after = game.ram('nuggets', 2)
     check(after > before, 'and keeps counting')
     check(count() == after, 'the count shows the new count')
-    print(f'counted {before} in the first stage, {after} after a nugget in the next')
+    print(f'counted {before} in the first level, {after} after a nugget in the next')
     game.close()
     print('PASS')
 

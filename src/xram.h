@@ -316,11 +316,11 @@ typedef struct
 #define PANEL_ROWS 19
 #define PANEL_Y 16 /* the top of the hangers */
 
-/* The stage select is a train of mine carts along the bottom: a map of
+/* The level select is a train of mine carts along the bottom: a map of
    4-bit tiles on plane 1 too, on the scanlines under the panels, which
    slides on its own. Each cart is CART_COLS cells with its coupling, and
    CART_ROWS down. art/carts.py makes the tiles and their palette, and the
-   padlock over a locked stage, whole and in halves, and writes
+   padlock over a locked level, whole and in halves, and writes
    build/carts.h. */
 #define CARTS_MAX 10
 #define CART_COLS 5
@@ -343,7 +343,7 @@ typedef struct
 #define PICTURE_SLOTS 4
 #define PICTURE_BYTES 1024
 
-/* The texture behind a stage's playfield, from art/texture.py: a bitmap at
+/* The texture behind a level's playfield, from art/texture.py: a bitmap at
    2 bits a pixel that wraps. */
 #define TEXTURE_W 320
 #define TEXTURE_H 240
@@ -377,7 +377,7 @@ typedef struct
 #define CURTAIN_BYTES (CURTAIN_W * CURTAIN_H / 2)
 
 /* The sleds that art/sled.py draws, one for each width of TUNE_WIDTHS, up
-   to SLEDS. A sled's images are the sled level, 8 rows, then tilted 1 and
+   to SLEDS. A sled's images are the sled flat, 8 rows, then tilted 1 and
    2 px in 8 to the right as it falls, SLED_TILT_ROWS each, all its width
    rounded up to 4 wide. Each sled has a slot of SLED_SLOT bytes, which
    art/sled.py gives too. */
@@ -575,18 +575,18 @@ typedef struct
     uint8_t bubble_map[BUBBLE_ROWS][BUBBLE_COLS];
 } talk_t;
 
-/* The art of the title and of a stage: the texture and a curtain set, the
-   stage's sled, then the title's logo or, in its place, the stage's frame
+/* The art of the title and of a level: the texture and a curtain set, the
+   level's sled, then the title's logo or, in its place, the level's frame
    set. Each screen loads its own when it starts. */
 typedef struct
 {
     uint8_t texture[TEXTURE_H][TEXTURE_W / 4];
     uint8_t curtains[2][CURTAIN_BYTES];
-    uint8_t sled_images[SLED_SLOT]; /* the sled of a stage */
+    uint8_t sled_images[SLED_SLOT]; /* the sled of a level */
     union
     {
         logo_image_t logo_images[3]; /* the title's logo */
-        frame_set_t frame;           /* a stage's frame set */
+        frame_set_t frame;           /* a level's frame set */
     };
 } cave_art_t;
 
@@ -726,7 +726,7 @@ typedef struct
 #define XRAM_BEAM_END offsetof(xram_layout_t, art.cave.frame.beam_end)
 #define XRAM_CAP_IMAGE offsetof(xram_layout_t, art.cave.frame.cap)
 #define XRAM_BRACE_IMAGE offsetof(xram_layout_t, art.cave.frame.brace)
-#define XRAM_STAGE_SLED offsetof(xram_layout_t, art.cave.sled_images)
+#define XRAM_LEVEL_SLED offsetof(xram_layout_t, art.cave.sled_images)
 #define XRAM_LOGO_IMAGES offsetof(xram_layout_t, art.cave.logo_images)
 
 MODE5_PALETTE_CHECK(palettes_t);

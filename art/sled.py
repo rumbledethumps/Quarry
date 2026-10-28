@@ -13,7 +13,7 @@
 
 Each sled has small details of its own: scuffs, and a lamp between each two
 jets. Its image is its width rounded up to 4, the size of its sprite. Its
-first 8 rows are the sled, level: the plate, rows 0 to 2, then the mount the
+first 8 rows are the sled, flat: the plate, rows 0 to 2, then the mount the
 jets hang from, rows 3 and 4. Under that are the sled tilted 1 px in 8 to
 the right as it falls, then 2 px in 8, 24 rows each.
 
@@ -66,7 +66,7 @@ def image_width(width):
 
 
 def sled(width, jets):
-    """The rows of the level sled, 8 rows of color indexes, its image width
+    """The rows of the flat sled, 8 rows of color indexes, its image width
     wide."""
     rng = random.Random(width)
     pad = [0] * (image_width(width) - width)
@@ -149,8 +149,8 @@ def main():
     os.makedirs(folder, exist_ok=True)
     data = bytearray()
     for width, n in zip(tuning('TUNE_WIDTHS'), tuning('TUNE_JETS')):
-        level = sled(width, n)
-        rows = level + [r for t in TILTS for r in tilted(level[:5], image_width(width), t)]
+        flat = sled(width, n)
+        rows = flat + [r for t in TILTS for r in tilted(flat[:5], image_width(width), t)]
         write_png(os.path.join(folder, f'sled-{width}.png'), image_width(width), len(rows), 3,
                   rows, colors)
         one = pack(rows)

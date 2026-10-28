@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Checks the menu when a stage ends and the upgrade screen, in the emulator.
+"""Checks the menu when a level ends and the upgrade screen, in the emulator.
 
   upgrades.py rom.rp6502
 
@@ -21,12 +21,12 @@ END_ITEMS = ['UPGRADES', 'REPLAY', 'MAIN MENU']
 
 def tuning(game):
     """The upgrade tables of src/upgrades.c, from RAM."""
-    width_levels, speed_levels = game.sym['WIDTH_LEVELS'], game.sym['SPEED_LEVELS']
+    width_ranks, speed_ranks = game.sym['WIDTH_RANKS'], game.sym['SPEED_RANKS']
     table = lambda name, count, size: [game.ram(f'{name}+{i * size}', size) for i in range(count)]
-    return {'TUNE_WIDTHS': table('widths', width_levels + 1, 1),
-            'TUNE_WIDTH_COSTS': table('width_costs', width_levels, 2),
-            'TUNE_SPEEDS': table('speeds', speed_levels + 1, 2),
-            'TUNE_SPEED_COSTS': table('speed_costs', speed_levels, 2)}
+    return {'TUNE_WIDTHS': table('widths', width_ranks + 1, 1),
+            'TUNE_WIDTH_COSTS': table('width_costs', width_ranks, 2),
+            'TUNE_SPEEDS': table('speeds', speed_ranks + 1, 2),
+            'TUNE_SPEED_COSTS': table('speed_costs', speed_ranks, 2)}
 
 
 def main():
@@ -38,7 +38,7 @@ def main():
     game.run(5)
 
     def end_picked():
-        """The item picked on the menu when a stage ends, end_menus in
+        """The item picked on the menu when a level ends, end_menus in
         src/main.c."""
         return END_ITEMS[game.ram('picked')]
 
@@ -73,13 +73,13 @@ def main():
     def settle():
         game.run(40)
 
-    # The stage ends: the menu, with UPGRADES picked, takes no choice for a
+    # The level ends: the menu, with UPGRADES picked, takes no choice for a
     # moment.
     game.tap('space')
     game.poke('balls', 0)
     game.wait('out of balls', 3000)
     game.run(2)
-    check(game.ram('game_state') == sym['STATE_MENU'], 'the menu opens when the stage ends')
+    check(game.ram('game_state') == sym['STATE_MENU'], 'the menu opens when the level ends')
     check(all(game.shows(w) for w in ['OUT OF BALLS'] + END_ITEMS), 'it says OUT OF BALLS, with its items')
     check(end_picked() == 'UPGRADES', 'UPGRADES is picked')
     check(cursor_on_item('end_menus', 0), 'and the cursor is on it at once')
@@ -125,7 +125,7 @@ def main():
     check(panel_lit(0) and not panel_lit(1), 'the middle panel is lit and the next one dim')
     game.tap('space')
     game.cmd('expect-not "bought"')
-    check(game.ram('upgrade_levels', 2) == 0, 'no upgrade without the nuggets')
+    check(game.ram('upgrade_ranks', 2) == 0, 'no upgrade without the nuggets')
 
     # Right slides the panels left, the next one lit in the middle, and the
     # picture slides with its panel. At the last panel, right does nothing.
@@ -159,24 +159,24 @@ def main():
     # or lower the upgrade picked, for nothing, and repeat while held.
     game.cmd('press lshift')
     game.tap('right')
-    check(game.ram('upgrade_levels') == 1 and game.ram('nuggets', 2) == 0,
+    check(game.ram('upgrade_ranks') == 1 and game.ram('nuggets', 2) == 0,
           'Shift and right raises the width, for nothing')
     game.tap('left')
-    check(game.ram('upgrade_levels') == 0, 'Shift and left lowers it')
+    check(game.ram('upgrade_ranks') == 0, 'Shift and left lowers it')
     game.cmd('press right')
     game.run(sym['REPEAT_DELAY'] + 2 * sym['REPEAT_STEPS'] + 2)
     game.cmd('release right')
-    check(game.ram('upgrade_levels') >= 3, 'held, it repeats')
+    check(game.ram('upgrade_ranks') >= 3, 'held, it repeats')
     game.cmd('press left')
-    game.run(sym['REPEAT_DELAY'] + sym['REPEAT_STEPS'] * sym['UPGRADE_LEVELS_MAX'])
+    game.run(sym['REPEAT_DELAY'] + sym['REPEAT_STEPS'] * sym['UPGRADE_RANKS_MAX'])
     game.cmd('release left')
     game.cmd('release lshift')
     game.run(2)
-    check(game.ram('upgrade_levels') == 0, 'and back down to none')
+    check(game.ram('upgrade_ranks') == 0, 'and back down to none')
     print('ok: the upgrade cheats')
 
-    # With nuggets: a level of width at its cost, then, with the button
-    # held, every other level, then MAX. The count shows what is left.
+    # With nuggets: a rank of width at its cost, then, with the button
+    # held, every other rank, then MAX. The count shows what is left.
     have = 200
     game.poke('nuggets', have, 2)
     game.tap('space')
@@ -188,45 +188,45 @@ def main():
     game.cmd('release space')
     game.wait(f'bought width {len(tune["TUNE_WIDTH_COSTS"])}', 10)
     have -= sum(tune['TUNE_WIDTH_COSTS'][1:])
-    check(game.ram('upgrade_levels') == len(tune['TUNE_WIDTH_COSTS']) and game.ram('nuggets', 2) == have,
-          'held, the button buys every level, each at its cost')
+    check(game.ram('upgrade_ranks') == len(tune['TUNE_WIDTH_COSTS']) and game.ram('nuggets', 2) == have,
+          'held, the button buys every rank, each at its cost')
     check(game.count('XRAM_NUGGET_DIGITS', sym['COUNT_DIGITS']) == have, 'the count shows what is left')
     game.tap('space')
     game.cmd('expect-not "bought"')
-    check(game.ram('nuggets', 2) == have, 'nothing more to buy at the top level')
-    check(panel(0, sym['COST_ROW']) == 'MAX', 'the top level shows MAX')
+    check(game.ram('nuggets', 2) == have, 'nothing more to buy at the top rank')
+    check(panel(0, sym['COST_ROW']) == 'MAX', 'the top rank shows MAX')
     print('ok: bought every width')
 
-    # A level of speed, on the next panel.
+    # A rank of speed, on the next panel.
     game.tap('right')
     game.tap('space')
     game.wait('bought speed 1', 10)
     have -= tune['TUNE_SPEED_COSTS'][0]
     check(game.ram('nuggets', 2) == have, 'speed 1 costs its cost')
 
-    # Down goes to the stages, where only the open ones can be picked.
+    # Down goes to the levels, where only the open ones can be picked.
     game.tap('down')
-    check(game.ram('cursor_on') == sym['ON_STAGES'], 'down moves the cursor to the stages')
+    check(game.ram('cursor_on') == sym['ON_LEVELS'], 'down moves the cursor to the levels')
     game.tap('right')
-    check(game.ram('stage_picked') == 1, 'stage 2 is locked until stage 1 is cleared')
+    check(game.ram('level_picked') == 1, 'level 2 is locked until level 1 is cleared')
 
-    # On the stages, Shift and right opens the next stage, with its unlock,
+    # On the levels, Shift and right opens the next level, with its unlock,
     # and another cuts that short and opens the one after. Shift and left
     # locks them again.
     game.cmd('press lshift')
     game.tap('right')
-    check(game.ram('stages_cleared') == 1 and game.ram('unlocking') == 2,
-          'Shift and right opens stage 2, to unlock')
+    check(game.ram('levels_cleared') == 1 and game.ram('unlocking') == 2,
+          'Shift and right opens level 2, to unlock')
     game.tap('right')
-    check(game.ram('stages_shown') == 2 and game.ram('unlocking') == 3,
-          'another cuts the unlock short, and opens stage 3')
+    check(game.ram('levels_shown') == 2 and game.ram('unlocking') == 3,
+          'another cuts the unlock short, and opens level 3')
     game.tap('left')
     game.tap('left')
     game.cmd('release lshift')
     game.run(2)
-    check(game.ram('stages_cleared') == 0 and game.ram('unlocking') == 0 and
-          game.ram('stage_picked') == 1 and game.ram('stages_shown') == 1, 'Shift and left locks them again')
-    print('ok: the stage cheats')
+    check(game.ram('levels_cleared') == 0 and game.ram('unlocking') == 0 and
+          game.ram('level_picked') == 1 and game.ram('levels_shown') == 1, 'Shift and left locks them again')
+    print('ok: the level cheats')
 
     # Esc asks to go back to the title, and Esc again doesn't.
     game.tap('escape')
@@ -237,10 +237,10 @@ def main():
     game.tap('escape')
     check(not game.shows('RETURN TO TITLE?'), 'Esc again does not')
 
-    # The button on a stage asks to begin it, with YES picked, and YES plays
+    # The button on a level asks to begin it, with YES picked, and YES plays
     # it with the paddle upgraded.
     game.tap('space')
-    check(game.shows('BEGIN LEVEL 1?'), 'the button asks to begin the stage')
+    check(game.shows('BEGIN LEVEL 1?'), 'the button asks to begin the level')
     game.tap('space')
     game.until('game_state', 'STATE_PLAY', 30)
     game.run(2)
@@ -263,17 +263,17 @@ def main():
           f'the paddle moves at its new speed, {moved} px in {steps} steps')
     print(f'ok: a {width} px paddle moving {speed / 256} px a step')
 
-    # The first clear of stage 1 earns a coin and opens stage 2, which the
+    # The first clear of level 1 earns a coin and opens level 2, which the
     # upgrade screen picks. Clearing it again earns nothing.
     def clear():
         game.tap('space')
         game.run(20)
         game.paused_poke([('bricks_left', 0, 1)])
-        game.wait('stage cleared', 10)
+        game.wait('level cleared', 10)
         game.run(2)
 
     clear()
-    check(game.ram('coins', 2) == 1 and game.ram('stages_cleared') == 1, 'a coin for clearing stage 1')
+    check(game.ram('coins', 2) == 1 and game.ram('levels_cleared') == 1, 'a coin for clearing level 1')
     check(game.count('XRAM_COIN_DIGITS', sym['COUNT_DIGITS']) == 1, 'the count shows it')
     game.talk_ok()  # the dwarf hands it over
     game.menu_choose('REPLAY')
@@ -281,26 +281,26 @@ def main():
     check(game.ram('coins', 2) == 1, 'no coin for clearing it again')
     game.menu_choose('UPGRADES')
     game.run(5)
-    check(game.ram('stage_picked') == 1 and game.ram('cart_scroll', 2) == 0,
-          'the upgrade screen opens on stage 1, just cleared')
+    check(game.ram('level_picked') == 1 and game.ram('cart_scroll', 2) == 0,
+          'the upgrade screen opens on level 1, just cleared')
     lock = sym['XRAM_MENU_SPRITES'] + sym['PANELS'] * sym['PANEL_SPRITES'] * SPRITE  # its halves, then the padlocks
-    check(game.ram('unlocking') == 2 and game.shown(lock, 2) == 2, 'and the lock of stage 2 shows, to break')
+    check(game.ram('unlocking') == 2 and game.shown(lock, 2) == 2, 'and the lock of level 2 shows, to break')
     check(game.shown(lock + 2 * SPRITE, 4) == 4, 'with padlocks on the 4 carts locked after it')
     game.wait('unlocked 2', 200)
-    check(game.ram('stages_shown') == 2 and game.ram('unlocking') == 0 and game.ram('stage_picked') == 2,
-          'the lock breaks, and stage 2 shows open, picked')
+    check(game.ram('levels_shown') == 2 and game.ram('unlocking') == 0 and game.ram('level_picked') == 2,
+          'the lock breaks, and level 2 shows open, picked')
     game.run(40)
     check(game.ram('cart_scroll', 2) == sym['CART_STEP'], 'and the train slides over to it')
     game.talk_ok()  # the dwarf who says what the unlock means
     game.tap('down')
     game.tap('space')
-    check(game.shows('BEGIN LEVEL 2?'), 'and asks to begin stage 2')
+    check(game.shows('BEGIN LEVEL 2?'), 'and asks to begin level 2')
     game.tap('space')
     game.until('game_state', 'STATE_PLAY', 30)
-    check(game.ram('bricks_left') == (sym['STAGE1_COLS'] + 1) * sym['STAGE1_ROWS'],
-          'stage 2 is a column wider')
+    check(game.ram('bricks_left') == (sym['LEVEL1_COLS'] + 1) * sym['LEVEL1_ROWS'],
+          'level 2 is a column wider')
     game.close()
-    print('ok: a coin for the first clear, and the next stage')
+    print('ok: a coin for the first clear, and the next level')
     print('PASS')
 
 

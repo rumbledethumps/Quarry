@@ -21,11 +21,11 @@
 /* The upgrade screen, a working mock with stand-in art. Panels hang from
    a rail across the top, one for each upgrade, and slide along it, so the
    one picked is always in the middle, lit, with the others dim to its
-   sides. The stages are a train of mine carts
+   sides. The levels are a train of mine carts
    along the bottom, which slides the same way. Up and down move the
    holographic cursor between the panels and the carts, and left and right
    move the pick, repeating while held. The button buys the upgrade picked,
-   again and again while held, or asks to begin the stage picked. Esc asks to go back to the title. A stage newly open is
+   again and again while held, or asks to begin the level picked. Esc asks to go back to the title. A level newly open is
    still locked when the screen opens: the padlock on its cart shakes and
    breaks, and its number lights.
 
@@ -55,10 +55,10 @@
 
 _Static_assert(PANELS * PANEL_SPRITES + 2 + LOCKS <= MENU_SPRITES, "MENU_SPRITES is too few.");
 
-/* The unlock of a stage newly open, on the cart beside the stage just
+/* The unlock of a level newly open, on the cart beside the level just
    cleared, which is picked: a wait, the lock shaking harder and harder,
    then it breaks, and its halves fly apart and fall away. Then the new
-   stage is picked, with a chime, and the train slides over to it. The
+   level is picked, with a chime, and the train slides over to it. The
    halves' speeds are in 1/16 px a step. */
 #define UNLOCK_WAIT 20
 #define UNLOCK_SHAKE 60
@@ -71,7 +71,7 @@ _Static_assert(PANELS * PANEL_SPRITES + 2 + LOCKS <= MENU_SPRITES, "MENU_SPRITES
    wide, and the others are side by side with it. A frame is
    PANEL_BORDER cells thick all around, which leaves PANEL_INSIDE cells
    across inside. The rows of the panel cells: the hangers, the top of the
-   frame, the picture, the title, the pips, what the next level does, and
+   frame, the picture, the title, the pips, what the next rank does, and
    two lines of cost. Each panel's frame is as tall as art/panels.py makes
    it. */
 #define PANEL_LEFT ((SCREEN_W - PANEL_COLS * 8) / 2)
@@ -94,9 +94,9 @@ _Static_assert(PANEL_LAYOUTS == PANELS, "art/panels.py needs a layout for each p
 static const char *const panel_titles[PANELS] = {"WIDER SLED", "FASTER SLED", "MORE ENERGY",
                                                  "SPECIAL BRICKS"};
 
-/* The stages are a train of mine carts along the bottom, the one picked
+/* The levels are a train of mine carts along the bottom, the one picked
    in the middle, its number lit. A cart is 4 cells across, with its
-   coupling after it: a heap of ore for a stage cleared, the rim, the body
+   coupling after it: a heap of ore for a level cleared, the rim, the body
    with the number plate in its middle two cells, and the wheels, as
    art/carts.py lays them out. Its top two rows come with the heap and
    without. The track under them is in the backdrop. */
@@ -104,12 +104,12 @@ static const char *const panel_titles[PANELS] = {"WIDER SLED", "FASTER SLED", "M
 #define CART_STEP (CART_COLS * 8)
 #define CART_LEFT ((SCREEN_W - CART_W) / 2)
 
-_Static_assert(STAGES <= CARTS_MAX, "CARTS_MAX in xram.h is too few for the stages.");
+_Static_assert(LEVELS <= CARTS_MAX, "CARTS_MAX in xram.h is too few for the levels.");
 _Static_assert(CART_TILES <= CART_TILES_MAX, "CART_TILES_MAX in xram.h is too few.");
 
 /* What the cursor is on, as shop_open() takes it. */
 #define ON_RAIL SHOP_ON_UPGRADES
-#define ON_STAGES SHOP_ON_STAGES
+#define ON_LEVELS SHOP_ON_LEVELS
 
 /* What is being asked, if anything. */
 #define ASK_NONE 0
@@ -122,7 +122,7 @@ static const menu_t begin_menu = {20, 11, BOX_TAPE, begin_title, yes_no, 2};
 static const menu_t title_menu = {20, 11, BOX_TAPE, "RETURN TO TITLE?", yes_no, 2};
 
 static uint8_t panel_picked; /* the panel in the middle */
-static uint8_t cursor_on;     /* ON_RAIL or ON_STAGES */
+static uint8_t cursor_on;     /* ON_RAIL or ON_LEVELS */
 static uint8_t asking;
 static int16_t panel_scroll; /* how far the panels have slid, in px */
 static int16_t cart_scroll;  /* how far the carts have slid, in px */
@@ -142,12 +142,12 @@ static uint8_t picture_shown[PANELS * PANEL_SPRITES];
    one the way the rail last moved, which loads before it slides into
    view. Those are four panels side by side, so each has a slot. */
 static uint8_t slot_panel[PICTURE_SLOTS]; /* whose picture each slot holds, or PANELS */
-static uint8_t slot_level[PICTURE_SLOTS]; /* and at which level */
+static uint8_t slot_rank[PICTURE_SLOTS]; /* and at which rank */
 static int8_t heading = 1; /* the way the rail last moved: 1 to the panels on the right, -1 to the left */
 
 _Static_assert(PICTURE_SLOTS >= 4, "A slot for each of the four panels near the one picked.");
 
-static uint8_t unlocking; /* the stage being unlocked, or 0 */
+static uint8_t unlocking; /* the level being unlocked, or 0 */
 static uint8_t unlock_steps;
 static int16_t half_x[2], half_y[2], half_dx[2], half_dy[2]; /* in 1/16 px, from the cart */
 static uint8_t lock_dirty;
@@ -244,21 +244,21 @@ static uint8_t can_buy(uint8_t u)
     return cost && nuggets[BRICK_WHITE] >= cost;
 }
 
-/* What the next level does, as the numbers now and then, with the units. */
+/* What the next rank does, as the numbers now and then, with the units. */
 static void effect_draw(uint8_t p)
 {
     char text[PANEL_INSIDE + 1];
     char *at = text;
-    uint8_t level = upgrade_levels[p], max = level >= upgrades_max(p);
+    uint8_t rank = upgrade_ranks[p], max = rank >= upgrades_max(p);
     const char *units = p == UPGRADE_WIDTH ? " PX" : " PX/S";
     /* A speed is in 1/256 px a step, at 60 steps a second. */
 #define VALUE(l) (p == UPGRADE_WIDTH ? upgrades_width_at(l) : (uint16_t)(upgrades_speed_at(l) * 60u / 256))
 
-    at = put_number(at, VALUE(level));
+    at = put_number(at, VALUE(rank));
     if (!max)
     {
         at = put_text(at, " \x10 ");
-        at = put_number(at, VALUE(level + 1));
+        at = put_number(at, VALUE(rank + 1));
     }
     at = put_text(at, units);
     *at = 0;
@@ -266,8 +266,8 @@ static void effect_draw(uint8_t p)
 #undef VALUE
 }
 
-/* A panel's contents: its title, a pip for each level, filled for each
-   bought, what the next level does, and its cost, in short digits while it
+/* A panel's contents: its title, a pip for each rank, filled for each
+   bought, what the next rank does, and its cost, in short digits while it
    can't be paid, or MAX. A stand-in says it is coming. The frame is the
    map's, as art/panels.py made it. */
 static void panel_draw(uint8_t p)
@@ -281,9 +281,9 @@ static void panel_draw(uint8_t p)
         return;
     }
     {
-        uint8_t max = upgrades_max(p), level = upgrade_levels[p];
+        uint8_t max = upgrades_max(p), rank = upgrade_ranks[p];
         for (i = 0; i < max; i++)
-            tiles[i] = i < level ? PANEL_TILE_PIP_ON : PANEL_TILE_PIP_OFF;
+            tiles[i] = i < rank ? PANEL_TILE_PIP_ON : PANEL_TILE_PIP_OFF;
         row_draw(p, PIPS_ROW, tiles, max);
     }
     effect_draw(p);
@@ -320,7 +320,7 @@ static uint8_t picture_ready(uint8_t p)
 {
     uint8_t slot = p % PICTURE_SLOTS;
 
-    return slot_panel[slot] == p && slot_level[slot] == upgrade_levels[UPGRADE_WIDTH];
+    return slot_panel[slot] == p && slot_rank[slot] == upgrade_ranks[UPGRADE_WIDTH];
 }
 
 /* Loads the pictures of the panels near the one picked that aren't in
@@ -334,9 +334,9 @@ static void pictures_load(void)
         if ((p == UPGRADE_WIDTH || p == UPGRADE_SPEED) && !picture_ready(p))
         {
             uint8_t slot = p % PICTURE_SLOTS;
-            scene_picture_sled(slot, upgrade_levels[UPGRADE_WIDTH]);
+            scene_picture_sled(slot, upgrade_ranks[UPGRADE_WIDTH]);
             slot_panel[slot] = p;
-            slot_level[slot] = upgrade_levels[UPGRADE_WIDTH];
+            slot_rank[slot] = upgrade_ranks[UPGRADE_WIDTH];
         }
 }
 
@@ -359,10 +359,10 @@ static void pictures_draw(uint8_t p)
     }
     if (p == UPGRADE_WIDTH || p == UPGRADE_SPEED)
     {
-        uint8_t level = upgrade_levels[UPGRADE_WIDTH];
-        uint8_t w = upgrades_width_at(level) * 2;
+        uint8_t rank = upgrade_ranks[UPGRADE_WIDTH];
+        uint8_t w = upgrades_width_at(rank) * 2;
         if (picture_ready(p))
-            sled_show(PANEL_SPRITE(p, 0), PICTURE_SPRITES, x + (PANEL_COLS * 8 - w) / 2, top + 7, level,
+            sled_show(PANEL_SPRITE(p, 0), PICTURE_SPRITES, x + (PANEL_COLS * 8 - w) / 2, top + 7, rank,
                       SLED_DOUBLE | dim | (p == UPGRADE_SPEED ? SLED_FLAMES : 0), XRAM_PICTURE(p % PICTURE_SLOTS));
     }
     else if (p == 2)
@@ -435,27 +435,27 @@ static void pictures_move(void)
     drawn_scroll = panel_scroll;
 }
 
-/* The stages shown open: all that are, but one being unlocked until its
+/* The levels shown open: all that are, but one being unlocked until its
    lock breaks. */
 static uint8_t shown_open(void)
 {
-    return unlocking > stages_shown ? unlocking - 1 : save_stages_open();
+    return unlocking > levels_shown ? unlocking - 1 : save_levels_open();
 }
 
-/* The left edge of stage s's cart, as the train slides. */
+/* The left edge of level s's cart, as the train slides. */
 static int16_t cart_x(uint8_t s)
 {
     return CART_LEFT + (s - 1) * CART_STEP - cart_scroll;
 }
 
-/* Every stage's cart: a heap on each one cleared, its number on its plate,
+/* Every level's cart: a heap on each one cleared, its number on its plate,
    lit on the one picked, or a blank plate on each that isn't open yet,
    for its padlock. */
 static void carts_draw(void)
 {
     uint8_t open = shown_open(), s, r, c;
 
-    for (s = 1; s <= STAGES; s++)
+    for (s = 1; s <= LEVELS; s++)
     {
         uint8_t cells[CART_ROWS][CART_COLS], t = CART_TILE_BODY;
         for (r = 0; r < CART_ROWS; r++)
@@ -465,7 +465,7 @@ static void carts_draw(void)
             for (c = 0; c < 4; c++)
                 if (r != CART_PLATE_ROW || c == 0 || c == 3)
                     cells[r][c] = t++;
-        if (s <= stages_cleared && s <= open)
+        if (s <= levels_cleared && s <= open)
             for (c = 0; c < 4; c++)
             {
                 cells[0][c] = CART_TILE_HEAP + c;
@@ -478,11 +478,11 @@ static void carts_draw(void)
         }
         else
         {
-            uint8_t digits = s == stage_picked ? CART_TILE_DIGIT : CART_TILE_DIM;
+            uint8_t digits = s == level_picked ? CART_TILE_DIGIT : CART_TILE_DIM;
             cells[CART_PLATE_ROW][1] = digits + s / 10;
             cells[CART_PLATE_ROW][2] = digits + s % 10;
         }
-        if (s < STAGES)
+        if (s < LEVELS)
             cells[CART_COUPLING_ROW][4] = CART_TILE_COUPLING;
         for (r = 0; r < CART_ROWS; r++)
             xram0_write(XRAM_CART_MAP + r * CART_MAP_COLS + (s - 1) * CART_COLS, cells[r], CART_COLS);
@@ -500,7 +500,7 @@ static void carts_move(void)
         s++;
     xram0_poke16(XRAM_CART_CONFIG + offsetof(mode2_config_t, x_pos_px), CART_LEFT - cart_scroll);
     for (i = 0; i < LOCKS; i++, s++)
-        if (s <= STAGES)
+        if (s <= LEVELS)
             sprite_move(LOCK_SPRITE(i), cart_x(s) + CART_LOCK_LEFT, CART_Y + CART_LOCK_TOP);
         else
             sprite_hide(LOCK_SPRITE(i));
@@ -519,7 +519,7 @@ static void cursor_aim(void)
         cursor_place(PANEL_LEFT - 3, PANEL_Y + TOP_ROW * 8 - 3, PANEL_LEFT + PANEL_COLS * 8 + 3,
                      PANEL_Y + (panel_heights[panel_picked] + 1) * 8 + 3);
     else
-        cursor_place(CART_LEFT - 3, CART_Y + (stage_picked <= stages_cleared ? CART_HEAP_TOP : CART_RIM) - 3,
+        cursor_place(CART_LEFT - 3, CART_Y + (level_picked <= levels_cleared ? CART_HEAP_TOP : CART_RIM) - 3,
                      CART_LEFT + CART_W + 3, CART_Y + CART_FOOT + 3);
 }
 
@@ -566,12 +566,12 @@ static void lock_move(void)
         sprite_move(HALF_SPRITE(i), cart_x(unlocking) + half_x[i] / 16 + shake, half_y[i] / 16);
 }
 
-/* Ends an unlock at once: the stage shows open, and is picked. */
+/* Ends an unlock at once: the level shows open, and is picked. */
 static void unlock_finish(void)
 {
     sprite_hide(HALF_SPRITE(0));
     sprite_hide(HALF_SPRITE(1));
-    stages_shown = stage_picked = unlocking;
+    levels_shown = level_picked = unlocking;
     unlocking = 0;
     lock_dirty = 0;
     carts_draw();
@@ -579,7 +579,7 @@ static void unlock_finish(void)
 }
 
 /* A step of the unlock: the shake rattles, the break snaps and shows the
-   stage's number, and the halves fall. At the end the stage is picked, with
+   level's number, and the halves fall. At the end the level is picked, with
    a chime, and the game saves. */
 static void unlock_step(void)
 {
@@ -591,7 +591,7 @@ static void unlock_step(void)
     if (t == UNLOCK_WAIT + UNLOCK_SHAKE)
     {
         sfx_play(SFX_SNAP, cart_x(unlocking));
-        stages_shown = unlocking;
+        levels_shown = unlocking;
         carts_draw();
     }
     if (t > UNLOCK_WAIT + UNLOCK_SHAKE)
@@ -606,14 +606,14 @@ static void unlock_step(void)
         sfx_play(SFX_UNLOCK, cart_x(unlocking));
         unlock_finish();
         save_write();
-        DEBUG_LOG("unlocked %u\n", stages_shown);
+        DEBUG_LOG("unlocked %u\n", levels_shown);
     }
 }
 
 #ifndef NDEBUG
 /* The cheats of a debug build, with Shift and right or left, which repeat
    while held. On the rail, they raise or lower the upgrade picked, for
-   nothing. On the stages, they open the next stage, with its unlock, or
+   nothing. On the levels, they open the next level, with its unlock, or
    lock the last one open again. A cheat cuts short an unlock under way. */
 static void cheats_step(void)
 {
@@ -626,39 +626,39 @@ static void cheats_step(void)
     if (cursor_on == ON_RAIL)
     {
         uint8_t u = panel_picked;
-        if (u >= UPGRADES || (up ? upgrade_levels[u] >= upgrades_max(u) : !upgrade_levels[u]))
+        if (u >= UPGRADES || (up ? upgrade_ranks[u] >= upgrades_max(u) : !upgrade_ranks[u]))
             return;
-        upgrade_levels[u] += up ? 1 : -1;
+        upgrade_ranks[u] += up ? 1 : -1;
         pictures_load();
         for (i = 0; i < UPGRADES; i++)
             panel_draw(i);
         pictures_dirty = 1;
-        DEBUG_LOG("cheat: %s %u\n", u == UPGRADE_WIDTH ? "width" : "speed", upgrade_levels[u]);
+        DEBUG_LOG("cheat: %s %u\n", u == UPGRADE_WIDTH ? "width" : "speed", upgrade_ranks[u]);
         return;
     }
-    if (up && stages_cleared < STAGES)
+    if (up && levels_cleared < LEVELS)
     {
-        stages_cleared++;
-        if (save_stages_open() > stages_shown)
+        levels_cleared++;
+        if (save_levels_open() > levels_shown)
         {
-            unlocking = save_stages_open();
-            stage_picked = unlocking - 1;
+            unlocking = save_levels_open();
+            level_picked = unlocking - 1;
             lock_start();
         }
     }
-    else if (!up && stages_cleared)
+    else if (!up && levels_cleared)
     {
-        stages_cleared--;
-        if (stage_picked > save_stages_open())
-            stage_picked = save_stages_open();
-        if (stages_shown > save_stages_open())
-            stages_shown = save_stages_open();
+        levels_cleared--;
+        if (level_picked > save_levels_open())
+            level_picked = save_levels_open();
+        if (levels_shown > save_levels_open())
+            levels_shown = save_levels_open();
     }
     else
         return;
     carts_draw();
     cursor_aim();
-    DEBUG_LOG("cheat: %u stages cleared\n", stages_cleared);
+    DEBUG_LOG("cheat: %u levels cleared\n", levels_cleared);
 }
 #endif
 
@@ -679,9 +679,9 @@ static void ask(uint8_t what)
 {
     if (what == ASK_BEGIN)
     {
-        begin_title[12] = stage_picked >= 10 ? '0' + stage_picked / 10 : '0' + stage_picked % 10;
-        begin_title[13] = stage_picked >= 10 ? '0' + stage_picked % 10 : '?';
-        begin_title[14] = stage_picked >= 10 ? '?' : 0;
+        begin_title[12] = level_picked >= 10 ? '0' + level_picked / 10 : '0' + level_picked % 10;
+        begin_title[13] = level_picked >= 10 ? '0' + level_picked % 10 : '?';
+        begin_title[14] = level_picked >= 10 ? '?' : 0;
     }
     asking = what;
     input_repeat_stop();
@@ -698,7 +698,7 @@ static void unask(void)
     cursor_aim();
 }
 
-/* The upgrade screen, its cursor on the rail of panels or the stage
+/* The upgrade screen, its cursor on the rail of panels or the level
    select, as on says. */
 void shop_open(uint8_t on)
 {
@@ -712,16 +712,16 @@ void shop_open(uint8_t on)
     nuggets_start(1);
     cursor_on = on;
     asking = ASK_NONE;
-    unlocking = save_stages_open() > stages_shown ? save_stages_open() : 0;
+    unlocking = save_levels_open() > levels_shown ? save_levels_open() : 0;
     if (unlocking)
-        stage_picked = unlocking - 1;
+        level_picked = unlocking - 1;
     /* The first unlock has a dwarf say what it means, and the first time
        here another says what the screen is for. */
     if (unlocking == 2)
         talk_once(TALK_UNLOCK);
     talk_once(TALK_UPGRADES);
     panel_scroll = panel_picked * PANEL_STEP;
-    cart_scroll = (stage_picked - 1) * CART_STEP;
+    cart_scroll = (level_picked - 1) * CART_STEP;
     /* The map comes lit. Every panel dims but the one picked. */
     for (p = 0; p < PANELS; p++)
     {
@@ -757,7 +757,7 @@ void shop_idle(void)
     if (unlocking)
         unlock_step();
     panel_scroll = ease(panel_scroll, panel_picked * PANEL_STEP);
-    cart_scroll = ease(cart_scroll, (stage_picked - 1) * CART_STEP);
+    cart_scroll = ease(cart_scroll, (level_picked - 1) * CART_STEP);
 }
 
 /* The last dwarf has gone, and the cursor and the cost icons come back. */
@@ -796,7 +796,7 @@ void shop_draw(void)
         }
 }
 
-/* Returns SHOP_BEGIN when the stage picked is to begin, SHOP_TITLE to go
+/* Returns SHOP_BEGIN when the level picked is to begin, SHOP_TITLE to go
    back to the title, and SHOP_STAY until then. */
 uint8_t shop_step(void)
 {
@@ -809,7 +809,7 @@ uint8_t shop_step(void)
     if (unlocking)
     {
         unlock_step();
-        cart_scroll = ease(cart_scroll, (stage_picked - 1) * CART_STEP);
+        cart_scroll = ease(cart_scroll, (level_picked - 1) * CART_STEP);
         return SHOP_STAY;
     }
     if (asking)
@@ -844,9 +844,9 @@ uint8_t shop_step(void)
         cursor_on = ON_RAIL;
         moved = 1;
     }
-    else if (input_pressed & INPUT_DOWN && cursor_on != ON_STAGES)
+    else if (input_pressed & INPUT_DOWN && cursor_on != ON_LEVELS)
     {
-        cursor_on = ON_STAGES;
+        cursor_on = ON_LEVELS;
         moved = 1;
     }
     else if (repeated & (INPUT_LEFT | INPUT_RIGHT))
@@ -860,16 +860,16 @@ uint8_t shop_step(void)
             pictures_dirty = 1;
             moved = 1;
         }
-        else if (cursor_on == ON_STAGES && (right ? stage_picked < save_stages_open() : stage_picked > 1))
+        else if (cursor_on == ON_LEVELS && (right ? level_picked < save_levels_open() : level_picked > 1))
         {
-            stage_picked += right ? 1 : -1;
+            level_picked += right ? 1 : -1;
             carts_draw();
             moved = 1;
         }
     }
     else if ((cursor_on == ON_RAIL ? repeated : input_pressed) & INPUT_CHOOSE)
     {
-        if (cursor_on == ON_STAGES)
+        if (cursor_on == ON_LEVELS)
             ask(ASK_BEGIN);
         else if (panel_picked < UPGRADES && upgrades_buy(panel_picked))
         {
@@ -890,6 +890,6 @@ uint8_t shop_step(void)
         cursor_aim();
     }
     panel_scroll = ease(panel_scroll, panel_picked * PANEL_STEP);
-    cart_scroll = ease(cart_scroll, (stage_picked - 1) * CART_STEP);
+    cart_scroll = ease(cart_scroll, (level_picked - 1) * CART_STEP);
     return SHOP_STAY;
 }

@@ -33,7 +33,7 @@ quarry_art(machine.bin image machine.png)
 quarry_art(coin.bin image coin.png)
 quarry_art(cursor.bin image cursor.png)
 
-# The textures behind a stage, one for each seed, as ROM:texture1 and on,
+# The textures behind a level, one for each seed, as ROM:texture1 and on,
 # and each curtain set of art/curtains/, as ROM:curtain1 and on.
 set(QUARRY_TEXTURE_SEEDS 7 11 23 42)
 set(QUARRY_TEXTURES)
@@ -102,7 +102,7 @@ add_custom_command(
     VERBATIM
 )
 
-# The mine carts of the stage select and the padlock of a locked stage,
+# The mine carts of the level select and the padlock of a locked level,
 # from art/cart.png and art/padlock.png, and carts.h, which gives their tile
 # numbers and the places on a cart.
 add_custom_command(

@@ -11,7 +11,8 @@ art, and compare new art against them.
 ## The Words
 
 What the game calls things, on its screens and in what the dwarves say,
-always in capitals. The code calls a level a stage, and fuel energy.
+always in capitals. The code calls fuel energy, and how much of an upgrade is
+bought its rank.
 
 | Word | What it is |
 | --- | --- |
@@ -244,7 +245,7 @@ Each width has a picture of its own, so each sled can have details of its
 own, such as its scuffs, and a lamp between each two jets. The build draws
 them with `art/sled.py` from the tuning, so a change to the widths or the
 jets needs only a rebuild, and writes them to `sleds/` in the build folder
-to look at. A picture holds the sled level, then tilted twice for its
+to look at. A picture holds the sled flat, then tilted twice for its
 fall. Once the widths settle, the pictures can move into `art/` to be
 touched up by hand.
 

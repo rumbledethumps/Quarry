@@ -112,7 +112,7 @@ def main():
     game.until('game_state', 'STATE_MENU', 200)
     print('ok: sputter and fall')
 
-    # On the menu when a stage ends and on the upgrade screen, moves click,
+    # On the menu when a level ends and on the upgrade screen, moves click,
     # and a purchase plays four notes, letting go between them.
     game.run(70)
     game.tap('down')

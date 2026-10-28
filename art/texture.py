@@ -5,7 +5,7 @@
 
 Two octaves of Perlin noise, cut into four levels of equal area, at 2 bits
 a pixel: 320x240, four pixels to a byte, the leftmost in the high bits. The
-noise repeats across and down, so the bitmap wraps, and each stage can show
+noise repeats across and down, so the bitmap wraps, and each level can show
 it from a new place. Each seed makes a texture of its own. The colors come
 with each curtain set, from art/curtain.py; the preview uses the first four
 of the texture row of art/palettes.png.

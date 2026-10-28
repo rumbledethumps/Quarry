@@ -45,7 +45,7 @@ uint8_t paddle_left;
 
 static uint16_t paddle_speed;
 static uint8_t paddle_moved; /* the sled needs drawing */
-static uint8_t sled_level;   /* its sled, the level of the width upgrade */
+static uint8_t sled_rank;   /* its sled, the rank of the width upgrade */
 static uint8_t sled_tilt;    /* the tilt its sprite shows */
 static uint8_t sled_jets;
 static int8_t steer;         /* 1 moving right, -1 left, 0 still */
@@ -64,11 +64,11 @@ static uint8_t jet_x(uint8_t width, uint8_t jets, uint8_t i)
 /* The width of a sled's image and sprite, a multiple of 4. */
 #define SLED_IMAGE_W(width) (((width) + 3) & ~3)
 
-/* The image of the stage's sled, width px wide, level or tilted, as
+/* The image of the level's sled, width px wide, flat or tilted, as
    art/sled.py lays it out. */
 static unsigned sled_image(uint8_t width, uint8_t tilt)
 {
-    unsigned image = XRAM_STAGE_SLED;
+    unsigned image = XRAM_LEVEL_SLED;
 
     if (tilt)
         image += SLED_IMAGE_W(width) * (8 + (tilt - 1) * SLED_TILT_ROWS) / 2;
@@ -82,22 +82,22 @@ static void jet_set(unsigned sprite, uint8_t frame, uint8_t flip)
                 flip ? MODE5_4BPP | MODE5_HFLIP : MODE5_4BPP);
 }
 
-/* The sled of a level of the width upgrade, its flat image at image, with
+/* The sled of a rank of the width upgrade, its flat image at image, with
    its top left at x, y, from count sprites at sprites: the sled, then its
    jets, with a medium flame, or the nozzles alone without flames. The
-   sprites it doesn't need are hidden, and all of them with level
+   sprites it doesn't need are hidden, and all of them with rank
    SLED_NONE. */
-void sled_show(unsigned sprites, uint8_t count, int16_t x, int16_t y, uint8_t level, uint8_t look,
+void sled_show(unsigned sprites, uint8_t count, int16_t x, int16_t y, uint8_t rank, uint8_t look,
                unsigned image)
 {
     uint8_t i, width = 0, n = 0, scale = look & SLED_DOUBLE ? 2 : 1;
     uint8_t doubling = look & SLED_DOUBLE ? MODE5_HDOUBLE | MODE5_VDOUBLE : 0;
     unsigned palette = look & SLED_DIM ? XRAM_PALETTE_SHADE : XRAM_PALETTE_SLED;
 
-    if (level != SLED_NONE)
+    if (rank != SLED_NONE)
     {
-        width = upgrades_width_at(level);
-        n = upgrades_jets_at(level);
+        width = upgrades_width_at(rank);
+        n = upgrades_jets_at(rank);
         sprite_set(sprites, image, palette, MODE5_SIZE(SLED_IMAGE_W(width), 8));
         sprite_attributes(sprites, doubling);
         sprite_move(sprites, x, y);
@@ -134,9 +134,9 @@ void paddle_start(void)
     paddle_y = FIX(TUNE_PADDLE_Y);
     paddle_left = 0;
     steer = 0;
-    sled_level = upgrade_levels[UPGRADE_WIDTH];
+    sled_rank = upgrade_ranks[UPGRADE_WIDTH];
     sled_tilt = 0;
-    sled_jets = upgrades_jets_at(sled_level);
+    sled_jets = upgrades_jets_at(sled_rank);
     sprite_set(XRAM_SLED_SPRITE, sled_image(paddle_width, 0), XRAM_PALETTE_SLED,
                MODE5_SIZE(SLED_IMAGE_W(paddle_width), 8));
     for (i = 0; i < JETS_MAX; i++)
@@ -182,7 +182,7 @@ static void hover_step(void)
     }
 }
 
-/* With controls 0, as after the stage ends, the paddle still burns its
+/* With controls 0, as after the level ends, the paddle still burns its
    flames, and finishes falling if it was. */
 void paddle_step(uint8_t controls)
 {

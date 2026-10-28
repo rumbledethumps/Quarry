@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""Build the mine carts of the upgrade screen's stage select, as art/style/README.md describes them.
+"""Build the mine carts of the upgrade screen's level select, as art/style/README.md describes them.
 
   carts.py out.bin out.h [--preview out.png]
 
 A cart is art/cart.png, from Retro Diffusion, 32x24: a graphite steel tub
 with a yellow rim and two wheels. It stands in cells 4 across and
 CELL_ROWS down, in 4-bit 8x8 tiles of one 16-color palette, low enough
-that the stage's number on its side is in the middle of it, rim to foot:
+that the level's number on its side is in the middle of it, rim to foot:
 the number is a plate in the cart's two middle cells of row PLATE_ROW,
-drawn here over the art's own plate. A stage cleared carries a heap of ore
+drawn here over the art's own plate. A level cleared carries a heap of ore
 over the rim, so the cart's top two rows come with the heap and without.
 The cell after each cart holds the coupling to the next, at the wheels'
 axles. The number's digits come lit and dim, in the panels' font.
 
-A locked stage's plate is blank, under a padlock: art/padlock.png, from
+A locked level's plate is blank, under a padlock: art/padlock.png, from
 Retro Diffusion, 16x16, a sprite with a palette of its own, its body over
 the plate and its shackle over the rim. It also comes in two 8x16 halves,
 so it can break in two.
@@ -206,7 +206,7 @@ def main():
 
     first = dict(names)
     with open(args.header, 'w') as f:
-        f.write('/* Made by art/carts.py. The tiles of the stage select\'s mine carts. */\n\n'
+        f.write('/* Made by art/carts.py. The tiles of the level select\'s mine carts. */\n\n'
                 '#ifndef CARTS_H\n#define CARTS_H\n\n'
                 f'#define CART_CELL_ROWS {CELL_ROWS}\n'
                 f'#define CART_TILE_HEAP {first["HEAP_0_0"]} /* the top two rows of a cart with a heap, 4 across */\n'

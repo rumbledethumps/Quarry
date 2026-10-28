@@ -226,13 +226,13 @@ class Game(rp6502.Emu):
         self.cmd(f'wait {name} {value} {frames}')
 
     def menu_choose(self, item, wait=True):
-        """Choose UPGRADES, REPLAY or MAIN MENU on the menu when a stage ends.
+        """Choose UPGRADES, REPLAY or MAIN MENU on the menu when a level ends.
         It opens with UPGRADES picked and waits a second before it takes a
         choice. Works with a Release ROM too, which logs nothing."""
         items = ['UPGRADES', 'REPLAY', 'MAIN MENU']
         states = ['STATE_SHOP', 'STATE_PLAY', 'STATE_TITLE']
         if wait:
-            self.run(self.sym['STAGE_OVER_WAIT'] + 10)
+            self.run(self.sym['LEVEL_OVER_WAIT'] + 10)
         for _ in range(items.index(item)):
             self.tap('down')
         self.tap('space')

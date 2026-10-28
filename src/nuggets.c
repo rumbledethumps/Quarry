@@ -46,7 +46,7 @@ static void coins_draw(void)
     video_count(XRAM_COIN_DIGITS, COUNT_DIGITS, ICON_X + 9, ICON_TOP - 1, coins);
 }
 
-/* A coin, for the first clear of a stage. */
+/* A coin, for the first clear of a level. */
 void coins_add(void)
 {
     if (coins < 0xFFFF)

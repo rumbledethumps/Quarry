@@ -23,7 +23,7 @@ again, and the beam pieces 48 wide from the left post, then if a
 playfield leaves half a piece, an end piece of its first 24 columns. A
 playfield is a multiple of 24 wide, so a post or a beam repeats every 8,
 12, 16 or 24 and joins itself at every piece, and one that repeats every
-12 or 24 fits a whole number of times between the posts of any stage, so
+12 or 24 fits a whole number of times between the posts of any level, so
 it ends the same at both. Retro Diffusion spaces rivets unevenly, so a
 girder's post or beam is one cell of its art, a rivet and the plate
 around it, 8 long, repeated. The brace is behind the ball, in the set's
@@ -144,7 +144,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('n', type=int)
     parser.add_argument('output')
-    parser.add_argument('--preview', help='also write the frame around a stage 1 playfield, at its size')
+    parser.add_argument('--preview', help='also write the frame around a level 1 playfield, at its size')
     args = parser.parse_args()
 
     pieces = cut(args.n)
@@ -182,7 +182,7 @@ def main():
     print(f'frame {args.n}: {len(colors)} colors, the brace at {brightest}, the machine at {machine}')
 
     if args.preview:
-        # A stage 1 playfield, 120 wide, its frame drawn as src/frame.c lays it.
+        # A level 1 playfield, 120 wide, its frame drawn as src/frame.c lays it.
         left, right, w, h = POST_W + 4, POST_W + 124, 2 * POST_W + 128, 240
         out = [[(20, 22, 28)] * w for _ in range(h)]
 

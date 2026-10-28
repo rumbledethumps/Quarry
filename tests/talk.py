@@ -119,7 +119,7 @@ def main():
     game.tap('space')
     game.run(20)
     game.paused_poke([('bricks_left', 0, 1)])
-    game.wait('stage cleared', 10)
+    game.wait('level cleared', 10)
     game.run(1)
     game.cmd('expect-not "menu UPGRADES"')  # the end menu, as menu_open() logs it
     talk('TALK_COIN')
@@ -131,7 +131,7 @@ def main():
     check(game.ram('game_state') == sym['STATE_MENU'], 'which takes no choice at once')
     print('ok: the coin, then the menu')
 
-    # The upgrade screen: as stage 2 unlocks, a dwarf says what that means,
+    # The upgrade screen: as level 2 unlocks, a dwarf says what that means,
     # and the unlock goes on under him. Then another says what the screen is
     # for. The cursor is off until each OK, and comes back to the rail after.
     game.run(sym['TALK_OVER_WAIT'])
@@ -149,7 +149,7 @@ def main():
     check(game.ram('talk_state') == sym['TALK_READY'], 'the unlock goes on while he talks')
     check(game.xram('XRAM_TALK', len(art)) == art, 'and nothing writes over him')
     corner = game.sprite(cursor)
-    check(corner[1] > 120, f'the cursor stays on his OK, not the rail, as the new stage is picked: {corner}')
+    check(corner[1] > 120, f'the cursor stays on his OK, not the rail, as the new level is picked: {corner}')
     game.tap('space')
     check(game.shown(cursor, 4) == 0, 'the cursor goes with his OK')
     talk('TALK_UPGRADES')
@@ -163,14 +163,14 @@ def main():
     # The next first clear has a coin but no more of the upgrade screen's.
     game.tap('down')
     game.tap('space')
-    game.tap('space')  # YES, begin stage 2
+    game.tap('space')  # YES, begin level 2
     game.until('game_state', 'STATE_PLAY', 60)
     game.run(5)
-    check(game.ram('talk_state') == sym['TALK_OFF'], 'no welcome on stage 2')
+    check(game.ram('talk_state') == sym['TALK_OFF'], 'no welcome on level 2')
     game.tap('space')
     game.run(20)
     game.paused_poke([('bricks_left', 0, 1)])
-    game.wait('stage cleared', 10)
+    game.wait('level cleared', 10)
     talk('TALK_COIN')
     game.talk_ok()
     game.menu_choose('UPGRADES')

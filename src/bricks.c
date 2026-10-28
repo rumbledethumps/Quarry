@@ -13,16 +13,16 @@
 #define BREAK_STEPS 4
 #define BREAK_OVER 4
 
-/* Stage 1 is 4 by 4 white bricks, with half a brick of space at each
-   wall. Until the stages are designed, each one after it is a column
-   wider, up to STAGE_COLS_MAX. */
-#define STAGE1_COLS 4
-#define STAGE1_ROWS 4
-#define STAGE1_MARGIN (BRICK_W / 2)
-#define STAGE_COLS_MAX 10
+/* Level 1 is 4 by 4 white bricks, with half a brick of space at each
+   wall. Until the levels are designed, each one after it is a column
+   wider, up to LEVEL_COLS_MAX. */
+#define LEVEL1_COLS 4
+#define LEVEL1_ROWS 4
+#define LEVEL1_MARGIN (BRICK_W / 2)
+#define LEVEL_COLS_MAX 10
 
-_Static_assert(STAGE_COLS_MAX * STAGE1_ROWS <= BRICKS_MAX, "A stage has too many bricks.");
-_Static_assert(BRICK_W % (BEAM_W / 2) == 0 && 2 * STAGE1_MARGIN % (BEAM_W / 2) == 0,
+_Static_assert(LEVEL_COLS_MAX * LEVEL1_ROWS <= BRICKS_MAX, "A level has too many bricks.");
+_Static_assert(BRICK_W % (BEAM_W / 2) == 0 && 2 * LEVEL1_MARGIN % (BEAM_W / 2) == 0,
                "The frame's beam needs a playfield a multiple of BEAM_W / 2 wide.");
 
 uint8_t bricks_cols;
@@ -46,11 +46,11 @@ static unsigned brick_sprite(uint8_t i)
     return XRAM_BRICKS + i * sizeof(mode5_csprite_t);
 }
 
-/* Sets the size of a stage, from 1, before the frame goes up around it. */
-void bricks_layout(uint8_t stage)
+/* Sets the size of a level, from 1, before the frame goes up around it. */
+void bricks_layout(uint8_t level)
 {
-    bricks_cols = STAGE1_COLS + stage - 1 < STAGE_COLS_MAX ? STAGE1_COLS + stage - 1 : STAGE_COLS_MAX;
-    bricks_margin = STAGE1_MARGIN;
+    bricks_cols = LEVEL1_COLS + level - 1 < LEVEL_COLS_MAX ? LEVEL1_COLS + level - 1 : LEVEL_COLS_MAX;
+    bricks_margin = LEVEL1_MARGIN;
 }
 
 /* A brick still breaking counts its nugget now, and its sprite is hidden. */
@@ -73,7 +73,7 @@ void bricks_start(int16_t left, int16_t top)
 
     bricks_finish();
     bricks_left = 0;
-    brick_count = bricks_cols * STAGE1_ROWS;
+    brick_count = bricks_cols * LEVEL1_ROWS;
     for (i = 0; i < brick_count; i++)
     {
         brick_x[i] = left + (i % bricks_cols) * BRICK_W;

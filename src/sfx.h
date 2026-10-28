@@ -16,9 +16,9 @@
 #define SFX_FALL 9     /* the paddle falling */
 #define SFX_BUY 10     /* an upgrade bought */
 #define SFX_MOVE 11    /* a menu's pick moving */
-#define SFX_RATTLE 12  /* the lock of a stage newly open shaking */
+#define SFX_RATTLE 12  /* the lock of a level newly open shaking */
 #define SFX_SNAP 13    /* the lock breaking */
-#define SFX_UNLOCK 14  /* the stage's button lighting up */
+#define SFX_UNLOCK 14  /* the level's button lighting up */
 #define SFX_COUNT 15
 
 #define SFX_CENTER 160 /* a sound from the middle of the screen */

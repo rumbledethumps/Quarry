@@ -9,8 +9,8 @@
 #include <unistd.h>
 
 /* One save, one file: the nugget counts of each color, the coins, the
-   upgrade levels, the stages cleared, the stage picked to play, the
-   highest stage the upgrade screen has shown open, and the talks of the
+   upgrade ranks, the levels cleared, the level picked to play, the
+   highest level the upgrade screen has shown open, and the talks of the
    dwarves already seen. It starts with a tag that names its layout, so a
    save of another layout is not read as this one. */
 #define SAVE_PATH "SAVE:quarry.save"
@@ -22,22 +22,22 @@ typedef struct
     uint16_t nuggets[BRICK_COLORS];
     uint16_t coins;
     uint8_t upgrades[UPGRADES];
-    uint8_t stages_cleared;
-    uint8_t stage_picked;
-    uint8_t stages_shown;
+    uint8_t levels_cleared;
+    uint8_t level_picked;
+    uint8_t levels_shown;
     uint8_t talks_seen;
 } save_t;
 
 uint8_t save_exists;
-uint8_t stages_cleared;
-uint8_t stage_picked = 1;
-uint8_t stages_shown = 1;
+uint8_t levels_cleared;
+uint8_t level_picked = 1;
+uint8_t levels_shown = 1;
 uint8_t talks_seen;
 
-/* The stages that can be played: every one cleared, and the next. */
-uint8_t save_stages_open(void)
+/* The levels that can be played: every one cleared, and the next. */
+uint8_t save_levels_open(void)
 {
-    return stages_cleared < STAGES ? stages_cleared + 1 : STAGES;
+    return levels_cleared < LEVELS ? levels_cleared + 1 : LEVELS;
 }
 
 /* Reads the save into the game. Returns whether there was a good one; a
@@ -53,19 +53,19 @@ uint8_t save_load(void)
         return 0;
     n = read(fd, &s, sizeof s);
     close(fd);
-    if (n != sizeof s || memcmp(s.tag, SAVE_TAG, sizeof s.tag) || s.stages_cleared > STAGES ||
-        s.stage_picked < 1 || s.stage_picked > STAGES || s.stage_picked > s.stages_cleared + 1 ||
-        s.stages_shown < 1 || s.stages_shown > STAGES)
+    if (n != sizeof s || memcmp(s.tag, SAVE_TAG, sizeof s.tag) || s.levels_cleared > LEVELS ||
+        s.level_picked < 1 || s.level_picked > LEVELS || s.level_picked > s.levels_cleared + 1 ||
+        s.levels_shown < 1 || s.levels_shown > LEVELS)
         return 0;
     for (i = 0; i < UPGRADES; i++)
         if (s.upgrades[i] > upgrades_max(i))
             return 0;
     memcpy(nuggets, s.nuggets, sizeof nuggets);
     coins = s.coins;
-    memcpy(upgrade_levels, s.upgrades, sizeof upgrade_levels);
-    stages_cleared = s.stages_cleared;
-    stage_picked = s.stage_picked;
-    stages_shown = s.stages_shown;
+    memcpy(upgrade_ranks, s.upgrades, sizeof upgrade_ranks);
+    levels_cleared = s.levels_cleared;
+    level_picked = s.level_picked;
+    levels_shown = s.levels_shown;
     talks_seen = s.talks_seen;
     save_exists = 1;
     DEBUG_LOG("loaded\n");
@@ -87,10 +87,10 @@ void save_write(void)
         s.nuggets[i] = nuggets[i] > 0xFFFF - pending ? 0xFFFF : nuggets[i] + pending;
     }
     s.coins = coins;
-    memcpy(s.upgrades, upgrade_levels, sizeof s.upgrades);
-    s.stages_cleared = stages_cleared;
-    s.stage_picked = stage_picked;
-    s.stages_shown = stages_shown;
+    memcpy(s.upgrades, upgrade_ranks, sizeof s.upgrades);
+    s.levels_cleared = levels_cleared;
+    s.level_picked = level_picked;
+    s.levels_shown = levels_shown;
     s.talks_seen = talks_seen;
     fd = open(SAVE_PATH, O_WRONLY | O_CREAT | O_TRUNC);
     if (fd < 0)
@@ -105,17 +105,17 @@ void save_write(void)
     DEBUG_LOG("saved\n");
 }
 
-/* Starts over: no nuggets, no coins, no upgrades, no stage cleared,
-   stage 1 picked and shown open, and no talk seen, and replaces the save
+/* Starts over: no nuggets, no coins, no upgrades, no level cleared,
+   level 1 picked and shown open, and no talk seen, and replaces the save
    with that. */
 void save_new_game(void)
 {
     memset(nuggets, 0, sizeof nuggets);
     coins = 0;
-    memset(upgrade_levels, 0, sizeof upgrade_levels);
-    stages_cleared = 0;
-    stage_picked = 1;
-    stages_shown = 1;
+    memset(upgrade_ranks, 0, sizeof upgrade_ranks);
+    levels_cleared = 0;
+    level_picked = 1;
+    levels_shown = 1;
     talks_seen = 0;
     save_write();
 }

@@ -8,7 +8,7 @@
    only the upgrades will spend them. */
 extern uint16_t nuggets[BRICK_COLORS];
 
-/* The coins, one for the first clear of each stage. */
+/* The coins, one for the first clear of each level. */
 extern uint16_t coins;
 
 void nuggets_start(uint8_t colors);

@@ -41,7 +41,7 @@ void video_blank(void)
 
 /* The sprites and the menus on a blank canvas. Planes, back to front:
    0: the backdrop of the upgrade screen, or the texture of the title and
-      a stage, which each screen programs itself, with the scenery and the
+      a level, which each screen programs itself, with the scenery and the
       bricks over it.
    1: the upgrade screen's panels and carts, and the paddle, its flames
       and smoke, and the ball.

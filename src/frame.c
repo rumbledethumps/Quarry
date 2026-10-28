@@ -3,7 +3,7 @@
 #include "xram.h"
 
 /* The frame of a playfield and what stands around it, all plane 0 sprites
-   in front of the texture. The posts and the cap beam, of the stage's
+   in front of the texture. The posts and the cap beam, of the level's
    frame set, are where the ball bounces: the bright inner face of a post
    is the edge of the playfield, and the underside of the beam its top.
    Outside the posts are the curtains, the rock of a curtain set. Behind

@@ -11,14 +11,14 @@
 /* Each screen has art of its own in XRAM_ART, read from the ROM's assets
    when the screen starts. The upgrade screen has its backdrop, its panels
    and carts, and slots for the pictures of the panels near the middle,
-   which load as the panels come near. The title has a texture, a curtain set and the logo, and a stage a
+   which load as the panels come near. The title has a texture, a curtain set and the logo, and a level a
    texture, a curtain set, a frame set and its own sled. The texture, the
    curtain set and the frame set are picked at random only when the screen
-   changes, so a stage played again keeps its rock and its frame, and
+   changes, so a level played again keeps its rock and its frame, and
    nobody sees them change. */
 
 #define SCENE_MENU 1
-#define SCENE_STAGE 2
+#define SCENE_LEVEL 2
 #define SCENE_TITLE 3
 
 /* The curtain sets, ROM:curtain1 and on, and the textures, ROM:texture1
@@ -34,7 +34,7 @@ _Static_assert(CURTAIN_SETS <= 9 && TEXTURES <= 9 && FRAME_SETS <= 9, "An asset'
 
 static uint8_t scene;
 static uint8_t curtain_set; /* the one shown, from 0 */
-static uint8_t frame_set;   /* the one a stage shows, from 0 */
+static uint8_t frame_set;   /* the one a level shows, from 0 */
 static uint8_t menu_shown;  /* whether the upgrade screen's planes are on */
 
 /* Waits for the start of the next frame. */
@@ -173,7 +173,7 @@ static void curtains_load(void)
 }
 
 /* A texture on plane 0, shown from a new place, and a curtain set, both
-   picked at random, and the frame set a stage shows, too. The texture
+   picked at random, and the frame set a level shows, too. The texture
    takes its colors from the curtain set. */
 static void cave(void)
 {
@@ -205,11 +205,11 @@ void scene_title(void)
     load("ROM:logo", 0, XRAM_LOGO_IMAGES, sizeof(((xram_layout_t *)0)->art.cave.logo_images));
 }
 
-/* A stage: a cave and its frame set, if it comes from another screen, and
-   the sled of a level of the width upgrade. */
-void scene_stage(uint8_t sled_level)
+/* A level: a cave and its frame set, if it comes from another screen, and
+   the sled of a rank of the width upgrade. */
+void scene_level(uint8_t sled_rank)
 {
-    if (scene_change(SCENE_STAGE))
+    if (scene_change(SCENE_LEVEL))
     {
         char frame[] = "ROM:frame1";
 
@@ -219,7 +219,7 @@ void scene_stage(uint8_t sled_level)
         load(frame, 0, XRAM_FRAME, sizeof(frame_set_t));
         DEBUG_LOG("frame %u\n", frame_set + 1);
     }
-    load("ROM:sleds", (long)sled_level * SLED_SLOT, XRAM_STAGE_SLED, SLED_SLOT);
+    load("ROM:sleds", (long)sled_rank * SLED_SLOT, XRAM_LEVEL_SLED, SLED_SLOT);
 }
 
 /* The curtain set after this one, or before it, in its place, while the
@@ -230,11 +230,11 @@ void scene_curtains(int8_t step)
     curtains_load();
 }
 
-/* The flat sled of a level of the width upgrade into a slot of the upgrade
+/* The flat sled of a rank of the width upgrade into a slot of the upgrade
    screen's pictures. */
-void scene_picture_sled(uint8_t slot, uint8_t level)
+void scene_picture_sled(uint8_t slot, uint8_t rank)
 {
-    load("ROM:sleds", (long)level * SLED_SLOT, XRAM_PICTURE(slot), SLED_WIDTH_MAX * 8 / 2);
+    load("ROM:sleds", (long)rank * SLED_SLOT, XRAM_PICTURE(slot), SLED_WIDTH_MAX * 8 / 2);
 }
 
 /* The menus' palette and tiles, at the start, and again after a dwarf has

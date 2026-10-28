@@ -23,16 +23,16 @@
    the question to start over, which takes the menu's place, clears it. */
 #define PROGRESS_TOP 23
 
-/* How far the save has come: the stages cleared and the upgrade levels
+/* How far the save has come: the levels cleared and the upgrade ranks
    bought, out of all of them. */
 static uint8_t progress(void)
 {
-    uint16_t done = stages_cleared, all = STAGES;
+    uint16_t done = levels_cleared, all = LEVELS;
     uint8_t u;
 
     for (u = 0; u < UPGRADES; u++)
     {
-        done += upgrade_levels[u];
+        done += upgrade_ranks[u];
         all += upgrades_max(u);
     }
     return all ? done * 100 / all : 0;

@@ -20,8 +20,8 @@ TITLE_ITEMS = ['RESUME', 'NEW GAME']
 
 
 def read_save(folder):
-    """The save as (nuggets, coins, upgrade levels, stages cleared, stage
-    picked, stages shown open, talks seen), or None."""
+    """The save as (nuggets, coins, upgrade ranks, levels cleared, level
+    picked, levels shown open, talks seen), or None."""
     path = os.path.join(folder, SAVE)
     if not os.path.exists(path):
         return None
@@ -60,8 +60,8 @@ def main():
     check(title.picked() == 'NEW GAME', 'up from New Game stays, as Resume cannot be picked')
     check(read_save(folder) is None, 'no save yet')
     game.new_game()
-    check(read_save(folder) == (0, 0, (0, 0), 0, 1, 1, 0), 'a stage starting saves a new game')
-    print('ok: a new game, saved when the stage starts')
+    check(read_save(folder) == (0, 0, (0, 0), 0, 1, 1, 0), 'a level starting saves a new game')
+    print('ok: a new game, saved when the level starts')
 
     # Pausing saves the nuggets, with those still on their way, and holds
     # the game still. Esc again, or Start, carries on.
@@ -73,7 +73,7 @@ def main():
     game.run(2)
     check(all(game.shows(w) for w in ['PAUSED', 'RESUME', 'UPGRADES', 'RESTART', 'MAIN MENU']),
           'the pause menu')
-    broken = game.sym['STAGE1_COLS'] * game.sym['STAGE1_ROWS'] - game.ram('bricks_left')
+    broken = game.sym['LEVEL1_COLS'] * game.sym['LEVEL1_ROWS'] - game.ram('bricks_left')
     saved = read_save(folder)
     check(saved and saved[0] == broken, f'pausing saves a nugget for each broken brick, {saved} for {broken}')
     welcome = 1 << game.sym['TALK_WELCOME'] - 1
@@ -103,15 +103,15 @@ def main():
         game.until('game_state', 'STATE_PLAY', 10)
     print(f'ok: paused with {broken} nuggets saved, and carried on, and Select, P and Pause pause too')
 
-    # The stage ends, and that saves too.
+    # The level ends, and that saves too.
     os.remove(os.path.join(folder, SAVE))
     game.poke('balls', 0)
     game.wait('out of balls', 3000)
     game.run(2)
-    broken = game.sym['STAGE1_COLS'] * game.sym['STAGE1_ROWS'] - game.ram('bricks_left')
-    check(read_save(folder) and read_save(folder)[0] == broken, f'a stage ending saves, {broken} nuggets')
+    broken = game.sym['LEVEL1_COLS'] * game.sym['LEVEL1_ROWS'] - game.ram('bricks_left')
+    check(read_save(folder) and read_save(folder)[0] == broken, f'a level ending saves, {broken} nuggets')
 
-    # Esc does nothing on the menu when a stage ends. Replay plays the stage
+    # Esc does nothing on the menu when a level ends. Replay plays the level
     # again, which saves, with its curtains, texture and frame as they were.
     game.run(70)
     game.tap('escape')
@@ -120,14 +120,14 @@ def main():
           'Esc does nothing on the menu')
     os.remove(os.path.join(folder, SAVE))
     def look():
-        """The stage's curtain set, its texture's place, and its frame set's colors."""
+        """The level's curtain set, its texture's place, and its frame set's colors."""
         return game.ram('curtain_set'), game.xram('XRAM_TEXTURE_CONFIG', 8), game.xram('XRAM_FRAME_PALETTE', 32)
     cave = look()
     game.menu_choose('REPLAY', wait=False)
-    check(read_save(folder) is not None, 'the stage starting saves')
-    check(look() == cave, 'the stage played again keeps its curtains, its texture and its frame')
+    check(read_save(folder) is not None, 'the level starting saves')
+    check(look() == cave, 'the level played again keeps its curtains, its texture and its frame')
 
-    # Restart from the pause menu starts the stage over, and keeps them too.
+    # Restart from the pause menu starts the level over, and keeps them too.
     game.paused_poke([('bricks_left', 3, 1)])
     game.tap('escape')
     game.until('game_state', 'STATE_PAUSE', 10)
@@ -135,8 +135,8 @@ def main():
     game.tap('down')  # RESTART
     game.tap('space')
     game.until('game_state', 'STATE_PLAY', 30)
-    check(game.ram('bricks_left') == game.sym['STAGE1_COLS'] * game.sym['STAGE1_ROWS'],
-          'Restart starts the stage over')
+    check(game.ram('bricks_left') == game.sym['LEVEL1_COLS'] * game.sym['LEVEL1_ROWS'],
+          'Restart starts the level over')
     check(look() == cave, 'with its curtains, texture and frame')
     print('ok: Replay and Restart')
 
@@ -190,13 +190,13 @@ def main():
     game.tap('space')
     game.until('game_state', 'STATE_SHOP', 120)
     check(game.ram('nuggets', 2) == left, 'Resume opens the upgrade screen with the nuggets')
-    check(game.ram('upgrade_levels') == 1, 'and the upgrade')
-    check(game.ram('cursor_on') == game.sym['SHOP_ON_STAGES'], 'on the stage select, coming from the title')
+    check(game.ram('upgrade_ranks') == 1, 'and the upgrade')
+    check(game.ram('cursor_on') == game.sym['SHOP_ON_LEVELS'], 'on the level select, coming from the title')
     game.tap('space')
-    game.tap('space')  # YES, begin the stage
+    game.tap('space')  # YES, begin the level
     game.until('game_state', 'STATE_PLAY', 60)
     game.run(2)
-    check(game.ram('paddle_width') == game.ram('widths+1'), 'the stage has the upgrade, on the paddle')
+    check(game.ram('paddle_width') == game.ram('widths+1'), 'the level has the upgrade, on the paddle')
     print(f'ok: came back, and Resume brought back {left} nuggets and a wider paddle')
 
     # Main Menu from the pause menu goes to the title. New Game over a save
