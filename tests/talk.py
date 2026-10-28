@@ -177,6 +177,28 @@ def main():
     game.menu_choose('UPGRADES')
     game.wait('unlocked 3', 200)
     check(game.ram('talk_state') == sym['TALK_OFF'], 'the unlock and the screen are told of once')
+    print('ok: the second first clear')
+
+    # In a debug build, Shift and a number brings in that talk on any screen,
+    # and the screen comes back after it.
+    def shift_number(n):
+        game.cmd('press lshift')
+        game.tap(str(n))
+        game.cmd('release lshift')
+        game.wait(f'talk {n}\\n', 30)
+        game.talk_ok()
+
+    shift_number(sym['TALK_WELCOME'])
+    check(game.ram('cursor_on') == sym['ON_RAIL'] and game.shown(cursor, 4) == 4,
+          'Shift and 1 brings in the welcome on the upgrade screen, and its cursor comes back')
+    game.tap('escape')
+    game.tap('space')  # YES, return to the title
+    game.until('game_state', 'STATE_TITLE', 60)
+    game.run(5)
+    shift_number(sym['TALKS'])
+    check(game.ram('game_state') == sym['STATE_TITLE'] and game.shows('NEW GAME') and game.shows('PROGRESS'),
+          f'and Shift and {sym["TALKS"]} the last talk on the title, which comes back after')
+    print('ok: Shift and a number brings in a talk')
     print('PASS')
 
 

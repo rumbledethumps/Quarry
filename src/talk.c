@@ -38,30 +38,40 @@ static const uint16_t going[OUT_STEPS + 1] = {0, 2, 7, 16, 28, 44, 64, 87, 114, 
 uint8_t talk_state;
 static uint8_t queue[QUEUE], queued;
 static uint8_t showing; /* the talk up, while talk_state isn't TALK_OFF */
+static uint8_t once;    /* a bit for each talk waiting or up that talk_once() asked for */
 static uint8_t steps;
 static uint16_t away; /* as in coming and going */
 static talk_head_t head; /* the talk's, as it loaded */
 
 /* The talk, after any already waiting, unless it is up or waiting
-   already. It counts as seen once its OK is pressed, and the save keeps
-   that the next time the game saves. */
-void talk_queue(uint8_t talk)
+   already. Returns whether it waits now. */
+static uint8_t queue_add(uint8_t talk)
 {
     uint8_t i;
 
     if (queued == QUEUE || (talk_state != TALK_OFF && showing == talk))
-        return;
+        return 0;
     for (i = 0; i < queued; i++)
         if (queue[i] == talk)
-            return;
+            return 0;
     queue[queued++] = talk;
+    return 1;
 }
 
-/* The talk, as talk_queue(), unless the player has seen it. */
+/* The talk, as often as it is asked for. */
+void talk_queue(uint8_t talk)
+{
+    queue_add(talk);
+}
+
+/* The talk, unless the player has seen it. It counts as seen once its OK
+   is pressed, and the save keeps that the next time the game saves. */
 void talk_once(uint8_t talk)
 {
-    if (!(talks_seen & 1 << (talk - 1)))
-        talk_queue(talk);
+    uint8_t bit = 1 << (talk - 1);
+
+    if (!(talks_seen & bit) && queue_add(talk))
+        once |= bit;
 }
 
 /* Whether a dwarf is talking, or about to. */
@@ -160,7 +170,11 @@ uint8_t talk_step(void)
     case TALK_READY:
         if (input_pressed & INPUT_CHOOSE)
         {
-            talks_seen |= 1 << (showing - 1);
+            if (once & 1 << (showing - 1))
+            {
+                talks_seen |= 1 << (showing - 1);
+                once &= ~(1 << (showing - 1));
+            }
             cursor_hide();
             talk_state = TALK_OUT;
             steps = 0;

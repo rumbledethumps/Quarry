@@ -25,6 +25,10 @@ extern uint8_t input_pressed; /* the INPUT_ bits held this step and not the last
    are held. */
 extern uint8_t shift_pressed;
 
+/* A number key, 1 to 9, pressed with Shift this step, or 0. In a debug
+   build it brings in that talk of the dwarves, to test. */
+extern uint8_t shift_digit;
+
 void input_init(void);
 void input_read(void);
 uint8_t input_repeat(void);

@@ -34,7 +34,9 @@ build has cheats too: in play, Shift and Right adds a ball, Shift and Left
 takes one away, and Shift and Up or Down adds or takes away a segment of
 energy. On the upgrade screen, Shift and Right or Left raises or lowers the
 upgrade picked, for nothing, or, on the levels, opens the next level or
-locks the last one again.
+locks the last one again. On any screen, Shift and a number brings in that
+talk of the dwarves, in the order of `TALKS` in `art/talk.py`, to see how
+it looks there, without counting it as seen.
 
 The playfield is framed in gray steel the ball bounces off, riveted
 girders or an open truss, a frame set picked at random for each new level,

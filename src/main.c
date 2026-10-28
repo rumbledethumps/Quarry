@@ -127,16 +127,6 @@ static void level_end(uint8_t how)
     save_write();
 }
 
-/* The last dwarf has gone: the menu waiting for him opens, or the upgrade
-   screen's cursor comes back. */
-static void talk_over(void)
-{
-    if (game_state == STATE_MENU)
-        end_menu(TALK_OVER_WAIT);
-    else if (game_state == STATE_SHOP)
-        shop_resume();
-}
-
 /* Resume is left off until there is a save. */
 static void title_show(void)
 {
@@ -180,6 +170,32 @@ static void pause_close(void)
     DEBUG_LOG("resume\n");
 }
 
+/* The last dwarf has gone: the menu waiting for him opens, or the upgrade
+   screen's cursor comes back. Only the test keys bring one over the pause
+   menu, the title or its question, and they come back too. */
+static void talk_over(void)
+{
+    switch (game_state)
+    {
+    case STATE_MENU:
+        end_menu(TALK_OVER_WAIT);
+        break;
+    case STATE_SHOP:
+        shop_resume();
+        break;
+    case STATE_PAUSE:
+        menu_open(&pause_menu, PAUSE_RESUME - 1, 0, 0);
+        break;
+    case STATE_TITLE:
+        title_show();
+        break;
+    case STATE_CONFIRM:
+        title_open(&title_menu);
+        menu_open(&confirm_menu, CONFIRM_NO - 1, 0, 0);
+        break;
+    }
+}
+
 static void wait_vsync(void)
 {
     static uint8_t last;
@@ -217,6 +233,12 @@ int main(void)
             shop_draw();
         input_read();
         sfx_step();
+#ifndef NDEBUG
+        /* In a debug build, Shift and a number brings in that talk, to see
+           how it looks on any screen. */
+        if (shift_digit && shift_digit <= TALKS)
+            talk_queue(shift_digit);
+#endif
         if (talk_step())
         {
             /* A dwarf takes the input, and the screen under him carries on. */

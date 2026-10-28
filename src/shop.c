@@ -762,9 +762,12 @@ void shop_idle(void)
     cart_scroll = ease(cart_scroll, (level_picked - 1) * CART_STEP);
 }
 
-/* The last dwarf has gone, and the cursor and the cost icons come back. */
+/* The last dwarf has gone, and the cursor and the cost icons come back. A
+   question a test key's dwarf took the place of goes. */
 void shop_resume(void)
 {
+    if (asking)
+        unask();
     pictures_dirty = 1;
     cursor_aim();
 }
