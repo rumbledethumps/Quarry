@@ -88,7 +88,8 @@ def cart(heaped):
         img[axle][x] = shades[len(shades) // 2]
     if heaped:
         for x in range(3, W - 3):
-            top = RIM - 1 - int(5 * (1 - ((x - W / 2) / (W / 2 - 3)) ** 2))
+            # Flat across its top, with no lone pixel on the peak.
+            top = RIM - 1 - min(4, int(5 * (1 - ((x - W / 2) / (W / 2 - 3)) ** 2)))
             for y in range(top, RIM):
                 img[y][x] = ORE2 if (x * 7 + y * 3) % 5 == 0 else ORE
             img[top][x] = shades[0]
