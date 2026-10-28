@@ -30,6 +30,11 @@ static const uint8_t curtain_rows[] = {64, 64, 64, 48};
 
 _Static_assert(sizeof curtain_cols * sizeof curtain_rows == CURTAIN_TILES, "CURTAIN_TILES is wrong.");
 
+/* The beam's art repeats from the middle of the screen, every 8 or 12 px,
+   and so from here too, a whole number of both to the left of it, and
+   left of every wall. */
+#define BEAM_ANCHOR (SCREEN_W / 2 - 8 * 24)
+
 static void piece(unsigned sprite, unsigned image, unsigned palette, uint8_t size, int16_t x, int16_t y,
                   uint8_t flip)
 {
@@ -83,8 +88,8 @@ void frame_start(int16_t left, int16_t right)
     xram0_read(look, XRAM_FRAME_SHOWS, 2);
     shows = look[0];
     repeat = look[1];
-    first = SCREEN_W / 2 - (SCREEN_W / 2 - left + repeat - 1) / repeat * repeat;
-    last = SCREEN_W / 2 + (right - SCREEN_W / 2 + repeat - 1) / repeat * repeat;
+    first = left - (left - BEAM_ANCHOR) % repeat;
+    last = right + (repeat - (right - BEAM_ANCHOR) % repeat) % repeat;
     piece(SCENERY(braces, 0), XRAM_BRACE_IMAGE, XRAM_FRAME_SHADE, MODE5_SIZE(BRACE_SIZE, BRACE_SIZE),
           left, BEAM_H, 0);
     piece(SCENERY(braces, 1), XRAM_BRACE_IMAGE, XRAM_FRAME_SHADE, MODE5_SIZE(BRACE_SIZE, BRACE_SIZE),

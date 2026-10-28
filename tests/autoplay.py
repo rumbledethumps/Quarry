@@ -37,7 +37,7 @@ def main():
     play_top = sym['BEAM_H']
     paddle_y, paddle_w = sym['TUNE_PADDLE_Y'], game.ram('paddle_width')
     ball = sym['BALL_SIZE']
-    bricks = sym['LEVEL1_COLS'] * sym['LEVEL1_ROWS']
+    bricks = sym['LEVEL1_BRICKS']
     balls = sym['TUNE_BALLS']
 
     def predict(x, y, dx, dy):

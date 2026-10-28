@@ -42,7 +42,8 @@ The playfield is framed in gray steel the ball bounces off, riveted
 girders or an open truss, a frame set picked at random for each new level,
 as its rock walls are. The paddle floats on thrusters. The energy bar
 drains from the first launch, and when it is empty the paddle falls and
-the level ends.
+the level ends. When the last brick breaks, the paddle flies home, down
+off the screen under its own power.
 
 The bricks are plain colors, gray, red, green, blue and gold, which stay
 apart with any kind of color blindness. Gray breaks in one hit, red in
@@ -70,11 +71,12 @@ carts on a track, a cart for each level, where the button begins the level
 picked. A level newly open is still locked the first time the screen shows
 it: the screen opens on the level just cleared, the padlock on the next
 cart shakes and breaks, and the train slides over to the new level, picked.
-Each level sets how far apart its bricks are, and how much room a ball has
-between them and each wall: 2 px and half a brick on levels 1 and 2.
-Level 1 is 4 by 4 gray bricks, and level 2 the same with red ones in the
-middle of its top two rows. Levels 3 to 10 are stand-ins: gray, a column
-wider each time.
+Each level places its own walls and bricks, so a playfield can be any
+width, and its walls any distance from its bricks, each side on its own.
+Level 1 is 4 by 4 gray bricks, 2 px apart, with half a brick of room for
+the ball at each wall, and level 2 the same with red ones in the middle of
+its top two rows. Levels 3 to 10 are level 2 again until they are
+designed.
 
 A new game starts with a cartoon dwarf miner coming up in the lower left
 corner, his speech bubble coming in beside him with a welcome, a stand-in
@@ -107,6 +109,10 @@ because the game would not fit in the 6502's memory or keep up with 60
 steps a second otherwise. Debug only adds the debug information.
 
 - `src/tuning.h` holds every gameplay number.
+- `levels/levels.py` lays out the levels: each is a short function, with
+  what it is for said first, that places its walls and its bricks on the
+  screen, to the pixel. The build checks them, writes them for the game,
+  and draws each in `levels/` in the build folder, to look at.
 - `src/sfx.c` holds the sound effects, as notes for the PSG.
 - `src/xram.h` is the XRAM layout.
 - `art/` holds the art as indexed PNGs. `art/png2bin.py` converts them

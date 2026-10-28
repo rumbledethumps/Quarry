@@ -291,7 +291,7 @@ static void panel_draw(uint8_t p)
     {
         char number[6];
         uint8_t n = put_number(number, upgrades_cost(p)) - number;
-        /* The cost's icon is a sprite in the cell before it. */
+        /* The cost's icon is a sprite in the two cells before it. */
         tiles[0] = tiles[1] = PANEL_TILE_GLYPH;
         for (i = 0; i < n; i++)
             tiles[2 + i] = can_buy(p) ? glyph(number[i]) : PANEL_TILE_SHORT + number[i] - '0';
@@ -385,13 +385,14 @@ static void pictures_draw(uint8_t p)
     }
     if (p < UPGRADES && upgrades_cost(p) && !talk_busy())
     {
-        /* In the first cell of the cost's row, as panel_draw() centers it,
-           but not while a dwarf talks, as it would show over his bubble. */
+        /* The big nugget of the counts, in the middle of the two cells
+           before the cost, as panel_draw() centers it, and of its row, but
+           not while a dwarf talks, as it would show over his bubble. */
         char number[6];
         uint8_t first = (PANEL_INSIDE - 2 - (put_number(number, upgrades_cost(p)) - number)) / 2;
-        sprite_set(PANEL_SPRITE(p, PICTURE_SPRITES), XRAM_NUGGET_IMAGE, XRAM_PALETTE_BRICK(BRICK_GRAY),
-                   MODE5_SIZE(8, 8));
-        sprite_move(PANEL_SPRITE(p, PICTURE_SPRITES), x + (PANEL_BORDER + first) * 8, PANEL_Y + COST_ROW * 8);
+        sprite_set(PANEL_SPRITE(p, PICTURE_SPRITES), XRAM_NUGGET_ICON_IMAGE, XRAM_PALETTE_BRICK(BRICK_GRAY),
+                   MODE5_SIZE(ICON_SIZE, ICON_SIZE));
+        sprite_move(PANEL_SPRITE(p, PICTURE_SPRITES), x + (PANEL_BORDER + first) * 8 + 3, PANEL_Y + COST_ROW * 8 - 1);
     }
 }
 

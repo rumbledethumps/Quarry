@@ -1,6 +1,7 @@
 #ifndef BRICKS_H
 #define BRICKS_H
 
+#include <levels.h>
 #include <stdint.h>
 
 #define BRICK_W 24
@@ -14,13 +15,8 @@
 #define BRICK_BLUE 3
 #define BRICK_GOLD 4
 
-/* Levels 3 on are stand-ins until the levels are designed. */
-#define LEVELS 10
+/* The levels, LEVELS of them, are levels/levels.py's. */
 
-extern uint8_t bricks_cols;   /* the width of the level, in bricks */
-extern int16_t bricks_width;  /* of the playfield */
-extern uint8_t bricks_margin; /* the room between each wall and the bricks */
-extern uint8_t bricks_gap;    /* between two bricks, across and down */
 extern uint8_t bricks_left; /* bricks not yet broken */
 
 /* The box around the bricks the last bricks_hit() broke. */
@@ -31,7 +27,7 @@ extern int16_t bricks_hit_bottom;
 
 void bricks_layout(uint8_t level);
 void bricks_shuffle(void);
-void bricks_start(int16_t left, int16_t top);
+void bricks_start(void);
 uint8_t bricks_hit(int16_t x, int16_t y, uint8_t w, uint8_t h);
 uint8_t bricks_touch(int16_t x, int16_t y, uint8_t w, uint8_t h);
 void bricks_step(void);

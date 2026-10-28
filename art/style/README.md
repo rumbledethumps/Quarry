@@ -31,10 +31,11 @@ bought its rank.
 
 A level's playfield is framed in steel: a post on each side and a cap beam
 across the top, where the ball bounces. Outside the posts are the
-curtains, the rock walls of the quarry. Level 1 is the narrowest, 4 bricks
-across with half a brick of space at each wall. The widest is about 10
-bricks, with a little rock left on each side. Each level is laid out
-fresh, so the curtains never move while anyone watches.
+curtains, the rock walls of the quarry. Each level places its walls, to
+the pixel, each side on its own: level 1 is 4 bricks across with half a
+brick of space at each wall. The widest can be about 10 bricks, with a
+little rock left on each side. Each level is laid out fresh, so the
+curtains never move while anyone watches.
 
 The counts float over the curtains, with no panels behind them:
 
@@ -95,8 +96,8 @@ of them by rule, and nothing is touched up by hand:
 
 - **Brick:** 24x8 with no gap of its own, its face the plain color and a
   1 px bevel all round, light on the top and the left, dark on the bottom
-  and the right. Widths are multiples of 4. Each level sets how far
-  apart its bricks are, across and down: 2 px on levels 1 and 2.
+  and the right. Widths are multiples of 4. Each level, in
+  `levels/levels.py`, places its bricks, 2 px apart on levels 1 and 2.
 - **Cracks:** sprites over the brick, so they flip either way: black lines
   with a gray lip under them, in sets of three, a brick a quarter, a half
   and three quarters broken. The first stays inside the face, the second

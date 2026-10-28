@@ -19,8 +19,12 @@
 #define TUNE_SPUTTER_STEPS 45 /* how long the flames sputter */
 #define TUNE_FALL_GRAVITY 20  /* the falling paddle speeds up this much each step */
 
-/* Bricks */
-#define TUNE_BRICKS_Y 32      /* the top of the first row of bricks */
+/* The level cleared, the paddle flies home, down off the screen under its
+   own power, speeding up gently to its speed. */
+#define TUNE_LEAVE_ACCEL 4
+#define TUNE_LEAVE_SPEED 192  /* 0.75 px per step */
+
+/* Bricks. Where they are is each level's, in levels/levels.py. */
 #define TUNE_BRICK_HITS {1, 2, 3, 4, 5} /* to break each color: gray, red, green, blue, gold */
 
 /* Nuggets fly from a broken brick to the left panel this many pixels a

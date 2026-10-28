@@ -6,7 +6,10 @@
 #include "tuning.h"
 #include "video.h"
 #include "xram.h"
+#include <fcntl.h>
 #include <rp6502.h>
+#include <stdio.h>
+#include <unistd.h>
 
 #define CRACK_SPRITE(i) (XRAM_CRACK_SPRITES + (i) * sizeof(mode5_csprite_t))
 #define CHUNK_SPRITE(i) (XRAM_CHUNK_SPRITES + (i) * sizeof(mode5_csprite_t))
@@ -30,52 +33,32 @@
 #define CHUNK_GRAVITY 2
 #define CHUNK_SUB 16
 
-/* Level 1 is 4 by 4 bricks. A playfield is as wide as its bricks, with
-   the gaps between them, across and down, and its margin, the room for a
-   ball between the bricks and each wall. */
-#define LEVEL1_COLS 4
-#define LEVEL1_ROWS 4
-#define LEVEL1_MARGIN (BRICK_W / 2)
-#define LEVEL1_GAP 2
-#define LEVEL_COLS_MAX 10
-
-_Static_assert(LEVEL_COLS_MAX * LEVEL1_ROWS <= BRICKS_MAX, "A level has too many bricks.");
 _Static_assert(BRICKS_MAX * CRACK_PIECES <= CRACKS_MAX, "Every brick needs its cracks.");
 _Static_assert(CHUNKS_MAX % CHUNKS_PER_BREAK == 0, "A break takes its chunks together.");
 
-/* A level designed: its margin and its gap, in px, and LEVEL1_ROWS rows
-   of LEVEL1_COLS bricks, a digit a brick: its color, from BRICK_GRAY. */
+/* A level, as levels/levels.py lays it out and ROM:levels holds them, one
+   after another: its walls, the inner faces of its posts, and its bricks,
+   each its top left and its color, all on the screen. */
 typedef struct
 {
-    uint8_t margin;
-    uint8_t gap;
-    const char *bricks;
-} design_t;
+    int16_t x;
+    uint8_t y;
+    uint8_t color; /* BRICK_GRAY and on */
+} level_brick_t;
 
-/* The levels designed so far. The levels after them are stand-ins, gray, a
-   column wider each time, up to LEVEL_COLS_MAX, with level 1's margin and
-   gap. */
-static const design_t designs[] = {
-    {LEVEL1_MARGIN, LEVEL1_GAP,
-     "0000"
-     "0000"
-     "0000"
-     "0000"},
-    {LEVEL1_MARGIN, LEVEL1_GAP,
-     "0110"
-     "0110"
-     "0000"
-     "0000"},
-};
-#define DESIGNS (sizeof designs / sizeof *designs)
+typedef struct
+{
+    int16_t left, right;
+    uint8_t count;
+    uint8_t unused;
+    level_brick_t bricks[BRICKS_MAX];
+} level_t;
+
+#define LEVEL_BYTES sizeof(level_t) /* for tests/assets.py */
 
 /* The hits that break a brick of each color. */
 static const uint8_t brick_hits[BRICK_COLORS] = TUNE_BRICK_HITS;
 
-uint8_t bricks_cols;
-int16_t bricks_width;
-uint8_t bricks_margin;
-uint8_t bricks_gap;
 uint8_t bricks_left;
 int16_t bricks_hit_left;
 int16_t bricks_hit_right;
@@ -83,8 +66,8 @@ int16_t bricks_hit_top;
 int16_t bricks_hit_bottom;
 
 /* Bricks are sprites, so each one keeps its own position. */
+static level_t layout; /* the level's */
 static uint8_t brick_count;
-static const design_t *design; /* the level's, or 0 for a stand-in */
 static int16_t brick_x[BRICKS_MAX];
 static int16_t brick_y[BRICKS_MAX];
 static uint8_t brick_alive[BRICKS_MAX];
@@ -123,16 +106,22 @@ static uint8_t random8(void)
     return (uint8_t)noise;
 }
 
-/* Sets the size of a level, from 1, before the frame goes up around it. */
+/* Reads a level, from 1, and sets its playfield, before the frame goes up
+   around it. */
 void bricks_layout(uint8_t level)
 {
-    uint8_t cols = LEVEL1_COLS + level - 1;
+    int fd = open("ROM:levels", O_RDONLY);
 
-    design = level <= DESIGNS ? &designs[level - 1] : 0;
-    bricks_cols = design ? LEVEL1_COLS : cols < LEVEL_COLS_MAX ? cols : LEVEL_COLS_MAX;
-    bricks_margin = design ? design->margin : LEVEL1_MARGIN;
-    bricks_gap = design ? design->gap : LEVEL1_GAP;
-    bricks_width = bricks_cols * (BRICK_W + bricks_gap) - bricks_gap + 2 * bricks_margin;
+    if (fd < 0)
+        DEBUG_LOG("no levels\n");
+    else
+    {
+        lseek(fd, (long)(level - 1) * sizeof layout, SEEK_SET);
+        read(fd, &layout, sizeof layout);
+        close(fd);
+    }
+    play_left = layout.left;
+    play_right = layout.right;
 }
 
 /* New cracks for every brick, picked at random as the screen opens: each
@@ -164,19 +153,19 @@ void bricks_finish(void)
         }
 }
 
-void bricks_start(int16_t left, int16_t top)
+void bricks_start(void)
 {
     uint8_t i;
 
     bricks_finish();
     bricks_left = 0;
-    brick_count = bricks_cols * LEVEL1_ROWS;
+    brick_count = layout.count;
     for (i = 0; i < brick_count; i++)
     {
-        brick_x[i] = left + (i % bricks_cols) * (BRICK_W + bricks_gap);
-        brick_y[i] = top + (i / bricks_cols) * (BRICK_H + bricks_gap);
+        brick_x[i] = layout.bricks[i].x;
+        brick_y[i] = layout.bricks[i].y;
         brick_alive[i] = 1;
-        brick_color[i] = design ? design->bricks[i] - '0' : BRICK_GRAY;
+        brick_color[i] = layout.bricks[i].color;
         brick_damage[i] = 0;
         sprite_set(brick_sprite(i), XRAM_BRICK_IMAGE, XRAM_PALETTE_BRICK(brick_color[i]),
                    MODE5_SIZE(BRICK_W, BRICK_H));

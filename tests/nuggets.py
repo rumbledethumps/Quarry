@@ -28,10 +28,10 @@ def main():
     sym = game.sym
     step = sym['TUNE_NUGGET_SPEED']
     # The gray nugget's line is under the coins' line.
-    BRICKS_Y, ICON_X, ICON_Y = sym['TUNE_BRICKS_Y'], sym['ICON_X'], sym['ICON_TOP'] + sym['LINE_H']
+    ICON_X, ICON_Y = sym['ICON_X'], sym['ICON_TOP'] + sym['LINE_H']
     TO_X = sym['NUGGET_TO_X']  # where a nugget lands, in the middle of its icon
     count = lambda: game.count('XRAM_NUGGET_DIGITS', sym['COUNT_DIGITS'])
-    BRICKS = sym['LEVEL1_COLS'] * sym['LEVEL1_ROWS']
+    BRICKS = sym['LEVEL1_BRICKS']
     HIDDEN_Y = sym['SPRITE_HIDDEN_Y']
     NUGGETS = sym['NUGGETS_MAX']  # in flight at once
     CHUNKS, PER_BREAK = sym['CHUNKS_MAX'], sym['CHUNKS_PER_BREAK']
@@ -54,7 +54,7 @@ def main():
     check(broken, 'a broken brick is gone at once')
     where = lambda i: (game.ram(f'brick_x+{2 * i}', 2), game.ram(f'brick_y+{2 * i}', 2))
     bx, by = where(broken[0])
-    middles = [where(i)[0] + sym['NUGGET_LEFT'] for i in broken]
+    starts = [(where(i)[0] + sym['NUGGET_LEFT'], where(i)[1]) for i in broken]
     pieces = [(x, y) for x, y, _ in game.sprites(chunks, CHUNKS) if y != HIDDEN_Y]
     check(len(pieces) == PER_BREAK * len(broken), f'it breaks into {PER_BREAK} chunks: {pieces}')
     _, _, _, chunk_palette, _, mode = struct.unpack('<hhHHBB', game.xram(chunks, sym['SPRITE_BYTES']))
@@ -89,8 +89,7 @@ def main():
     for slot, path in paths.items():
         x0, y0 = path[0]
         # It may have taken its first step by the first frame it is seen.
-        check(any(abs(x0 - m) <= step for m in middles) and
-              BRICKS_Y - step <= y0 < BRICKS_Y + sym['LEVEL1_ROWS'] * (sym['BRICK_H'] + sym['LEVEL1_GAP']),
+        check(any(abs(x0 - sx) <= step and abs(y0 - sy) <= step for sx, sy in starts),
               f'nugget {slot} starts in the middle of a broken brick, at {x0},{y0}')
         for (ax, ay), (cx, cy) in zip(path, path[1:]):
             check(max(abs(cx - ax), abs(cy - ay)) == step,

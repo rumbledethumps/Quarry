@@ -66,26 +66,21 @@ static uint8_t game_state;
 static uint8_t level = 1; /* the level being played, from 1 */
 static uint8_t level_how; /* how it ended, as play_step() returned */
 
-/* Lays out the level, centers the playfield with its frame and curtains,
-   and sets up the paddle and every ball, ready to play. It starts from no
+/* Lays out the level, its playfield with its frame and curtains, and sets
+   up the paddle and every ball, ready to play. It starts from no
    sprites and the level's own art, so nothing is left of another screen.
    The bricks' cracks are new only with the screen, as its rock is. */
 static void level_setup(void)
 {
-    int16_t width;
-
     video_hide_sprites();
     cursor_hide();
     if (scene_level(upgrade_ranks[UPGRADE_WIDTH]))
         bricks_shuffle();
     play_init();
     bricks_layout(level);
-    width = bricks_width;
-    play_left = (SCREEN_W - width) / 2;
-    play_right = play_left + width;
     frame_start(play_left, play_right);
     menu_clear();
-    bricks_start(play_left + bricks_margin, TUNE_BRICKS_Y);
+    bricks_start();
     nuggets_start();
     play_start();
 }

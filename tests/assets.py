@@ -42,9 +42,11 @@ def main():
     size = lambda name: os.path.getsize(os.path.join(build, f'{name}.bin'))
     for name, bytes_name in exact.items():
         check(size(name) == sym[bytes_name], f'{name}.bin is {size(name)} bytes, not the {sym[bytes_name]} of {bytes_name}')
+    levels = sym['LEVELS'] * sym['LEVEL_BYTES']
+    check(size('levels') == levels, f'levels.bin is {size("levels")} bytes, not a LEVEL_BYTES for each level, {levels}')
     sleds = (sym['WIDTH_RANKS'] + 1) * sym['SLED_SLOT']
     check(size('sleds') == sleds, f'sleds.bin is {size("sleds")} bytes, not a SLED_SLOT for each width, {sleds}')
-    print(f'ok: {len(exact) + 1} assets, each the size of what it loads into')
+    print(f'ok: {len(exact) + 2} assets, each the size of what it loads into')
 
     # The images that load as the ROM starts, but the palettes, checked
     # whole above.

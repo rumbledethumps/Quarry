@@ -146,6 +146,18 @@ void paddle_start(void)
     paddle_moved = 1;
 }
 
+/* The level is cleared: a hovering paddle flies home, down off the screen
+   under its own power, level, its flames burning. */
+void paddle_leave(void)
+{
+    if (paddle_state != PADDLE_HOVER)
+        return;
+    paddle_state = PADDLE_LEAVING;
+    state_steps = 0;
+    fall_speed = 0;
+    DEBUG_LOG("paddle leaves\n");
+}
+
 /* Out of energy. The player loses control, and the flames sputter. */
 void paddle_give_up(void)
 {
@@ -183,7 +195,7 @@ static void hover_step(void)
 }
 
 /* With controls 0, as after the level ends, the paddle still burns its
-   flames, and finishes falling if it was. */
+   flames, and finishes falling or flying home if it was. */
 void paddle_step(uint8_t controls)
 {
     state_steps++;
@@ -216,6 +228,17 @@ void paddle_step(uint8_t controls)
             DEBUG_LOG("paddle gone\n");
         }
         break;
+    case PADDLE_LEAVING:
+        if (fall_speed < TUNE_LEAVE_SPEED)
+            fall_speed += TUNE_LEAVE_ACCEL;
+        paddle_y += fall_speed;
+        paddle_moved = 1;
+        if (PX(paddle_y) >= SCREEN_H)
+        {
+            paddle_state = PADDLE_GONE;
+            DEBUG_LOG("paddle home\n");
+        }
+        break;
     }
 }
 
@@ -230,7 +253,7 @@ static void jet_draw(uint8_t i, int16_t x, int16_t y, uint8_t tilt)
         sprite_hide(JET_SPRITE(i));
         return;
     }
-    if (paddle_state == PADDLE_HOVER)
+    if (paddle_state == PADDLE_HOVER || paddle_state == PADDLE_LEAVING)
     {
         frame = JET_FLAME + flame_cycle[(state_steps / FLAME_STEPS + i * 3) & 7];
         if (steer)

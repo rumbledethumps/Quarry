@@ -277,6 +277,21 @@ def main():
     clear()
     check(game.ram('coins', 2) == 1 and game.ram('levels_cleared') == 1, 'a coin for clearing level 1')
     check(game.count('XRAM_COIN_DIGITS', sym['COUNT_DIGITS']) == 1, 'the count shows it')
+
+    # The sled flies home, down off the screen under its own power: level,
+    # its flames burning, with no smoke.
+    check(game.ram('paddle_state') == sym['PADDLE_LEAVING'], 'the sled flies home when the level is cleared')
+    sled, size, heights = 'XRAM_SLED_SPRITE', game.sizes('XRAM_SLED_SPRITE', 1)[0], []
+    for _ in range(150):
+        if game.ram('paddle_state') == sym['PADDLE_GONE']:
+            break
+        heights.append(game.sprite(sled)[1])
+        check(game.sizes(sled, 1)[0] == size and game.shown('XRAM_SMOKE_SPRITES', sym['JETS_MAX']) == 0 and
+              game.sprites('XRAM_JET_SPRITES', 1)[0][2] != sym['XRAM_JET_IMAGES'] + sym['JET_NOZZLE'] *
+              sym['JET_IMAGE_BYTES'], 'level, its flames burning, with no smoke')
+        game.run(1)
+    check(game.ram('paddle_state') == sym['PADDLE_GONE'] and heights == sorted(heights) and
+          heights[-1] > heights[0] and game.shown(sled, 1) == 0, 'down off the screen')
     game.talk_ok()  # the dwarf hands it over
     game.menu_choose('REPLAY')
     clear()
@@ -307,7 +322,7 @@ def main():
     # A red brick takes two hits: the first cracks it, half broken, and the
     # second breaks it, into red chunks and a red nugget, whose line of the
     # counts shows once it lands.
-    bricks, step = sym['LEVEL1_COLS'] * sym['LEVEL1_ROWS'], sym['SPRITE_BYTES']
+    bricks, step = sym['LEVEL2_BRICKS'], sym['SPRITE_BYTES']
     gray, red = sym['XRAM_PALETTE_BRICKS'], sym['XRAM_PALETTE_BRICKS'] + 32 * sym['BRICK_RED']
     palette = lambda addr: struct.unpack('<H', game.xram(addr + 6, 2))[0]
     colors = [palette(sym['XRAM_BRICKS'] + i * step) for i in range(bricks)]

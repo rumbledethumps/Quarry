@@ -146,6 +146,19 @@ add_custom_command(
     VERBATIM
 )
 
+# The levels, from levels/levels.py, as ROM:levels, and levels.h, which
+# counts them. levels.py also writes a picture of each to levels/ in the
+# build folder.
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/levels.bin ${CMAKE_CURRENT_BINARY_DIR}/levels.h
+    COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/levels/levels.py ${CMAKE_CURRENT_BINARY_DIR}/levels.bin
+        ${CMAKE_CURRENT_BINARY_DIR}/levels.h --preview ${CMAKE_CURRENT_BINARY_DIR}/levels
+    DEPENDS levels/levels.py art/rd2png.py art/png2bin.py art/brick.png art/palettes.png
+        src/bricks.h src/xram.h src/play.c src/tuning.h
+    VERBATIM
+)
+
 # A sled for each width of src/tuning.h, drawn by art/sled.py, which also
 # writes them to look at in sleds/ in the build folder.
 add_custom_command(
@@ -177,6 +190,7 @@ rp6502_asset(quarry logo ${CMAKE_CURRENT_BINARY_DIR}/logo.bin)
 rp6502_asset(quarry sleds ${CMAKE_CURRENT_BINARY_DIR}/sleds.bin)
 rp6502_asset(quarry cracks ${CMAKE_CURRENT_BINARY_DIR}/cracks.bin)
 rp6502_asset(quarry chunks ${CMAKE_CURRENT_BINARY_DIR}/chunks.bin)
+rp6502_asset(quarry levels ${CMAKE_CURRENT_BINARY_DIR}/levels.bin)
 rp6502_asset(quarry panels ${CMAKE_CURRENT_BINARY_DIR}/panels.bin)
 rp6502_asset(quarry carts ${CMAKE_CURRENT_BINARY_DIR}/carts.bin)
 rp6502_asset(quarry menus ${CMAKE_CURRENT_BINARY_DIR}/menus.bin)
@@ -223,6 +237,7 @@ target_sources(quarry PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}/carts.h
     ${CMAKE_CURRENT_BINARY_DIR}/menus.h
     ${CMAKE_CURRENT_BINARY_DIR}/talks.h
+    ${CMAKE_CURRENT_BINARY_DIR}/levels.h
 )
 target_include_directories(quarry PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 

@@ -84,7 +84,7 @@ def main():
     game.run(2)
     check(all(game.shows(w) for w in ['PAUSED', 'RESUME', 'UPGRADES', 'RESTART', 'MAIN MENU']),
           'the pause menu')
-    broken = game.sym['LEVEL1_COLS'] * game.sym['LEVEL1_ROWS'] - game.ram('bricks_left')
+    broken = game.sym['LEVEL1_BRICKS'] - game.ram('bricks_left')
     saved = read_save(folder)
     check(saved and saved[0] == broken, f'pausing saves a nugget for each broken brick, {saved} for {broken}')
     welcome = 1 << game.sym['TALK_WELCOME'] - 1
@@ -120,7 +120,7 @@ def main():
     game.poke('balls', 0)
     game.wait('out of balls', 3000)
     game.run(2)
-    broken = game.sym['LEVEL1_COLS'] * game.sym['LEVEL1_ROWS'] - game.ram('bricks_left')
+    broken = game.sym['LEVEL1_BRICKS'] - game.ram('bricks_left')
     check(read_save(folder) and read_save(folder)[0] == broken, f'a level ending saves, {broken} nuggets')
 
     # Esc does nothing on the menu when a level ends. Replay plays the level
@@ -147,7 +147,7 @@ def main():
     game.tap('down')  # RESTART
     game.tap('space')
     game.until('game_state', 'STATE_PLAY', 30)
-    check(game.ram('bricks_left') == game.sym['LEVEL1_COLS'] * game.sym['LEVEL1_ROWS'],
+    check(game.ram('bricks_left') == game.sym['LEVEL1_BRICKS'],
           'Restart starts the level over')
     check(look() == cave, 'with its curtains, texture and frame')
     print('ok: Replay and Restart')

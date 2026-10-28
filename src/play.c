@@ -229,6 +229,7 @@ uint8_t play_step(void)
         if (!bricks_left)
         {
             ball_state = BALL_GONE;
+            paddle_leave();
             DEBUG_LOG("level cleared\n");
             return PLAY_CLEARED;
         }
