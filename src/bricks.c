@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <rp6502.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #define CRACK_SPRITE(i) (XRAM_CRACK_SPRITES + (i) * sizeof(mode5_csprite_t))
@@ -90,20 +91,10 @@ typedef struct
 
 static chunk_t chunks[CHUNKS_MAX];
 static uint8_t chunk_next; /* the free one, or the oldest */
-static uint16_t noise = 1;
 
 static unsigned brick_sprite(uint8_t i)
 {
     return XRAM_BRICKS + i * sizeof(mode5_csprite_t);
-}
-
-/* A xorshift, for the chunks. */
-static uint8_t random8(void)
-{
-    noise ^= noise << 7;
-    noise ^= noise >> 9;
-    noise ^= noise << 8;
-    return (uint8_t)noise;
 }
 
 /* Reads a level, from 1, and sets its playfield, before the frame goes up
@@ -132,12 +123,11 @@ void bricks_shuffle(void)
 
     for (i = 0; i < CRACKS_MAX; i++)
     {
-        uint32_t r = ria_attr_get(RIA_ATTR_LRAND);
-        crack_look[i] = (r % CRACK_SETS) | ((r >> 8) & CRACK_FLIPS);
+        unsigned r = rand();
+        crack_look[i] = (r % CRACK_SETS) | (r & CRACK_FLIPS);
         if (i < BRICKS_MAX)
-            crack_left[i] = (r >> 16) % (CRACK_ROOM + 1);
+            crack_left[i] = (r >> 8) % (CRACK_ROOM + 1);
     }
-    noise = ria_attr_get(RIA_ATTR_LRAND) | 1;
 }
 
 /* The chunks in flight are gone at once. */
@@ -219,7 +209,7 @@ static void chunks_spawn(uint8_t i)
     {
         chunk_t *c = &chunks[chunk_next];
         unsigned sprite = CHUNK_SPRITE(chunk_next);
-        uint8_t r = random8();
+        uint8_t r = rand();
 
         c->x = (brick_x[i] + k * (BRICK_W - 8) / (CHUNKS_PER_BREAK - 1)) * CHUNK_SUB;
         c->y = brick_y[i] * CHUNK_SUB;
@@ -227,7 +217,7 @@ static void chunks_spawn(uint8_t i)
         c->vy = (int8_t)(-12 - (r >> 4));
         c->steps = CHUNK_STEPS;
         c->turn = r & CRACK_FLIPS;
-        sprite_set(sprite, CHUNK_IMAGE(random8() % CHUNK_IMAGES), XRAM_PALETTE_BRICK(brick_color[i]),
+        sprite_set(sprite, CHUNK_IMAGE(rand() % CHUNK_IMAGES), XRAM_PALETTE_BRICK(brick_color[i]),
                    MODE5_SIZE(8, 8));
         sprite_mode(sprite, MODE5_2BPP | c->turn);
         chunk_next = (chunk_next + 1) % CHUNKS_MAX;

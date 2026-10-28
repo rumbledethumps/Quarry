@@ -1,4 +1,5 @@
 #include <rp6502.h>
+#include <stdlib.h>
 #include "bricks.h"
 #include "cursor.h"
 #include "debug.h"
@@ -211,6 +212,12 @@ int main(void)
 {
     uint8_t talked = 0; /* whether a dwarf talked the step before */
 
+    /* The game's random numbers are the C library's rand(), a 16-bit
+       xorshift, quick and even enough for play, seeded once from the RIA's
+       lrand. On the hardware lrand is better but slower, 10 us a call to
+       rand()'s 6, worth it only for its 31 bits at once, as a screen uses
+       them to pick its look. */
+    srand((unsigned)ria_attr_get(RIA_ATTR_LRAND) | 1);
     video_init();
     scene_menus();
     input_init();
