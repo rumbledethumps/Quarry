@@ -232,6 +232,7 @@ def main():
     game.wait('ball lost', 30)
     game.run(2)
     check(game.ram('game_state') != sym['STATE_PLAY'], 'the level ends once the ball falls off the screen')
+    game.cmd(f'expect-not "sfx {sym["SFX_LOST"]}\\n"')  # the sled's fall was its sound
     check(game.shows('OUT OF FUEL'), 'the menu says OUT OF FUEL')
     print(f'puff of {puff} smoke pixels, the paddle fell off the screen, and the ball played on until it fell')
 
@@ -258,6 +259,7 @@ def main():
     game.wait('paddle gone', 120)
     game.wait('ball lost', 10)
     game.run(2)
+    game.cmd(f'expect-not "sfx {sym["SFX_LOST"]}\\n"')  # the ball fell with the sled, and its sound
     check(game.shows('OUT OF FUEL'), 'the menu says OUT OF FUEL again')
 
     # The level clears while the paddle falls: it still falls off the screen.

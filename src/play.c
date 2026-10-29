@@ -209,8 +209,9 @@ static void cheats_step(void)
 /* When the energy runs out, the paddle sputters and falls, and the level
    ends once it is gone and no ball is in play. A ball in flight plays on,
    breaking bricks, until it falls off the bottom of the screen, and a lost
-   one is not replaced. A ball on the paddle rides it down, and falls on
-   off the screen once it is gone. */
+   one is not replaced, nor makes a sound, as the sled's fall was the
+   sound of it. A ball on the paddle rides it down, and falls on off the
+   screen once it is gone. */
 uint8_t play_step(void)
 {
 #ifndef NDEBUG
@@ -240,18 +241,21 @@ uint8_t play_step(void)
         }
         if (PX(ball_y) >= SCREEN_H)
         {
-            sfx_play(SFX_LOST, PX(ball_x));
             DEBUG_LOG("ball lost\n");
             if (paddle_state != PADDLE_HOVER)
-                ball_state = BALL_GONE;
-            else if (balls)
-                ball_dock();
+                ball_state = BALL_GONE; /* out of energy, and the sled's fall was its sound */
             else
             {
-                ball_state = BALL_GONE;
-                paddle_leave();
-                DEBUG_LOG("out of balls\n");
-                return PLAY_OUT;
+                sfx_play(SFX_LOST, PX(ball_x));
+                if (balls)
+                    ball_dock();
+                else
+                {
+                    ball_state = BALL_GONE;
+                    paddle_leave();
+                    DEBUG_LOG("out of balls\n");
+                    return PLAY_OUT;
+                }
             }
         }
         break;
