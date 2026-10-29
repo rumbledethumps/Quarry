@@ -33,12 +33,13 @@
 #define STATE_PAUSE 6
 
 /* The menus. The items of each are numbered from 1, as menu_step()
-   returns them. */
-static const char *const end_items[] = {"UPGRADES", "REPLAY", "MAIN MENU"};
+   returns them. The menus and the dwarves call the upgrade screen THE
+   DRY, the change house at a mine where miners wait for their shift. */
+static const char *const end_items[] = {"THE DRY", "REPLAY", "MAIN MENU"};
 #define END_UPGRADES 1
 #define END_REPLAY 2
 #define END_MAIN_MENU 3
-static const char *const pause_items[] = {"RESUME", "UPGRADES", "RESTART", "MAIN MENU"};
+static const char *const pause_items[] = {"RESUME", "THE DRY", "RESTART", "MAIN MENU"};
 #define PAUSE_RESUME 1
 #define PAUSE_UPGRADES 2
 #define PAUSE_RESTART 3

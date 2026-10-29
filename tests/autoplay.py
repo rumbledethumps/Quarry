@@ -125,7 +125,7 @@ def main():
     if how == 'cleared':
         game.talk_ok()  # the dwarf with the coin, before the menu
     title = {'cleared': 'LEVEL COMPLETE', 'out of energy': 'OUT OF FUEL', 'out of balls': 'OUT OF BALLS'}[how]
-    check(game.shows(title) and game.shows('UPGRADES') and game.shows('REPLAY'),
+    check(game.shows(title) and game.shows('THE DRY') and game.shows('REPLAY'),
           f'the menu says {title} when the level ends')
     if how != 'out of energy':
         images = set()
@@ -150,7 +150,7 @@ def main():
     check(game.ram('nuggets', 2) == counted, 'the nuggets are kept')
     check(count() == balls, 'the count of balls comes back')
     check(game.ram('energy', 2) == full, 'the energy is full again')
-    check(not game.shows('UPGRADES'), 'the menu is gone')
+    check(not game.shows('THE DRY'), 'the menu is gone')
     game.close()
     print('PASS')
 

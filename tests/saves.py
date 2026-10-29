@@ -82,7 +82,7 @@ def main():
     game.tap('escape')
     game.until('game_state', 'STATE_PAUSE', 10)
     game.run(2)
-    check(all(game.shows(w) for w in ['PAUSED', 'RESUME', 'UPGRADES', 'RESTART', 'MAIN MENU']),
+    check(all(game.shows(w) for w in ['PAUSED', 'RESUME', 'THE DRY', 'RESTART', 'MAIN MENU']),
           'the pause menu')
     broken = game.sym['LEVEL1_BRICKS'] - game.ram('bricks_left')
     saved = read_save(folder)
@@ -156,7 +156,7 @@ def main():
     # the title, where Resume can be picked now.
     game.paused_poke([('balls', 0, 1), ('ball_state', 1, 1)])
     game.wait('out of balls', 3000)
-    game.menu_choose('UPGRADES')
+    game.menu_choose('THE DRY')
     game.talk_ok()
     game.poke('nuggets', 20, 2)
     left = 20 - game.ram('width_costs', 2)  # after the first width

@@ -25,7 +25,8 @@ bought its rank.
 | FUEL | What the gauge on the right shows. When it runs out, the sled falls, and the level ends once the balls in play have fallen off the screen too. |
 | BALL | The ball, and the count of those left. |
 | HITS | What breaks a brick: each hit of the ball does its DAMAGE, and the brick breaks once the damage reaches its hits. |
-| UPGRADE | A panel on the upgrade screen's rail, and what it buys. |
+| THE DRY | The upgrade screen, as the menus and the dwarves call it: the change house at a mine, where miners change into their work clothes, hang their wet gear to dry, and wait for their shift. The code and this guide still call it the upgrade screen. |
+| UPGRADE | A panel on the rail in THE DRY, and what it buys. |
 | CART | A level, on the train of mine carts under the rail. |
 
 ## The Screen

@@ -121,7 +121,7 @@ def main():
     game.paused_poke([('bricks_left', 0, 1)])
     game.wait('level cleared', 10)
     game.run(1)
-    game.cmd('expect-not "menu UPGRADES"')  # the end menu, as menu_open() logs it
+    game.cmd('expect-not "menu THE DRY"')  # the end menu, as menu_open() logs it
     talk('TALK_COIN')
     game.run(30)
     check(not game.shows('LEVEL COMPLETE'), 'the dwarf with the coin comes before the menu')
@@ -135,7 +135,7 @@ def main():
     # and the unlock goes on under him. Then another says what the screen is
     # for. The cursor is off until each OK, and comes back to the rail after.
     game.run(sym['TALK_OVER_WAIT'])
-    game.tap('space')  # UPGRADES
+    game.tap('space')  # THE DRY
     game.until('game_state', 'STATE_SHOP', 60)
     talk('TALK_UNLOCK')
     check(game.shown(cursor, 4) == 0, 'no cursor while he comes in')
@@ -175,7 +175,7 @@ def main():
     game.wait('level cleared', 10)
     talk('TALK_COIN')
     game.talk_ok()
-    game.menu_choose('UPGRADES')
+    game.menu_choose('THE DRY')
     game.wait('unlocked 3', 200)
     check(game.ram('talk_state') == sym['TALK_OFF'], 'the unlock and the screen are told of once')
     print('ok: the second first clear')

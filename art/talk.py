@@ -55,11 +55,11 @@ TALKS = [
     # A new game's first level.
     ('WELCOME', 'miner', ['WELCOME TO QUARRY.', 'BREAK SOME BRICKS AND', 'BUY SOME UPGRADES.'], LEVEL),
     # Each first clear of a level, before its menu.
-    ('COIN', 'miner', ['CONGRATULATIONS!', "HERE'S A COIN."], LEVEL),
+    ('COIN', 'miner', ['CONGRATULATIONS!', "HERE'S A COIN. YOU CAN", 'SPEND IT IN THE DRY.'], LEVEL),
     # The upgrade screen, as level 2 unlocks.
     ('UNLOCK', 'miner', ['GREAT JOB! EACH LEVEL YOU', 'CLEAR UNLOCKS THE NEXT.', 'PICK ITS CART BELOW.'], UPGRADES),
     # The first time on the upgrade screen, after any other.
-    ('UPGRADES', 'miner', ['SPEND YOUR NUGGETS HERE', 'ON UPGRADES THAT HELP', 'YOU CLEAR LEVELS.'], UPGRADES),
+    ('UPGRADES', 'miner', ['THIS IS THE DRY. SPEND', 'YOUR NUGGETS HERE ON', 'UPGRADES THAT HELP YOU', 'CLEAR LEVELS.'], UPGRADES),
 ]
 
 CLEAR, INK, PAPER, SHADE = range(4)

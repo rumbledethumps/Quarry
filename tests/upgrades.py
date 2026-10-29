@@ -17,7 +17,7 @@ from game import Game, check
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'art'))
 from panels import FONT  # noqa: E402
 
-END_ITEMS = ['UPGRADES', 'REPLAY', 'MAIN MENU']
+END_ITEMS = ['THE DRY', 'REPLAY', 'MAIN MENU']
 
 
 def tuning(game):
@@ -74,7 +74,7 @@ def main():
     def settle():
         game.run(40)
 
-    # The level ends: the menu, with UPGRADES picked, takes no choice for a
+    # The level ends: the menu, with THE DRY picked, takes no choice for a
     # moment.
     game.tap('space')
     game.poke('balls', 0)
@@ -83,7 +83,7 @@ def main():
     check(game.ram('game_state') == sym['STATE_MENU'], 'the menu opens when the level ends')
     check(game.ram('paddle_state') == sym['PADDLE_LEAVING'], 'and out of balls, the sled flies home')
     check(all(game.shows(w) for w in ['OUT OF BALLS'] + END_ITEMS), 'it says OUT OF BALLS, with its items')
-    check(end_picked() == 'UPGRADES', 'UPGRADES is picked')
+    check(end_picked() == 'THE DRY', 'THE DRY is picked')
     check(cursor_on_item('end_menus', 0), 'and the cursor is on it at once')
     game.tap('space')
     game.run(10)
@@ -101,7 +101,7 @@ def main():
         game.tap(key)
         check(end_picked() == was, f'{key} does not move the pick')
     game.tap('up')
-    check(end_picked() == 'UPGRADES', 'up from the first stays: the menu does not wrap')
+    check(end_picked() == 'THE DRY', 'up from the first stays: the menu does not wrap')
     for _ in END_ITEMS:
         game.tap('down')
     check(end_picked() == 'MAIN MENU', 'down from the last stays')
@@ -114,7 +114,7 @@ def main():
     # The upgrade screen, with no nuggets: a panel for each upgrade, the
     # first lit in the middle, and nothing to buy.
     game.poke('nuggets', 0, 2)
-    game.menu_choose('UPGRADES', wait=False)
+    game.menu_choose('THE DRY', wait=False)
     game.talk_ok()  # the dwarf's first word on the screen
     game.run(20)  # past the flicker of the panel in the middle
     check(game.ram('panel_picked') == 0 and game.ram('cursor_on') == sym['ON_RAIL'],
@@ -299,7 +299,7 @@ def main():
     game.menu_choose('REPLAY')
     clear()
     check(game.ram('coins', 2) == 1, 'no coin for clearing it again')
-    game.menu_choose('UPGRADES')
+    game.menu_choose('THE DRY')
     game.run(5)
     check(game.ram('level_picked') == 1 and game.ram('cart_scroll', 2) == 0,
           'the upgrade screen opens on level 1, just cleared')
