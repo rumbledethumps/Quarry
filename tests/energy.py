@@ -78,10 +78,11 @@ def check_glass(game):
         check(row == want, f'row {y} of the glass is {row}, the rock behind it {want}')
 
 
-def bubbles(game):
-    """The tops of the bubbles rising in the gauge, from their sprites."""
-    hidden = game.sym['SPRITE_HIDDEN_Y']
-    return [y for _, y, _ in game.sprites('XRAM_BUBBLE_SPRITES', game.sym['BUBBLES']) if y != hidden]
+def bubbles(game, image='XRAM_BUBBLE_IMAGE'):
+    """The tops of the bubbles rising in the gauge, from their sprites, or
+    with XRAM_DROP_IMAGE, of the drops the popped ones throw up."""
+    hidden, image = game.sym['SPRITE_HIDDEN_Y'], game.sym[image]
+    return [y for _, y, i in game.sprites('XRAM_BUBBLE_SPRITES', game.sym['BUBBLES']) if y != hidden and i == image]
 
 
 def bounce(game):
@@ -98,7 +99,8 @@ def bounce(game):
 def check_bubbles(game):
     """A bubble rises from the foot of the fuel each time the ball bounces
     off the sled, while one is free. One is never taken from another, so
-    each rises all the way, and is gone at the surface."""
+    each rises all the way, pops at the surface, and throws up a drop that
+    hops over it and falls back in."""
     sym = game.sym
     foot = game.sprite('XRAM_GLASS_SPRITES')[1] + sym['GLASS_H']
     bounce(game)
@@ -116,15 +118,20 @@ def check_bubbles(game):
     gaps = lambda ys: [b - a for a, b in zip(ys, ys[1:])]
     check(len(after) == sym['BUBBLES'] and gaps(after) == gaps(full) and after[0] < full[0],
           f'with none free, a bounce makes none and takes none: {full}, then {after}')
-    for _ in range(sym['GLASS_H'] + 20):
-        tops = bubbles(game)
-        if not tops:
+    highest = 0
+    for _ in range(sym['GLASS_H'] + 40):
+        tops, drops = bubbles(game), bubbles(game, 'XRAM_DROP_IMAGE')
+        if not tops and not drops:
             break
         surface = game.sprite('XRAM_SURFACE_SPRITE')[1] + 1
-        check(min(tops) > surface, f'no bubble rises past the surface, at {surface}: {tops}')
+        check(not tops or min(tops) > surface, f'no bubble rises past the surface, at {surface}: {tops}')
+        check(all(surface - sym['DROP_PEAK'] <= y < surface for y in drops),
+              f'a drop hops up to {sym["DROP_PEAK"]} px over the surface, at {surface}: {drops}')
+        highest = max([highest] + [surface - y for y in drops])
         game.run()
-    check(not bubbles(game), 'every bubble is gone at the surface')
-    print(f'ok: {sym["BUBBLES"]} bubbles at most, each up to the surface')
+    check(not bubbles(game) and not bubbles(game, 'XRAM_DROP_IMAGE'), 'every bubble pops and its drop falls back')
+    check(highest == sym['DROP_PEAK'], f'the drops hop {sym["DROP_PEAK"]} px, saw {highest}')
+    print(f'ok: {sym["BUBBLES"]} bubbles at most, each up to the surface, where it throws up a drop')
 
 
 def smoke_pixels(game, shot, x0, x1, y0, y1):

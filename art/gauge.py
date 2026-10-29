@@ -6,8 +6,8 @@ describes them.
 
 The build runs this. out.bin is gauge_art_t of src/xram.h as far as its
 glass, which the game makes for each level from the rock behind it: the
-top fitting, the bottom fitting, a run of the fuel, its surface, and a
-bubble.
+top fitting, the bottom fitting, a run of the fuel, its surface, a bubble,
+and the drop it throws up as it pops.
 
 The fittings are GAUGE_W wide and FITTING_H tall: a brass pipe from off
 the edge of the screen into a hex nut that grips the end of the glass,
@@ -19,7 +19,8 @@ is a bright line, and a pixel higher at each wall, where the liquid
 climbs the glass. Every row of the run is the same, so the game can stack
 it to any height. The bubble is a ring 3 across, paler than the fuel, the
 palest on its upper left, the fuel showing through its middle, in a sprite
-BUBBLE_SIZE square.
+BUBBLE_SIZE square. The drop is a single pixel of the fuel at that
+sprite's top left.
 
 The fittings are in the brass row of art/palettes.png, and the fuel in
 the liquid row, so its colors can change without touching the brass.
@@ -48,6 +49,7 @@ L1, L2, L3, L4, L5, L6, L7, GLINT, SURFACE = range(1, 10)
 BODY = [L5, GLINT, L7, L6, L6, L5, L4, L3, L2, L1]
 LINE = [SURFACE] * 6 + [L7, L7, L6, L5]
 BUBBLE = [[0, SURFACE, 0, 0], [SURFACE, 0, GLINT, 0], [0, GLINT, 0, 0], [0, 0, 0, 0]]
+DROP = [[L6, 0, 0, 0]] + [[0] * BUBBLE_SIZE for _ in range(BUBBLE_SIZE - 1)]
 
 
 def pipe(rows, top, bottom):
@@ -113,13 +115,13 @@ def main():
     top, bottom = fittings()
     run, surface = fuel()
     with open(args.output, 'wb') as f:
-        f.write(pack(top) + pack(bottom) + pack(run) + pack(surface) + pack(BUBBLE))
+        f.write(pack(top) + pack(bottom) + pack(run) + pack(surface) + pack(BUBBLE) + pack(DROP))
     if args.preview:
         _, _, palettes = rgba(os.path.join(HERE, 'palettes.png'))
         # The brass row's colors, then the liquid row's after them.
         colors = palettes[BRASS_ROW][:7] + palettes[LIQUID_ROW][1:10]
         shift = lambda rows: [[c and c + 6 for c in row] for row in rows]
-        pieces = [top, bottom, shift(run), shift(surface), shift(BUBBLE)]
+        pieces = [top, bottom, shift(run), shift(surface), shift(BUBBLE), shift(DROP)]
         gap = [0] * 4
         rows = [sum(([p[y][x] if y < len(p) else 0 for x in range(len(p[0]))] + gap for p in pieces), [])
                 for y in range(FITTING_H)]

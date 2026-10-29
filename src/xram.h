@@ -628,14 +628,15 @@ typedef struct
     brace_image_t brace;
 } frame_set_t;
 
-/* The energy gauge's images: the fittings, the fuel and a bubble, as
-   ROM:gauge holds them, then the glass, made for each level. */
+/* The energy gauge's images: the fittings, the fuel, a bubble and its
+   drop, as ROM:gauge holds them, then the glass, made for each level. */
 typedef struct
 {
     fitting_image_t fittings[2]; /* top, bottom */
     liquid_image_t liquid;
     liquid_image_t surface;
     bubble_image_t bubble;
+    bubble_image_t drop; /* that a bubble throws up as it pops */
     glass_image_t glass;
 } gauge_art_t;
 
@@ -860,6 +861,7 @@ typedef struct
 #define XRAM_LIQUID_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.liquid)
 #define XRAM_SURFACE_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.surface)
 #define XRAM_BUBBLE_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.bubble)
+#define XRAM_DROP_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.drop)
 #define XRAM_GLASS_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.glass)
 #define XRAM_LEVEL_SLED offsetof(xram_layout_t, art.cave.sled_images)
 #define XRAM_LOGO_IMAGES offsetof(xram_layout_t, art.cave.logo_images)

@@ -319,8 +319,11 @@ post clear of it.
   it may. `art/gauge.py` draws it and the fittings.
 - Each time the ball bounces off the sled, a bubble rises from the foot of
   the fuel to its surface, a pale ring 3 across that sways a pixel either
-  way, while one of the 3 is free. A bubble is never taken from another:
-  every one rises all the way.
+  way, while one of the 3 is free. At the surface it pops and throws up a
+  single drop of the fuel, which hops 3 px into the air and falls back in,
+  as a real bubble does breaking through. A bubble is never taken from
+  another: every one rises all the way, and is free again once its drop
+  is back in.
 - The fittings are stand-ins, in a dull brass, not gold, to be replaced.
 - Still to come: more bubbles at other times, the fuel sloshing, and a
   look for low fuel. The
@@ -598,7 +601,7 @@ rows are left.
 | sled | the widths of `TUNE_WIDTHS`, up to 64, rounded up to 4 for the sprite; 8 tall, then its two tilts, 24 tall each |
 | jet | 7 frames, 8x12: the nozzle alone, 3 flames, 3 swiveled flames |
 | smoke | 3 frames, 8x8 |
-| energy gauge | 16 wide, the screen tall: the fittings 16x20, the glass 12x200 in 4 sprites, made for each level, the fuel in runs of 12x16 under its surface, and a bubble 4x4; 1,720 bytes of a level's art |
+| energy gauge | 16 wide, the screen tall: the fittings 16x20, the glass 12x200 in 4 sprites, made for each level, the fuel in runs of 12x16 under its surface, and a bubble and its drop, 4x4 each; 1,728 bytes of a level's art |
 | logo | 3 pieces, 64x64, as one 192x64 image |
 | curtains | 100x240 each, cut from a 256x240 curtain set |
 | cursor | 4 corners, 12x12, one image turned |
