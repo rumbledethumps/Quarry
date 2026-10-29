@@ -44,9 +44,8 @@ The counts float over the curtains, with no panels behind them:
   nugget beside it, a line for each, room for 8 or more.
 - **Lower left:** the count of balls, with a sprite of the ball beside it,
   in the same presentation as the nuggets.
-- **Right:** the energy gauge, a narrow vertical bar that rises and
-  falls. It is narrower than the counts on the left. The bar there now is
-  a placeholder.
+- **Right:** the energy gauge, a sight glass down the right edge, from
+  the top of the screen to its foot: see [The Energy Gauge](#the-energy-gauge).
 
 The digits are sprites, 6x8 with a 1 px black outline, so they read over
 any rock or steel. Each digit's outline overlaps the last one's, so a
@@ -249,7 +248,8 @@ Diffusion or by hand, and `art/frames.py` cuts it to the game's sizes.
 - The concepts in `art/style/ref/frame-*.png` hold more looks for the next
   sets, such as the mine shaft frames of D1, D3 and D4.
 
-`art/screen.py` draws the machine, the digits, and the placeholder gauge.
+`art/screen.py` draws the machine, the digits, and the old energy bar, now
+only the upgrade screen's stand-in picture of the gauge.
 The machine uses the shade row, so its brightness is set there, not in its
 picture. Run it after a change there, then touch up any piece by hand.
 
@@ -293,22 +293,35 @@ later, such as a rare bonus. The art leaves room for it.
 
 ### The Energy Gauge
 
-The energy gauge is the Oracle, a precision instrument on the right side
-of the screen, the one instrument the operator watches all day. Its
-design is `ref/oracle.png`, a mock drawn to the pixel; the bar there now
-is a placeholder.
+The energy gauge is a sight glass down the right of the screen, the one
+instrument the operator watches all day: a glass tube with the fuel in
+it, between two brass fittings, each a pipe off the edge of the screen
+into a hex nut that grips the glass. It is 16 wide, 4 px in from the
+edge, over the right curtain, and `levels/levels.py` keeps every level's
+post clear of it.
 
-- The scale is plain steel, 16 wide, with exactly 200 px of travel, 2 px
-  to 1%: small pips on its left, every 1%, 5% and 10%, and on its right a
-  track with a rack, a tooth every 1%. It can be dressed up at its ends.
-- The cursor rides the track and is wider than the scale. Through its
-  clear sight glass the pips show, and a notch in the glass's edge, a 45°
-  chevron, points at the level. Beside it a coloured chevron, which
-  clockwork turns from green to yellow to red as the energy runs low, and
-  a gear in a round window. It notches down a tooth at a time, the gear
-  turning. It is the piece worth the most care: finely made, a little
-  ornate.
-- It leaves room on its left for effects at the level line.
+- The glass is 12 wide with its outline, and exactly 200 tall: a row for
+  each step of the fuel's level, which moves a pixel at a time.
+- The glass shows the rock behind it, a little tinted, and that is what
+  makes it. As a level starts, `src/energy.c` copies the right curtain's
+  pixels under it into its image, and draws them in the glass row: the
+  curtain's 13 colors 15% of the way to a pale blue, which
+  `art/curtain.py` makes with each curtain set. Where the shaft is clear
+  behind it, it shows the darkest rock.
+- A glint runs down the glass 2 px in from its left, 55% of the way to
+  white, the rock showing through it too, from a strip of its own. With
+  `GAUGE_GLINT` off in `src/xram.h` it is a flat color, for 400 bytes back.
+- The fuel is amber, lit from the upper left, in 7 shades across: a rim at
+  its left wall, the glint, the brightest just past it, and darker to its
+  right wall. Its surface is a bright line, and it climbs a pixel up each
+  wall. It is in a row of its own, the liquid row, so its color can
+  change, as it may. `art/gauge.py` draws it and the fittings.
+- The fittings are stand-ins, in a dull brass, not gold, to be replaced.
+- Still to come: bubbles, the fuel sloshing, and a look for low fuel. The
+  beeps and the machine's lamp warn of it now.
+- The Oracle, `ref/oracle.png`, was the design before: a steel scale with
+  a cursor riding it, a sight glass in the cursor and a clockwork chevron.
+  It is parked, as no model could draw its cursor at its size.
 
 ### The Upgrade Panels
 
@@ -542,19 +555,24 @@ darkest first. Each class of art gets a row of its own:
 | --- | --- |
 | main | the ball |
 | bricks | one per color: the brick, its cracks and chunks, and its nuggets |
-| fx | the smoke and the energy gauge |
+| fx | the smoke, and the old energy bar of the upgrade screen's picture |
 | logo | the title logo |
 | sled | the sleds, their jets and flames, the machine, the digits, and the coin |
 | texture | the texture behind the playfield, its first 4 colors, loaded with each curtain set |
 | curtain | the curtain set of the level, loaded with it |
 | shade | the sled row at half, for the machine behind the ball and a dim sled |
 | holo | the holographic cursor of the upgrade screen and the menus, whose colors shimmer |
+| liquid | the fuel in the energy gauge |
+| brass | the gauge's fittings |
+| glass | the curtain row through the gauge's glass, and its outline and flat glint, loaded with each curtain set |
+| glint | the curtain row through the glint, loaded with each curtain set |
 
 The upgrade panels have a palette of their own, 256 colors, outside these rows, since they are a tile layer, and so do the menus, 16 colors. Each frame set brings its own 16 colors, and the same darkened for its braces, with its pieces. Each talk brings its dwarf's 16 colors and its bubble's 4.
 
 A jet's nozzle and its flame are one sprite, so the flames share the sled
-row. Every curtain set brings its own palette into the one curtain row.
-That is 8 rows and the 5 brick colors, so 19 rows are left.
+row. Every curtain set brings its own palette into the one curtain row,
+and the glass and glint rows from it. That is 12 rows and the 5 brick
+colors, so 15 rows are left.
 
 ## Sizes
 
@@ -575,7 +593,7 @@ That is 8 rows and the 5 brick colors, so 19 rows are left.
 | sled | the widths of `TUNE_WIDTHS`, up to 64, rounded up to 4 for the sprite; 8 tall, then its two tilts, 24 tall each |
 | jet | 7 frames, 8x12: the nozzle alone, 3 flames, 3 swiveled flames |
 | smoke | 3 frames, 8x8 |
-| energy gauge | a narrow vertical bar; the placeholder is 8 wide, in pieces 8 tall |
+| energy gauge | 16 wide, the screen tall: the fittings 16x20, the glass 12x200 in 4 sprites and its glint 4x200, made for each level, and the fuel in runs of 12x16 under its surface; 2,112 bytes of a level's art |
 | logo | 3 pieces, 64x64, as one 192x64 image |
 | curtains | 100x240 each, cut from a 256x240 curtain set |
 | cursor | 4 corners, 12x12, one image turned |
@@ -640,7 +658,7 @@ The blocks of the looks:
 | `ref/ore-blocks.png` | Matte ore rock and the pairing of each brick with its nugget. Eight candidate ores: limestone, gold-flecked sandstone, malachite in granite, iron ore, coal, silver in slate, rose quartz, and amber in basalt. The bricks became plain colors instead. |
 | `ref/sled-kit.png` | The colors, the chevrons, the bolts, and the thrusters. Keep the scuffs and leave out the rust specks. Its tops are not flat: the new sled has the flat, overhanging top plate of [The Sled](#the-sled). |
 | `ref/ui-kit.png` | Graphite panels with yellow trim, gauges, and meters. Its vertical meter was the start for the energy gauge. |
-| `ref/oracle.png`, `ref/oracle-cursor.png` | The Oracle, the energy gauge's design, drawn to the pixel as a layout for a model to make finer, not as final art: the scale with its pips and rack, and the cursor at 70%, 33x23, with its sight glass, the chevron notch, the coloured chevron, and the gear. `oracle-cursor.png` is the cursor on level 1, the cave wall showing through its glass. |
+| `ref/oracle.png`, `ref/oracle-cursor.png` | The Oracle, a design for the energy gauge, parked, drawn to the pixel as a layout for a model to make finer, not as final art: the scale with its pips and rack, and the cursor at 70%, 33x23, with its sight glass, the chevron notch, the coloured chevron, and the gear. `oracle-cursor.png` is the cursor on level 1, the cave wall showing through its glass. |
 | `ref/frame-B2.png`, `ref/frame-B3.png` | Concepts for the playfield's frame: lattice towers of angle iron with X bracing, a zigzag truss beam, bolted gussets. Gray steel, see-through. |
 | `ref/frame-C1.png`, `ref/frame-C3.png` | Concepts for the frame: riveted I-beam columns, a riveted plate girder, gusset plates in the corners, in the panels' graphite steel. |
 | `ref/frame-D1.png`, `ref/frame-D3.png`, `ref/frame-D4.png` | Concepts for the frame: a mine shaft frame of plain steel posts, a crossbeam and knee braces. D1 drew a whole mine around it; only its frame counts. A first frame set redrawn from D3 at the game's scale came out muddy, its edges noise, and was dropped. |

@@ -133,7 +133,7 @@ def main():
     print('ok: a held launch launches once')
 
     # The cheats of a debug build: Shift and right or left adds a ball or
-    # takes one away, and Shift and up or down a segment of energy. With
+    # takes one away, and Shift and up or down a twelfth of the energy. With
     # Shift, the arrows neither move nor launch.
     game.cmd(f'state load "{state}"')
     x, balls, energy = game.sprite(paddle)[0], game.ram('balls'), game.ram('energy', 2)
@@ -144,7 +144,7 @@ def main():
     game.tap('left')
     check(game.ram('balls') == balls - 1, 'Shift and left takes one away')
     game.tap('down')
-    check(game.ram('energy', 2) == energy - game.sym['SEGMENT_ENERGY'], 'Shift and down takes energy')
+    check(game.ram('energy', 2) == energy - game.sym['CHEAT_ENERGY'], 'Shift and down takes energy')
     game.tap('up')
     check(game.ram('energy', 2) == energy, 'Shift and up gives it back')
     check(game.sprite(paddle)[0] == x, 'with Shift, the arrows do not move the paddle')

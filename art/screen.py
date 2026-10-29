@@ -9,8 +9,9 @@ any of them by hand. The frame of the playfield comes from art/frames.py.
 
 The machine is drawn for the left wall, stands behind the ball, and the
 right wall shows it with MODE5_HFLIP. The digits are 6x8 with a 1 px
-outline, in 8x12 sprites. The energy gauge is a placeholder until its
-redesign.
+outline, in 8x12 sprites. The old energy bar is now only the upgrade
+screen's stand-in picture of the gauge, whose sight glass is
+art/gauge.py's.
 
 The machine and the digits use the sled row of art/palettes.png, the
 gauge the fx row, and the cursor the holo row. The coin is drawn by
@@ -89,7 +90,7 @@ def digit(ch):
 
 
 def gauge():
-    """The placeholder energy gauge, in the fx row: the top, a full, a low and
+    """The old energy bar, in the fx row: the top, a full, a low and
     an empty segment, and the bottom, 8x8 each."""
     DARK, EMPTY, STEEL, PALE, FULL, LIGHT, LOW = 1, 2, 4, 5, 11, 12, 13
     pieces = []

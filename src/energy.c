@@ -6,9 +6,10 @@
 #include "video.h"
 #include "xram.h"
 
-#define BAR_SPRITE(i) (XRAM_ENERGY_SPRITES + (i) * sizeof(mode5_csprite_t))
-#define BAR_IMAGE(i) (XRAM_ENERGY_IMAGES + (i) * sizeof(energy_image_t))
-#define BAR_PIECE_H 8
+#define GAUGE_SPRITE(field, i) (XRAM_GAUGE_SPRITES + offsetof(gauge_sprites_t, field) + (i) * sizeof(mode5_csprite_t))
+#define GLASS_ROW_BYTES (GLASS_W / 2)
+#define GLINT_ROW_BYTES (GLINT_W / 2)
+#define PIECE_H 64 /* of the glass, the tallest a sprite can be */
 
 /* While the energy is low, a beep every LOW_BEEP_STEPS steps, and the
    machine's lamp lights with each for LAMP_STEPS, so the machine reads as
@@ -16,67 +17,131 @@
 #define LOW_BEEP_STEPS 180
 #define LAMP_STEPS 12
 
-/* The energy each segment of the bar stands for. */
-#define SEGMENT_ENERGY ((TUNE_ENERGY + ENERGY_SEGMENTS - 1) / ENERGY_SEGMENTS)
+/* The energy a cheat adds or takes away, a twelfth of a full gauge. */
+#define CHEAT_ENERGY ((TUNE_ENERGY + 11) / 12)
 
 _Static_assert(TUNE_ENERGY_LOW < TUNE_ENERGY, "TUNE_ENERGY_LOW must be less than TUNE_ENERGY.");
+_Static_assert(GLASS_PIECES == (GLASS_H + PIECE_H - 1) / PIECE_H, "GLASS_PIECES is wrong.");
+_Static_assert(LIQUID_SEGMENTS * LIQUID_H <= GLASS_H, "The runs of fuel fit in the glass.");
 
 uint16_t energy;
 uint8_t energy_draining;
 
-static uint8_t lit_shown; /* segments lit on the bar */
+static int16_t gauge_x, glass_y; /* the gauge's left, and its glass's top */
+static uint8_t rows_shown;       /* of fuel in the glass */
 static uint8_t beep_steps;
 static uint8_t lamp_steps;
-static uint8_t low_shown; /* the lit segments are orange */
 
-/* Lights a segment for each SEGMENT_ENERGY left, or part of it, from the
-   bottom up. They turn from yellow to orange when the energy is low. */
-static void bar_draw(void)
+/* The glass, from the rock behind it: each row the right curtain's pixels
+   there, in the glass palette, an outline down each side, and the glint,
+   from a strip of its own that shows the rock too, or in a flat color. */
+static void glass_make(void)
 {
-    uint8_t lit = (energy + SEGMENT_ENERGY - 1) / SEGMENT_ENERGY;
-    uint8_t low = energy <= TUNE_ENERGY_LOW;
-    uint8_t i;
+    uint8_t row[GLASS_W], bytes[GLASS_ROW_BYTES], y, i;
+    unsigned image = XRAM_GLASS_IMAGE;
+#if GAUGE_GLINT
+    unsigned glint = XRAM_GLINT_IMAGE;
+    uint8_t strip[GLINT_ROW_BYTES] = {0};
+#endif
 
-    if (lit == lit_shown && low == low_shown)
-        return;
-    for (i = 0; i < ENERGY_SEGMENTS; i++)
+    row[0] = row[GLASS_W - 1] = GLASS_OUTLINE;
+    for (y = 0; y < GLASS_H; y++)
     {
-        uint8_t image = i < ENERGY_SEGMENTS - lit ? ENERGY_EMPTY : low ? ENERGY_LOW : ENERGY_FULL;
-        xram0_poke16(BAR_SPRITE(1 + i) + offsetof(mode5_csprite_t, xram_sprite_ptr), BAR_IMAGE(image));
+        frame_rock(row + 1, gauge_x + GLASS_X + 1, glass_y + y, GLASS_W - 2);
+#if GAUGE_GLINT
+        strip[0] = row[GLINT_COL] << 4;
+        xram0_write(glint, strip, sizeof strip);
+        glint += sizeof strip;
+#else
+        row[GLINT_COL] = GLASS_GLINT;
+#endif
+        for (i = 0; i < GLASS_ROW_BYTES; i++)
+            bytes[i] = row[2 * i] << 4 | row[2 * i + 1];
+        xram0_write(image, bytes, sizeof bytes);
+        image += sizeof bytes;
     }
-    lit_shown = lit;
-    low_shown = low;
+}
+
+/* The fuel, a row of it for each GLASS_H-th of TUNE_ENERGY, or part of
+   one: its surface, over the runs of it from the foot of the glass up,
+   each shown whole or not at all. The surface reaches down to the first
+   run, or to the foot of the glass, so it never shows past the nut. */
+static void gauge_draw(void)
+{
+    uint8_t rows = ((uint32_t)energy * GLASS_H + TUNE_ENERGY - 1) / TUNE_ENERGY, i;
+    int16_t foot = glass_y + GLASS_H, top = foot - rows;
+
+    if (rows == rows_shown)
+        return;
+    rows_shown = rows;
+    for (i = 0; i < LIQUID_SEGMENTS; i++)
+    {
+        int16_t run = foot - (i + 1) * LIQUID_H;
+
+        if (run >= top)
+            sprite_move(GAUGE_SPRITE(liquid, i), gauge_x + GLASS_X, run);
+        else
+            sprite_hide(GAUGE_SPRITE(liquid, i));
+    }
+    if (rows)
+    {
+        uint8_t h = rows + 1 < LIQUID_H ? (rows + 4) & ~3 : LIQUID_H;
+
+        xram0_poke8(XRAM_SURFACE_SPRITE + offsetof(mode5_csprite_t, width_height), MODE5_SIZE(GLASS_W, h));
+        sprite_move(XRAM_SURFACE_SPRITE, gauge_x + GLASS_X, top - 1);
+    }
+    else
+        sprite_hide(XRAM_SURFACE_SPRITE);
 }
 
 #ifndef NDEBUG
-/* A cheat: adds segments of energy, up to full, or takes them away. */
-void energy_cheat(int8_t segments)
+/* A cheat: adds a twelfth of the energy, up to full, or takes it away. */
+void energy_cheat(int8_t steps)
 {
-    int16_t more = energy + segments * (int16_t)SEGMENT_ENERGY;
+    int16_t more = energy + steps * (int16_t)CHEAT_ENERGY;
 
     energy = more < 0 ? 0 : more > TUNE_ENERGY ? TUNE_ENERGY : more;
-    bar_draw();
+    gauge_draw();
     DEBUG_LOG("cheat: energy %u\n", energy);
 }
 #endif
 
-/* A full bar, with its top left at x, y. */
+/* A full gauge, with its top left at x, y: its glass made from the rock
+   behind it, which must be in place. */
 void energy_start(int16_t x, int16_t y)
 {
     uint8_t i;
 
     energy = TUNE_ENERGY;
     energy_draining = 0;
-    for (i = 0; i < ENERGY_SEGMENTS + 2; i++)
+    gauge_x = x;
+    glass_y = y + FITTING_H;
+    glass_make();
+    for (i = 0; i < GLASS_PIECES; i++)
     {
-        uint8_t image = i == 0 ? ENERGY_TOP : i == ENERGY_SEGMENTS + 1 ? ENERGY_BOTTOM : ENERGY_EMPTY;
-        sprite_set(BAR_SPRITE(i), BAR_IMAGE(image), XRAM_PALETTE_FX, MODE5_SIZE(8, BAR_PIECE_H));
-        sprite_move(BAR_SPRITE(i), x, y + i * BAR_PIECE_H);
+        uint8_t top = i * PIECE_H, h = i < GLASS_PIECES - 1 ? PIECE_H : GLASS_H - top;
+
+        sprite_set(GAUGE_SPRITE(glass, i), XRAM_GLASS_IMAGE + top * GLASS_ROW_BYTES, XRAM_PALETTE_GLASS,
+                   MODE5_SIZE(GLASS_W, h));
+        sprite_move(GAUGE_SPRITE(glass, i), x + GLASS_X, glass_y + top);
+#if GAUGE_GLINT
+        sprite_set(GAUGE_SPRITE(glint, i), XRAM_GLINT_IMAGE + top * GLINT_ROW_BYTES, XRAM_PALETTE_GLINT,
+                   MODE5_SIZE(GLINT_W, h));
+        sprite_move(GAUGE_SPRITE(glint, i), x + GLASS_X + GLINT_COL, glass_y + top);
+#endif
     }
-    lit_shown = 0;
-    low_shown = 0;
+    for (i = 0; i < LIQUID_SEGMENTS; i++)
+        sprite_set(GAUGE_SPRITE(liquid, i), XRAM_LIQUID_IMAGE, XRAM_PALETTE_LIQUID, MODE5_SIZE(GLASS_W, LIQUID_H));
+    sprite_set(XRAM_SURFACE_SPRITE, XRAM_SURFACE_IMAGE, XRAM_PALETTE_LIQUID, MODE5_SIZE(GLASS_W, LIQUID_H));
+    for (i = 0; i < 2; i++)
+    {
+        sprite_set(GAUGE_SPRITE(fittings, i), XRAM_FITTING_IMAGES + i * sizeof(fitting_image_t), XRAM_PALETTE_BRASS,
+                   MODE5_SIZE(GAUGE_W, FITTING_H));
+        sprite_move(GAUGE_SPRITE(fittings, i), x, i ? glass_y + GLASS_H : y);
+    }
+    rows_shown = 0xFF;
     lamp_steps = 0;
-    bar_draw();
+    gauge_draw();
 }
 
 static void beep(uint8_t sound)
@@ -106,5 +171,5 @@ void energy_step(void)
     }
     else if (energy <= TUNE_ENERGY_LOW && energy && ++beep_steps >= LOW_BEEP_STEPS)
         beep(SFX_LOW_BEEP);
-    bar_draw();
+    gauge_draw();
 }

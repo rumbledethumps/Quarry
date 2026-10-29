@@ -170,6 +170,17 @@ add_custom_command(
     VERBATIM
 )
 
+# The energy gauge's fittings and fuel, drawn by art/gauge.py, which also
+# writes gauge.png to look at. A level makes its glass from its rock.
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/gauge.bin
+    COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/art/gauge.py ${CMAKE_CURRENT_BINARY_DIR}/gauge.bin
+        --preview ${CMAKE_CURRENT_BINARY_DIR}/gauge.png
+    DEPENDS art/gauge.py art/rd2png.py art/palettes.png
+    VERBATIM
+)
+
 add_executable(quarry)
 rp6502_align(quarry "XRAM_.*")
 rp6502_asset(quarry help src/help.txt)
@@ -192,6 +203,7 @@ rp6502_asset(quarry logo ${CMAKE_CURRENT_BINARY_DIR}/logo.bin)
 rp6502_asset(quarry sleds ${CMAKE_CURRENT_BINARY_DIR}/sleds.bin)
 rp6502_asset(quarry cracks ${CMAKE_CURRENT_BINARY_DIR}/cracks.bin)
 rp6502_asset(quarry chunks ${CMAKE_CURRENT_BINARY_DIR}/chunks.bin)
+rp6502_asset(quarry gauge ${CMAKE_CURRENT_BINARY_DIR}/gauge.bin)
 rp6502_asset(quarry levels ${CMAKE_CURRENT_BINARY_DIR}/levels.bin)
 rp6502_asset(quarry panels ${CMAKE_CURRENT_BINARY_DIR}/panels.bin)
 rp6502_asset(quarry carts ${CMAKE_CURRENT_BINARY_DIR}/carts.bin)

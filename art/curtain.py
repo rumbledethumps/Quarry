@@ -12,10 +12,18 @@ CURTAIN_W columns left of the middle, and the right curtain the CURTAIN_W
 columns right of it.
 
 out.bin is the palette, 16 colors as png2bin.py writes a palette row, then
-the 4 colors of the texture behind the playfield, then each curtain as
-sprite images: CURTAIN_COLS across and CURTAIN_ROWS down, row by row, each
-image packed as png2bin.py packs one. CURTAIN_W and the sizes are those of
-src/xram.h. Only the Python standard library is used.
+the 4 colors of the texture behind the playfield, then the glass row and
+the glint row, then each curtain as sprite images: CURTAIN_COLS across and
+CURTAIN_ROWS down, row by row, each image packed as png2bin.py packs one.
+CURTAIN_W and the sizes are those of src/xram.h. Only the Python standard
+library is used.
+
+The energy gauge's sight glass shows the right curtain through it, its
+pixels as they are, in the glass row: the rock's colors GLASS_TINT of the
+way to the color of the glass, then the glass's outline, GLASS_OUTLINE,
+and a flat glint, GLASS_GLINT, the glint over the rock's average. The
+glint row is the rock's colors through the glass, then GLINT_MIX of the way
+to the glint, for a glint that shows the rock too.
 
 The texture's colors are near grays at the four faint levels of
 TEXTURE_LUMA, so the floor of the playfield matches the walls around it.
@@ -42,10 +50,26 @@ DARKEN = (0.57, 0.6, 0.67)  # red, green and blue, darker and a little cool
 TEXTURE_LUMA = (7.3, 10.3, 13.7, 17.4)  # of 255, the four levels of the texture
 SHAFT_RUN = 32  # rows of one color down the middle column that are shaft, not rock
 ROCK_COLORS = 13  # of the row's 15, two left for the sight glass
+GLASS, GLASS_TINT = (150, 196, 210), 0.15  # the glass's color, and how much of it shows
+GLINT, GLINT_MIX = (236, 244, 245), 0.55
+OUTLINE = (16, 19, 28)  # the navy outline of the sprites
+GLASS_OUTLINE, GLASS_GLINT = 14, 15  # of the glass row, as src/xram.h
 
 
 def luma(c):
     return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
+
+
+def mix(c, to, amount):
+    """The color c, amount of the way to the color to."""
+    return tuple(round(a + (b - a) * amount) for a, b in zip(c, to))
+
+
+def palette_row(palette):
+    """16 colors as png2bin.py writes a palette row: 5 bits a channel, and
+    the bit of an opaque one."""
+    return b''.join(struct.pack('<H', (b >> 3) << 11 | (g >> 3) << 6 | (r >> 3) | (32 if a >= 128 else 0))
+                    for r, g, b, a in palette)
 
 
 def rgb555(r5, g5, b5):
@@ -156,11 +180,18 @@ def main():
     rows = [[index[p[:3]] if p[3] else 0 for p in row] for row in pixels]
     palette = [(0, 0, 0, 0)] + [c + (255,) for c in colors]
     palette += [(0, 0, 0, 0)] * (16 - len(palette))
-    data = bytearray()
-    for r, g, b, a in palette:
-        data += struct.pack('<H', (b >> 3) << 11 | (g >> 3) << 6 | (r >> 3) | (32 if a >= 128 else 0))
-    for c5 in texture_colors(Counter(to[p[:3]] for row in pixels for p in row if p[3])):
+    data = bytearray(palette_row(palette))
+    rock = Counter(to[p[:3]] for row in pixels for p in row if p[3])
+    for c5 in texture_colors(rock):
         data += struct.pack('<H', rgb555(*c5))
+    seen = [mix(c, GLASS, GLASS_TINT) for c in colors]
+    average = tuple(sum(c[i] * n for c, n in rock.items()) / sum(rock.values()) for i in range(3))
+    glass = [(0, 0, 0, 0)] + [c + (255,) for c in seen]
+    glass += [(0, 0, 0, 0)] * (GLASS_OUTLINE - len(glass))
+    glass += [OUTLINE + (255,), mix(mix(average, GLASS, GLASS_TINT), GLINT, GLINT_MIX) + (255,)]
+    glint = [(0, 0, 0, 0)] + [mix(c, GLINT, GLINT_MIX) + (255,) for c in seen]
+    glint += [(0, 0, 0, 0)] * (16 - len(glint))
+    data += palette_row(glass) + palette_row(glint)
     data += tiles(rows, width // 2 - CURTAIN_W) + tiles(rows, width // 2)
     with open(args.output, 'wb') as f:
         f.write(data)

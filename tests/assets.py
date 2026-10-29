@@ -24,7 +24,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', 'tools'))
 sys.path.insert(0, os.path.join(HERE, '..', 'art'))
 from rp6502 import Symbols  # noqa: E402
-import bricks, frames, logo, screen, sled, texture  # noqa: E402, E401
+import bricks, frames, gauge, logo, screen, sled, texture  # noqa: E402, E401
 
 
 def main():
@@ -34,7 +34,7 @@ def main():
     # Each asset, and the bytes it must be.
     exact = {'palettes': 'PALETTES_BYTES', 'backdrop': 'BACKDROP_BYTES', 'panels': 'PANELS_BYTES',
              'carts': 'CARTS_BYTES', 'menus': 'MENUS_BYTES', 'logo': 'LOGO_BYTES',
-             'cracks': 'CRACKS_BYTES', 'chunks': 'CHUNKS_BYTES'}
+             'cracks': 'CRACKS_BYTES', 'chunks': 'CHUNKS_BYTES', 'gauge': 'GAUGE_BYTES'}
     exact.update({name: 'TEXTURE_BYTES' for name in numbered('texture', sym['TEXTURES'])})
     exact.update({name: 'CURTAIN_SET_BYTES' for name in numbered('curtain', sym['CURTAIN_SETS'])})
     exact.update({name: 'FRAME_SET_BYTES' for name in numbered('frame', sym['FRAME_SETS'])})
@@ -65,7 +65,8 @@ def main():
     rows = [(bricks, 'BRICK_ROW', 'BRICKS'), (bricks, 'SLED_ROW', 'SLED'),
             (logo, 'LOGO_ROW', 'LOGO'), (sled, 'SLED_ROW', 'SLED'), (screen, 'SLED_ROW', 'SLED'),
             (screen, 'FX_ROW', 'FX'), (screen, 'HOLO_ROW', 'HOLO'), (texture, 'TEXTURE_ROW', 'TEXTURE'),
-            (frames, 'SLED_ROW', 'SLED'), (frames, 'SHADE_ROW', 'SHADE')]
+            (frames, 'SLED_ROW', 'SLED'), (frames, 'SHADE_ROW', 'SHADE'),
+            (gauge, 'LIQUID_ROW', 'LIQUID'), (gauge, 'BRASS_ROW', 'BRASS')]
     for module, name, palette in rows:
         check(getattr(module, name) == row(palette),
               f'art/{module.__name__}.py has {name} {getattr(module, name)}, but the {palette} palette is row {row(palette)}')

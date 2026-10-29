@@ -30,6 +30,8 @@ static const uint8_t curtain_rows[] = {64, 64, 64, 48};
 
 _Static_assert(sizeof curtain_cols * sizeof curtain_rows == CURTAIN_TILES, "CURTAIN_TILES is wrong.");
 
+static int16_t right_curtain; /* the left edge of the right curtain on the screen */
+
 /* The beam's art repeats from the middle of the screen, every 8 or 12 px,
    and so from here too, a whole number of both to the left of it, and
    left of every wall. */
@@ -71,6 +73,43 @@ void frame_curtains(int16_t left, int16_t right)
 {
     curtain(0, left - CURTAIN_W);
     curtain(1, right);
+    right_curtain = right;
+}
+
+/* The colors of n pixels of the right curtain from x, y on the screen, a
+   byte each, into pixels: the rock behind the energy gauge. Where the
+   shaft is clear, or there is no curtain, the darkest rock. */
+void frame_rock(uint8_t *pixels, int16_t x, int16_t y, uint8_t n)
+{
+    unsigned band = XRAM_CURTAINS + CURTAIN_BYTES;
+    uint8_t r = 0, i;
+
+    while (r < sizeof curtain_rows - 1 && y >= curtain_rows[r])
+    {
+        band += CURTAIN_W * curtain_rows[r] / 2;
+        y -= curtain_rows[r++];
+    }
+    for (i = 0; i < n; i++)
+    {
+        int16_t u = x + i - right_curtain;
+        uint8_t color = 0;
+
+        if (u >= 0 && u < CURTAIN_W)
+        {
+            unsigned image = band;
+            uint8_t w = curtain_cols[0];
+
+            if (u >= w)
+            {
+                image += w * curtain_rows[r] / 2;
+                u -= w;
+                w = curtain_cols[1];
+            }
+            color = xram0_peek8(image + y * (w / 2) + u / 2);
+            color = u & 1 ? color & 15 : color >> 4;
+        }
+        pixels[i] = color ? color : GLASS_ROCK;
+    }
 }
 
 /* The frame around a playfield from left to right, and the rest around it.

@@ -14,14 +14,14 @@
 #define BALL_SIZE 8
 
 /* The count of balls is at the bottom left, the ball, as big as the
-   digits, and then its digits,
-   and the energy gauge at the right edge, clear of the right post of the
-   widest level, which ends at 312. */
+   digits, and then its digits, and the energy gauge down the right edge,
+   over the right curtain, from the top of the screen to its foot.
+   levels/levels.py keeps every level's right post clear of it. */
 #define BALLS_X 4
 #define BALLS_Y 227
 #define BALLS_MAX 99
-#define GAUGE_X 312
-#define GAUGE_Y 64
+#define GAUGE_X 300
+#define GAUGE_Y 0
 
 #define BALL_DOCKED 0 /* on the paddle, waiting for launch */
 #define BALL_FLYING 1
@@ -184,8 +184,8 @@ static void ball_step(void)
 
 #ifndef NDEBUG
 /* The cheats of a debug build: Shift and right or left adds a ball or takes
-   one away, and Shift and up or down adds a segment of energy or takes one
-   away. A ball on the paddle keeps the one it is. */
+   one away, and Shift and up or down adds a twelfth of the energy or
+   takes one away. A ball on the paddle keeps the one it is. */
 static void cheats_step(void)
 {
     if ((shift_pressed & SHIFT_RIGHT) && balls < BALLS_MAX)

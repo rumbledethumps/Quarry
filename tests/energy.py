@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Checks the energy bar and running out of energy, in the emulator.
+"""Checks the energy gauge and running out of energy, in the emulator.
 
   energy.py rom.rp6502
 
 Needs a Debug ROM, which logs the game's events. The energy is poked low
-to skip ahead. Reads the colors of the bar and the smoke from screenshots,
-and the jets and the tilt of the falling sled from their sprites.
-Exits 0 when every check passes.
+to skip ahead. Reads the fuel in the gauge, the jets and the tilt of the
+falling sled from their sprites, the glass from its image, and the smoke
+from screenshots. Exits 0 when every check passes.
 """
 
 import os
@@ -14,22 +14,71 @@ import tempfile
 
 from game import Game, check
 
-# The colors of the fx palette, in art/palettes.png.
-COLORS = {'full': (0xd9, 0xb9, 0x5e), 'low': (0xe0, 0x78, 0x2a), 'empty': (0x1d, 0x36, 0x4d)}
+# The colors of the smoke, in the fx row of art/palettes.png.
 SMOKE = [(0x51, 0x5a, 0x62), (0x8c, 0x94, 0x9a)]
 
 
-def nearest(rgb, palette):
-    return min(palette, key=lambda k: sum((a - b) ** 2 for a, b in zip(rgb, palette[k])))
-
-
-def bar(game, shot):
-    """The segments of the bar, top to bottom, as 'full', 'low' or 'empty'."""
+def fuel(game):
+    """The rows of fuel the gauge shows, from its sprites: its surface a row
+    above the fuel, and each run of it under the surface, from the foot of
+    the glass up, shown, and none above."""
     sym = game.sym
-    rows = game.screen(shot)
-    x, top = game.sprite('XRAM_ENERGY_SPRITES')
-    return [nearest(rows[top + sym['BAR_PIECE_H'] * (1 + i) + 1][x + 3], COLORS)
-            for i in range(sym['ENERGY_SEGMENTS'])]
+    hidden = sym['SPRITE_HIDDEN_Y']
+    foot = game.sprite('XRAM_GLASS_SPRITES')[1] + sym['GLASS_H']
+    y = game.sprite('XRAM_SURFACE_SPRITE')[1]
+    rows = 0 if y == hidden else foot - y - 1
+    for i, (_, top, _) in enumerate(game.sprites('XRAM_LIQUID_SPRITES', sym['LIQUID_SEGMENTS'])):
+        run = foot - (i + 1) * sym['LIQUID_H']
+        check(top == (run if rows and run >= foot - rows else hidden),
+              f'run {i} of the fuel is at {top}, with {rows} rows of fuel')
+    return rows
+
+
+def fuel_of(game, energy):
+    """The rows of fuel for the energy: a row for each GLASS_H-th of a full
+    gauge, or part of one."""
+    return -(-energy * game.sym['GLASS_H'] // game.sym['TUNE_ENERGY'])
+
+
+def check_fuel(game, message):
+    """The gauge shows the energy, read after its sprites: the energy may
+    have drained a step since, but never more."""
+    rows = fuel(game)
+    expected = fuel_of(game, game.ram('energy', 2))
+    check(expected <= rows <= expected + 1, f'{message}: {rows} rows of fuel, for {expected}')
+    return rows
+
+
+def check_glass(game):
+    """The glass is the right curtain's rock behind it, pixel for pixel: an
+    outline down each side, the darkest rock where the shaft is clear, and
+    the glint, a strip of the rock of its own, or a flat color."""
+    sym = game.sym
+    nibble = lambda data, pitch, x, y: data[y * pitch + x // 2] >> (0 if x & 1 else 4) & 15
+    right = '(XRAM_CURTAIN_SPRITES+CURTAIN_TILES*SPRITE_BYTES)'
+    pieces = []
+    for (x, y, image), size in zip(game.sprites(right, sym['CURTAIN_TILES']), game.sizes(right, sym['CURTAIN_TILES'])):
+        w, h = ((size & 15) + 1) * 4, ((size >> 4) + 1) * 4
+        pieces.append((x, y, w, h, game.xram(image, w * h // 2)))
+
+    def rock(sx, sy):
+        for x, y, w, h, data in pieces:
+            if x <= sx < x + w and y <= sy < y + h:
+                return nibble(data, w // 2, sx - x, sy - y) or sym['GLASS_ROCK']
+        return sym['GLASS_ROCK']
+
+    gx, gy, _ = game.sprites('XRAM_GLASS_SPRITES', 1)[0]
+    w, h, col = sym['GLASS_W'], sym['GLASS_H'], sym['GLINT_COL']
+    glass = game.xram(sym['XRAM_GLASS_IMAGE'], w * h // 2)
+    glint = game.xram(sym['XRAM_GLINT_IMAGE'], sym['GLINT_W'] * h // 2) if sym['GAUGE_GLINT'] else None
+    for y in range(h):
+        row = [nibble(glass, w // 2, x, y) for x in range(w)]
+        want = [sym['GLASS_OUTLINE']] + [rock(gx + x, gy + y) for x in range(1, w - 1)] + [sym['GLASS_OUTLINE']]
+        if glint:
+            check(nibble(glint, sym['GLINT_W'] // 2, 0, y) == want[col], f'the glint shows the rock on row {y}')
+        else:
+            want[col] = sym['GLASS_GLINT']
+        check(row == want, f'row {y} of the glass is {row}, the rock behind it {want}')
 
 
 def smoke_pixels(game, shot, x0, x1, y0, y1):
@@ -42,13 +91,14 @@ def main():
     shot = os.path.join(tempfile.mkdtemp(), 'shot.png')
     game = Game()
     sym = game.sym
-    bar_segments = sym['ENERGY_SEGMENTS']
     game.new_game()
     game.run(5)
 
     full = game.ram('energy', 2)
     check(full == sym['TUNE_ENERGY'], 'the energy starts full')
-    check(bar(game, shot) == ['full'] * bar_segments, 'the bar starts full and yellow')
+    check(fuel(game) == sym['GLASS_H'], 'the gauge starts full')
+    check_glass(game)
+    print('ok: a full gauge, its glass the rock behind it')
     x, y = game.px('paddle_x'), game.px('paddle_y')
     pieces, flames = 'XRAM_SLED_SPRITE', 'XRAM_JET_SPRITES'
     nozzle = sym['XRAM_JET_IMAGES'] + sym['JET_NOZZLE'] * sym['JET_IMAGE_BYTES']  # a jet with no flame
@@ -81,11 +131,8 @@ def main():
     check(lamp() == sym['LAMP_ON'], "the machine's lamp lights with the warning")
     game.run(sym['LAMP_STEPS'])
     check(lamp() == sym['LAMP_OFF'], 'and goes out after it')
-    segments = bar(game, shot)
-    lit = -(-low // -(-full // bar_segments))
-    check(segments == ['empty'] * (bar_segments - lit) + ['low'] * lit,
-          f'a low bar has {lit} orange segments: {segments}')
-    print(f'low bar: {segments.count("low")} orange segments')
+    rows = check_fuel(game, 'the gauge falls with the energy')
+    print(f'low: {rows} rows of fuel')
 
     # Out of energy: the flames sputter and the player loses control.
     game.paused_poke([('energy', 30, 2)])
@@ -100,7 +147,7 @@ def main():
     game.cmd('release right')
     check(game.px('paddle_x') == x, 'the paddle does not move while it sputters')
     check(0 < lit < 20, f'the flame flickers while it sputters, lit {lit} of 20')
-    check(bar(game, shot) == ['empty'] * bar_segments, 'the bar is empty')
+    check(fuel(game) == 0, 'the gauge is empty')
 
     # A puff of smoke, and the paddle falls and tilts.
     game.wait('paddle falls', sym['TUNE_SPUTTER_STEPS'])
@@ -127,7 +174,7 @@ def main():
     check(game.ram('energy', 2) == full, 'the energy is full again')
     check(game.ram('energy_draining') == 0, 'it waits for the first launch again')
     check(game.ram('paddle_state') == sym['PADDLE_HOVER'], 'the paddle hovers again')
-    check(bar(game, shot) == ['full'] * bar_segments, 'the bar is full again')
+    check(fuel(game) == sym['GLASS_H'], 'the gauge is full again')
 
     # Out of energy with the ball on the paddle: the ball goes down with it,
     # and launch does nothing.
