@@ -16,8 +16,10 @@ commands take the same names, and expressions of them, wherever they take
 a number, as in "wait game_state STATE_PLAY", so a test holds no addresses
 and no copies of the game's numbers. Text on the
 screen is read from the menus' map at XRAM_MENU_MAP, a tile a byte, each
-tile from MENU_TILE_GLYPH a letter of the panels' font, and the sprites
-from their lists in XRAM.
+tile from MENU_TILE_GLYPH a letter of the panels' font, and the title's
+from the map of its panels that their layer shows, each tile from
+TITLE_TILE_GLYPH a letter of the font of art/title_panels.py. The sprites
+are read from their lists in XRAM.
 
 The script's frames do not line up with the game's steps, so a read of the
 game's RAM can land in the middle of a step, after it moves the ball across
@@ -36,6 +38,7 @@ sys.path.insert(0, os.path.join(HERE, '..', 'tools'))
 sys.path.insert(0, os.path.join(HERE, '..', 'art'))
 import rp6502  # noqa: E402
 from panels import FONT  # noqa: E402
+import title_panels  # noqa: E402
 from png2bin import read_png  # noqa: E402
 
 
@@ -105,8 +108,8 @@ class Game(rp6502.Emu):
         self.booted = True
 
     def new_game(self):
-        """From the title screen with no save, where New Game is picked,
-        start a new game, and get past the dwarf's welcome."""
+        """From the title screen with no save, where Start Game is all
+        there is, start a new game, and get past the dwarf's welcome."""
         if not self.booted:
             self.boot()
         self.tap('space')
@@ -200,6 +203,17 @@ class Game(rp6502.Emu):
         cols = self.sym['TEXT_COLS']
         data = self.xram('XRAM_MENU_MAP', cols * self.sym['TEXT_ROWS'])
         return any(text in self.letters(data[r:r + cols]) for r in range(0, len(data), cols))
+
+    def on_panels(self, text):
+        """Whether the text is anywhere on the title's panels, from the map
+        the layer shows, unless it is off the screen."""
+        cols, font, first = self.sym['TITLE_COLS'], title_panels.FONT, self.sym['TITLE_TILE_GLYPH']
+        x, data_ptr = struct.unpack('<2xh6xH', self.xram('XRAM_PANEL_CONFIG', 12))
+        if x >= self.sym['SCREEN_W']:
+            return False
+        data = self.xram(data_ptr, cols * self.sym['TITLE_ROWS'])
+        line = lambda r: ''.join(font[t - first] if 0 <= t - first < len(font) else ' ' for t in data[r:r + cols])
+        return any(text in line(r) for r in range(0, len(data), cols))
 
     def screen(self, path):
         """The screen, as rows of RGB tuples."""

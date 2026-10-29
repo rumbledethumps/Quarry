@@ -29,8 +29,7 @@
 #define STATE_MENU 2    /* the menu when a level ends */
 #define STATE_SHOP 3    /* the upgrade screen */
 #define STATE_TITLE 4
-#define STATE_CONFIRM 5 /* yes or no to a new game over the save */
-#define STATE_PAUSE 6
+#define STATE_PAUSE 5
 
 /* The menus. The items of each are numbered from 1, as menu_step()
    returns them. The menus and the dwarves call the upgrade screen THE
@@ -44,17 +43,8 @@ static const char *const pause_items[] = {"RESUME", "THE DRY", "RESTART", "MAIN 
 #define PAUSE_UPGRADES 2
 #define PAUSE_RESTART 3
 #define PAUSE_MAIN_MENU 4
-static const char *const title_items[] = {"RESUME", "NEW GAME"};
-#define TITLE_RESUME 1
-#define TITLE_NEW_GAME 2
-static const char *const confirm_items[] = {"YES", "NO"};
-#define CONFIRM_YES 1
-#define CONFIRM_NO 2
 
-/* The question to start over takes the title menu's place. */
 static const menu_t pause_menu = {20, 7, BOX_TAPE, "PAUSED", pause_items, 4};
-static const menu_t title_menu = {20, 11, BOX_PLAIN, 0, title_items, 2};
-static const menu_t confirm_menu = {20, 11, BOX_TAPE, "START OVER?", confirm_items, 2};
 /* The menu when a level ends says how, by what play_step() returned, from
    PLAY_CLEARED. */
 static const menu_t end_menus[] = {
@@ -126,12 +116,9 @@ static void level_end(uint8_t how)
     save_write();
 }
 
-/* Resume is left off until there is a save. */
 static void title_show(void)
 {
-    title_open(&title_menu);
-    menu_open(&title_menu, save_exists ? TITLE_RESUME - 1 : TITLE_NEW_GAME - 1,
-              save_exists ? 0 : 1 << (TITLE_RESUME - 1), 0);
+    title_open();
     game_state = STATE_TITLE;
     DEBUG_LOG("title\n");
 }
@@ -171,7 +158,7 @@ static void pause_close(void)
 
 /* The last dwarf has gone: the menu waiting for him opens, or the upgrade
    screen's cursor comes back. Only the test keys bring one over the pause
-   menu, the title or its question, and they come back too. */
+   menu or the title, and they come back too. */
 static void talk_over(void)
 {
     switch (game_state)
@@ -188,10 +175,6 @@ static void talk_over(void)
     case STATE_TITLE:
         title_show();
         break;
-    case STATE_CONFIRM:
-        title_open(&title_menu);
-        menu_open(&confirm_menu, CONFIRM_NO - 1, 0, 0);
-        break;
     }
 }
 
@@ -204,8 +187,9 @@ static void wait_vsync(void)
     last = ria_vsync();
 }
 
-/* The title screen first. Resume opens the upgrade screen, where a level
-   begins, and New Game begins level 1. When a level ends, its menu goes
+/* The title screen first. With a save, Continue Game opens the upgrade
+   screen, where a level begins; with none, Start Game begins level 1.
+   When a level ends, its menu goes
    to the upgrade screen, plays it again, or goes to the title. Esc pauses
    a level, with the same choices and Restart. There is no way out of the
    game: every menu leads to another screen. */
@@ -329,37 +313,15 @@ int main(void)
             }
             break;
         case STATE_TITLE:
-            title_step();
-            switch (menu_step())
+            switch (title_step())
             {
-            case TITLE_RESUME:
+            case TITLE_CONTINUE:
                 save_load();
                 shop_show(SHOP_ON_LEVELS);
                 break;
-            case TITLE_NEW_GAME:
-                if (save_exists)
-                {
-                    menu_close();
-                    menu_open(&confirm_menu, CONFIRM_NO - 1, 0, 0);
-                    game_state = STATE_CONFIRM;
-                }
-                else
-                    new_game();
-                break;
-            }
-            break;
-        case STATE_CONFIRM:
-            /* Esc is No. */
-            switch (input_pressed & INPUT_PAUSE ? CONFIRM_NO : menu_step())
-            {
-            case CONFIRM_YES:
+            case TITLE_START:
                 DEBUG_LOG("new game\n");
                 new_game();
-                break;
-            case CONFIRM_NO:
-                menu_close();
-                menu_open(&title_menu, TITLE_NEW_GAME - 1, 0, 0);
-                game_state = STATE_TITLE;
                 break;
             }
             break;

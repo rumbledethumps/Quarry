@@ -15,12 +15,15 @@ of paper along its foot. Its corners, edges and tail are drawn by hand
 below, the tail reaching out of its left side toward his mouth, and its
 lines are the panels' font in ink, a row of cells between them. The last
 line ends with an OK, at the right, which the game puts in once the
-bubble has come in. The bubble is cut into tiles, the same ones shared.
+bubble has come in, but on the title, where he stays while the player
+picks from the menu above him. The bubble is cut into tiles, the same
+ones shared.
 
 TALKS lists what the dwarves say: each one's name, the dwarf, his lines,
 and where he and his bubble stand when they are in. Each becomes
 out_dir/talkN.bin, from 1, a talk_t of src/xram.h, and the header gives
-their numbers as TALK_name. Only the Python standard library is used.
+their numbers as TALK_name, and TALK_STAYS a bit for each that stays. Only
+the Python standard library is used.
 """
 
 import argparse
@@ -47,9 +50,11 @@ SCREEN_H = 240
 # Where they stand: he is in the lower left corner, and his bubble beside
 # him, its tail under his beard. The bubble is placed by its left and its
 # foot, so the tail is as high whatever its lines. On the upgrade screen
-# its foot is over the carts, which show what he talks about.
+# its foot is over the carts, which show what he talks about. On the title
+# it is a row lower, clear of the panel over it, and he stays, with no OK.
 LEVEL = {'dwarf': (0, SCREEN_H - DWARF_SIZE), 'bubble': (68, SCREEN_H - 24)}
 UPGRADES = {'dwarf': (0, SCREEN_H - DWARF_SIZE), 'bubble': (68, 196)}
+TITLE = {'dwarf': (0, SCREEN_H - DWARF_SIZE), 'bubble': (68, SCREEN_H - 16), 'stays': True}
 
 TALKS = [
     # A new game's first level.
@@ -60,6 +65,8 @@ TALKS = [
     ('UNLOCK', 'miner', ['GREAT JOB! EACH LEVEL YOU', 'CLEAR UNLOCKS THE NEXT.', 'PICK ITS CART BELOW.'], UPGRADES),
     # The first time on the upgrade screen, after any other.
     ('UPGRADES', 'miner', ['THIS IS THE DRY. SPEND', 'YOUR NUGGETS HERE ON', 'UPGRADES THAT HELP YOU', 'CLEAR LEVELS.'], UPGRADES),
+    # The title, with no save.
+    ('GREENHORN', 'miner', ['WELCOME, GREENHORN.', "HEAD ON IN WHEN YOU'RE", 'READY TO BREAK SOME ROCK.'], TITLE),
 ]
 
 CLEAR, INK, PAPER, SHADE = range(4)
@@ -177,11 +184,12 @@ def pieces(img):
     return best[1]
 
 
-def bubble(lines):
+def bubble(lines, ok):
     """The bubble, as rows of the 4 colors, with its OK cells as paper, and
     the cell of the O. The OK ends the last line, at the right, a cell after
-    it, with a cell clear all round it for the cursor."""
-    cols = max(max(len(line) for line in lines), len(lines[-1]) + 4) + 2
+    it, with a cell clear all round it for the cursor. Without one, the cell
+    is 0, 0, which is the bubble's corner."""
+    cols = max(max(len(line) for line in lines), len(lines[-1]) + 4 if ok else 0) + 2
     rows = 2 * len(lines) + 2
     if cols + 1 > BUBBLE_COLS or rows > BUBBLE_ROWS:
         raise SystemExit(f'talk.py: a bubble of {cols} by {rows} cells is too big')
@@ -204,7 +212,7 @@ def bubble(lines):
     for i, line in enumerate(lines):
         for j, ch in enumerate(line):
             glyph(img, 8 * (j + 2), 8 * (1 + 2 * i), ch)
-    return img, (cols - 3, rows - 3)
+    return img, (cols - 3, rows - 3) if ok else (0, 0)
 
 
 def glyph(img, x0, y0, ch):
@@ -257,10 +265,11 @@ def build(dwarf, lines, where):
     if len(images) > DWARF_BYTES:
         raise SystemExit(f'talk.py: {dwarf} takes {len(images)} bytes, more than {DWARF_BYTES}')
 
-    pic, (ok_col, ok_row) = bubble(lines)
+    stays = where.get('stays', False)
+    pic, (ok_col, ok_row) = bubble(lines, not stays)
     tiles, grid = cells(pic)
     ok = [row[:] for row in pic]
-    for j, ch in enumerate('OK'):
+    for j, ch in enumerate('' if stays else 'OK'):
         glyph(ok, 8 * (ok_col + j), 8 * ok_row, ch)
     ok_tiles, ok_grid = cells(ok)
     ok_cells = [ok_tiles[ok_grid[ok_row][ok_col + j]] for j in range(2)]
@@ -329,7 +338,10 @@ def main():
                 '#ifndef TALKS_H\n#define TALKS_H\n\n')
         for n, (name, *_) in enumerate(TALKS, 1):
             f.write(f'#define TALK_{name} {n}\n')
-        f.write(f'#define TALKS {len(TALKS)}\n\n#endif\n')
+        stays = sum(1 << n for n, talk in enumerate(TALKS) if talk[3].get('stays'))
+        f.write(f'#define TALKS {len(TALKS)}\n'
+                f'#define TALK_STAYS 0x{stays:02X} /* a bit for each talk that stays, with no OK, from TALK 1 */\n\n'
+                '#endif\n')
 
 
 if __name__ == '__main__':

@@ -63,11 +63,23 @@ most of XRAM to itself.
 
 The title has the same cave as a level, with no frame: a texture behind
 everything and a curtain set, both picked at random each time, with the
-curtains just outside the word QUARRY. Under the logo are the menu,
-RESUME and NEW GAME, and under it a box as wide as the menu with the
-progress of the save, as a percent. There is no sled on the title, and no
-way to exit the game: every menu leads to another screen. More decoration
-comes later.
+curtains just outside the word QUARRY. Under the logo hang panels like
+the upgrade screen's: see [The Title's Panels](#the-titles-panels). There
+is no sled on the title, and no way to exit the game: every menu leads to
+another screen.
+
+- With a save, the menu's panel holds CONTINUE GAME, picked, and DELETE
+  SAVE, and the progress of the save, as a percent, is on a panel of its
+  own that hangs from it on two hangers.
+- With none, as the first time, a smaller panel holds START GAME alone,
+  and a dwarf in the lower left greets the player: "WELCOME, GREENHORN.
+  HEAD ON IN WHEN YOU'RE READY TO BREAK SOME ROCK." His bubble has no OK,
+  and he stays while the player picks. START GAME begins level 1.
+- DELETE SAVE asks first, in a box of caution tape in the panels' place,
+  with NO picked, and Esc is NO too. YES deletes the save and stays on
+  the title, which turns into the one with none: the panels come back,
+  half a second later the progress panel goes, half a second after that
+  the menu's panel shrinks to START GAME, and the dwarf comes in.
 
 ## Stone: the levels
 
@@ -382,6 +394,37 @@ graphite steel with no yellow: there is nothing to be careful of here.
   it copies it, at a high one it redraws its steel, and inpainting ignored
   its mask. New corners or edge pieces are drawn here, on frame 1's steel.
 
+### The Title's Panels
+
+The title's panels are the upgrade screen's, made again by
+`art/title_panels.py` for a 4-bit tile layer of their own on plane 1, in
+one palette of 16 colors, in what XRAM the title has left. The steel is cut
+from frame 1's 22 colors to 11, merging the closest, beside black, the
+plate and the menus' two creams. Only the lit tiles come, as nothing on
+the title dims, and the text is the menus' font on the plate.
+
+- Every panel is symmetrical, unlike the upgrade screen's, whose plain
+  steel and bolts fall wherever the walk through frame 1's cells puts
+  them: frame 1's four corners as they are, the run between them along
+  the top and the bottom built for its left half and turned over for its
+  right, a pair of bolts in each half, and the run down each side built
+  for its top half and turned over for its bottom. Every panel has the
+  same pieces in the same places.
+- All are 20 cells across, as wide as a menu's box, so the menus' cursor
+  spans the plate. The menu's is 10 rows, its two items right under the
+  frame, and START GAME's 9, its item in the middle.
+- Frame 1's corners need 4 cells down each side, for the clamp by each
+  corner, so a panel is at least 8 rows. The progress panel is 7, a row of
+  plate over and under its line: its sides are plain steel, with one of
+  frame 1's clamps in the middle of each.
+- It hangs a row under the menu's panel on two of the upgrade screen's
+  hangers, at the ends of the run, each the other's mirror but lit from
+  the left, from 2 px into one frame to 2 px into the other.
+- Each map of the title, the menu's panel with the progress panel, the
+  menu's alone, and START GAME's, is in XRAM with its text from the
+  start, and the layer shows one at a time, so a panel changes all at
+  once.
+
 ### The Backdrop
 
 Behind the upgrade screen is a workshop wall: the rail the panels hang
@@ -500,8 +543,8 @@ shows, as the tape's 4 palette entries turn round.
   colors pulse. On the upgrade screen it
   slides into a question and back out; elsewhere it appears at once.
 - Nothing is grayed out: an item that doesn't apply is left off.
-- The title's boxes are plain, with no tape, until the title is
-  redesigned.
+- The title has no boxes but its question: its menus are on its panels,
+  with no box, and the cursor goes round their items there.
 
 ## The Dwarves
 
@@ -518,14 +561,18 @@ opens, never in the middle of play, and the screen under them carries on:
   menu opens;
 - on the upgrade screen, as level 2 unlocks, one says what an unlock
   means, as the unlock goes on over the carts, and the first time there,
-  another says what the screen is for, after any other.
+  another says what the screen is for, after any other;
+- on the title with no save, one greets the player. He has no OK, and
+  stays while the menu over him takes the input and keeps the cursor, and
+  goes with the title.
 
 - A dwarf is a head-and-shoulders portrait, 80x80, in the outlined
   cartoon look of the sleds: bold shapes, a crisp dark outline, flat
   shading in a few colors, light from the upper left, facing a little to
   the right, toward his bubble. He stands in the lower left corner, his
   shoulders on the foot of the screen, and covers the counts there. On the
-  upgrade screen his bubble's foot is just over the carts, so they show.
+  upgrade screen his bubble's foot is just over the carts, so they show,
+  and on the title it is a row lower, clear of the panel over it.
 - Each dwarf is a portrait in `art/dwarves/` as Retro Diffusion drew it,
   in a frame of its own on a plain background. `art/talk.py` cuts off the
   frame, clears the background from the edges in, and brings him down to
@@ -588,7 +635,7 @@ darkest first. Each class of art gets a row of its own:
 | fitting | the gauge's fittings, the backdrop's colors of its pipe, then the meter's paddle and its shade, which the game sets green, yellow or red |
 | glass | the curtain row through the gauge's glass, and its outline and glint, loaded with each curtain set |
 
-The upgrade panels have a palette of their own, 256 colors, outside these rows, since they are a tile layer, and so do the menus, 16 colors. Each frame set brings its own 16 colors, and the same darkened for its braces, with its pieces. Each talk brings its dwarf's 16 colors and its bubble's 4.
+The upgrade panels have a palette of their own, 256 colors, outside these rows, since they are a tile layer, and so do the title's panels and the menus, 16 colors each. Each frame set brings its own 16 colors, and the same darkened for its braces, with its pieces. Each talk brings its dwarf's 16 colors and its bubble's 4.
 
 A jet's nozzle and its flame are one sprite, so the flames share the sled
 row. Every curtain set brings its own palette into the one curtain row,
@@ -620,6 +667,7 @@ rows are left.
 | cursor | 4 corners, 12x12, one image turned |
 | dwarf | 80x80, in up to 3 sprites |
 | speech bubble | up to 28x10 cells of 8x8, the tail's column with them |
+| title's panels | 20 cells across, the menu's 10 rows, START GAME's 9 and the progress 7; 132 tiles of 4 bits, with their three maps 5,336 bytes, of which the title has 226 left |
 
 The current sizes come from `src/xram.h`. RD Pro styles start at 12x12, so
 art 8 pixels tall is made as a larger study, then redrawn by hand at its

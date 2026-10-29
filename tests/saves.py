@@ -5,8 +5,8 @@
 
 Needs a Debug ROM, which logs the game's events. Every run of the emulator
 here keeps its saves in a folder of the test's own. Reads the save file
-itself, and the menus from their map in XRAM. Exits 0 when every
-check passes.
+itself, the menus from their map in XRAM, and the title's panels from
+theirs. Exits 0 when every check passes.
 """
 
 import os
@@ -20,7 +20,6 @@ from rp6502 import Symbols  # noqa: E402
 
 SAVE = 'quarry.save'
 TAG = b'QRY6'
-TITLE_ITEMS = ['RESUME', 'NEW GAME']
 SYM = Symbols(os.path.splitext(rom())[0] + '.sym')
 NO_RANKS = (0,) * SYM['UPGRADES']
 NEW_GAME = (0, 0, NO_RANKS, 0, 1, 1, 0, 0)  # as read_save() gives it
@@ -29,9 +28,10 @@ NEW_GAME = (0, 0, NO_RANKS, 0, 1, 1, 0, 0)  # as read_save() gives it
 def read_save(folder):
     """The save, save_t of src/save.c, as (gray nuggets, coins, upgrade
     ranks, levels cleared, level picked, levels shown open, talks seen,
-    lines of the counts shown), or None."""
+    lines of the counts shown), or None, with no file or an empty one, as
+    Delete Save leaves it."""
     path = os.path.join(folder, SAVE)
-    if not os.path.exists(path):
+    if not os.path.exists(path) or not os.path.getsize(path):
         return None
     data = open(path, 'rb').read()
     check(len(data) == SYM['SAVE_BYTES'] and data[:4] == TAG, f'the save is a good one: {data!r}')
@@ -43,36 +43,54 @@ def read_save(folder):
 
 
 class Title:
-    """Reads the title menu, title_menu in src/main.c: the item picked, from
-    src/menu.c, and whether Resume is on it, which it is only with a save."""
+    """Reads the title's menu on its panels, from src/title.c: CONTINUE GAME
+    and DELETE SAVE with a save, and the progress, or with none, START GAME
+    alone, and the item picked, from src/menu.c."""
 
     def __init__(self, game):
         self.game = game
-        check(game.shows('NEW GAME'), 'the title menu is up')
+        check(game.ram('game_state') == game.sym['STATE_TITLE'], 'the title is up')
+
+    def saved(self):
+        """Whether the title is the one of a save."""
+        on = self.game.on_panels
+        if on('CONTINUE GAME') and on('DELETE SAVE') and on('PROGRESS') and not on('START GAME'):
+            return True
+        check(on('START GAME') and not on('CONTINUE GAME') and not on('DELETE SAVE') and not on('PROGRESS'),
+              'the title has the panels of a save, or of none')
+        return False
 
     def picked(self):
-        return TITLE_ITEMS[self.game.ram('picked')]
+        items = ['CONTINUE GAME', 'DELETE SAVE'] if self.saved() else ['START GAME']
+        return items[self.game.ram('picked')]
 
-    def resume_off(self):
-        return not self.game.shows('RESUME')
+    def greeting(self):
+        """Whether the dwarf's greeting is up."""
+        game = self.game
+        return game.ram('talk_state') != game.sym['TALK_OFF'] and game.ram('showing') == game.sym['TALK_GREENHORN']
 
 
 def main():
     folder = save_dir()
 
-    # A first run, with no save: Resume is left off the menu, and New Game
-    # starts at once.
+    # A first run, with no save: the title has START GAME alone, and the
+    # dwarf's greeting, who has no OK and stays while the menu takes the
+    # input, with the cursor round START GAME. It starts at once.
     game = Game()
     game.boot()
+    game.run(60)
     title = Title(game)
-    check(title.resume_off(), 'Resume is left off with no save')
-    check(title.picked() == 'NEW GAME', 'New Game is picked')
+    check(not title.saved() and title.picked() == 'START GAME', 'Start Game alone with no save')
+    check(title.greeting() and game.ram('talk_state') == game.sym['TALK_WAIT'], 'and the dwarf greets, and stays')
+    check(game.shown('XRAM_CURSOR_SPRITES', 4) == 4, 'with the cursor round Start Game')
     game.tap('up')
-    check(title.picked() == 'NEW GAME', 'up from New Game stays, as Resume cannot be picked')
+    game.tap('down')
+    check(title.picked() == 'START GAME' and title.greeting(), 'up and down stay on it, and he stays')
     check(read_save(folder) is None, 'no save yet')
     game.new_game()
     check(read_save(folder) == NEW_GAME, 'a level starting saves a new game')
-    print('ok: a new game, saved when the level starts')
+    check(game.ram('showing') == game.sym['TALK_WELCOME'], "and the greeting went with the title, for level 1's")
+    print('ok: a new game from the greeting, saved when the level starts')
 
     # Pausing saves the nuggets, with those still on their way, and holds
     # the game still. Esc again, or Start, carries on.
@@ -153,7 +171,7 @@ def main():
     print('ok: Replay and Restart')
 
     # A purchase on the upgrade screen saves. Esc there asks to go back to
-    # the title, where Resume can be picked now.
+    # the title, which has the save's panels now.
     game.paused_poke([('balls', 0, 1), ('ball_state', 1, 1)])
     game.wait('out of balls', 3000)
     game.menu_choose('THE DRY')
@@ -169,22 +187,23 @@ def main():
     game.until('game_state', 'STATE_TITLE', 60)
     game.run(5)
     title = Title(game)
-    check(not title.resume_off() and title.picked() == 'RESUME', 'Resume is there now, and picked')
+    check(title.saved() and title.picked() == 'CONTINUE GAME', 'Continue Game is there now, picked, with the progress')
+    check(not title.greeting(), 'and no dwarf')
     game.close()
 
-    # Another run, as when the player comes back: Resume brings back the
-    # nuggets and the upgrade.
+    # Another run, as when the player comes back: Continue Game brings back
+    # the nuggets and the upgrade.
     game = Game()
     game.boot()
     game.run(3)
     title = Title(game)
-    check(title.picked() == 'RESUME', 'Resume is picked when the player comes back')
+    check(title.picked() == 'CONTINUE GAME', 'Continue Game is picked when the player comes back')
 
     # Left and right don't move a menu. On the title, Shift and right or left
     # switch the curtains, and with Shift, down doesn't move the menu.
     for key in ['right', 'left']:
         game.tap(key)
-        check(title.picked() == 'RESUME', f'{key} does not move the menu')
+        check(title.picked() == 'CONTINUE GAME', f'{key} does not move the menu')
     sets, shown = game.sym['CURTAIN_SETS'], game.ram('curtain_set')
     palette = game.xram('XRAM_PALETTE_CURTAIN', 32)
     game.cmd('press lshift')
@@ -197,11 +216,11 @@ def main():
     check(game.ram('curtain_set') == (shown - 1) % sets, 'and go on around')
     game.tap('down')
     game.cmd('release lshift')
-    check(title.picked() == 'RESUME', 'with Shift, down does not move the menu')
+    check(title.picked() == 'CONTINUE GAME', 'with Shift, down does not move the menu')
     print(f'ok: left and right leave the menu, and Shift switches the {sets} curtain sets')
     game.tap('space')
     game.until('game_state', 'STATE_SHOP', 120)
-    check(game.ram('nuggets', 2) == left, 'Resume opens the upgrade screen with the nuggets')
+    check(game.ram('nuggets', 2) == left, 'Continue Game opens the upgrade screen with the nuggets')
     check(game.shown('XRAM_NUGGET_ICONS', game.sym['BRICK_COLORS']) == 1, 'and their line of the counts')
     check(game.ram('upgrade_ranks') == 1, 'and the upgrade')
     check(game.ram('cursor_on') == game.sym['SHOP_ON_LEVELS'], 'on the level select, coming from the title')
@@ -210,46 +229,69 @@ def main():
     game.until('game_state', 'STATE_PLAY', 60)
     game.run(2)
     check(game.ram('paddle_width') == game.ram('widths+1'), 'the level has the upgrade, on the paddle')
-    print(f'ok: came back, and Resume brought back {left} nuggets and a wider paddle')
+    print(f'ok: came back, and Continue Game brought back {left} nuggets and a wider paddle')
 
-    # Main Menu from the pause menu goes to the title. New Game over a save
-    # asks first. No leaves the save, Yes starts over.
+    # Main Menu from the pause menu goes to the title. Delete Save asks
+    # first, in the panels' place, with No picked. Esc and No keep the save.
     game.tap('escape')
     game.until('game_state', 'STATE_PAUSE', 10)
     for _ in range(3):
         game.tap('down')  # MAIN MENU
     game.tap('space')
     game.until('game_state', 'STATE_TITLE', 60)
-    game.tap('down')   # NEW GAME
+    game.run(2)
+    asked = lambda: game.shows('DELETE SAVE?') and not game.on_panels('DELETE SAVE')
+    game.tap('down')   # DELETE SAVE
     game.tap('space')
-    game.until('game_state', 'STATE_CONFIRM', 10)
-    check(game.shows('START OVER?'), 'it asks to start over')
+    check(asked() and game.ram('picked') == 1, 'Delete Save asks first, in place of the panels, No picked')
     game.tap('escape')
-    game.until('game_state', 'STATE_TITLE', 10)
-    check(not game.shows('START OVER?') and game.shows('NEW GAME'), 'Esc is No')
-    game.tap('space')  # NEW GAME, picked after Esc
-    game.until('game_state', 'STATE_CONFIRM', 10)
+    check(not game.shows('DELETE SAVE?') and title.picked() == 'DELETE SAVE', 'Esc is No')
+    game.tap('space')  # DELETE SAVE, picked after Esc
+    check(asked(), 'it asks again')
     game.tap('space')  # NO, picked first
-    game.until('game_state', 'STATE_TITLE', 10)
-    check(read_save(folder)[:3] == (left, 0, (1,) + NO_RANKS[1:]), 'No leaves the save')
-    game.tap('space')  # NEW GAME, picked after No
-    game.until('game_state', 'STATE_CONFIRM', 10)
+    check(not game.shows('DELETE SAVE?') and title.picked() == 'DELETE SAVE', 'No goes back to the panels')
+    check(read_save(folder)[:3] == (left, 0, (1,) + NO_RANKS[1:]), 'and No keeps the save')
+
+    # Yes deletes it, and the title turns into the one with none, with no
+    # game started: the panels come back, then the progress panel goes, then
+    # the menu's panel shrinks to Start Game, and the dwarf comes in.
+    game.tap('space')  # DELETE SAVE, picked after No
     game.tap('up')     # YES
+    game.cmd('press space')
+    game.wait('deleted', 10)
+    game.cmd('release space')
+    check(read_save(folder) is None, 'Yes deletes the save')
+    game.run(2)
+    check(not game.shows('DELETE SAVE?') and title.saved() and not title.greeting(),
+          'and the panels come back as they were')
+    steps = []
+    for _ in range(game.sym['SHRUNK_STEPS'] + 30):
+        on = game.on_panels
+        now = (on('PROGRESS'), on('CONTINUE GAME'), on('START GAME'))
+        if not steps or steps[-1] != now:
+            steps.append(now)
+        game.run(1)
+    check(steps == [(True, True, False), (False, True, False), (False, False, True)],
+          f'then the progress goes, then the menu shrinks to Start Game: {steps}')
+    check(game.ram('game_state') == game.sym['STATE_TITLE'] and title.picked() == 'START GAME', 'and no game starts')
+    check(title.greeting() and game.shown('XRAM_CURSOR_SPRITES', 4) == 4,
+          'and the dwarf greets the player, with the cursor round Start Game')
+    check(game.ram('nuggets', 2) == 0 and game.ram('upgrade_ranks') == 0, 'and the game is a new one')
     game.tap('space')
     game.until('game_state', 'STATE_PLAY', 60)
     game.run(2)
-    check(read_save(folder) == NEW_GAME, 'Yes replaces the save with a new game')
-    check(game.ram('talk_state') != game.sym['TALK_OFF'], 'and the dwarf welcomes the player again')
-    check(game.ram('nuggets', 2) == 0 and game.ram('paddle_width') == game.ram('widths'),
-          'and starts over')
-    print('ok: New Game asked first, and Esc and No kept the save')
+    check(read_save(folder) == NEW_GAME, 'Start Game saves a new game')
+    check(game.ram('showing') == game.sym['TALK_WELCOME'] and game.ram('paddle_width') == game.ram('widths'),
+          'and starts over, with the welcome')
+    print('ok: Delete Save asked first, Esc and No kept the save, and Yes deleted it')
     game.close()
 
     # A save that isn't one is no save.
     open(os.path.join(folder, SAVE), 'wb').write(b'NOPE, not a save')
     game = Game()
     game.boot()
-    check(Title(game).resume_off(), 'a bad save file is no save')
+    game.run(5)
+    check(not Title(game).saved(), 'a bad save file is no save')
     game.close()
     print('ok: a bad save is ignored')
 

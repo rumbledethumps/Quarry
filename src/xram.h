@@ -10,6 +10,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <title_panels.h>
 
 /* Keyboard, from the RIA datasheet. */
 
@@ -484,6 +485,7 @@ typedef struct
 typedef MODE2_TILE(8, 8) panel_tile_t;
 typedef MODE2_TILE(4, 8) cart_tile_t;
 typedef MODE2_TILE(4, 8) menu_tile_t;
+typedef MODE2_TILE(4, 8) title_tile_t;
 typedef MODE2_TILE(2, 8) bubble_tile_t;
 typedef MODE5_CUSTOM_IMAGE(2, 24, 8) brick_image_t;
 typedef MODE5_CUSTOM_IMAGE(2, CRACK_W, CRACK_H) crack_image_t;
@@ -706,9 +708,22 @@ typedef struct
     uint8_t bubble_map[BUBBLE_ROWS][BUBBLE_COLS];
 } talk_t;
 
+/* The title's own art: the logo, then its panels, from
+   art/title_panels.py, as ROM:title_panels holds them: their palette and
+   tiles, and maps of the tiles on plane 1, each TITLE_COLS by TITLE_ROWS
+   cells under the logo, of the panels as each screen of the title shows
+   them. The layer shows one at a time. */
+typedef struct
+{
+    logo_image_t logo_images[3];
+    uint16_t panel_palette[16];
+    title_tile_t panel_tiles[TITLE_TILES];
+    uint8_t panel_maps[TITLE_MAPS][TITLE_ROWS][TITLE_COLS];
+} title_art_t;
+
 /* The art of the title and of a level: the texture and a curtain set, the
-   level's sled, then the title's logo or, in its place, the level's own
-   art. Each screen loads its own when it starts. */
+   level's sled, then the title's own art or, in its place, the level's.
+   Each screen loads its own when it starts. */
 typedef struct
 {
     uint8_t texture[TEXTURE_H][TEXTURE_W / 4];
@@ -716,8 +731,8 @@ typedef struct
     uint8_t sled_images[SLED_SLOT]; /* the sled of a level */
     union
     {
-        logo_image_t logo_images[3]; /* the title's logo */
-        level_art_t level;           /* a level's own */
+        title_art_t title;
+        level_art_t level; /* a level's own */
     };
 } cave_art_t;
 
@@ -730,7 +745,7 @@ typedef struct
     mode3_config_t texture_config;
     mode2_config_t menu_config;
     mode2_config_t talk_config; /* the bubble, on plane 2 in the menus' place */
-    mode2_config_t panel_config;
+    mode2_config_t panel_config; /* the upgrade screen's panels, or the title's */
     mode2_config_t cart_config;
     palettes_t palettes;
     scenery_t scenery;
@@ -883,13 +898,19 @@ typedef struct
 #define XRAM_METER_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.meter)
 #define XRAM_GLASS_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.glass)
 #define XRAM_LEVEL_SLED offsetof(xram_layout_t, art.cave.sled_images)
-#define XRAM_LOGO_IMAGES offsetof(xram_layout_t, art.cave.logo_images)
+#define XRAM_LOGO_IMAGES offsetof(xram_layout_t, art.cave.title.logo_images)
+#define XRAM_TITLE_PALETTE offsetof(xram_layout_t, art.cave.title.panel_palette)
+#define XRAM_TITLE_TILES offsetof(xram_layout_t, art.cave.title.panel_tiles)
+#define XRAM_TITLE_MAPS offsetof(xram_layout_t, art.cave.title.panel_maps)
+#define XRAM_TITLE_MAP(map) (XRAM_TITLE_MAPS + (map) * TITLE_ROWS * TITLE_COLS)
 
 MODE5_PALETTE_CHECK(palettes_t);
 
 #define PALETTES_BYTES sizeof(palettes_t) /* for tests/assets.py */
 
 PSG_PAGE_CHECK(XRAM_PSG);
+
+_Static_assert(sizeof(xram_layout_t) <= 0x10000, "XRAM holds 64 KB.");
 
 /* video_init() hides every sprite from XRAM_SCENERY up to XRAM_MENU_MAP, and
    plane 0 draws the scenery and the bricks as one list. A level's plane 1

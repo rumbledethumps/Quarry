@@ -13,7 +13,7 @@
    when the screen starts. The upgrade screen has its backdrop, its panels
    and carts, and slots for the pictures of the panels near the middle,
    which load as the panels come near. The title has a texture, a curtain
-   set and the logo, and a level a texture, a curtain set, a frame set,
+   set, the logo and its panels, and a level a texture, a curtain set, a frame set,
    the cracks and the chunks of its bricks, the fittings and the fuel of
    the energy gauge, and its own sled. The texture,
    the curtain set and the frame set are picked at random only when the
@@ -45,7 +45,8 @@ _Static_assert(CURTAIN_SETS <= 9 && TEXTURES <= 9 && FRAME_SETS <= 9, "An asset'
 #define PANELS_BYTES (PANEL_ART_BYTES + PANEL_LAYOUTS * PANEL_FRAME_BYTES)
 #define CARTS_BYTES (XRAM_CART_TILES + CART_TILES * sizeof(cart_tile_t) - XRAM_CART_PALETTE)
 #define MENUS_BYTES (XRAM_MENU_TILES + MENU_TILES * sizeof(menu_tile_t) - XRAM_MENU_PALETTE)
-#define LOGO_BYTES sizeof(((xram_layout_t *)0)->art.cave.logo_images)
+#define LOGO_BYTES sizeof(((xram_layout_t *)0)->art.cave.title.logo_images)
+#define TITLE_PANELS_BYTES (XRAM_TITLE_MAP(TITLE_MAPS) - XRAM_TITLE_PALETTE)
 #define TEXTURE_BYTES sizeof(((xram_layout_t *)0)->art.cave.texture)
 #define CURTAIN_PALETTE_BYTES sizeof(((palettes_t *)0)->curtain)
 #define CURTAIN_SET_BYTES (2 * CURTAIN_PALETTE_BYTES + 4 * sizeof(uint16_t) + 2 * CURTAIN_BYTES)
@@ -220,16 +221,32 @@ static void cave(void)
     xreg_vga_mode3(MODE3_2BPP, XRAM_TEXTURE_CONFIG, 0);
 }
 
-/* The title: a cave, if it comes from another screen, and the logo. */
-void scene_title(void)
+/* The title: a cave, if it comes from another screen, the logo, and its
+   panels, on plane 1 from scanline y, off the screen to the right until the
+   title puts them in their place. */
+void scene_title(int16_t y)
 {
+    mode2_config_t config;
+
     if (scene_change(SCENE_TITLE))
     {
         video_start(0);
         cave();
     }
     load("ROM:logo", 0, XRAM_LOGO_IMAGES, LOGO_BYTES);
+    load("ROM:title_panels", 0, XRAM_TITLE_PALETTE, TITLE_PANELS_BYTES);
+    memset(&config, 0, sizeof config);
+    config.x_pos_px = SCREEN_W;
+    config.y_pos_px = y;
+    config.width_tiles = TITLE_COLS;
+    config.height_tiles = TITLE_ROWS;
+    config.xram_data_ptr = XRAM_TITLE_MAP(0);
+    config.xram_palette_ptr = XRAM_TITLE_PALETTE;
+    config.xram_tile_ptr = XRAM_TITLE_TILES;
+    xram0_write(XRAM_PANEL_CONFIG, &config, sizeof config);
+    xreg_vga_mode2(MODE2_4BPP | MODE2_8X8, XRAM_PANEL_CONFIG, 1, y, y + TITLE_ROWS * 8);
 }
+
 
 /* A level: a cave, its frame set, the cracks and chunks of its bricks and
    the gauge's fittings and fuel, if it comes from another screen, and the sled of a rank of the width

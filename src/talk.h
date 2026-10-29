@@ -18,5 +18,6 @@ void talk_once(uint8_t talk);
 uint8_t talk_busy(void);
 uint8_t talk_step(void);
 void talk_draw(void);
+void talk_stop(void);
 
 #endif

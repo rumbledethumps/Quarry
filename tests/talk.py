@@ -34,7 +34,7 @@ def main():
     sym = game.sym
     shot = os.path.join(tempfile.mkdtemp(), 'talk.png')
     game.boot()
-    game.tap('space')  # NEW GAME
+    game.tap('space')  # START GAME
     game.until('game_state', 'STATE_PLAY')
     game.until('talk_state', 'TALK_IN', 10)
 
@@ -196,9 +196,10 @@ def main():
     game.tap('space')  # YES, return to the title
     game.until('game_state', 'STATE_TITLE', 60)
     game.run(5)
-    shift_number(sym['TALKS'])
-    check(game.ram('game_state') == sym['STATE_TITLE'] and game.shows('NEW GAME') and game.shows('PROGRESS'),
-          f'and Shift and {sym["TALKS"]} the last talk on the title, which comes back after')
+    shift_number(sym['TALK_UPGRADES'])
+    check(game.ram('game_state') == sym['STATE_TITLE'] and game.on_panels('CONTINUE GAME')
+          and game.on_panels('PROGRESS'),
+          f'and Shift and {sym["TALK_UPGRADES"]} a talk on the title, which comes back after')
     print('ok: Shift and a number brings in a talk')
     print('PASS')
 

@@ -14,9 +14,11 @@
    the OK shows, with the cursor round it, and the button sends them back
    the way they came. While he talks the screen under him takes no input,
    and the cursor is off until the OK shows, and off again when it is
-   pressed. More can wait their turn, each coming in as the last goes. He
-   and his bubble are in the menus' place, so the menus' tiles load again
-   once the last has gone. */
+   pressed. More can wait their turn, each coming in as the last goes. A
+   talk of TALK_STAYS has no OK: he stays, and the screen under him keeps
+   the input and the cursor, until another talk takes his place or the
+   screen goes. He and his bubble are in the menus' place, so the menus'
+   tiles load again once the last has gone. */
 
 #define QUEUE 4
 #define IN_STEPS 18
@@ -38,6 +40,7 @@ static const uint16_t going[OUT_STEPS + 1] = {0, 2, 7, 16, 28, 44, 64, 87, 114, 
 uint8_t talk_state;
 static uint8_t queue[QUEUE], queued;
 static uint8_t showing; /* the talk up, while talk_state isn't TALK_OFF */
+static uint8_t stays;   /* whether it is of TALK_STAYS */
 static uint8_t once;    /* a bit for each talk waiting or up that talk_once() asked for */
 static uint8_t steps;
 static uint16_t away; /* as in coming and going */
@@ -80,16 +83,21 @@ uint8_t talk_busy(void)
     return talk_state != TALK_OFF || queued;
 }
 
-/* The next talk comes in from off the screen. The cursor goes, and the
-   bubble takes the menus' place on plane 2, off the screen, before its
-   art loads over the menus'. */
+/* The next talk comes in from off the screen. The cursor goes, but for
+   one that stays, and the bubble takes the menus' place on plane 2, off
+   the screen, before its art loads over the menus'. */
 static void talk_start(void)
 {
     mode2_config_t config;
     uint8_t i;
 
-    cursor_hide();
-    menu_close(); /* he takes the menus' place, so any menu goes */
+    showing = queue[0];
+    stays = TALK_STAYS >> (showing - 1) & 1;
+    if (!stays)
+    {
+        cursor_hide();
+        menu_close(); /* he takes the menus' place, so any menu goes */
+    }
     config.x_wrap = false;
     config.y_wrap = false;
     config.x_pos_px = SCREEN_W;
@@ -101,7 +109,6 @@ static void talk_start(void)
     config.xram_tile_ptr = XRAM_BUBBLE_TILES;
     xram0_write(XRAM_TALK_CONFIG, &config, sizeof config);
     video_talk();
-    showing = queue[0];
     scene_talk(showing);
     DEBUG_LOG("talk %u\n", showing);
     for (i = 1; i < queued; i++)
@@ -135,8 +142,8 @@ static void talk_end(void)
     DEBUG_LOG("talk over\n");
 }
 
-/* Returns whether a dwarf is talking, which takes the input from the
-   screen under him. */
+/* Returns whether a dwarf is talking and takes the input from the screen
+   under him, which one that stays doesn't. */
 uint8_t talk_step(void)
 {
     switch (talk_state)
@@ -155,7 +162,15 @@ uint8_t talk_step(void)
         }
         break;
     case TALK_WAIT:
-        if (++steps == OK_STEPS)
+        if (stays)
+        {
+            if (queued)
+            {
+                talk_state = TALK_OUT;
+                steps = 0;
+            }
+        }
+        else if (++steps == OK_STEPS)
         {
             /* The cursor goes round the OK's letters, 14 px across and 7
                down from a pixel into its cells, 4 px clear of them all
@@ -194,7 +209,16 @@ uint8_t talk_step(void)
             away = going[++steps];
         break;
     }
-    return 1;
+    return !stays;
+}
+
+/* The talk up goes at once, with the screen it was on, and none waits. */
+void talk_stop(void)
+{
+    queued = 0;
+    once = 0;
+    if (talk_state != TALK_OFF)
+        talk_end();
 }
 
 /* At the start of a frame: the dwarf and his bubble where they got to. */

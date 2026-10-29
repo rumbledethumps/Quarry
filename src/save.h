@@ -13,5 +13,6 @@ uint8_t save_levels_open(void);
 uint8_t save_load(void);
 void save_write(void);
 void save_new_game(void);
+void save_delete(void);
 
 #endif

@@ -159,9 +159,9 @@ void video_rule(uint8_t left, uint8_t right, uint8_t row)
     xram0_set(XRAM_MENU_MAP + row * TEXT_COLS + left, MENU_TILE_RULE, right - left + 1);
 }
 
-/* A dark box in cells from left, top to right, bottom: framed in caution
-   tape and steel, or BOX_PLAIN, without. */
-void video_box(uint8_t left, uint8_t top, uint8_t right, uint8_t bottom, uint8_t frame)
+/* A dark box in cells from left, top to right, bottom, framed in caution
+   tape and steel. */
+void video_box(uint8_t left, uint8_t top, uint8_t right, uint8_t bottom)
 {
     uint8_t cells[TEXT_COLS];
     uint8_t row, col, n = right - left + 1;
@@ -176,7 +176,7 @@ void video_box(uint8_t left, uint8_t top, uint8_t right, uint8_t bottom, uint8_t
             uint8_t edge_col = col == 0 ? 0 : col == n - 1 ? 2 : 1;
             static const uint8_t pieces[3][3] = {{0, 4, 1}, {6, 0xFF, 7}, {2, 5, 3}};
             uint8_t piece = pieces[edge_row][edge_col];
-            cells[col] = frame == BOX_PLAIN || piece == 0xFF ? MENU_TILE_GLYPH : MENU_TILE_FRAME + piece;
+            cells[col] = piece == 0xFF ? MENU_TILE_GLYPH : MENU_TILE_FRAME + piece;
         }
         xram0_write(XRAM_MENU_MAP + row * TEXT_COLS + left, cells, n);
     }

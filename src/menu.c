@@ -22,9 +22,20 @@ static uint8_t disabled_items; /* a bit for each item left off */
 static uint8_t waiting;        /* steps before it takes a choice */
 static uint8_t tape_steps;
 
+static uint8_t first_row(const menu_t *menu)
+{
+    return menu->top + (menu->title ? HEAD_ROWS : 1);
+}
+
 static uint8_t first_item_row(void)
 {
-    return shown->top + (shown->title ? HEAD_ROWS : 1);
+    return first_row(shown);
+}
+
+/* The row of the text of item, from 0, of a menu with none left off. */
+uint8_t menu_item_row(const menu_t *menu, uint8_t item)
+{
+    return first_row(menu) + item * ITEM_ROWS + 1;
 }
 
 /* Where item i is among the items shown. */
@@ -76,7 +87,8 @@ static void pick_step(int8_t step)
    that can be picked. disabled has a bit for each item that can't be,
    which the menu leaves off. It waits wait steps before it takes a choice,
    so a press meant for what came before doesn't choose. The cursor comes
-   to it: it slides there if it shows already, or appears there. */
+   to it: it slides there if it shows already, or appears there. A menu of
+   BOX_NONE draws nothing. */
 void menu_open(const menu_t *menu, uint8_t pick, uint8_t disabled, uint8_t wait)
 {
     uint8_t i;
@@ -86,16 +98,19 @@ void menu_open(const menu_t *menu, uint8_t pick, uint8_t disabled, uint8_t wait)
     picked = pick;
     if (disabled & (1 << pick))
         pick_step(1);
-    video_box(menu->center - MENU_COLS / 2, menu->top, menu->center + MENU_COLS / 2 - 1, bottom(), menu->frame);
-    if (menu->title)
+    if (menu->frame != BOX_NONE)
     {
-        video_text(menu->center - strlen(menu->title) / 2, menu->top + 2, menu->title);
-        video_rule(menu->center - MENU_COLS / 2 + 2, menu->center + MENU_COLS / 2 - 3, menu->top + 3);
+        video_box(menu->center - MENU_COLS / 2, menu->top, menu->center + MENU_COLS / 2 - 1, bottom());
+        if (menu->title)
+        {
+            video_text(menu->center - strlen(menu->title) / 2, menu->top + 2, menu->title);
+            video_rule(menu->center - MENU_COLS / 2 + 2, menu->center + MENU_COLS / 2 - 3, menu->top + 3);
+        }
+        for (i = 0; i < menu->count; i++)
+            if (!(disabled & (1 << i)))
+                video_text(menu->center - strlen(menu->items[i]) / 2,
+                           first_item_row() + place(i) * ITEM_ROWS + 1, menu->items[i]);
     }
-    for (i = 0; i < menu->count; i++)
-        if (!(disabled & (1 << i)))
-            video_text(menu->center - strlen(menu->items[i]) / 2, first_item_row() + place(i) * ITEM_ROWS + 1,
-                       menu->items[i]);
     cursor_aim();
     waiting = wait;
     DEBUG_LOG("menu %s\n", menu->items[0]);
@@ -114,7 +129,7 @@ void menu_clear(void)
    cursor stays, for whatever is picked next. */
 void menu_close(void)
 {
-    if (shown)
+    if (shown && shown->frame != BOX_NONE)
         video_clear(shown->center - MENU_COLS / 2, shown->top, shown->center + MENU_COLS / 2 - 1, bottom());
     shown = 0;
 }

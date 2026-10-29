@@ -92,6 +92,19 @@ add_custom_command(
     VERBATIM
 )
 
+# The panels of the title, from art/panel-frame.png in 16 colors, and the
+# menus' font, and title_panels.h, which gives the tile numbers and the
+# maps. art/title_panels.py also writes title_panels.png to look at.
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/title_panels.bin ${CMAKE_CURRENT_BINARY_DIR}/title_panels.h
+    COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/art/title_panels.py ${CMAKE_CURRENT_BINARY_DIR}/title_panels.bin
+        ${CMAKE_CURRENT_BINARY_DIR}/title_panels.h --preview ${CMAKE_CURRENT_BINARY_DIR}/title_panels.png
+    DEPENDS art/title_panels.py art/panels.py art/menus.py art/panel_font.py art/curtain.py art/rd2png.py
+        art/panel-frame.png
+    VERBATIM
+)
+
 # The backdrop of the upgrade screen, from art/backdrop.png, in three bands,
 # and backdrop.h, which gives their sizes. art/backdrop.py also writes
 # backdrop.png to look at. It reads PANEL_Y in src/xram.h and the panels'
@@ -132,7 +145,7 @@ add_custom_command(
 # each as ROM:talk1 and on, and talks.h, which numbers them. There are
 # QUARRY_TALKS of them, as art/talk.py lists them, and talk.png is the
 # first, to look at.
-set(QUARRY_TALKS 4)
+set(QUARRY_TALKS 5)
 set(QUARRY_TALK_BINS)
 foreach(n RANGE 1 ${QUARRY_TALKS})
     list(APPEND QUARRY_TALK_BINS ${CMAKE_CURRENT_BINARY_DIR}/talk${n}.bin)
@@ -207,6 +220,7 @@ rp6502_asset(quarry chunks ${CMAKE_CURRENT_BINARY_DIR}/chunks.bin)
 rp6502_asset(quarry gauge ${CMAKE_CURRENT_BINARY_DIR}/gauge.bin)
 rp6502_asset(quarry levels ${CMAKE_CURRENT_BINARY_DIR}/levels.bin)
 rp6502_asset(quarry panels ${CMAKE_CURRENT_BINARY_DIR}/panels.bin)
+rp6502_asset(quarry title_panels ${CMAKE_CURRENT_BINARY_DIR}/title_panels.bin)
 rp6502_asset(quarry carts ${CMAKE_CURRENT_BINARY_DIR}/carts.bin)
 rp6502_asset(quarry menus ${CMAKE_CURRENT_BINARY_DIR}/menus.bin)
 foreach(n RANGE 1 ${QUARRY_TALKS})
@@ -249,6 +263,7 @@ target_sources(quarry PRIVATE
     src/video.c
     ${CMAKE_CURRENT_BINARY_DIR}/backdrop.h
     ${CMAKE_CURRENT_BINARY_DIR}/panels.h
+    ${CMAKE_CURRENT_BINARY_DIR}/title_panels.h
     ${CMAKE_CURRENT_BINARY_DIR}/carts.h
     ${CMAKE_CURRENT_BINARY_DIR}/menus.h
     ${CMAKE_CURRENT_BINARY_DIR}/talks.h
