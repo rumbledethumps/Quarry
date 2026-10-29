@@ -623,11 +623,10 @@ size.
    style draws the pixels, so the prompt never says "pixel art". For a
    single piece, give a plain background, such as "on a plain black
    background", and remove it with `remove_bg`.
-3. Pass references: whole images from `ref/`, as they are, never cut
-   down: `ref/rock-crop.png` for stone, `ref/sled-kit.png` for
-   industrial, and the others of [The Reference Images](#the-reference-images)
-   for what they show. Pass them as RGB PNGs: the API refused the indexed
-   `art/logo.png`.
+3. Pass references from `ref/`: `ref/rock-crop.png` for stone,
+   `ref/sled-kit.png` for industrial, and the others of
+   [The Reference Images](#the-reference-images) for what they show. Pass
+   them as RGB PNGs: the API refused the indexed `art/logo.png`.
 4. Reduce the colors to 15 with Retro Diffusion's `color_reducer`, which
    is free, or map them onto a row with its `palette_converter`.
 5. Convert it with `art/rd2png.py`:
