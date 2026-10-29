@@ -9,8 +9,9 @@
    Outside the posts are the curtains, the rock of a curtain set. Behind
    the ball are a knee brace in each top corner, in the frame set's colors
    darkened, and a machine on the right wall, in the shade palette, the
-   sled's colors darker, so they stay in the background. Each piece is
-   drawn for the left side, and MODE5_HFLIP turns it for the right. */
+   sled's colors darker, so they stay in the background, but for the
+   meter through its window, which src/energy.c sets. Each piece is drawn
+   for the left side, and MODE5_HFLIP turns it for the right. */
 
 #define SCENERY(field, i) (XRAM_SCENERY + offsetof(scenery_t, field) + (i) * sizeof(mode5_csprite_t))
 
@@ -22,11 +23,25 @@ static const uint8_t curtain_rows[] = {64, 64, 64, 48};
 #define CURTAIN_UNDER 6
 
 /* The machine hangs this far down the right wall. Its lamp is the red of
-   the shade palette, which the game lights. */
+   the shade palette, which the game lights. Its meter is behind its
+   window, which is in the middle, so the same either way round. */
 #define MACHINE_Y 140
 #define LAMP_COLOR 7
 #define LAMP_OFF COLOR_FROM_RGBA(92, 32, 13, 255) /* the red of the shade row */
 #define LAMP_ON COLOR_FROM_RGBA(255, 64, 32, 255)
+#define METER_X 6
+#define METER_Y 10
+
+/* The meter's paddle and its shade in each of its colors, from
+   METER_GREEN. */
+#define PADDLE_GREEN COLOR_FROM_RGBA(64, 176, 72, 255)
+#define PADDLE_YELLOW COLOR_FROM_RGBA(248, 200, 48, 255)
+#define PADDLE_RED COLOR_FROM_RGBA(224, 56, 40, 255)
+static const uint16_t paddle_colors[][2] = {
+    {PADDLE_GREEN, COLOR_FROM_RGBA(32, 112, 48, 255)},
+    {PADDLE_YELLOW, COLOR_FROM_RGBA(184, 128, 24, 255)},
+    {PADDLE_RED, COLOR_FROM_RGBA(144, 28, 24, 255)},
+};
 
 _Static_assert(sizeof curtain_cols * sizeof curtain_rows == CURTAIN_TILES, "CURTAIN_TILES is wrong.");
 
@@ -133,6 +148,8 @@ void frame_start(int16_t left, int16_t right)
           left, BEAM_H, 0);
     piece(SCENERY(braces, 1), XRAM_BRACE_IMAGE, XRAM_FRAME_SHADE, MODE5_SIZE(BRACE_SIZE, BRACE_SIZE),
           right - BRACE_SIZE, BEAM_H, 1);
+    piece(SCENERY(meter, 0), XRAM_METER_IMAGES, XRAM_PALETTE_FITTING, MODE5_SIZE(METER_W, METER_H),
+          right - MACHINE_W + METER_X, MACHINE_Y + METER_Y, 0);
     piece(SCENERY(machine, 0), XRAM_MACHINE_IMAGE, XRAM_PALETTE_SHADE, MODE5_SIZE(MACHINE_W, MACHINE_H),
           right - MACHINE_W, MACHINE_Y, 1);
     frame_curtains(left - shows + CURTAIN_UNDER, right + shows - CURTAIN_UNDER);
@@ -162,4 +179,14 @@ void frame_start(int16_t left, int16_t right)
 void frame_lamp(uint8_t on)
 {
     xram0_poke16(XRAM_PALETTE_SHADE + LAMP_COLOR * sizeof(uint16_t), on ? LAMP_ON : LAMP_OFF);
+}
+
+/* The machine's meter with its paddle at frame, from 0, down, to
+   METER_FRAMES - 1, up, in color, from METER_GREEN. */
+void frame_meter(uint8_t frame, uint8_t color)
+{
+    xram0_poke16(XRAM_METER_SPRITE + offsetof(mode5_csprite_t, xram_sprite_ptr),
+                 XRAM_METER_IMAGES + frame * METER_IMAGE_BYTES);
+    xram0_poke16(XRAM_PALETTE_FITTING + METER_PADDLE * sizeof(uint16_t), paddle_colors[color][0]);
+    xram0_poke16(XRAM_PALETTE_FITTING + METER_SHADE * sizeof(uint16_t), paddle_colors[color][1]);
 }

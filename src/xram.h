@@ -448,6 +448,19 @@ typedef struct
 #define BUBBLES 3 /* rising through the fuel at once, a sprite each */
 #define BUBBLE_SIZE 4
 
+/* The machine on the right wall shows how the fuel stands through a
+   window, as an old parking meter does: a white face METER_W by METER_H,
+   behind the machine, and a paddle on it, green, yellow or red, which
+   flips down and comes up again in its new color as the fuel falls. Its
+   METER_FRAMES go from the paddle down to the paddle up. The paddle is
+   the fitting palette's METER_PADDLE and METER_SHADE, which the game
+   sets. */
+#define METER_W 12
+#define METER_H 8
+#define METER_FRAMES 4
+#define METER_PADDLE 12
+#define METER_SHADE 13
+
 /* Pieces of the old energy bar, in the order of art/energy.png, the
    upgrade screen's stand-in picture of the gauge. */
 #define ENERGY_TOP 0
@@ -489,6 +502,8 @@ typedef MODE5_CUSTOM_IMAGE(4, GAUGE_W, FITTING_H) fitting_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, GLASS_W, LIQUID_H) liquid_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, GLASS_W, GLASS_H) glass_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, BUBBLE_SIZE, BUBBLE_SIZE) bubble_image_t;
+typedef MODE5_CUSTOM_IMAGE(4, METER_W, METER_H) meter_image_t;
+#define METER_IMAGE_BYTES sizeof(meter_image_t)
 typedef MODE5_CUSTOM_IMAGE(4, 64, 64) logo_image_t; /* a third of art/logo.png */
 typedef MODE5_CUSTOM_IMAGE(4, POST_W, POST_H) post_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, BEAM_W, BEAM_H) beam_image_t;
@@ -511,7 +526,7 @@ typedef struct
     uint16_t shade[16];   /* the sled row at half, for the machine and a dim sled */
     uint16_t holo[16];    /* the cursor of the upgrade screen and the menus, which shimmers */
     uint16_t liquid[16];  /* the fuel in the gauge's sight glass */
-    uint16_t fitting[16]; /* the gauge's fittings */
+    uint16_t fitting[16]; /* the gauge's fittings, and the meter's face and paddle */
     uint16_t glass[16];   /* the curtain row seen through the glass, loaded with each curtain set */
 } palettes_t;
 
@@ -520,6 +535,7 @@ typedef struct
 typedef struct
 {
     mode5_csprite_t braces[2];
+    mode5_csprite_t meter; /* behind the machine's window */
     mode5_csprite_t machine;
     mode5_csprite_t curtains[2][CURTAIN_TILES];
     mode5_csprite_t posts[2][POST_SPRITES];
@@ -630,7 +646,8 @@ typedef struct
 } frame_set_t;
 
 /* The energy gauge's images: the fitting, the fuel, a bubble and its
-   drop, as ROM:gauge holds them, then the glass, made for each level. */
+   drop, and the meter's frames, as ROM:gauge holds them, then the glass,
+   made for each level. */
 typedef struct
 {
     fitting_image_t fitting; /* the top one, and turned over, the bottom */
@@ -638,6 +655,7 @@ typedef struct
     liquid_image_t surface;
     bubble_image_t bubble;
     bubble_image_t drop; /* that a bubble throws up as it pops */
+    meter_image_t meter[METER_FRAMES];
     glass_image_t glass;
 } gauge_art_t;
 
@@ -775,6 +793,7 @@ typedef struct
 #define XRAM_PALETTE_GLASS offsetof(xram_layout_t, palettes.glass)
 #define XRAM_SCENERY offsetof(xram_layout_t, scenery)
 #define XRAM_BRACE_SPRITES offsetof(xram_layout_t, scenery.braces)
+#define XRAM_METER_SPRITE offsetof(xram_layout_t, scenery.meter)
 #define XRAM_MACHINE_SPRITE offsetof(xram_layout_t, scenery.machine)
 #define XRAM_CURTAIN_SPRITES offsetof(xram_layout_t, scenery.curtains)
 #define XRAM_POST_SPRITES offsetof(xram_layout_t, scenery.posts)
@@ -863,6 +882,7 @@ typedef struct
 #define XRAM_SURFACE_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.surface)
 #define XRAM_BUBBLE_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.bubble)
 #define XRAM_DROP_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.drop)
+#define XRAM_METER_IMAGES offsetof(xram_layout_t, art.cave.level.gauge.meter)
 #define XRAM_GLASS_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.glass)
 #define XRAM_LEVEL_SLED offsetof(xram_layout_t, art.cave.sled_images)
 #define XRAM_LOGO_IMAGES offsetof(xram_layout_t, art.cave.logo_images)

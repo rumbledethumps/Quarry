@@ -8,7 +8,8 @@ art/cursor.png. Run it after a change to the drawing here, then touch up
 any of them by hand. The frame of the playfield comes from art/frames.py.
 
 The machine is drawn for the left wall, stands behind the ball, and the
-right wall shows it with MODE5_HFLIP. The digits are 6x8 with a 1 px
+right wall shows it with MODE5_HFLIP. Its window is clear, for the meter
+behind it, which art/gauge.py draws. The digits are 6x8 with a 1 px
 outline, in 8x12 sprites. The old energy bar is now only the upgrade
 screen's stand-in picture of the gauge, whose sight glass is
 art/gauge.py's.
@@ -46,7 +47,10 @@ def machine():
     for x in range(4, 20, 4):
         rows[4][x] = OUT  # the hazard marks on its lid
         rows[5][x + 1] = OUT
-    for y in range(12, 26, 2):
+    for y in range(9, 19):
+        for x in range(5, 19):
+            rows[y][x] = OUT if y in (9, 18) or x in (5, 18) else 0  # the meter's window
+    for y in range(20, 26, 2):
         for x in range(6, 18):
             rows[y][x] = G0  # its vents
     for y in range(29, 34):

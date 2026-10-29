@@ -6,8 +6,9 @@
 Needs a Debug ROM, which logs the game's events. The energy is poked low
 to skip ahead, and the ball poked over the sled to make it bounce. Reads
 the fuel in the gauge, its bubbles, the jets and the tilt of the falling
-sled from their sprites, the glass from its image, and the smoke from
-screenshots. Exits 0 when every check passes.
+sled from their sprites, the glass from its image, the meter from its
+sprite and its paddle's color, and the smoke from screenshots. Exits 0
+when every check passes.
 """
 
 import os
@@ -136,6 +137,32 @@ def check_bubbles(game):
     print(f'ok: {sym["BUBBLES"]} bubbles at most, each up to the surface, where it throws up a drop')
 
 
+def meter(game):
+    """How far up the meter's paddle is, from 0, down, by its sprite's
+    image, and its color."""
+    sym = game.sym
+    image = game.sprites('XRAM_METER_SPRITE', 1)[0][2]
+    color = game.xram(sym['XRAM_PALETTE_FITTING'] + 2 * sym['METER_PADDLE'], 2)
+    return (image - sym['XRAM_METER_IMAGES']) // sym['METER_IMAGE_BYTES'], int.from_bytes(color, 'little')
+
+
+def check_meter(game, color, message):
+    """The meter's paddle, on its way down from up, flips down a frame at a
+    time, and comes up again in the color, as PADDLE_ names it in
+    src/frame.c. The poke that set it off took some steps, so it may be
+    part way down."""
+    sym = game.sym
+    up, was = sym['METER_FRAMES'] - 1, meter(game)[1]
+    want = sym[f'PADDLE_{color}']
+    seen = [meter(game)]
+    for _ in range(2 * sym['METER_FRAMES'] * sym['METER_STEPS']):
+        game.run()
+        if meter(game) != seen[-1]:
+            seen.append(meter(game))
+    flip = [(f, was) for f in range(up, -1, -1)] + [(f, want) for f in range(up + 1)]
+    check(seen[0] in flip[:up + 1] and seen == flip[flip.index(seen[0]):], f'{message}: {seen}')
+
+
 def smoke_pixels(game, shot, x0, x1, y0, y1):
     rows = game.screen(shot)
     return sum(1 for y in range(y0, y1) for x in range(x0, x1)
@@ -153,7 +180,9 @@ def main():
     check(full == sym['TUNE_ENERGY'], 'the energy starts full')
     check(fuel(game) == sym['GLASS_H'], 'the gauge starts full')
     check_glass(game)
-    print('ok: a full gauge, its glass the rock behind it')
+    up = sym['METER_FRAMES'] - 1
+    check(meter(game) == (up, sym['PADDLE_GREEN']), f"the meter's paddle has flipped up green: {meter(game)}")
+    print('ok: a full gauge, its glass the rock behind it, and the meter green')
     x, y = game.px('paddle_x'), game.px('paddle_y')
     pieces, flames = 'XRAM_SLED_SPRITE', 'XRAM_JET_SPRITES'
     nozzle = sym['XRAM_JET_IMAGES'] + sym['JET_NOZZLE'] * sym['JET_IMAGE_BYTES']  # a jet with no flame
@@ -179,14 +208,22 @@ def main():
     print(f'drained {drained} in 60 steps after the launch')
     check_bubbles(game)
 
+    game.paused_poke([('energy', sym['TUNE_ENERGY_MID'], 2)])
+    check_meter(game, 'YELLOW', "at TUNE_ENERGY_MID, the meter's paddle flips down and up again yellow")
     low = sym['TUNE_ENERGY_LOW']
     game.paused_poke([('energy', low + 20, 2)])
     game.wait('energy low', 30)
     lamp_color = sym['XRAM_PALETTE_SHADE'] + 2 * sym['LAMP_COLOR']
     lamp = lambda: int.from_bytes(game.xram(lamp_color, 2), 'little')
     check(lamp() == sym['LAMP_ON'], "the machine's lamp lights with the warning")
-    game.run(sym['LAMP_STEPS'])
+    # The script's frames don't line up with the steps, so the wait can end
+    # a step after the beep.
+    game.run(sym['LAMP_STEPS'] - 2)
+    check(lamp() == sym['LAMP_ON'], f'and stays lit for {sym["LAMP_STEPS"]} steps')
+    game.run(2)
     check(lamp() == sym['LAMP_OFF'], 'and goes out after it')
+    check(meter(game) == (up, sym['PADDLE_RED']), f'by then the meter has turned red: {meter(game)}')
+    print('ok: the meter turns yellow, then red as the warning beeps and the lamp lights')
     rows = check_fuel(game, 'the gauge falls with the energy')
     print(f'low: {rows} rows of fuel')
 
@@ -245,6 +282,8 @@ def main():
     check(game.ram('energy_draining') == 0, 'it waits for the first launch again')
     check(game.ram('paddle_state') == sym['PADDLE_HOVER'], 'the paddle hovers again')
     check(fuel(game) == sym['GLASS_H'], 'the gauge is full again')
+    game.run(sym['METER_FRAMES'] * sym['METER_STEPS'])
+    check(meter(game) == (up, sym['PADDLE_GREEN']), f'and the meter green again: {meter(game)}')
 
     # Out of energy with the ball on the paddle: the ball goes down with it,
     # and launch does nothing.

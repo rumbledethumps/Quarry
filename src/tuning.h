@@ -9,11 +9,12 @@
 #define TUNE_BALLS 5          /* balls at the start of a level */
 #define TUNE_BALL_SPEED 640   /* 2.5 px per step */
 
-/* Energy. A full bar holds this many steps of thrust, and it drains from
-   the first launch of a level until the level ends. */
+/* Energy. A full gauge holds this many steps of thrust, and it drains
+   from the first launch of a level until the level ends. */
 #define TUNE_ENERGY 1440      /* 24 seconds */
 #define TUNE_ENERGY_DRAIN 1   /* per step */
-#define TUNE_ENERGY_LOW 288   /* the bar turns orange: the last 4.8 seconds */
+#define TUNE_ENERGY_MID 720   /* the meter's paddle turns yellow: the last 12 seconds */
+#define TUNE_ENERGY_LOW 288   /* it turns red, and the beeps start: the last 4.8 seconds */
 
 /* Out of energy: the flames sputter, then the paddle falls. */
 #define TUNE_SPUTTER_STEPS 45 /* how long the flames sputter */

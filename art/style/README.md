@@ -140,7 +140,10 @@ machines of the mine:
   set's own, so dark it is barely there, and nobody takes it for something
   to bounce off;
 - a machine bolted to the inside of the right wall. It is not explained.
-  It hints that it powers the energy gauge. Upgrades may add more machines
+  It hints that it powers the energy gauge. Where its top four louvers
+  were is a window, and through it, as in an old parking meter, a white
+  face and a paddle that flips up on it: green, yellow, and red when the
+  fuel is low. Its red lamp blinks with each beep. Upgrades may add more machines
   along the walls.
 
 ### Curtain Sets
@@ -250,7 +253,10 @@ Diffusion or by hand, and `art/frames.py` cuts it to the game's sizes.
   sets, such as the mine shaft frames of D1, D3 and D4.
 
 `art/screen.py` draws the machine, the digits, and the old energy bar, now
-only the upgrade screen's stand-in picture of the gauge.
+only the upgrade screen's stand-in picture of the gauge. The machine's
+window is clear, and its meter, a sprite behind it, is drawn by hand in
+`art/gauge.py`, in the fitting row, as it is too small for any diffusion
+model.
 The machine uses the shade row, so its brightness is set there, not in its
 picture. Run it after a change there, then touch up any piece by hand.
 
@@ -332,8 +338,8 @@ post clear of it.
   repeating a plain column, as the frames' posts are, and outlined in the
   sprites' navy. The bottom one is the top one turned over.
 - Still to come: more bubbles at other times, the fuel sloshing, and a
-  look for low fuel. The
-  beeps and the machine's lamp warn of it now.
+  look for low fuel. The beeps, the machine's lamp and its meter warn of
+  it now.
 - The Oracle, `ref/oracle.png`, was the design before: a steel scale with
   a cursor riding it, a sight glass in the cursor and a clockwork chevron.
   It is parked, as no model could draw its cursor at its size.
@@ -578,7 +584,7 @@ darkest first. Each class of art gets a row of its own:
 | shade | the sled row at half, for the machine behind the ball and a dim sled |
 | holo | the holographic cursor of the upgrade screen and the menus, whose colors shimmer |
 | liquid | the fuel in the energy gauge |
-| fitting | the gauge's fittings, the backdrop's colors of its pipe |
+| fitting | the gauge's fittings, the backdrop's colors of its pipe, then the meter's face and its shadow, and its paddle and the paddle's shade, which the game sets green, yellow or red |
 | glass | the curtain row through the gauge's glass, and its outline and glint, loaded with each curtain set |
 
 The upgrade panels have a palette of their own, 256 colors, outside these rows, since they are a tile layer, and so do the menus, 16 colors. Each frame set brings its own 16 colors, and the same darkened for its braces, with its pieces. Each talk brings its dwarf's 16 colors and its bubble's 4.
@@ -603,11 +609,11 @@ rows are left.
 | post | 20 wide, up to 20 of it showing, in pieces 48 tall |
 | cap beam | 16 tall, in pieces 48 wide, and a cap 20x16 over each post |
 | brace | 32x32 |
-| machine | 24x40 |
+| machine | 24x40, and its meter 12x8 behind its window, in 4 frames |
 | sled | the widths of `TUNE_WIDTHS`, up to 64, rounded up to 4 for the sprite; 8 tall, then its two tilts, 24 tall each |
 | jet | 7 frames, 8x12: the nozzle alone, 3 flames, 3 swiveled flames |
 | smoke | 3 frames, 8x8 |
-| energy gauge | 16 wide, the screen tall: a fitting 16x20, turned over for the bottom, the glass 12x200 in 4 sprites, made for each level, the fuel in runs of 12x16 under its surface, and a bubble and its drop, 4x4 each; 1,568 bytes of a level's art |
+| energy gauge | 16 wide, the screen tall: a fitting 16x20, turned over for the bottom, the glass 12x200 in 4 sprites, made for each level, the fuel in runs of 12x16 under its surface, and a bubble and its drop, 4x4 each; with the meter's frames, 1,760 bytes of a level's art |
 | logo | 3 pieces, 64x64, as one 192x64 image |
 | curtains | 100x240 each, cut from a 256x240 curtain set |
 | cursor | 4 corners, 12x12, one image turned |
