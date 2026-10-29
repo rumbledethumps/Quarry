@@ -5,9 +5,16 @@
 #ifndef TUNING_H
 #define TUNING_H
 
+/* A level builds up as it starts: the sled rises into place, the bricks
+   are laid, the gauge fills, and a ball flies from the count to the sled,
+   to land as it ends. */
+#define TUNE_BUILD_STEPS 120  /* 2 seconds */
+#define TUNE_RISE_STEPS 45    /* of them, the sled's rise from below the screen */
+
 /* Balls */
 #define TUNE_BALLS 5          /* balls at the start of a level */
 #define TUNE_BALL_SPEED 640   /* 2.5 px per step */
+#define TUNE_BALL_COME 1024   /* a new ball flies from the count to the sled, 4 px per step */
 
 /* Energy. A full gauge holds this many steps of thrust, and it drains
    from the first launch of a level until the level ends. */

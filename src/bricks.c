@@ -75,6 +75,8 @@ static uint8_t brick_alive[BRICKS_MAX];
 static uint8_t brick_color[BRICKS_MAX];
 static uint8_t brick_hits[BRICKS_MAX];   /* that break it */
 static uint8_t brick_damage[BRICKS_MAX]; /* taken, a ball's damage a hit */
+static uint8_t lay_order[BRICKS_MAX]; /* the bricks as they are laid */
+static uint8_t bricks_laid;
 
 /* Each piece of cracks, its set and its flips, and each brick's, where its
    cracks start across it. They stay the same while the screen does. */
@@ -144,13 +146,23 @@ void bricks_finish(void)
         }
 }
 
+/* Whether brick a is laid before brick b: the bottom row first, and
+   along a row, left to right. */
+static uint8_t laid_before(uint8_t a, uint8_t b)
+{
+    return brick_y[a] > brick_y[b] || (brick_y[a] == brick_y[b] && brick_x[a] < brick_x[b]);
+}
+
+/* The level's bricks, whole, none of them laid yet: on a new screen none
+   shows, and on the level played again, what is left of the last try
+   shows until a fresh brick is laid over it. bricks_lay() lays them. */
 void bricks_start(void)
 {
-    uint8_t i;
+    uint8_t i, j;
 
     bricks_finish();
-    bricks_left = 0;
-    brick_count = layout.count;
+    brick_count = bricks_left = layout.count;
+    bricks_laid = 0;
     for (i = 0; i < brick_count; i++)
     {
         brick_x[i] = layout.bricks[i].x;
@@ -159,14 +171,29 @@ void bricks_start(void)
         brick_color[i] = layout.bricks[i].look & 15;
         brick_hits[i] = layout.bricks[i].look >> 4;
         brick_damage[i] = 0;
+        for (j = i; j && laid_before(i, lay_order[j - 1]); j--)
+            lay_order[j] = lay_order[j - 1];
+        lay_order[j] = i;
+    }
+}
+
+/* Lays the bricks, in their order, evenly over the level's build-up of
+   TUNE_BUILD_STEPS, as many as are due by step of it: each fresh, with no
+   cracks, over whatever was there. */
+void bricks_lay(uint8_t step)
+{
+    uint8_t k, n = ((uint16_t)step * brick_count + TUNE_BUILD_STEPS - 1) / TUNE_BUILD_STEPS;
+
+    while (bricks_laid < n && bricks_laid < brick_count)
+    {
+        uint8_t i = lay_order[bricks_laid++];
+
+        for (k = 0; k < CRACK_PIECES; k++)
+            sprite_hide(CRACK_SPRITE(i * CRACK_PIECES + k));
         sprite_set(brick_sprite(i), XRAM_BRICK_IMAGE, XRAM_PALETTE_BRICK(brick_color[i]),
                    MODE5_SIZE(BRICK_W, BRICK_H));
         sprite_mode(brick_sprite(i), MODE5_2BPP);
-        if (brick_alive[i])
-        {
-            bricks_left++;
-            sprite_move(brick_sprite(i), brick_x[i], brick_y[i]);
-        }
+        sprite_move(brick_sprite(i), brick_x[i], brick_y[i]);
     }
 }
 

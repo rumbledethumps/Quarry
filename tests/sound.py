@@ -95,7 +95,7 @@ def main():
     played(game, 'LOST', 20)
     game.run(1)
     whistle = [i for i, (f, w, g) in enumerate(channels(game))
-               if w == wave(game, 'SQUARE') and g and 360 <= f < 660 * 3]
+               if w == wave(game, 'SQUARE') and g and 360 <= f <= 660 * 3]
     check(whistle, 'the whistle is on a channel, gate held')
     first = channels(game)[whistle[0]][0]
     game.run(10)

@@ -265,19 +265,21 @@ void scene_title_show(int16_t x)
 }
 
 
-/* A level: a cave, its frame set, the cracks and chunks of its bricks and
-   the gauge's fittings and fuel, if it comes from another screen, and the sled of a rank of the width
-   upgrade. Its own sprites start hidden, before plane 1 shows them.
-   Returns whether the screen changed. */
+/* A level: if it comes from another screen, no sprites, and a cave, its
+   frame set, the cracks and chunks of its bricks and the gauge's fittings
+   and fuel, and the sled of a rank of the width upgrade. Its own sprites
+   start hidden, before plane 1 shows them. Returns whether the screen
+   changed. */
 uint8_t scene_level(uint8_t sled_rank)
 {
     uint8_t changed = scene_change(SCENE_LEVEL);
 
-    video_hide_level_sprites();
     if (changed)
     {
         char frame[] = "ROM:frame1";
 
+        video_hide_sprites();
+        video_hide_level_sprites();
         video_start(1);
         cave();
         frame[9] = '1' + frame_set;
@@ -286,8 +288,8 @@ uint8_t scene_level(uint8_t sled_rank)
         load("ROM:chunks", 0, XRAM_CHUNK_IMAGES, CHUNKS_BYTES);
         load("ROM:gauge", 0, XRAM_GAUGE_ART, GAUGE_BYTES);
         DEBUG_LOG("frame %u\n", frame_set + 1);
+        load("ROM:sleds", (long)sled_rank * SLED_SLOT, XRAM_LEVEL_SLED, SLED_SLOT);
     }
-    load("ROM:sleds", (long)sled_rank * SLED_SLOT, XRAM_LEVEL_SLED, SLED_SLOT);
     return changed;
 }
 

@@ -89,7 +89,8 @@ def main():
     game.until('talk_state', 'TALK_OFF', 30)
     game.run(2)
     check(game.shown(dwarf, pieces) == 0 and bubble() >= 320, 'they are gone')
-    check(game.ram('balls') == sym['TUNE_BALLS'] and game.ram('ball_state') == sym['BALL_DOCKED'],
+    game.ready()
+    check(game.ram('ball_state') == sym['BALL_DOCKED'] and not game.ram('energy_draining'),
           'the press that sent them away did not launch')
     menus = open(os.path.join(os.path.dirname(os.path.dirname(rom())), 'menus.bin'), 'rb').read()
     check(game.xram('XRAM_MENU_PALETTE', len(menus)) == menus, "the menus' art is back")
@@ -108,7 +109,7 @@ def main():
         game.tap('down')  # RESTART
     game.tap('space')
     game.until('game_state', 'STATE_PLAY', 30)
-    game.run(30)
+    game.ready()
     check(game.ram('talk_state') == sym['TALK_OFF'], 'the welcome is only once')
     check(field(game.screen(shot)) == after, 'and he left nothing on the screen')
     print('ok: the welcome is only once, and he left nothing behind')
@@ -169,6 +170,7 @@ def main():
     game.until('game_state', 'STATE_PLAY', 60)
     game.run(5)
     check(game.ram('talk_state') == sym['TALK_OFF'], 'no welcome on level 2')
+    game.ready()
     game.tap('space')
     game.run(20)
     game.paused_poke([('bricks_left', 0, 1)])

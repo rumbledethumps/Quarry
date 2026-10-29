@@ -446,7 +446,7 @@ typedef struct
 #define GLASS_GLINT 15
 #define LIQUID_H 16
 #define LIQUID_SEGMENTS (GLASS_H / LIQUID_H) /* the rows above them, the surface's alone */
-#define BUBBLES 3 /* rising through the fuel at once, a sprite each */
+#define BUBBLES 16 /* rising through the fuel at once, a sprite each */
 #define BUBBLE_SIZE 4
 
 /* The machine on the right wall shows how the fuel stands through a

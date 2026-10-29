@@ -248,7 +248,7 @@ def main():
     check(game.shows('BEGIN LEVEL 1?'), 'the button asks to begin the level')
     game.tap('space')
     game.until('game_state', 'STATE_PLAY', 30)
-    game.run(2)
+    game.ready()
     width, speed = widths[-1], tune['TUNE_SPEEDS'][1]
     check(game.ram('paddle_width') == width, f'the paddle is {width} px wide now')
     check(game.ram('paddle_speed', 2) == speed, f'and moves {speed} a step')
@@ -271,6 +271,7 @@ def main():
     # The first clear of level 1 earns a coin and opens level 2, which the
     # upgrade screen picks. Clearing it again earns nothing.
     def clear():
+        game.ready()
         game.tap('space')
         game.run(20)
         game.paused_poke([('bricks_left', 0, 1)])
@@ -318,7 +319,7 @@ def main():
     check(game.shows('BEGIN LEVEL 2?'), 'and asks to begin level 2')
     game.tap('space')
     game.until('game_state', 'STATE_PLAY', 30)
-    game.run(2)
+    game.ready()
     print('ok: a coin for the first clear, and the next level')
 
     # Level 2 is level 1 with red bricks in the middle of its top two rows,

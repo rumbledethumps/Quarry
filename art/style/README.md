@@ -39,12 +39,39 @@ brick of space at each wall. The widest can be about 10 bricks, with a
 little rock left on each side. Each level is laid out fresh, so the
 curtains never move while anyone watches.
 
+A level builds up as it starts, over `TUNE_BUILD_STEPS`, 2 seconds for
+now. It opens with the frame and the curtains, but no bricks, no sled, the
+gauge empty and the meter down, and if a dwarf has something to say, he
+says it over that. The build-up starts as he goes, or at once without him,
+and everything in it starts together:
+
+- The sled rises from below the screen, slowing into its place by
+  `TUNE_RISE_STEPS`, where it is the player's.
+- The bricks are laid one at a time, evenly over the time, bottom row
+  first, each row left to right.
+- The gauge fills from empty at the rate that fills it in that time, and
+  its bubbles rise with it: see [The Energy Gauge](#the-energy-gauge).
+- A ball flies from the count of balls to its place on the sled, leaving
+  so as to land as the time is up, and chasing the sled if it moves. The
+  count drops as the ball leaves it. Once it lands, it can be launched,
+  and the meter comes up green.
+
+Played again, it builds up over what is left: each fresh brick is laid
+over whatever was there, broken, cracked or whole, the gauge rises only
+once the fill reaches the fuel it holds, and the meter, if it is up,
+slides down first. The end menu covers the machine, and the meter goes
+down under it. A sled hovering at a restart stays where it is, and is the
+player's at once; the ball in play goes at once. A sled sputtering or
+falling goes at once, to rise again. Every lost ball's replacement flies
+from the count the same way, while the fuel drains; if the fuel runs out
+as it comes, it chases the falling sled down.
+
 The counts float over the curtains, with no panels behind them:
 
 - **Upper left:** a count for each kind of nugget, with a sprite of the
   nugget beside it, a line for each, room for 8 or more.
-- **Lower left:** the count of balls, with a sprite of the ball beside it,
-  in the same presentation as the nuggets.
+- **Lower left:** the count of balls not yet in play, with a sprite of the
+  ball beside it, in the same presentation as the nuggets.
 - **Right:** the energy gauge, a sight glass down the right edge, from
   the top of the screen to its foot: see [The Energy Gauge](#the-energy-gauge).
 
@@ -156,8 +183,9 @@ machines of the mine:
   were is a window, and in it, as in an old parking meter, a paddle that
   slides up: green, yellow, and red when the fuel is low. The window is
   clear, so the floor shows round the paddle, and the paddle nearly fills
-  it. Its red lamp blinks with each beep. Upgrades may add more machines
-  along the walls.
+  it. It is down while the level builds up, and comes up as the ball
+  lands. Its red lamp blinks with each beep. Upgrades may add more
+  machines along the walls.
 
 ### Curtain Sets
 
@@ -339,11 +367,16 @@ post clear of it.
   it may. `art/gauge.py` draws it and the fittings.
 - Each time the ball bounces off the sled, a bubble rises from the foot of
   the fuel to its surface, a pale ring 3 across that sways a pixel either
-  way, while one of the 3 is free. At the surface it pops and throws up a
+  way, while one of the 16 is free. At the surface it pops and throws up a
   single drop of the fuel, which hops 3 px into the air and falls back in,
   as a real bubble does breaking through. A bubble is never taken from
   another: every one rises all the way, and is free again once its drop
   is back in.
+- While the fuel rises, as when it fills as a level builds up, every
+  bubble in it rises with it, a pixel for each pixel it rises, as well as
+  by itself, and it sends up bubbles of its own, each after 5 to 15 steps
+  of rising, at random: about 12 over a fill from empty. A refill that
+  bonuses bring will do the same.
 - The fittings are the pipe of the upgrade screen's backdrop, in its own
   steel colors, not brass, which would be taken for the safety yellow: a
   length of the U-shaped pipe behind the crusher in `art/backdrop.png`,
@@ -563,7 +596,8 @@ button sends them back the way they came. Only one dwarf shows at a time,
 and the cursor is off while they come and go. They show when a screen
 opens, never in the middle of play, and the screen under them carries on:
 
-- the first level of a new game starts with a welcome;
+- the first level of a new game starts with a welcome, over the level
+  before it builds up, which it does as he goes;
 - each first clear of a level has a dwarf hand over its coin, before the
   menu opens;
 - on the upgrade screen, as level 2 unlocks, one says what an unlock

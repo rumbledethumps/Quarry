@@ -47,6 +47,7 @@ def main():
     check(game.ram('talk_state') == game.sym['TALK_READY'], 'a key held into play does not pass the dwarf')
     game.talk_ok()
     game.cmd('expect-not "launch"')
+    game.ready()
 
     game.run(2)
     paddle = game.sym['XRAM_SLED_SPRITE']
@@ -124,11 +125,11 @@ def main():
     game.run(10)
     game.poke('ball_state', 0)
     game.run(30)
-    game.cmd(f'expect-not "launch, {start_balls - 2} balls left"')
+    game.cmd('expect-not "launch"')
     game.cmd('release space')
     game.run(2)
     game.cmd('press space')
-    game.wait(f'launch, {start_balls - 2} balls left', 5)
+    game.wait(f'launch, {start_balls - 1} balls left', 5)
     game.cmd('release space')
     print('ok: a held launch launches once')
 

@@ -83,6 +83,12 @@ uint8_t talk_busy(void)
     return talk_state != TALK_OFF || queued;
 }
 
+/* Whether the last dwarf is going, with none to follow. */
+uint8_t talk_leaving(void)
+{
+    return talk_state == TALK_OUT && !queued;
+}
+
 /* The next talk comes in from off the screen. The cursor goes, but for
    one that stays, and the bubble takes the menus' place on plane 2, off
    the screen, before its art loads over the menus'. */

@@ -3,6 +3,7 @@
 #include "bricks.h"
 #include "cursor.h"
 #include "debug.h"
+#include "energy.h"
 #include "frame.h"
 #include "input.h"
 #include "menu.h"
@@ -59,14 +60,18 @@ static uint8_t level = 1; /* the level being played, from 1 */
 static uint8_t level_how; /* how it ended, as play_step() returned */
 
 /* Lays out the level, its playfield with its frame and curtains, and sets
-   up the paddle and every ball, ready to play. It starts from no
-   sprites and the level's own art, so nothing is left of another screen.
-   The bricks' cracks are new only with the screen, as its rock is. */
+   it up to build up and play. From another screen it starts from no
+   sprites and the level's own art, so nothing is left of that screen.
+   Played again, what is left of the last try stays, the bricks and a
+   hovering paddle, until the level builds up over it. The bricks' cracks
+   are new only with the screen, as its rock is. */
 static void level_setup(void)
 {
-    video_hide_sprites();
+    uint8_t again;
+
     cursor_hide();
-    if (scene_level(upgrade_ranks[UPGRADE_WIDTH]))
+    again = !scene_level(upgrade_ranks[UPGRADE_WIDTH]);
+    if (!again)
         bricks_shuffle();
     play_init();
     bricks_layout(level);
@@ -74,7 +79,7 @@ static void level_setup(void)
     menu_clear();
     bricks_start();
     nuggets_start();
-    play_start();
+    play_start(again);
 }
 
 /* A level starts, set up from the start, and the game saves. The first
@@ -90,10 +95,12 @@ static void level_play(void)
 }
 
 /* The menu when a level ends, which waits wait steps before it takes a
-   choice. */
+   choice. It covers the machine, and the meter's paddle goes down under
+   it. */
 static void end_menu(uint8_t wait)
 {
     menu_open(&end_menus[level_how - PLAY_CLEARED], END_UPGRADES - 1, 0, wait);
+    energy_meter_down();
 }
 
 /* The first clear of a level earns a coin and opens the next, which the

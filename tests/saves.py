@@ -137,8 +137,8 @@ def main():
 
     # The level ends, and that saves too.
     os.remove(os.path.join(folder, SAVE))
-    game.poke('balls', 0)
-    game.wait('out of balls', 3000)
+    game.paused_poke([('balls', 0, 1), ('ball_y', 225 << 8, 4), ('ball_vx', 0, 2), ('ball_vy', 600, 2)])
+    game.wait('out of balls', 60)
     game.run(2)
     broken = game.sym['LEVEL1_BRICKS'] - game.ram('bricks_left')
     check(read_save(folder) and read_save(folder)[0] == broken, f'a level ending saves, {broken} nuggets')
@@ -156,6 +156,7 @@ def main():
         return game.ram('curtain_set'), game.xram('XRAM_TEXTURE_CONFIG', 8), game.xram('XRAM_FRAME_PALETTE', 32)
     cave = look()
     game.menu_choose('REPLAY', wait=False)
+    game.wait('level 1 start', 30)  # logged once it has saved
     check(read_save(folder) is not None, 'the level starting saves')
     check(look() == cave, 'the level played again keeps its curtains, its texture and its frame')
 
@@ -174,7 +175,9 @@ def main():
 
     # A purchase on the upgrade screen saves. Esc there asks to go back to
     # the title, which has the save's panels now.
-    game.paused_poke([('balls', 0, 1), ('ball_state', 1, 1)])
+    game.ready()
+    game.paused_poke([('balls', 0, 1), ('ball_state', 1, 1), ('ball_y', 225 << 8, 4), ('ball_vx', 0, 2),
+                      ('ball_vy', 600, 2)])
     game.wait('out of balls', 3000)
     game.menu_choose('THE DRY')
     game.talk_ok()

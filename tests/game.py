@@ -109,12 +109,19 @@ class Game(rp6502.Emu):
 
     def new_game(self):
         """From the title screen with no save, where Start Game is all
-        there is, start a new game, and get past the dwarf's welcome."""
+        there is, start a new game, get past the dwarf's welcome, and wait
+        for the level to build up."""
         if not self.booted:
             self.boot()
         self.tap('space')
         self.until('game_state', 'STATE_PLAY')
         self.talk_ok()
+        self.ready()
+
+    def ready(self):
+        """Wait for the level to build up, until its ball has landed on the
+        sled, ready to launch."""
+        self.until('building', 0, 60 + 2 * self.sym['TUNE_BUILD_STEPS'])
 
     def talk_ok(self):
         """Get past the dwarves: wait for each one's OK, press the button, and
