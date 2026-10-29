@@ -30,6 +30,7 @@ Python standard library is used.
 
 import argparse
 import os
+import random
 import struct
 from collections import Counter
 
@@ -66,6 +67,10 @@ NUMERALS = {
     '9': ['.##.##.', '##...##', '##...##', '.##.###', '.....##', '.....##', '.##.##.'],
 }
 ORE, ORE2 = (214, 214, 220), (150, 150, 160)
+# A heap of ore is lumps of it in its shades of pale and gray, each as its
+# color and its shadow, and how many of the lumps are of it.
+ORE_SHADES = [((ORE, ORE2), 3), (((190, 194, 188), ORE2), 2), ((ORE2, (106, 118, 119)), 2)]
+HEAP_LUMPS, HEAP_SEED = 16, 3
 # The padlock: its body over the plate, its shackle over the rim.
 LOCK_LEFT, LOCK_BODY = 8, 7  # its left in the cart, and its first row of body
 LOCK_TOP = PLATE_Y0 - LOCK_BODY
@@ -101,13 +106,29 @@ def cart(heaped):
         img[axle - 1][x] = img[axle + 1][x] = shades[0]
         img[axle][x] = shades[len(shades) // 2]
     if heaped:
-        for x in range(3, W - 3):
-            # Flat across its top, with no lone pixel on the peak.
-            top = RIM - 1 - min(4, int(5 * (1 - ((x - W / 2) / (W / 2 - 3)) ** 2)))
-            for y in range(top, RIM):
-                img[y][x] = ORE2 if (x * 7 + y * 3) % 5 == 0 else ORE
-            img[top][x] = shades[0]
+        heap(img, shades[0])
     return img
+
+
+def heap(img, outline):
+    """The heap of ore over the rim, flat across its top with no lone pixel
+    on the peak, and outlined. Inside, lumps of ore packed in no pattern,
+    each the pixels nearest a point scattered over it, a little wider than
+    tall, in one of the ore's shades, shadowed where it sits against the
+    next."""
+    rnd = random.Random(HEAP_SEED)
+    tops = {x: RIM - 1 - min(4, int(5 * (1 - ((x - W / 2) / (W / 2 - 3)) ** 2))) for x in range(3, W - 3)}
+    inside = [(x, y) for x, top in tops.items() for y in range(top + 1, RIM)]
+    shades = rnd.choices([k for k, _ in ORE_SHADES], [n for _, n in ORE_SHADES], k=HEAP_LUMPS)
+    points = [(rnd.uniform(3, W - 3), rnd.uniform(RIM - 5, RIM)) for _ in range(HEAP_LUMPS)]
+    near = lambda x, y: min(range(HEAP_LUMPS), key=lambda i: (0.5 * (x + 0.5 - points[i][0])) ** 2 +
+                            (y + 0.5 - points[i][1]) ** 2)
+    lump = {(x, y): near(x, y) for x, y in inside}
+    for (x, y), i in lump.items():
+        color, shadow = shades[i]
+        img[y][x] = shadow if lump.get((x, y + 1), i) != i or lump.get((x + 1, y), i) != i else color
+    for x, top in tops.items():
+        img[top][x] = outline
 
 
 def coupling(img):
