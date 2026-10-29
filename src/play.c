@@ -275,11 +275,12 @@ uint8_t play_step(void)
 }
 
 /* After the level ends, the flames still burn, a falling paddle still
-   falls off the screen, the last nuggets still fly to the panel, and the
-   last chunks still fall. */
+   falls off the screen, the last nuggets still fly to the panel, the last
+   chunks still fall, and the gauge's bubbles still rise. */
 void play_idle(void)
 {
     paddle_step(0);
+    energy_idle();
     nuggets_step();
     bricks_step();
 }
@@ -308,4 +309,5 @@ void play_draw(void)
     paddle_draw();
     nuggets_draw();
     bricks_draw();
+    energy_draw();
 }

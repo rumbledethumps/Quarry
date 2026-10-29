@@ -37,10 +37,11 @@ uint16_t energy;
 uint8_t energy_draining;
 
 static int16_t gauge_x, glass_y; /* the gauge's left, and its glass's top */
-static uint8_t rows_shown;       /* of fuel in the glass */
+static uint8_t rows;             /* of fuel in the glass */
+static uint8_t rows_drawn;       /* as its sprites show them */
 static uint16_t bubble_y[BUBBLES]; /* the top of each bubble, in 1/16 px, or 0 for none */
 static uint8_t bubble_x[BUBBLES];  /* its left, from the glass's, before it sways; its drop's, once popped */
-static uint8_t bubble_pop[BUBBLES]; /* steps of its drop's hop, once it pops */
+static uint8_t bubble_pop[BUBBLES]; /* steps of its drop's hop, from 1, once it pops */
 static const int8_t sway[] = {0, 1, 0, -1};
 static const uint8_t hop[] = {1, 1, 2, 2, DROP_PEAK, DROP_PEAK, DROP_PEAK, DROP_PEAK, DROP_PEAK, DROP_PEAK, 2, 2, 1, 1};
 static uint8_t beep_steps;
@@ -65,36 +66,11 @@ static void glass_make(void)
     }
 }
 
-/* The fuel, a row of it for each GLASS_H-th of TUNE_ENERGY, or part of
-   one: its surface, over the runs of it from the foot of the glass up,
-   each shown whole or not at all. The surface reaches down to the first
-   run, or to the foot of the glass, so it never shows past the nut. */
-static void gauge_draw(void)
+/* The rows of fuel for the energy: a row for each GLASS_H-th of
+   TUNE_ENERGY, or part of one. */
+static void rows_count(void)
 {
-    uint8_t rows = ((uint32_t)energy * GLASS_H + TUNE_ENERGY - 1) / TUNE_ENERGY, i;
-    int16_t foot = glass_y + GLASS_H, top = foot - rows;
-
-    if (rows == rows_shown)
-        return;
-    rows_shown = rows;
-    for (i = 0; i < LIQUID_SEGMENTS; i++)
-    {
-        int16_t run = foot - (i + 1) * LIQUID_H;
-
-        if (run >= top)
-            sprite_move(GAUGE_SPRITE(liquid, i), gauge_x + GLASS_X, run);
-        else
-            sprite_hide(GAUGE_SPRITE(liquid, i));
-    }
-    if (rows)
-    {
-        uint8_t h = rows + 1 < LIQUID_H ? (rows + 4) & ~3 : LIQUID_H;
-
-        xram0_poke8(XRAM_SURFACE_SPRITE + offsetof(mode5_csprite_t, width_height), MODE5_SIZE(GLASS_W, h));
-        sprite_move(XRAM_SURFACE_SPRITE, gauge_x + GLASS_X, top - 1);
-    }
-    else
-        sprite_hide(XRAM_SURFACE_SPRITE);
+    rows = ((uint32_t)energy * GLASS_H + TUNE_ENERGY - 1) / TUNE_ENERGY;
 }
 
 /* A bubble from the foot of the fuel, if there is fuel and a bubble free.
@@ -105,14 +81,13 @@ void energy_bubble(void)
 {
     uint8_t i;
 
-    if (!rows_shown)
+    if (!rows)
         return;
     for (i = 0; i < BUBBLES; i++)
         if (!bubble_y[i])
         {
             bubble_y[i] = (glass_y + GLASS_H - BUBBLE_SIZE) << 4;
             bubble_x[i] = 2 + rand() % (GLASS_W - 6);
-            xram0_poke16(BUBBLE_SPRITE(i) + offsetof(mode5_csprite_t, xram_sprite_ptr), XRAM_BUBBLE_IMAGE);
             return;
         }
 }
@@ -122,32 +97,85 @@ void energy_bubble(void)
    fuel, the bubble is gone. */
 static void bubbles_step(void)
 {
-    int16_t surface = glass_y + GLASS_H - rows_shown;
+    int16_t surface = glass_y + GLASS_H - rows;
     uint8_t i;
 
     for (i = 0; i < BUBBLES; i++)
     {
         if (!bubble_y[i])
             continue;
-        if (!bubble_pop[i])
+        if (bubble_pop[i])
         {
-            int16_t y = (bubble_y[i] -= BUBBLE_SPEED) >> 4;
-            uint8_t x = bubble_x[i] + sway[y >> 3 & 3];
-
-            if (y > surface + 1)
-            {
-                sprite_move(BUBBLE_SPRITE(i), gauge_x + GLASS_X + x, y);
-                continue;
-            }
-            bubble_x[i] = x + 1; /* the drop, from the middle of the ring */
-            xram0_poke16(BUBBLE_SPRITE(i) + offsetof(mode5_csprite_t, xram_sprite_ptr), XRAM_DROP_IMAGE);
+            if (++bubble_pop[i] > sizeof hop)
+                bubble_y[i] = bubble_pop[i] = 0;
         }
-        if (bubble_pop[i] < sizeof hop)
-            sprite_move(BUBBLE_SPRITE(i), gauge_x + GLASS_X + bubble_x[i], surface - hop[bubble_pop[i]++]);
         else
         {
-            bubble_y[i] = bubble_pop[i] = 0;
+            int16_t y = (bubble_y[i] -= BUBBLE_SPEED) >> 4;
+
+            if (y <= surface + 1)
+            {
+                bubble_x[i] += sway[y >> 3 & 3] + 1; /* the drop, from the middle of the ring */
+                bubble_pop[i] = 1;
+            }
+        }
+    }
+}
+
+/* A bubble's sprite at x, y with its image, in one write. */
+static void bubble_show(unsigned sprite, unsigned image, int16_t x, int16_t y)
+{
+    int16_t s[3];
+
+    s[0] = x;
+    s[1] = y;
+    s[2] = image;
+    xram0_write(sprite, s, sizeof s);
+}
+
+/* The gauge's sprites as the fuel and the bubbles are, at the start of a
+   step, as a level draws all of its sprites, back to front. The fuel is
+   its surface, over the runs of it from the foot of the glass up, each
+   shown whole or not at all. The surface reaches down to the first run, or
+   to the foot of the glass, so it never shows past the nut. */
+void energy_draw(void)
+{
+    int16_t foot = glass_y + GLASS_H, top = foot - rows;
+    uint8_t i;
+
+    if (rows != rows_drawn)
+    {
+        for (i = 0; i < LIQUID_SEGMENTS; i++)
+        {
+            int16_t run = foot - (i + 1) * LIQUID_H;
+
+            if (run >= top)
+                sprite_move(GAUGE_SPRITE(liquid, i), gauge_x + GLASS_X, run);
+            else
+                sprite_hide(GAUGE_SPRITE(liquid, i));
+        }
+        if (rows)
+        {
+            uint8_t h = rows + 1 < LIQUID_H ? (rows + 4) & ~3 : LIQUID_H;
+
+            xram0_poke8(XRAM_SURFACE_SPRITE + offsetof(mode5_csprite_t, width_height), MODE5_SIZE(GLASS_W, h));
+            sprite_move(XRAM_SURFACE_SPRITE, gauge_x + GLASS_X, top - 1);
+        }
+        else
+            sprite_hide(XRAM_SURFACE_SPRITE);
+        rows_drawn = rows;
+    }
+    for (i = 0; i < BUBBLES; i++)
+    {
+        if (!bubble_y[i])
             sprite_hide(BUBBLE_SPRITE(i));
+        else if (bubble_pop[i])
+            bubble_show(BUBBLE_SPRITE(i), XRAM_DROP_IMAGE, gauge_x + GLASS_X + bubble_x[i], top - hop[bubble_pop[i] - 1]);
+        else
+        {
+            int16_t y = bubble_y[i] >> 4;
+
+            bubble_show(BUBBLE_SPRITE(i), XRAM_BUBBLE_IMAGE, gauge_x + GLASS_X + bubble_x[i] + sway[y >> 3 & 3], y);
         }
     }
 }
@@ -159,7 +187,7 @@ void energy_cheat(int8_t steps)
     int16_t more = energy + steps * (int16_t)CHEAT_ENERGY;
 
     energy = more < 0 ? 0 : more > TUNE_ENERGY ? TUNE_ENERGY : more;
-    gauge_draw();
+    rows_count();
     DEBUG_LOG("cheat: energy %u\n", energy);
 }
 #endif
@@ -197,9 +225,10 @@ void energy_start(int16_t x, int16_t y)
                    MODE5_SIZE(GAUGE_W, FITTING_H));
         sprite_move(GAUGE_SPRITE(fittings, i), x, i ? glass_y + GLASS_H : y);
     }
-    rows_shown = 0xFF;
+    rows_count();
+    rows_drawn = 0xFF;
     lamp_steps = 0;
-    gauge_draw();
+    energy_draw();
 }
 
 static void beep(uint8_t sound)
@@ -230,5 +259,11 @@ void energy_step(void)
     }
     else if (energy <= TUNE_ENERGY_LOW && energy && ++beep_steps >= LOW_BEEP_STEPS)
         beep(SFX_LOW_BEEP);
-    gauge_draw();
+    rows_count();
+}
+
+/* After the level ends, the bubbles still rise and pop. */
+void energy_idle(void)
+{
+    bubbles_step();
 }
