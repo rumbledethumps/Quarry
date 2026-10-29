@@ -8,7 +8,6 @@
 
 #define GAUGE_SPRITE(field, i) (XRAM_GAUGE_SPRITES + offsetof(gauge_sprites_t, field) + (i) * sizeof(mode5_csprite_t))
 #define GLASS_ROW_BYTES (GLASS_W / 2)
-#define GLINT_ROW_BYTES (GLINT_W / 2)
 #define PIECE_H 64 /* of the glass, the tallest a sprite can be */
 
 /* While the energy is low, a beep every LOW_BEEP_STEPS steps, and the
@@ -33,28 +32,17 @@ static uint8_t beep_steps;
 static uint8_t lamp_steps;
 
 /* The glass, from the rock behind it: each row the right curtain's pixels
-   there, in the glass palette, an outline down each side, and the glint,
-   from a strip of its own that shows the rock too, or in a flat color. */
+   there, in the glass palette, an outline down each side, and the glint. */
 static void glass_make(void)
 {
     uint8_t row[GLASS_W], bytes[GLASS_ROW_BYTES], y, i;
     unsigned image = XRAM_GLASS_IMAGE;
-#if GAUGE_GLINT
-    unsigned glint = XRAM_GLINT_IMAGE;
-    uint8_t strip[GLINT_ROW_BYTES] = {0};
-#endif
 
     row[0] = row[GLASS_W - 1] = GLASS_OUTLINE;
     for (y = 0; y < GLASS_H; y++)
     {
         frame_rock(row + 1, gauge_x + GLASS_X + 1, glass_y + y, GLASS_W - 2);
-#if GAUGE_GLINT
-        strip[0] = row[GLINT_COL] << 4;
-        xram0_write(glint, strip, sizeof strip);
-        glint += sizeof strip;
-#else
         row[GLINT_COL] = GLASS_GLINT;
-#endif
         for (i = 0; i < GLASS_ROW_BYTES; i++)
             bytes[i] = row[2 * i] << 4 | row[2 * i + 1];
         xram0_write(image, bytes, sizeof bytes);
@@ -124,11 +112,6 @@ void energy_start(int16_t x, int16_t y)
         sprite_set(GAUGE_SPRITE(glass, i), XRAM_GLASS_IMAGE + top * GLASS_ROW_BYTES, XRAM_PALETTE_GLASS,
                    MODE5_SIZE(GLASS_W, h));
         sprite_move(GAUGE_SPRITE(glass, i), x + GLASS_X, glass_y + top);
-#if GAUGE_GLINT
-        sprite_set(GAUGE_SPRITE(glint, i), XRAM_GLINT_IMAGE + top * GLINT_ROW_BYTES, XRAM_PALETTE_GLINT,
-                   MODE5_SIZE(GLINT_W, h));
-        sprite_move(GAUGE_SPRITE(glint, i), x + GLASS_X + GLINT_COL, glass_y + top);
-#endif
     }
     for (i = 0; i < LIQUID_SEGMENTS; i++)
         sprite_set(GAUGE_SPRITE(liquid, i), XRAM_LIQUID_IMAGE, XRAM_PALETTE_LIQUID, MODE5_SIZE(GLASS_W, LIQUID_H));

@@ -52,7 +52,7 @@ def check_fuel(game, message):
 def check_glass(game):
     """The glass is the right curtain's rock behind it, pixel for pixel: an
     outline down each side, the darkest rock where the shaft is clear, and
-    the glint, a strip of the rock of its own, or a flat color."""
+    the glint."""
     sym = game.sym
     nibble = lambda data, pitch, x, y: data[y * pitch + x // 2] >> (0 if x & 1 else 4) & 15
     right = '(XRAM_CURTAIN_SPRITES+CURTAIN_TILES*SPRITE_BYTES)'
@@ -70,14 +70,10 @@ def check_glass(game):
     gx, gy, _ = game.sprites('XRAM_GLASS_SPRITES', 1)[0]
     w, h, col = sym['GLASS_W'], sym['GLASS_H'], sym['GLINT_COL']
     glass = game.xram(sym['XRAM_GLASS_IMAGE'], w * h // 2)
-    glint = game.xram(sym['XRAM_GLINT_IMAGE'], sym['GLINT_W'] * h // 2) if sym['GAUGE_GLINT'] else None
     for y in range(h):
         row = [nibble(glass, w // 2, x, y) for x in range(w)]
         want = [sym['GLASS_OUTLINE']] + [rock(gx + x, gy + y) for x in range(1, w - 1)] + [sym['GLASS_OUTLINE']]
-        if glint:
-            check(nibble(glint, sym['GLINT_W'] // 2, 0, y) == want[col], f'the glint shows the rock on row {y}')
-        else:
-            want[col] = sym['GLASS_GLINT']
+        want[col] = sym['GLASS_GLINT']
         check(row == want, f'row {y} of the glass is {row}, the rock behind it {want}')
 
 

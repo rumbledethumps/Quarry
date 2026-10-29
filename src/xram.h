@@ -428,10 +428,8 @@ typedef struct
    shows the rock behind it. The glass is made as a level starts: the right
    curtain's pixels under it, in the glass palette, the curtain's colors
    tinted, and an outline down each side. A glint runs down it GLINT_COL
-   in. With GAUGE_GLINT, the glint shows the rock too, in the glint
-   palette, from a strip of its own; without it, it is the glass palette's
-   flat GLASS_GLINT, and the glint's images and sprites are not there, a
-   few hundred bytes back. The fuel is LIQUID_SEGMENTS sprites of one image
+   in, the glass palette's flat GLASS_GLINT. The fuel is LIQUID_SEGMENTS
+   sprites of one image
    of liquid LIQUID_H tall, up from the foot of the glass, under one of its
    surface. Sprites are 64 tall at most, so the glass is in pieces. */
 #define GAUGE_W 16
@@ -441,8 +439,6 @@ typedef struct
 #define GLASS_H 200
 #define GLASS_PIECES 4 /* GLASS_H in pieces of 64, the last one shorter */
 #define GLINT_COL 2    /* of the glass */
-#define GLINT_W 4      /* the narrowest sprite */
-#define GAUGE_GLINT 1
 #define GLASS_ROCK 1     /* the glass palette's darkest rock, where the shaft is clear */
 #define GLASS_OUTLINE 14 /* its colors past the curtain's 13 */
 #define GLASS_GLINT 15
@@ -489,7 +485,6 @@ typedef MODE5_CUSTOM_IMAGE(4, 8, 8) energy_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, GAUGE_W, FITTING_H) fitting_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, GLASS_W, LIQUID_H) liquid_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, GLASS_W, GLASS_H) glass_image_t;
-typedef MODE5_CUSTOM_IMAGE(4, GLINT_W, GLASS_H) glint_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 64, 64) logo_image_t; /* a third of art/logo.png */
 typedef MODE5_CUSTOM_IMAGE(4, POST_W, POST_H) post_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, BEAM_W, BEAM_H) beam_image_t;
@@ -514,7 +509,6 @@ typedef struct
     uint16_t liquid[16];  /* the fuel in the gauge's sight glass */
     uint16_t brass[16];   /* the gauge's fittings */
     uint16_t glass[16];   /* the curtain row seen through the glass, loaded with each curtain set */
-    uint16_t glint[16];   /* and through its glint */
 } palettes_t;
 
 /* Plane 0 sprites, in front of the texture and behind the bricks, back to
@@ -562,9 +556,6 @@ typedef struct
 typedef struct
 {
     mode5_csprite_t glass[GLASS_PIECES];
-#if GAUGE_GLINT
-    mode5_csprite_t glint[GLASS_PIECES];
-#endif
     mode5_csprite_t liquid[LIQUID_SEGMENTS];
     mode5_csprite_t surface;
     mode5_csprite_t fittings[2]; /* top, bottom */
@@ -633,16 +624,13 @@ typedef struct
 } frame_set_t;
 
 /* The energy gauge's images: the fittings and the fuel, as ROM:gauge
-   holds them, then the glass and its glint, made for each level. */
+   holds them, then the glass, made for each level. */
 typedef struct
 {
     fitting_image_t fittings[2]; /* top, bottom */
     liquid_image_t liquid;
     liquid_image_t surface;
     glass_image_t glass;
-#if GAUGE_GLINT
-    glint_image_t glint;
-#endif
 } gauge_art_t;
 
 /* A level's own art: its frame set, the cracks and the chunks, as
@@ -776,8 +764,7 @@ typedef struct
 #define XRAM_PALETTE_HOLO offsetof(xram_layout_t, palettes.holo)
 #define XRAM_PALETTE_LIQUID offsetof(xram_layout_t, palettes.liquid)
 #define XRAM_PALETTE_BRASS offsetof(xram_layout_t, palettes.brass)
-#define XRAM_PALETTE_GLASS offsetof(xram_layout_t, palettes.glass) /* and the glint's after it */
-#define XRAM_PALETTE_GLINT offsetof(xram_layout_t, palettes.glint)
+#define XRAM_PALETTE_GLASS offsetof(xram_layout_t, palettes.glass)
 #define XRAM_SCENERY offsetof(xram_layout_t, scenery)
 #define XRAM_BRACE_SPRITES offsetof(xram_layout_t, scenery.braces)
 #define XRAM_MACHINE_SPRITE offsetof(xram_layout_t, scenery.machine)
@@ -795,9 +782,6 @@ typedef struct
 #define XRAM_LIQUID_SPRITES offsetof(xram_layout_t, hud.gauge.liquid)
 #define XRAM_SURFACE_SPRITE offsetof(xram_layout_t, hud.gauge.surface)
 #define XRAM_FITTING_SPRITES offsetof(xram_layout_t, hud.gauge.fittings)
-#if GAUGE_GLINT
-#define XRAM_GLINT_SPRITES offsetof(xram_layout_t, hud.gauge.glint)
-#endif
 #define XRAM_COIN_ICON offsetof(xram_layout_t, hud.coin_icon)
 #define XRAM_COIN_DIGITS offsetof(xram_layout_t, hud.coin_digits)
 #define XRAM_NUGGET_ICONS offsetof(xram_layout_t, hud.nugget_icons)
@@ -869,9 +853,6 @@ typedef struct
 #define XRAM_LIQUID_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.liquid)
 #define XRAM_SURFACE_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.surface)
 #define XRAM_GLASS_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.glass)
-#if GAUGE_GLINT
-#define XRAM_GLINT_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.glint)
-#endif
 #define XRAM_LEVEL_SLED offsetof(xram_layout_t, art.cave.sled_images)
 #define XRAM_LOGO_IMAGES offsetof(xram_layout_t, art.cave.logo_images)
 

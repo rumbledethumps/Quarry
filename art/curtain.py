@@ -12,18 +12,17 @@ CURTAIN_W columns left of the middle, and the right curtain the CURTAIN_W
 columns right of it.
 
 out.bin is the palette, 16 colors as png2bin.py writes a palette row, then
-the 4 colors of the texture behind the playfield, then the glass row and
-the glint row, then each curtain as sprite images: CURTAIN_COLS across and
-CURTAIN_ROWS down, row by row, each image packed as png2bin.py packs one.
+the 4 colors of the texture behind the playfield, then the glass row,
+then each curtain as sprite images: CURTAIN_COLS across and CURTAIN_ROWS
+down, row by row, each image packed as png2bin.py packs one.
 CURTAIN_W and the sizes are those of src/xram.h. Only the Python standard
 library is used.
 
 The energy gauge's sight glass shows the right curtain through it, its
 pixels as they are, in the glass row: the rock's colors GLASS_TINT of the
 way to the color of the glass, then the glass's outline, GLASS_OUTLINE,
-and a flat glint, GLASS_GLINT, the glint over the rock's average. The
-glint row is the rock's colors through the glass, then GLINT_MIX of the way
-to the glint, for a glint that shows the rock too.
+and a flat glint, GLASS_GLINT: the rock's average through the glass,
+GLINT_MIX of the way to the glint's color.
 
 The texture's colors are near grays at the four faint levels of
 TEXTURE_LUMA, so the floor of the playfield matches the walls around it.
@@ -189,9 +188,7 @@ def main():
     glass = [(0, 0, 0, 0)] + [c + (255,) for c in seen]
     glass += [(0, 0, 0, 0)] * (GLASS_OUTLINE - len(glass))
     glass += [OUTLINE + (255,), mix(mix(average, GLASS, GLASS_TINT), GLINT, GLINT_MIX) + (255,)]
-    glint = [(0, 0, 0, 0)] + [mix(c, GLINT, GLINT_MIX) + (255,) for c in seen]
-    glint += [(0, 0, 0, 0)] * (16 - len(glint))
-    data += palette_row(glass) + palette_row(glint)
+    data += palette_row(glass)
     data += tiles(rows, width // 2 - CURTAIN_W) + tiles(rows, width // 2)
     with open(args.output, 'wb') as f:
         f.write(data)

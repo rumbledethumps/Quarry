@@ -308,9 +308,9 @@ post clear of it.
   curtain's 13 colors 15% of the way to a pale blue, which
   `art/curtain.py` makes with each curtain set. Where the shaft is clear
   behind it, it shows the darkest rock.
-- A glint runs down the glass 2 px in from its left, 55% of the way to
-  white, the rock showing through it too, from a strip of its own. With
-  `GAUGE_GLINT` off in `src/xram.h` it is a flat color, for 400 bytes back.
+- A glint runs down the glass 2 px in from its left, a flat color. A glint
+  that showed the rock through it too cost 400 bytes, and nobody could
+  tell.
 - The fuel is amber, lit from the upper left, in 7 shades across: a rim at
   its left wall, the glint, the brightest just past it, and darker to its
   right wall. Its surface is a bright line, and it climbs a pixel up each
@@ -564,15 +564,14 @@ darkest first. Each class of art gets a row of its own:
 | holo | the holographic cursor of the upgrade screen and the menus, whose colors shimmer |
 | liquid | the fuel in the energy gauge |
 | brass | the gauge's fittings |
-| glass | the curtain row through the gauge's glass, and its outline and flat glint, loaded with each curtain set |
-| glint | the curtain row through the glint, loaded with each curtain set |
+| glass | the curtain row through the gauge's glass, and its outline and glint, loaded with each curtain set |
 
 The upgrade panels have a palette of their own, 256 colors, outside these rows, since they are a tile layer, and so do the menus, 16 colors. Each frame set brings its own 16 colors, and the same darkened for its braces, with its pieces. Each talk brings its dwarf's 16 colors and its bubble's 4.
 
 A jet's nozzle and its flame are one sprite, so the flames share the sled
 row. Every curtain set brings its own palette into the one curtain row,
-and the glass and glint rows from it. That is 12 rows and the 5 brick
-colors, so 15 rows are left.
+and the glass row from it. That is 11 rows and the 5 brick colors, so 16
+rows are left.
 
 ## Sizes
 
@@ -593,7 +592,7 @@ colors, so 15 rows are left.
 | sled | the widths of `TUNE_WIDTHS`, up to 64, rounded up to 4 for the sprite; 8 tall, then its two tilts, 24 tall each |
 | jet | 7 frames, 8x12: the nozzle alone, 3 flames, 3 swiveled flames |
 | smoke | 3 frames, 8x8 |
-| energy gauge | 16 wide, the screen tall: the fittings 16x20, the glass 12x200 in 4 sprites and its glint 4x200, made for each level, and the fuel in runs of 12x16 under its surface; 2,112 bytes of a level's art |
+| energy gauge | 16 wide, the screen tall: the fittings 16x20, the glass 12x200 in 4 sprites, made for each level, and the fuel in runs of 12x16 under its surface; 1,712 bytes of a level's art |
 | logo | 3 pieces, 64x64, as one 192x64 image |
 | curtains | 100x240 each, cut from a 256x240 curtain set |
 | cursor | 4 corners, 12x12, one image turned |
