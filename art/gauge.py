@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Draw the energy gauge's fittings and fuel, as art/style/README.md
+"""Draw the energy gauge's fittings, fuel and bubble, as art/style/README.md
 describes them.
 
   gauge.py out.bin [--preview out.png]
 
 The build runs this. out.bin is gauge_art_t of src/xram.h as far as its
 glass, which the game makes for each level from the rock behind it: the
-top fitting, the bottom fitting, a run of the fuel and its surface.
+top fitting, the bottom fitting, a run of the fuel, its surface, and a
+bubble.
 
 The fittings are GAUGE_W wide and FITTING_H tall: a brass pipe from off
 the edge of the screen into a hex nut that grips the end of the glass,
@@ -16,7 +17,9 @@ from the upper left, brightest a little in from its left and darkest at
 its right wall, the glint of the glass down it GLINT_COL in. Its surface
 is a bright line, and a pixel higher at each wall, where the liquid
 climbs the glass. Every row of the run is the same, so the game can stack
-it to any height.
+it to any height. The bubble is a ring 3 across, paler than the fuel, the
+palest on its upper left, the fuel showing through its middle, in a sprite
+BUBBLE_SIZE square.
 
 The fittings are in the brass row of art/palettes.png, and the fuel in
 the liquid row, so its colors can change without touching the brass.
@@ -31,7 +34,7 @@ from rd2png import rgba, write_png
 HERE = os.path.dirname(os.path.abspath(__file__))
 LIQUID_ROW, BRASS_ROW = 13, 14  # of art/palettes.png
 GAUGE_W, FITTING_H, PIPE_W, NUT_H = 16, 20, 8, 8
-GLASS_W, LIQUID_H, GLINT_COL = 12, 16, 2  # as src/xram.h
+GLASS_W, LIQUID_H, GLINT_COL, BUBBLE_SIZE = 12, 16, 2, 4  # as src/xram.h
 
 # The brass row, by index, darkest first.
 OUTLINE, B0, B1, B2, B3, B4 = range(1, 7)
@@ -44,6 +47,7 @@ L1, L2, L3, L4, L5, L6, L7, GLINT, SURFACE = range(1, 10)
 # shadowed wall.
 BODY = [L5, GLINT, L7, L6, L6, L5, L4, L3, L2, L1]
 LINE = [SURFACE] * 6 + [L7, L7, L6, L5]
+BUBBLE = [[0, SURFACE, 0, 0], [SURFACE, 0, GLINT, 0], [0, GLINT, 0, 0], [0, 0, 0, 0]]
 
 
 def pipe(rows, top, bottom):
@@ -109,13 +113,13 @@ def main():
     top, bottom = fittings()
     run, surface = fuel()
     with open(args.output, 'wb') as f:
-        f.write(pack(top) + pack(bottom) + pack(run) + pack(surface))
+        f.write(pack(top) + pack(bottom) + pack(run) + pack(surface) + pack(BUBBLE))
     if args.preview:
         _, _, palettes = rgba(os.path.join(HERE, 'palettes.png'))
         # The brass row's colors, then the liquid row's after them.
         colors = palettes[BRASS_ROW][:7] + palettes[LIQUID_ROW][1:10]
         shift = lambda rows: [[c and c + 6 for c in row] for row in rows]
-        pieces = [top, bottom, shift(run), shift(surface)]
+        pieces = [top, bottom, shift(run), shift(surface), shift(BUBBLE)]
         gap = [0] * 4
         rows = [sum(([p[y][x] if y < len(p) else 0 for x in range(len(p[0]))] + gap for p in pieces), [])
                 for y in range(FITTING_H)]

@@ -4,9 +4,10 @@
   energy.py rom.rp6502
 
 Needs a Debug ROM, which logs the game's events. The energy is poked low
-to skip ahead. Reads the fuel in the gauge, the jets and the tilt of the
-falling sled from their sprites, the glass from its image, and the smoke
-from screenshots. Exits 0 when every check passes.
+to skip ahead, and the ball poked over the sled to make it bounce. Reads
+the fuel in the gauge, its bubbles, the jets and the tilt of the falling
+sled from their sprites, the glass from its image, and the smoke from
+screenshots. Exits 0 when every check passes.
 """
 
 import os
@@ -77,6 +78,55 @@ def check_glass(game):
         check(row == want, f'row {y} of the glass is {row}, the rock behind it {want}')
 
 
+def bubbles(game):
+    """The tops of the bubbles rising in the gauge, from their sprites."""
+    hidden = game.sym['SPRITE_HIDDEN_Y']
+    return [y for _, y, _ in game.sprites('XRAM_BUBBLE_SPRITES', game.sym['BUBBLES']) if y != hidden]
+
+
+def bounce(game):
+    """The ball dropped straight onto the middle of the sled, to bounce off
+    it."""
+    sym = game.sym
+    x = game.px('paddle_x') + game.ram('paddle_width') // 2 - sym['BALL_SIZE'] // 2
+    y = game.px('paddle_y') - sym['BALL_SIZE'] - 3
+    game.paused_poke([('ball_x', x << 8, 4), ('ball_y', y << 8, 4), ('ball_vx', 0, 2), ('ball_vy', 256, 2)])
+    game.wait('paddle zone', 10)
+    game.run(2)
+
+
+def check_bubbles(game):
+    """A bubble rises from the foot of the fuel each time the ball bounces
+    off the sled, while one is free. One is never taken from another, so
+    each rises all the way, and is gone at the surface."""
+    sym = game.sym
+    foot = game.sprite('XRAM_GLASS_SPRITES')[1] + sym['GLASS_H']
+    bounce(game)
+    risen = bubbles(game)
+    check(len(risen) == 1 and foot - sym['BUBBLE_SIZE'] - 4 <= risen[0] < foot,
+          f'a bounce sends a bubble up from the foot of the fuel, at {foot}: {risen}')
+    game.run(20)
+    check(bubbles(game)[0] < risen[0] - 10, f'the bubble rises, from {risen[0]} to {bubbles(game)[0]}')
+    for _ in range(sym['BUBBLES'] - 1):
+        bounce(game)
+    full = sorted(bubbles(game))
+    check(len(full) == sym['BUBBLES'], f'a bubble for each bounce, {sym["BUBBLES"]} at most: {full}')
+    bounce(game)
+    after = sorted(bubbles(game))
+    gaps = lambda ys: [b - a for a, b in zip(ys, ys[1:])]
+    check(len(after) == sym['BUBBLES'] and gaps(after) == gaps(full) and after[0] < full[0],
+          f'with none free, a bounce makes none and takes none: {full}, then {after}')
+    for _ in range(sym['GLASS_H'] + 20):
+        tops = bubbles(game)
+        if not tops:
+            break
+        surface = game.sprite('XRAM_SURFACE_SPRITE')[1] + 1
+        check(min(tops) > surface, f'no bubble rises past the surface, at {surface}: {tops}')
+        game.run()
+    check(not bubbles(game), 'every bubble is gone at the surface')
+    print(f'ok: {sym["BUBBLES"]} bubbles at most, each up to the surface')
+
+
 def smoke_pixels(game, shot, x0, x1, y0, y1):
     rows = game.screen(shot)
     return sum(1 for y in range(y0, y1) for x in range(x0, x1)
@@ -118,6 +168,7 @@ def main():
     check(55 * drain <= drained <= 65 * drain,
           f'energy drains {drain} a step after the launch, drained {drained} in 60')
     print(f'drained {drained} in 60 steps after the launch')
+    check_bubbles(game)
 
     low = sym['TUNE_ENERGY_LOW']
     game.paused_poke([('energy', low + 20, 2)])

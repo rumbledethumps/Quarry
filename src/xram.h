@@ -429,9 +429,9 @@ typedef struct
    curtain's pixels under it, in the glass palette, the curtain's colors
    tinted, and an outline down each side. A glint runs down it GLINT_COL
    in, the glass palette's flat GLASS_GLINT. The fuel is LIQUID_SEGMENTS
-   sprites of one image
-   of liquid LIQUID_H tall, up from the foot of the glass, under one of its
-   surface. Sprites are 64 tall at most, so the glass is in pieces. */
+   sprites of one image of liquid LIQUID_H tall, up from the foot of the
+   glass, under one of its surface, and up to BUBBLES bubbles rise through
+   it. Sprites are 64 tall at most, so the glass is in pieces. */
 #define GAUGE_W 16
 #define FITTING_H 20
 #define GLASS_X 2 /* from the gauge's left */
@@ -444,6 +444,8 @@ typedef struct
 #define GLASS_GLINT 15
 #define LIQUID_H 16
 #define LIQUID_SEGMENTS (GLASS_H / LIQUID_H) /* the rows above them, the surface's alone */
+#define BUBBLES 3 /* rising through the fuel at once, a sprite each */
+#define BUBBLE_SIZE 4
 
 /* Pieces of the old energy bar, in the order of art/energy.png, the
    upgrade screen's stand-in picture of the gauge. */
@@ -485,6 +487,7 @@ typedef MODE5_CUSTOM_IMAGE(4, 8, 8) energy_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, GAUGE_W, FITTING_H) fitting_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, GLASS_W, LIQUID_H) liquid_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, GLASS_W, GLASS_H) glass_image_t;
+typedef MODE5_CUSTOM_IMAGE(4, BUBBLE_SIZE, BUBBLE_SIZE) bubble_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 64, 64) logo_image_t; /* a third of art/logo.png */
 typedef MODE5_CUSTOM_IMAGE(4, POST_W, POST_H) post_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, BEAM_W, BEAM_H) beam_image_t;
@@ -552,12 +555,14 @@ typedef struct
 #define LEVEL_SPRITES (sizeof(level_sprites_t) / sizeof(mode5_csprite_t))
 
 /* The energy gauge's sprites, back to front: the glass, the fuel over it,
-   and the fittings over the ends of both. */
+   the bubbles rising through the fuel, and the fittings over the ends of
+   them all. */
 typedef struct
 {
     mode5_csprite_t glass[GLASS_PIECES];
     mode5_csprite_t liquid[LIQUID_SEGMENTS];
     mode5_csprite_t surface;
+    mode5_csprite_t bubbles[BUBBLES];
     mode5_csprite_t fittings[2]; /* top, bottom */
 } gauge_sprites_t;
 
@@ -623,13 +628,14 @@ typedef struct
     brace_image_t brace;
 } frame_set_t;
 
-/* The energy gauge's images: the fittings and the fuel, as ROM:gauge
-   holds them, then the glass, made for each level. */
+/* The energy gauge's images: the fittings, the fuel and a bubble, as
+   ROM:gauge holds them, then the glass, made for each level. */
 typedef struct
 {
     fitting_image_t fittings[2]; /* top, bottom */
     liquid_image_t liquid;
     liquid_image_t surface;
+    bubble_image_t bubble;
     glass_image_t glass;
 } gauge_art_t;
 
@@ -781,6 +787,7 @@ typedef struct
 #define XRAM_GLASS_SPRITES offsetof(xram_layout_t, hud.gauge.glass)
 #define XRAM_LIQUID_SPRITES offsetof(xram_layout_t, hud.gauge.liquid)
 #define XRAM_SURFACE_SPRITE offsetof(xram_layout_t, hud.gauge.surface)
+#define XRAM_BUBBLE_SPRITES offsetof(xram_layout_t, hud.gauge.bubbles)
 #define XRAM_FITTING_SPRITES offsetof(xram_layout_t, hud.gauge.fittings)
 #define XRAM_COIN_ICON offsetof(xram_layout_t, hud.coin_icon)
 #define XRAM_COIN_DIGITS offsetof(xram_layout_t, hud.coin_digits)
@@ -852,6 +859,7 @@ typedef struct
 #define XRAM_FITTING_IMAGES offsetof(xram_layout_t, art.cave.level.gauge.fittings)
 #define XRAM_LIQUID_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.liquid)
 #define XRAM_SURFACE_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.surface)
+#define XRAM_BUBBLE_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.bubble)
 #define XRAM_GLASS_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.glass)
 #define XRAM_LEVEL_SLED offsetof(xram_layout_t, art.cave.sled_images)
 #define XRAM_LOGO_IMAGES offsetof(xram_layout_t, art.cave.logo_images)

@@ -311,13 +311,19 @@ post clear of it.
 - A glint runs down the glass 2 px in from its left, a flat color. A glint
   that showed the rock through it too cost 400 bytes, and nobody could
   tell.
-- The fuel is amber, lit from the upper left, in 7 shades across: a rim at
-  its left wall, the glint, the brightest just past it, and darker to its
-  right wall. Its surface is a bright line, and it climbs a pixel up each
-  wall. It is in a row of its own, the liquid row, so its color can
-  change, as it may. `art/gauge.py` draws it and the fittings.
+- The fuel is a pale blue, cool rocket fuel in the hue of the holographic
+  cursor, lit from the upper left, in 7 shades across: a rim at its left
+  wall, the glint, the brightest just past it, and darker to its right
+  wall. Its surface is a bright line, and it climbs a pixel up each wall.
+  It is in a row of its own, the liquid row, so its color can change, as
+  it may. `art/gauge.py` draws it and the fittings.
+- Each time the ball bounces off the sled, a bubble rises from the foot of
+  the fuel to its surface, a pale ring 3 across that sways a pixel either
+  way, while one of the 3 is free. A bubble is never taken from another:
+  every one rises all the way.
 - The fittings are stand-ins, in a dull brass, not gold, to be replaced.
-- Still to come: bubbles, the fuel sloshing, and a look for low fuel. The
+- Still to come: more bubbles at other times, the fuel sloshing, and a
+  look for low fuel. The
   beeps and the machine's lamp warn of it now.
 - The Oracle, `ref/oracle.png`, was the design before: a steel scale with
   a cursor riding it, a sight glass in the cursor and a clockwork chevron.
@@ -592,7 +598,7 @@ rows are left.
 | sled | the widths of `TUNE_WIDTHS`, up to 64, rounded up to 4 for the sprite; 8 tall, then its two tilts, 24 tall each |
 | jet | 7 frames, 8x12: the nozzle alone, 3 flames, 3 swiveled flames |
 | smoke | 3 frames, 8x8 |
-| energy gauge | 16 wide, the screen tall: the fittings 16x20, the glass 12x200 in 4 sprites, made for each level, and the fuel in runs of 12x16 under its surface; 1,712 bytes of a level's art |
+| energy gauge | 16 wide, the screen tall: the fittings 16x20, the glass 12x200 in 4 sprites, made for each level, the fuel in runs of 12x16 under its surface, and a bubble 4x4; 1,720 bytes of a level's art |
 | logo | 3 pieces, 64x64, as one 192x64 image |
 | curtains | 100x240 each, cut from a 256x240 curtain set |
 | cursor | 4 corners, 12x12, one image turned |

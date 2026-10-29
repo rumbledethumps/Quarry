@@ -93,7 +93,8 @@ static void ball_launch(void)
     DEBUG_LOG("launch, %u balls left\n", balls);
 }
 
-/* x is the ball's left edge, which overlaps the paddle. */
+/* x is the ball's left edge, which overlaps the paddle. Each bounce sends a
+   bubble up the fuel gauge. */
 static void paddle_bounce(int16_t x)
 {
     int16_t across = x + BALL_SIZE - PX(paddle_x);
@@ -104,6 +105,7 @@ static void paddle_bounce(int16_t x)
     ball_vx = zone_vx[zone];
     ball_vy = zone_vy[zone];
     sfx_play(SFX_PADDLE, x + BALL_SIZE / 2);
+    energy_bubble();
     DEBUG_LOG("paddle zone %u\n", zone);
 }
 

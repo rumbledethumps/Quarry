@@ -5,6 +5,7 @@
 #include "tuning.h"
 #include "video.h"
 #include "xram.h"
+#include <stdlib.h>
 
 #define GAUGE_SPRITE(field, i) (XRAM_GAUGE_SPRITES + offsetof(gauge_sprites_t, field) + (i) * sizeof(mode5_csprite_t))
 #define GLASS_ROW_BYTES (GLASS_W / 2)
@@ -15,6 +16,12 @@
    what powers the paddle. */
 #define LOW_BEEP_STEPS 180
 #define LAMP_STEPS 12
+
+/* A bubble rises BUBBLE_SPEED sixteenths of a px a step, from the foot of
+   the fuel to its surface, and sways a px either way as it goes, a step of
+   the sway every 8 px. */
+#define BUBBLE_SPEED 16
+#define BUBBLE_SPRITE(i) GAUGE_SPRITE(bubbles, i)
 
 /* The energy a cheat adds or takes away, a twelfth of a full gauge. */
 #define CHEAT_ENERGY ((TUNE_ENERGY + 11) / 12)
@@ -28,6 +35,9 @@ uint8_t energy_draining;
 
 static int16_t gauge_x, glass_y; /* the gauge's left, and its glass's top */
 static uint8_t rows_shown;       /* of fuel in the glass */
+static uint16_t bubble_y[BUBBLES]; /* the top of each bubble, in 1/16 px, or 0 for none */
+static uint8_t bubble_x[BUBBLES];  /* its left, from the glass's, before it sways */
+static const int8_t sway[] = {0, 1, 0, -1};
 static uint8_t beep_steps;
 static uint8_t lamp_steps;
 
@@ -82,6 +92,50 @@ static void gauge_draw(void)
         sprite_hide(XRAM_SURFACE_SPRITE);
 }
 
+/* A bubble from the foot of the fuel, if there is fuel and a bubble free.
+   None is ever taken from another, so each rises all the way. It starts
+   somewhere across the glass, where it and its sway stay inside the
+   outline. */
+void energy_bubble(void)
+{
+    uint8_t i;
+
+    if (!rows_shown)
+        return;
+    for (i = 0; i < BUBBLES; i++)
+        if (!bubble_y[i])
+        {
+            bubble_y[i] = (glass_y + GLASS_H - BUBBLE_SIZE) << 4;
+            bubble_x[i] = 2 + rand() % (GLASS_W - 6);
+            return;
+        }
+}
+
+/* Each bubble a step up, until its top reaches the surface, and it is
+   gone. */
+static void bubbles_step(void)
+{
+    int16_t surface = glass_y + GLASS_H - rows_shown;
+    uint8_t i;
+
+    for (i = 0; i < BUBBLES; i++)
+    {
+        int16_t y;
+
+        if (!bubble_y[i])
+            continue;
+        bubble_y[i] -= BUBBLE_SPEED;
+        y = bubble_y[i] >> 4;
+        if (y <= surface + 1)
+        {
+            bubble_y[i] = 0;
+            sprite_hide(BUBBLE_SPRITE(i));
+        }
+        else
+            sprite_move(BUBBLE_SPRITE(i), gauge_x + GLASS_X + bubble_x[i] + sway[y >> 3 & 3], y);
+    }
+}
+
 #ifndef NDEBUG
 /* A cheat: adds a twelfth of the energy, up to full, or takes it away. */
 void energy_cheat(int8_t steps)
@@ -116,6 +170,11 @@ void energy_start(int16_t x, int16_t y)
     for (i = 0; i < LIQUID_SEGMENTS; i++)
         sprite_set(GAUGE_SPRITE(liquid, i), XRAM_LIQUID_IMAGE, XRAM_PALETTE_LIQUID, MODE5_SIZE(GLASS_W, LIQUID_H));
     sprite_set(XRAM_SURFACE_SPRITE, XRAM_SURFACE_IMAGE, XRAM_PALETTE_LIQUID, MODE5_SIZE(GLASS_W, LIQUID_H));
+    for (i = 0; i < BUBBLES; i++)
+    {
+        bubble_y[i] = 0;
+        sprite_set(BUBBLE_SPRITE(i), XRAM_BUBBLE_IMAGE, XRAM_PALETTE_LIQUID, MODE5_SIZE(BUBBLE_SIZE, BUBBLE_SIZE));
+    }
     for (i = 0; i < 2; i++)
     {
         sprite_set(GAUGE_SPRITE(fittings, i), XRAM_FITTING_IMAGES + i * sizeof(fitting_image_t), XRAM_PALETTE_BRASS,
@@ -139,6 +198,7 @@ void energy_step(void)
 {
     uint16_t was = energy;
 
+    bubbles_step();
     if (lamp_steps && !--lamp_steps)
         frame_lamp(0);
     if (!energy_draining || !energy)
