@@ -709,16 +709,16 @@ typedef struct
 } talk_t;
 
 /* The title's own art: the logo, then its panels, from
-   art/title_panels.py, as ROM:title_panels holds them: their palette and
-   tiles, and maps of the tiles on plane 1, each TITLE_COLS by TITLE_ROWS
-   cells under the logo, of the panels as each screen of the title shows
-   them. The layer shows one at a time. */
+   art/title_panels.py, a map of 4-bit tiles on plane 1, TITLE_COLS by
+   TITLE_ROWS cells under the logo: their palette and tiles, as
+   ROM:title_panels holds them, then the map, which the title loads from
+   the maps after them. */
 typedef struct
 {
     logo_image_t logo_images[3];
     uint16_t panel_palette[16];
     title_tile_t panel_tiles[TITLE_TILES];
-    uint8_t panel_maps[TITLE_MAPS][TITLE_ROWS][TITLE_COLS];
+    uint8_t panel_map[TITLE_ROWS][TITLE_COLS];
 } title_art_t;
 
 /* The art of the title and of a level: the texture and a curtain set, the
@@ -901,8 +901,7 @@ typedef struct
 #define XRAM_LOGO_IMAGES offsetof(xram_layout_t, art.cave.title.logo_images)
 #define XRAM_TITLE_PALETTE offsetof(xram_layout_t, art.cave.title.panel_palette)
 #define XRAM_TITLE_TILES offsetof(xram_layout_t, art.cave.title.panel_tiles)
-#define XRAM_TITLE_MAPS offsetof(xram_layout_t, art.cave.title.panel_maps)
-#define XRAM_TITLE_MAP(map) (XRAM_TITLE_MAPS + (map) * TITLE_ROWS * TITLE_COLS)
+#define XRAM_TITLE_MAP offsetof(xram_layout_t, art.cave.title.panel_map)
 
 MODE5_PALETTE_CHECK(palettes_t);
 

@@ -46,7 +46,9 @@ _Static_assert(CURTAIN_SETS <= 9 && TEXTURES <= 9 && FRAME_SETS <= 9, "An asset'
 #define CARTS_BYTES (XRAM_CART_TILES + CART_TILES * sizeof(cart_tile_t) - XRAM_CART_PALETTE)
 #define MENUS_BYTES (XRAM_MENU_TILES + MENU_TILES * sizeof(menu_tile_t) - XRAM_MENU_PALETTE)
 #define LOGO_BYTES sizeof(((xram_layout_t *)0)->art.cave.title.logo_images)
-#define TITLE_PANELS_BYTES (XRAM_TITLE_MAP(TITLE_MAPS) - XRAM_TITLE_PALETTE)
+#define TITLE_ART_BYTES (XRAM_TITLE_MAP - XRAM_TITLE_PALETTE) /* the palette and the tiles */
+#define TITLE_MAP_BYTES (TITLE_ROWS * TITLE_COLS)
+#define TITLE_PANELS_BYTES (TITLE_ART_BYTES + TITLE_MAPS * TITLE_MAP_BYTES)
 #define TEXTURE_BYTES sizeof(((xram_layout_t *)0)->art.cave.texture)
 #define CURTAIN_PALETTE_BYTES sizeof(((palettes_t *)0)->curtain)
 #define CURTAIN_SET_BYTES (2 * CURTAIN_PALETTE_BYTES + 4 * sizeof(uint16_t) + 2 * CURTAIN_BYTES)
@@ -221,9 +223,9 @@ static void cave(void)
     xreg_vga_mode3(MODE3_2BPP, XRAM_TEXTURE_CONFIG, 0);
 }
 
-/* The title: a cave, if it comes from another screen, the logo, and its
-   panels, on plane 1 from scanline y, off the screen to the right until the
-   title puts them in their place. */
+/* The title: a cave, if it comes from another screen, the logo, and the
+   palette and tiles of its panels, on plane 1 from scanline y, off the
+   screen to the right until scene_title_panels() shows them. */
 void scene_title(int16_t y)
 {
     mode2_config_t config;
@@ -234,17 +236,32 @@ void scene_title(int16_t y)
         cave();
     }
     load("ROM:logo", 0, XRAM_LOGO_IMAGES, LOGO_BYTES);
-    load("ROM:title_panels", 0, XRAM_TITLE_PALETTE, TITLE_PANELS_BYTES);
+    load("ROM:title_panels", 0, XRAM_TITLE_PALETTE, TITLE_ART_BYTES);
     memset(&config, 0, sizeof config);
     config.x_pos_px = SCREEN_W;
     config.y_pos_px = y;
     config.width_tiles = TITLE_COLS;
     config.height_tiles = TITLE_ROWS;
-    config.xram_data_ptr = XRAM_TITLE_MAP(0);
+    config.xram_data_ptr = XRAM_TITLE_MAP;
     config.xram_palette_ptr = XRAM_TITLE_PALETTE;
     config.xram_tile_ptr = XRAM_TITLE_TILES;
     xram0_write(XRAM_PANEL_CONFIG, &config, sizeof config);
     xreg_vga_mode2(MODE2_4BPP | MODE2_8X8, XRAM_PANEL_CONFIG, 1, y, y + TITLE_ROWS * 8);
+}
+
+/* The title's panels off the screen, and with a map, TITLE_MAP_SAVE and on,
+   loaded in their place, which the title then shows with
+   scene_title_show(), once it has put in their text. */
+void scene_title_panels(uint8_t map)
+{
+    scene_title_show(SCREEN_W);
+    load("ROM:title_panels", TITLE_ART_BYTES + (long)map * TITLE_MAP_BYTES, XRAM_TITLE_MAP, TITLE_MAP_BYTES);
+}
+
+/* The title's panels with their left at x, or off the screen at SCREEN_W. */
+void scene_title_show(int16_t x)
+{
+    xram0_poke16(XRAM_PANEL_CONFIG + offsetof(mode2_config_t, x_pos_px), x);
 }
 
 

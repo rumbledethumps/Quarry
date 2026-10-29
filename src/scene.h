@@ -6,6 +6,8 @@
 void scene_menu(void);
 void scene_menu_show(void);
 void scene_title(int16_t y);
+void scene_title_panels(uint8_t map);
+void scene_title_show(int16_t x);
 uint8_t scene_level(uint8_t sled_rank);
 void scene_curtains(int8_t step);
 void scene_panel_frame(uint8_t p, unsigned at);

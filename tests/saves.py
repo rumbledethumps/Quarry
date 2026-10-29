@@ -10,6 +10,7 @@ theirs. Exits 0 when every check passes.
 """
 
 import os
+import re
 import struct
 import sys
 
@@ -53,12 +54,9 @@ class Title:
 
     def saved(self):
         """Whether the title is the one of a save."""
-        on = self.game.on_panels
-        if on('CONTINUE GAME') and on('DELETE SAVE') and on('PROGRESS') and not on('START GAME'):
-            return True
-        check(on('START GAME') and not on('CONTINUE GAME') and not on('DELETE SAVE') and not on('PROGRESS'),
-              'the title has the panels of a save, or of none')
-        return False
+        panels = self.game.title_panels()
+        check(panels in ('SAVE', 'START'), f'the title has the panels of a save, or of none, not {panels}')
+        return panels == 'SAVE'
 
     def picked(self):
         items = ['CONTINUE GAME', 'DELETE SAVE'] if self.saved() else ['START GAME']
@@ -83,6 +81,10 @@ def main():
     check(not title.saved() and title.picked() == 'START GAME', 'Start Game alone with no save')
     check(title.greeting() and game.ram('talk_state') == game.sym['TALK_WAIT'], 'and the dwarf greets, and stays')
     check(game.shown('XRAM_CURSOR_SPRITES', 4) == 4, 'with the cursor round Start Game')
+    image = lambda: game.xram('XRAM_DWARF_IMAGES', game.sym['DWARF_BYTES'])
+    was = image()
+    game.run(game.sym['TAPE_STEPS'] * 3)
+    check(image() == was, 'nothing writes over him while he stays, such as the tape of a menu')
     game.tap('up')
     game.tap('down')
     check(title.picked() == 'START GAME' and title.greeting(), 'up and down stay on it, and he stays')
@@ -187,7 +189,9 @@ def main():
     game.until('game_state', 'STATE_TITLE', 60)
     game.run(5)
     title = Title(game)
-    check(title.saved() and title.picked() == 'CONTINUE GAME', 'Continue Game is there now, picked, with the progress')
+    check(title.saved() and title.picked() == 'CONTINUE GAME', 'Continue Game is there now, picked')
+    check(re.fullmatch(r'PROGRESS ( \d|\d\d)%', game.progress()),
+          f'with the progress, a space more under 10%, so it centers: {game.progress()!r}')
     check(not title.greeting(), 'and no dwarf')
     game.close()
 
@@ -240,7 +244,7 @@ def main():
     game.tap('space')
     game.until('game_state', 'STATE_TITLE', 60)
     game.run(2)
-    asked = lambda: game.shows('DELETE SAVE?') and not game.on_panels('DELETE SAVE')
+    asked = lambda: game.shows('DELETE SAVE?') and game.title_panels() is None
     game.tap('down')   # DELETE SAVE
     game.tap('space')
     check(asked() and game.ram('picked') == 1, 'Delete Save asks first, in place of the panels, No picked')
@@ -252,9 +256,18 @@ def main():
     check(not game.shows('DELETE SAVE?') and title.picked() == 'DELETE SAVE', 'No goes back to the panels')
     check(read_save(folder)[:3] == (left, 0, (1,) + NO_RANKS[1:]), 'and No keeps the save')
 
-    # Yes deletes it, and the title turns into the one with none, with no
-    # game started: the panels come back, then the progress panel goes, then
-    # the menu's panel shrinks to Start Game, and the dwarf comes in.
+    # With every level cleared and every upgrade bought, the progress says
+    # so, when the panels come back.
+    tops = game.ram('ranks', game.sym['UPGRADES']).to_bytes(game.sym['UPGRADES'], 'little')
+    game.poke('levels_cleared', game.sym['LEVELS'])
+    for u, top in enumerate(tops):
+        game.poke(f'upgrade_ranks+{u}', top)
+    game.tap('space')  # DELETE SAVE
+    game.tap('space')  # NO
+    check(game.progress() == '100% COMPLETE!', f'at 100%: {game.progress()!r}')
+
+    # Yes deletes it, and the title of none comes at once, with no game
+    # started: Start Game, and the dwarf.
     game.tap('space')  # DELETE SAVE, picked after No
     game.tap('up')     # YES
     game.cmd('press space')
@@ -262,18 +275,10 @@ def main():
     game.cmd('release space')
     check(read_save(folder) is None, 'Yes deletes the save')
     game.run(2)
-    check(not game.shows('DELETE SAVE?') and title.saved() and not title.greeting(),
-          'and the panels come back as they were')
-    steps = []
-    for _ in range(game.sym['SHRUNK_STEPS'] + 30):
-        on = game.on_panels
-        now = (on('PROGRESS'), on('CONTINUE GAME'), on('START GAME'))
-        if not steps or steps[-1] != now:
-            steps.append(now)
-        game.run(1)
-    check(steps == [(True, True, False), (False, True, False), (False, False, True)],
-          f'then the progress goes, then the menu shrinks to Start Game: {steps}')
-    check(game.ram('game_state') == game.sym['STATE_TITLE'] and title.picked() == 'START GAME', 'and no game starts')
+    check(not game.shows('DELETE SAVE?') and not title.saved() and title.picked() == 'START GAME',
+          'and the panels of none come at once')
+    check(game.ram('game_state') == game.sym['STATE_TITLE'], 'and no game starts')
+    game.run(30)
     check(title.greeting() and game.shown('XRAM_CURSOR_SPRITES', 4) == 4,
           'and the dwarf greets the player, with the cursor round Start Game')
     check(game.ram('nuggets', 2) == 0 and game.ram('upgrade_ranks') == 0, 'and the game is a new one')

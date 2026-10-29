@@ -20,15 +20,20 @@ from it a row below on two of the hangers of the upgrade screen, and the
 smaller one of START GAME, for when there is no save. The progress panel
 is too short for frame 1's two clamps down each side, one by each corner,
 so its sides are plain steel, as the runs down the others' are, with one
-of frame 1's clamps in the middle. Each map of MAPS is
-the panels as one screen of the title shows them, COLS by ROWS cells.
+of frame 1's clamps in the middle. Each map of MAPS is the panels as one
+screen of the title shows them, COLS by ROWS cells.
+
+The menus' items are drawn here, each centered to the pixel, so an item
+of an odd length is half a cell over, in tiles of its own. The game writes
+the progress, a line of FONT always an even length, so it is centered on
+the cells.
 
 out.bin is the palette, 16 colors as png2bin.py writes a palette row, then
 the tiles, 32 bytes each, the left pixel of each pair in the high nibble:
 tile 0 clear, then a glyph for each letter of FONT, the space the plate,
-then the frames. Then each map of MAPS, a byte a cell. out.h gives the tile
-numbers, the maps and the row of the progress. Only the Python standard
-library is used.
+then the frames and the items. Then each map of MAPS, a byte a cell. out.h
+gives the tile numbers, the maps and the rows of the text. Only the Python
+standard library is used.
 """
 
 import argparse
@@ -56,9 +61,17 @@ EDGE = '..Bb..'
 RUN = 2 * len(EDGE)
 HANGERS = (0, RUN - 1)
 
-# Every letter the title puts on its panels.
-WORDS = ('CONTINUE GAME', 'DELETE SAVE', 'START GAME', 'PROGRESS 0123456789%')
-FONT = ' ' + ''.join(sorted(set(''.join(WORDS)) - {' '}))
+# The menus' items, as src/title.c has them, and the rows of their text, the
+# second ITEM_ROWS under the first, as src/menu.c spaces them: those of a
+# save right under the menu panel's frame, and START GAME in the middle of
+# its panel.
+SAVE_ITEMS, SAVE_ROW = ('CONTINUE GAME', 'DELETE SAVE'), 3
+START_ITEMS, START_ROW = ('START GAME',), 4
+ITEM_ROWS = 3
+PROGRESS_ROW = PROGRESS_TOP + PROGRESS_ROWS // 2
+
+# The letters of the progress, PROGRESS 42%, or at 100, 100% COMPLETE!
+FONT = ' ' + ''.join(sorted(set('PROGRESS 0123456789%' + '100% COMPLETE!') - {' '}))
 
 BLACK = panels.OUTLINE
 PLATE = panels.PLATE
@@ -150,28 +163,38 @@ def hangers(screen):
                 screen[y][x0 + dx] = color
 
 
-def screens(src):
-    """The maps of the title as pictures, in the order of MAPS."""
-    blank = lambda: [[None] * (COLS * 8) for _ in range(ROWS * 8)]
-    save, menu, start = blank(), blank(), blank()
-    place(save, panel(src, MENU_ROWS), 0)
-    place(save, one_clamp(src, panel(src, PROGRESS_ROWS)), PROGRESS_TOP)
-    hangers(save)
-    place(menu, panel(src, MENU_ROWS), 0)
-    place(start, panel(src, START_ROWS), 0)
-    return [save, menu, start]
-
-
-# The maps, in order: the menu's panel and the progress panel hanging from
-# it, as with a save; the menu's panel alone, as the progress panel goes
-# once the save is deleted; and the panel of START GAME.
-MAPS = ('SAVE', 'MENU', 'START')
-
-
 def glyph(ch):
     """A letter of the menus' font, on the plate."""
     colors = {menus.FILL: PLATE, menus.CREAM: CREAM, menus.CREAM2: CREAM2, menus.OUTLINE: BLACK}
     return [[colors[i] for i in row] for row in menus.glyph(ch)]
+
+
+def items(screen, words, row):
+    """The menu's items on its panel, each centered to the pixel on a row,
+    ITEM_ROWS apart."""
+    for i, word in enumerate(words):
+        x0 = COLS * 4 - 4 * len(word)
+        for j, ch in enumerate(word):
+            for y, line in enumerate(glyph(ch)):
+                screen[(row + i * ITEM_ROWS) * 8 + y][x0 + 8 * j:x0 + 8 * j + 8] = line
+
+
+def screens(src):
+    """The maps of the title as pictures, in the order of MAPS."""
+    blank = lambda: [[None] * (COLS * 8) for _ in range(ROWS * 8)]
+    save, start = blank(), blank()
+    place(save, panel(src, MENU_ROWS), 0)
+    place(save, one_clamp(src, panel(src, PROGRESS_ROWS)), PROGRESS_TOP)
+    hangers(save)
+    items(save, SAVE_ITEMS, SAVE_ROW)
+    place(start, panel(src, START_ROWS), 0)
+    items(start, START_ITEMS, START_ROW)
+    return [save, start]
+
+
+# The maps, in order: the menu's panel and the progress panel hanging from
+# it, as with a save, and the panel of START GAME, with none.
+MAPS = ('SAVE', 'START')
 
 
 def main():
@@ -185,7 +208,7 @@ def main():
     pictures = screens(panels.source(frame))
 
     # The steel down to the colors that fit, merging the closest.
-    counts = Counter(c for pic in pictures for row in pic for c in row if c not in (None, BLACK, PLATE))
+    counts = Counter(c for pic in pictures for row in pic for c in row if c not in (None, BLACK, PLATE, CREAM, CREAM2))
     to = reduce(counts, STEEL)
     pictures = [[[to.get(c, c) for c in row] for row in pic] for pic in pictures]
     colors = sorted({BLACK, PLATE, CREAM, CREAM2} | set(to.values()), key=lambda c: 299 * c[0] + 587 * c[1] + 114 * c[2])
@@ -232,9 +255,11 @@ def main():
                 f'#define TITLE_ROWS {ROWS}\n'
                 + ''.join(f'#define TITLE_MAP_{name} {i}\n' for i, name in enumerate(MAPS)) +
                 f'#define TITLE_MAPS {len(MAPS)}\n'
-                f'#define TITLE_PROGRESS_ROW {PROGRESS_TOP + PROGRESS_ROWS // 2} /* the progress\'s text */\n\n'
+                f'#define TITLE_SAVE_ROW {SAVE_ROW} /* the text of the first item of a save, of its map */\n'
+                f'#define TITLE_START_ROW {START_ROW} /* the text of START GAME */\n'
+                f'#define TITLE_PROGRESS_ROW {PROGRESS_ROW} /* the progress, which the game writes */\n\n'
                 '#endif\n')
-    print(f'title_panels: {len(tiles)} tiles, {len(tiles) - 1 - len(FONT)} of them the frames; '
+    print(f'title_panels: {len(tiles)} tiles, {len(tiles) - 1 - len(FONT)} of them the frames and the items; '
           f'the steel in {STEEL} colors, from {len(counts)}')
 
     if args.preview:

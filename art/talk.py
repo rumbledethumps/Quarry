@@ -51,10 +51,11 @@ SCREEN_H = 240
 # him, its tail under his beard. The bubble is placed by its left and its
 # foot, so the tail is as high whatever its lines. On the upgrade screen
 # its foot is over the carts, which show what he talks about. On the title
-# it is a row lower, clear of the panel over it, and he stays, with no OK.
+# he stays, with no OK, and his bubble is a row shorter, clear of the panel
+# over it.
 LEVEL = {'dwarf': (0, SCREEN_H - DWARF_SIZE), 'bubble': (68, SCREEN_H - 24)}
 UPGRADES = {'dwarf': (0, SCREEN_H - DWARF_SIZE), 'bubble': (68, 196)}
-TITLE = {'dwarf': (0, SCREEN_H - DWARF_SIZE), 'bubble': (68, SCREEN_H - 16), 'stays': True}
+TITLE = dict(LEVEL, stays=True)
 
 TALKS = [
     # A new game's first level.
@@ -188,9 +189,10 @@ def bubble(lines, ok):
     """The bubble, as rows of the 4 colors, with its OK cells as paper, and
     the cell of the O. The OK ends the last line, at the right, a cell after
     it, with a cell clear all round it for the cursor. Without one, the cell
-    is 0, 0, which is the bubble's corner."""
+    is 0, 0, which is the bubble's corner, and there is no row under the
+    last line."""
     cols = max(max(len(line) for line in lines), len(lines[-1]) + 4 if ok else 0) + 2
-    rows = 2 * len(lines) + 2
+    rows = 2 * len(lines) + (2 if ok else 1)
     if cols + 1 > BUBBLE_COLS or rows > BUBBLE_ROWS:
         raise SystemExit(f'talk.py: a bubble of {cols} by {rows} cells is too big')
     w, h = 8 * (cols + 1), 8 * rows

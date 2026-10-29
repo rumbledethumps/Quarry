@@ -69,17 +69,17 @@ is no sled on the title, and no way to exit the game: every menu leads to
 another screen.
 
 - With a save, the menu's panel holds CONTINUE GAME, picked, and DELETE
-  SAVE, and the progress of the save, as a percent, is on a panel of its
-  own that hangs from it on two hangers.
+  SAVE, and the progress of the save is on a panel of its own that hangs
+  from it on two hangers: PROGRESS 42%, with a space more under 10%, so
+  the line is always as long and centers on the cells, and at 100%,
+  100% COMPLETE!
 - With none, as the first time, a smaller panel holds START GAME alone,
   and a dwarf in the lower left greets the player: "WELCOME, GREENHORN.
   HEAD ON IN WHEN YOU'RE READY TO BREAK SOME ROCK." His bubble has no OK,
   and he stays while the player picks. START GAME begins level 1.
 - DELETE SAVE asks first, in a box of caution tape in the panels' place,
-  with NO picked, and Esc is NO too. YES deletes the save and stays on
-  the title, which turns into the one with none: the panels come back,
-  half a second later the progress panel goes, half a second after that
-  the menu's panel shrinks to START GAME, and the dwarf comes in.
+  with NO picked, and Esc is NO too. YES deletes the save, and the title
+  of none shows at once, with the dwarf coming in. No game starts.
 
 ## Stone: the levels
 
@@ -403,6 +403,13 @@ from frame 1's 22 colors to 11, merging the closest, beside black, the
 plate and the menus' two creams. Only the lit tiles come, as nothing on
 the title dims, and the text is the menus' font on the plate.
 
+- All the title's text is centered. `art/title_panels.py` draws the
+  menus' items into the maps, each centered to the pixel, so CONTINUE
+  GAME and DELETE SAVE, of odd lengths, are half a cell over, in tiles of
+  their own. The game writes only the progress, whose line is always an
+  even length. The upgrade screen's text stays on the cells, to keep it
+  simple to work on.
+
 - Every panel is symmetrical, unlike the upgrade screen's, whose plain
   steel and bolts fall wherever the walk through frame 1's cells puts
   them: frame 1's four corners as they are, the run between them along
@@ -420,10 +427,10 @@ the title dims, and the text is the menus' font on the plate.
 - It hangs a row under the menu's panel on two of the upgrade screen's
   hangers, at the ends of the run, each the other's mirror but lit from
   the left, from 2 px into one frame to 2 px into the other.
-- Each map of the title, the menu's panel with the progress panel, the
-  menu's alone, and START GAME's, is in XRAM with its text from the
-  start, and the layer shows one at a time, so a panel changes all at
-  once.
+- The title has two maps in ROM, the save's and START GAME's, and room
+  for one in XRAM. It loads the one to show with the panels off the
+  screen, writes the progress, and puts them back, so they never show
+  half drawn.
 
 ### The Backdrop
 
@@ -571,8 +578,9 @@ opens, never in the middle of play, and the screen under them carries on:
   shading in a few colors, light from the upper left, facing a little to
   the right, toward his bubble. He stands in the lower left corner, his
   shoulders on the foot of the screen, and covers the counts there. On the
-  upgrade screen his bubble's foot is just over the carts, so they show,
-  and on the title it is a row lower, clear of the panel over it.
+  upgrade screen his bubble's foot is just over the carts, so they show.
+  On the title, where he has no OK, his bubble has no row under its last
+  line.
 - Each dwarf is a portrait in `art/dwarves/` as Retro Diffusion drew it,
   in a frame of its own on a plain background. `art/talk.py` cuts off the
   frame, clears the background from the edges in, and brings him down to
@@ -667,7 +675,7 @@ rows are left.
 | cursor | 4 corners, 12x12, one image turned |
 | dwarf | 80x80, in up to 3 sprites |
 | speech bubble | up to 28x10 cells of 8x8, the tail's column with them |
-| title's panels | 20 cells across, the menu's 10 rows, START GAME's 9 and the progress 7; 132 tiles of 4 bits, with their three maps 5,336 bytes, of which the title has 226 left |
+| title's panels | 20 cells across, the menu's 10 rows, START GAME's 9 and the progress 7; 150 tiles of 4 bits and a map, 5,192 bytes, of which the title has 370 left |
 
 The current sizes come from `src/xram.h`. RD Pro styles start at 12x12, so
 art 8 pixels tall is made as a larger study, then redrawn by hand at its

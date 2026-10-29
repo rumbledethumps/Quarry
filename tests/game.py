@@ -16,10 +16,10 @@ commands take the same names, and expressions of them, wherever they take
 a number, as in "wait game_state STATE_PLAY", so a test holds no addresses
 and no copies of the game's numbers. Text on the
 screen is read from the menus' map at XRAM_MENU_MAP, a tile a byte, each
-tile from MENU_TILE_GLYPH a letter of the panels' font, and the title's
-from the map of its panels that their layer shows, each tile from
-TITLE_TILE_GLYPH a letter of the font of art/title_panels.py. The sprites
-are read from their lists in XRAM.
+tile from MENU_TILE_GLYPH a letter of the panels' font. The title's panels
+are known by their map, which is one of art/title_panels.py's, but for the
+progress, from TITLE_TILE_GLYPH a letter of its font. The sprites are read
+from their lists in XRAM.
 
 The script's frames do not line up with the game's steps, so a read of the
 game's RAM can land in the middle of a step, after it moves the ball across
@@ -204,16 +204,30 @@ class Game(rp6502.Emu):
         data = self.xram('XRAM_MENU_MAP', cols * self.sym['TEXT_ROWS'])
         return any(text in self.letters(data[r:r + cols]) for r in range(0, len(data), cols))
 
-    def on_panels(self, text):
-        """Whether the text is anywhere on the title's panels, from the map
-        the layer shows, unless it is off the screen."""
-        cols, font, first = self.sym['TITLE_COLS'], title_panels.FONT, self.sym['TITLE_TILE_GLYPH']
-        x, data_ptr = struct.unpack('<2xh6xH', self.xram('XRAM_PANEL_CONFIG', 12))
+    def title_panels(self):
+        """The title's panels as they show: 'SAVE' or 'START', the map of
+        art/title_panels.py they are, but for the progress, or None, off the
+        screen."""
+        cols, rows, row = self.sym['TITLE_COLS'], self.sym['TITLE_ROWS'], self.sym['TITLE_PROGRESS_ROW']
+        x = struct.unpack('<h', self.xram('XRAM_PANEL_CONFIG+2', 2))[0]
         if x >= self.sym['SCREEN_W']:
-            return False
-        data = self.xram(data_ptr, cols * self.sym['TITLE_ROWS'])
-        line = lambda r: ''.join(font[t - first] if 0 <= t - first < len(font) else ' ' for t in data[r:r + cols])
-        return any(text in line(r) for r in range(0, len(data), cols))
+            return None
+        size = cols * rows
+        shown = self.xram('XRAM_TITLE_MAP', size)
+        asset = open(os.path.join(os.path.dirname(os.path.dirname(rom())), 'title_panels.bin'), 'rb').read()
+        but = lambda m: m[:row * cols] + m[(row + 1) * cols:]
+        for name in title_panels.MAPS:
+            at = self.sym['TITLE_ART_BYTES'] + self.sym[f'TITLE_MAP_{name}'] * size
+            if but(asset[at:at + size]) == but(shown):
+                return name
+        fail('the title shows panels of none of its maps')
+
+    def progress(self):
+        """The progress on the title's panels, as text."""
+        cols, row, first = self.sym['TITLE_COLS'], self.sym['TITLE_PROGRESS_ROW'], self.sym['TITLE_TILE_GLYPH']
+        font = title_panels.FONT
+        line = self.xram(f'XRAM_TITLE_MAP+{row * cols}', cols)
+        return ''.join(font[t - first] if 0 <= t - first < len(font) else '#' for t in line).strip('#').strip()
 
     def screen(self, path):
         """The screen, as rows of RGB tuples."""

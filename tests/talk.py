@@ -197,8 +197,7 @@ def main():
     game.until('game_state', 'STATE_TITLE', 60)
     game.run(5)
     shift_number(sym['TALK_UPGRADES'])
-    check(game.ram('game_state') == sym['STATE_TITLE'] and game.on_panels('CONTINUE GAME')
-          and game.on_panels('PROGRESS'),
+    check(game.ram('game_state') == sym['STATE_TITLE'] and game.title_panels() == 'SAVE',
           f'and Shift and {sym["TALK_UPGRADES"]} a talk on the title, which comes back after')
     print('ok: Shift and a number brings in a talk')
     print('PASS')

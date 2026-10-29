@@ -5,8 +5,8 @@
 
 /* A menu: a box of the menus' cells with a title, if any, and items under
    it, one picked. The box is MENU_COLS wide, centered on center. A menu
-   of BOX_NONE has no box, and the screen under it draws its items, where
-   they would be in a box, as the title does on its panels. */
+   of BOX_NONE has no box, and the screen under it has its items, where
+   they would be in a box, as the title has on its panels. */
 typedef struct
 {
     uint8_t center; /* the column in the middle of the box */
@@ -30,7 +30,6 @@ void menu_clear(void);
 void menu_open(const menu_t *menu, uint8_t pick, uint8_t disabled, uint8_t wait);
 void menu_close(void);
 uint8_t menu_picked(void);
-uint8_t menu_item_row(const menu_t *menu, uint8_t item);
 uint8_t menu_step(void);
 void menu_draw(void);
 
