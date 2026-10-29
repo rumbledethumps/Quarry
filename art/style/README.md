@@ -289,10 +289,22 @@ later, such as a rare bonus. The art leaves room for it.
 
 ### The Energy Gauge
 
-The energy gauge is a narrow vertical bar on the right side of the
-screen. It reads like a thermometer with no bulb, built as an industrial
-indicator: a tube in a steel frame, with the level rising and falling in
-it. It leaves room on its left and right for effects at the level line.
+The energy gauge is the Oracle, a precision instrument on the right side
+of the screen, the one instrument the operator watches all day. Its
+design is `ref/oracle.png`, a mock drawn to the pixel; the bar there now
+is a placeholder.
+
+- The scale is plain steel, 16 wide, with exactly 200 px of travel, 2 px
+  to 1%: small pips on its left, every 1%, 5% and 10%, and on its right a
+  track with a rack, a tooth every 1%. It can be dressed up at its ends.
+- The cursor rides the track and is wider than the scale. Through its
+  clear sight glass the pips show, and a notch in the glass's edge, a 45°
+  chevron, points at the level. Beside it a coloured chevron, which
+  clockwork turns from green to yellow to red as the energy runs low, and
+  a gear in a round window. It notches down a tooth at a time, the gear
+  turning. It is the piece worth the most care: finely made, a little
+  ornate.
+- It leaves room on its left for effects at the level line.
 
 ### The Upgrade Panels
 
@@ -623,7 +635,8 @@ The blocks of the looks:
 | `ref/stone-wall.png` | The organic shapes of the curtains, and the warm sandstone turning to cool granite. It is too bright as it is. |
 | `ref/ore-blocks.png` | Matte ore rock and the pairing of each brick with its nugget. Eight candidate ores: limestone, gold-flecked sandstone, malachite in granite, iron ore, coal, silver in slate, rose quartz, and amber in basalt. The bricks became plain colors instead. |
 | `ref/sled-kit.png` | The colors, the chevrons, the bolts, and the thrusters. Keep the scuffs and leave out the rust specks. Its tops are not flat: the new sled has the flat, overhanging top plate of [The Sled](#the-sled). |
-| `ref/ui-kit.png` | Graphite panels with yellow trim, gauges, and meters. Its vertical meter is a start for the energy gauge. |
+| `ref/ui-kit.png` | Graphite panels with yellow trim, gauges, and meters. Its vertical meter was the start for the energy gauge. |
+| `ref/oracle.png`, `ref/oracle-cursor.png` | The Oracle, the energy gauge's design, drawn to the pixel as a layout for a model to make finer, not as final art: the scale with its pips and rack, and the cursor at 70%, 33x23, with its sight glass, the chevron notch, the coloured chevron, and the gear. `oracle-cursor.png` is the cursor on level 1, the cave wall showing through its glass. |
 | `ref/frame-B2.png`, `ref/frame-B3.png` | Concepts for the playfield's frame: lattice towers of angle iron with X bracing, a zigzag truss beam, bolted gussets. Gray steel, see-through. |
 | `ref/frame-C1.png`, `ref/frame-C3.png` | Concepts for the frame: riveted I-beam columns, a riveted plate girder, gusset plates in the corners, in the panels' graphite steel. |
 | `ref/frame-D1.png`, `ref/frame-D3.png`, `ref/frame-D4.png` | Concepts for the frame: a mine shaft frame of plain steel posts, a crossbeam and knee braces. D1 drew a whole mine around it; only its frame counts. A first frame set redrawn from D3 at the game's scale came out muddy, its edges noise, and was dropped. |
