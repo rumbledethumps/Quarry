@@ -3,9 +3,10 @@
 #include "xram.h"
 
 /* Sound effects on the PSG. Each effect is a few notes, played one after
-   another on a channel of its own, with a step of silence between notes so
-   each starts its envelope anew. Effects take the channel that has been
-   quiet longest, or the oldest effect's channel when every one is busy. */
+   another on a channel of its own, with GATE_OFF steps of silence before
+   each note so each starts its envelope anew. Effects take the channel
+   that has been quiet longest, or the oldest effect's channel when every
+   one is busy. */
 
 typedef struct
 {
@@ -21,6 +22,12 @@ typedef struct
     {PSG_FREQ_HZ(hz), (slide) * 3, steps, (wave) | (release), attack, decay}
 #define REST(steps) {PSG_FREQ_HZ(100), 0, steps, PSG_WAVE_SINE, 0xF0, 0xF0}
 #define END {0, 0, 0, 0, 0, 0}
+
+/* The PSG runs apart from the video, and can miss a gate held on or off
+   for only one step, and then a note starts without its attack, so a gate
+   is off for 2 steps before each note, as every note holds it on for 2 or
+   more. */
+#define GATE_OFF 2
 
 #define SQUARE PSG_WAVE_SQUARE
 #define TRIANGLE PSG_WAVE_TRIANGLE
@@ -85,7 +92,8 @@ static const note_t *const sounds[SFX_COUNT] = {
 typedef struct
 {
     const note_t *note; /* the note playing, or next; NULL when quiet */
-    uint8_t left;       /* steps left of the note, 0 between notes */
+    uint8_t left;       /* steps left of the note's gate */
+    uint8_t rest;       /* steps before the note starts, its gate off */
     uint16_t freq;
     uint8_t pan;
     uint8_t quiet; /* steps since the effect ended, to 255 */
@@ -146,14 +154,16 @@ void sfx_play(uint8_t sound, int16_t x)
             best = i;
     }
     v = &voices[best];
+    /* It starts on a later step, so each note holds its gate for whole
+       steps however late in a step it was played, once the gate has been
+       off for GATE_OFF steps: on the next step if the channel has been
+       quiet that long. A busy channel's gate goes off now, part way through
+       a step, so it waits a step more. */
+    v->rest = v->note ? GATE_OFF + 1 : v->quiet + 1 >= GATE_OFF ? 1 : GATE_OFF - v->quiet;
     v->pan = PSG_PAN(pan < -63 ? -63 : pan > 63 ? 63 : pan);
     v->age = 0;
     v->note = sounds[sound];
-    /* It starts on the next step, so each note holds its gate for whole
-       steps however late in a step it was played. A channel that was
-       busy gets the step of silence first. */
     gate_off(best);
-    v->left = 0;
     DEBUG_LOG("sfx %u\n", sound);
 }
 
@@ -173,9 +183,10 @@ void sfx_step(void)
         }
         if (v->age < 255)
             v->age++;
-        if (!v->left)
+        if (v->rest)
         {
-            note_start(i);
+            if (!--v->rest)
+                note_start(i);
             continue;
         }
         if (--v->left == 0)
@@ -186,6 +197,8 @@ void sfx_step(void)
                 v->note = 0;
                 v->quiet = 0;
             }
+            else
+                v->rest = GATE_OFF;
             continue;
         }
         if (v->note->slide)
