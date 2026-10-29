@@ -5,9 +5,11 @@
 
 in.png is 256x240: two rock walls framing a dark shaft down the middle, as
 art/style/README.md describes. The shaft goes clear, so each wall keeps the
-rock's own edge, and the rock is darkened and cut to 15 colors. The left
-curtain is the CURTAIN_W columns left of the middle, and the right curtain
-the CURTAIN_W columns right of it.
+rock's own edge, and the rock is darkened and cut to 15 colors, the
+closest merged, then to ROCK_COLORS, the least used merged, so the row
+has room for the sight glass of the energy gauge. The left curtain is the
+CURTAIN_W columns left of the middle, and the right curtain the CURTAIN_W
+columns right of it.
 
 out.bin is the palette, 16 colors as png2bin.py writes a palette row, then
 the 4 colors of the texture behind the playfield, then each curtain as
@@ -29,12 +31,17 @@ from collections import Counter, deque
 
 from rd2png import rgba, write_png
 
+# Room to spare, if the level screen runs short of XRAM: on level 1, the
+# narrowest, each curtain has 13 columns off the screen behind frame set 1,
+# whose post shows 16, and 15 behind set 2. Curtains 87 or 88 wide would
+# give back about 3 KB, until a level is narrower than level 1.
 CURTAIN_W = 100
 CURTAIN_COLS = (64, 36)
 CURTAIN_ROWS = (64, 64, 64, 48)
 DARKEN = (0.57, 0.6, 0.67)  # red, green and blue, darker and a little cool
 TEXTURE_LUMA = (7.3, 10.3, 13.7, 17.4)  # of 255, the four levels of the texture
 SHAFT_RUN = 32  # rows of one color down the middle column that are shaft, not rock
+ROCK_COLORS = 13  # of the row's 15, two left for the sight glass
 
 
 def luma(c):
@@ -87,15 +94,22 @@ def clear_shaft(pixels, width, height):
             todo.extend(((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)))
 
 
-def reduce(counts, n):
-    """Merges the two closest colors until n are left. Returns a map from
-    each color to the one it became."""
+def reduce(counts, n, least_used=False):
+    """Merges the two closest colors until n are left, or with least_used,
+    the two whose merge moves the fewest pixels the least: their distance
+    weighted by the pixels of both. Returns a map from each color to the one
+    it became."""
     weight = dict(counts)  # each color now, and its pixels
     members = {c: [c] for c in counts}
+
+    def cost(pq):
+        d = sum((x - y) ** 2 for x, y in zip(*pq))
+        wa, wb = weight[pq[0]], weight[pq[1]]
+        return d * wa * wb / (wa + wb) if least_used else d
+
     while len(weight) > n:
         keys = list(weight)
-        a, b = min(((p, q) for i, p in enumerate(keys) for q in keys[i + 1:]),
-                   key=lambda pq: sum((x - y) ** 2 for x, y in zip(*pq)))
+        a, b = min(((p, q) for i, p in enumerate(keys) for q in keys[i + 1:]), key=cost)
         wa, wb = weight.pop(a), weight.pop(b)
         merged = tuple(round((x * wa + y * wb) / (wa + wb)) for x, y in zip(a, b))
         old = members.pop(a) + members.pop(b)
@@ -135,6 +149,8 @@ def main():
                 row[x] = (round(r * DARKEN[0]), round(g * DARKEN[1]), round(b * DARKEN[2]), 255)
     counts = Counter(p[:3] for row in pixels for p in row if p[3])
     to = reduce(counts, 15)
+    fewer = reduce(Counter(to[p[:3]] for row in pixels for p in row if p[3]), ROCK_COLORS, least_used=True)
+    to = {c: fewer[t] for c, t in to.items()}
     colors = sorted(set(to.values()), key=lambda c: 299 * c[0] + 587 * c[1] + 114 * c[2])
     index = {c: colors.index(to[c]) + 1 for c in to}
     rows = [[index[p[:3]] if p[3] else 0 for p in row] for row in pixels]

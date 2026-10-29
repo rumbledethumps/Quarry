@@ -171,8 +171,12 @@ curtain keeps the rock's own edge, and the texture shows through past it.
 The shaft is the flat colors that run down the middle column for 32 rows
 or more. Where rock crosses the middle instead, the curtain's inner edge
 is a straight cut, which looks like a seam: reject that image.
-The rock is darkened, since this is underground, and cut to 15 colors of
-its own palette, and the texture's four colors are made from it. Each
+The rock is darkened, since this is underground, and cut to 13 colors of
+its own palette, and the texture's four colors are made from it: first to
+15, merging the closest colors, then to 13, merging the least used, which
+changes the fewest pixels. Merging the closest all the way to 13 joined
+big areas of the rock and changed the texture's tint. The row's other two
+colors are for the sight glass of the energy gauge. Each
 curtain is the 100 columns beside the middle. The build writes
 `curtain<n>.png` in the build folder to look at.
 
