@@ -422,8 +422,9 @@ typedef struct
 #define SMOKE_FRAMES 3
 
 /* The energy gauge is a sight glass down the right of the screen, from
-   src/energy.c: a brass fitting FITTING_H tall at each end, a pipe off the
-   edge of the screen and a nut, from art/gauge.py, and between them
+   src/energy.c: a fitting FITTING_H tall at each end, a pipe off the edge
+   of the screen and the ring that grips the glass, from art/gauge.py, the
+   bottom one the top one turned over, and between them
    GLASS_H rows of glass, a row for each step of the fuel's level, which
    shows the rock behind it. The glass is made as a level starts: the right
    curtain's pixels under it, in the glass palette, the curtain's colors
@@ -510,7 +511,7 @@ typedef struct
     uint16_t shade[16];   /* the sled row at half, for the machine and a dim sled */
     uint16_t holo[16];    /* the cursor of the upgrade screen and the menus, which shimmers */
     uint16_t liquid[16];  /* the fuel in the gauge's sight glass */
-    uint16_t brass[16];   /* the gauge's fittings */
+    uint16_t fitting[16]; /* the gauge's fittings */
     uint16_t glass[16];   /* the curtain row seen through the glass, loaded with each curtain set */
 } palettes_t;
 
@@ -628,11 +629,11 @@ typedef struct
     brace_image_t brace;
 } frame_set_t;
 
-/* The energy gauge's images: the fittings, the fuel, a bubble and its
+/* The energy gauge's images: the fitting, the fuel, a bubble and its
    drop, as ROM:gauge holds them, then the glass, made for each level. */
 typedef struct
 {
-    fitting_image_t fittings[2]; /* top, bottom */
+    fitting_image_t fitting; /* the top one, and turned over, the bottom */
     liquid_image_t liquid;
     liquid_image_t surface;
     bubble_image_t bubble;
@@ -770,7 +771,7 @@ typedef struct
 #define XRAM_PALETTE_SHADE offsetof(xram_layout_t, palettes.shade)
 #define XRAM_PALETTE_HOLO offsetof(xram_layout_t, palettes.holo)
 #define XRAM_PALETTE_LIQUID offsetof(xram_layout_t, palettes.liquid)
-#define XRAM_PALETTE_BRASS offsetof(xram_layout_t, palettes.brass)
+#define XRAM_PALETTE_FITTING offsetof(xram_layout_t, palettes.fitting)
 #define XRAM_PALETTE_GLASS offsetof(xram_layout_t, palettes.glass)
 #define XRAM_SCENERY offsetof(xram_layout_t, scenery)
 #define XRAM_BRACE_SPRITES offsetof(xram_layout_t, scenery.braces)
@@ -857,7 +858,7 @@ typedef struct
 #define XRAM_JET_SPRITES offsetof(xram_layout_t, art.cave.level.sprites.actors.jets)
 #define XRAM_SMOKE_SPRITES offsetof(xram_layout_t, art.cave.level.sprites.actors.smoke)
 #define XRAM_GAUGE_ART offsetof(xram_layout_t, art.cave.level.gauge)
-#define XRAM_FITTING_IMAGES offsetof(xram_layout_t, art.cave.level.gauge.fittings)
+#define XRAM_FITTING_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.fitting)
 #define XRAM_LIQUID_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.liquid)
 #define XRAM_SURFACE_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.surface)
 #define XRAM_BUBBLE_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.bubble)

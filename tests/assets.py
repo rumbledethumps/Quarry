@@ -66,7 +66,7 @@ def main():
             (logo, 'LOGO_ROW', 'LOGO'), (sled, 'SLED_ROW', 'SLED'), (screen, 'SLED_ROW', 'SLED'),
             (screen, 'FX_ROW', 'FX'), (screen, 'HOLO_ROW', 'HOLO'), (texture, 'TEXTURE_ROW', 'TEXTURE'),
             (frames, 'SLED_ROW', 'SLED'), (frames, 'SHADE_ROW', 'SHADE'),
-            (gauge, 'LIQUID_ROW', 'LIQUID'), (gauge, 'BRASS_ROW', 'BRASS')]
+            (gauge, 'LIQUID_ROW', 'LIQUID'), (gauge, 'FITTING_ROW', 'FITTING')]
     for module, name, palette in rows:
         check(getattr(module, name) == row(palette),
               f'art/{module.__name__}.py has {name} {getattr(module, name)}, but the {palette} palette is row {row(palette)}')

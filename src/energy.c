@@ -221,8 +221,9 @@ void energy_start(int16_t x, int16_t y)
     }
     for (i = 0; i < 2; i++)
     {
-        sprite_set(GAUGE_SPRITE(fittings, i), XRAM_FITTING_IMAGES + i * sizeof(fitting_image_t), XRAM_PALETTE_BRASS,
-                   MODE5_SIZE(GAUGE_W, FITTING_H));
+        sprite_set(GAUGE_SPRITE(fittings, i), XRAM_FITTING_IMAGE, XRAM_PALETTE_FITTING, MODE5_SIZE(GAUGE_W, FITTING_H));
+        if (i)
+            sprite_attributes(GAUGE_SPRITE(fittings, i), MODE5_VFLIP);
         sprite_move(GAUGE_SPRITE(fittings, i), x, i ? glass_y + GLASS_H : y);
     }
     rows_count();

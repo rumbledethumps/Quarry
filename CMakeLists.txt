@@ -170,14 +170,15 @@ add_custom_command(
     VERBATIM
 )
 
-# The energy gauge's fittings and fuel, drawn by art/gauge.py, which also
-# writes gauge.png to look at. A level makes its glass from its rock.
+# The energy gauge's fitting, from the pipe of art/backdrop.png, and its
+# fuel and bubbles, drawn by art/gauge.py, which also writes gauge.png to
+# look at. A level makes its glass from its rock.
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/gauge.bin
     COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/art/gauge.py ${CMAKE_CURRENT_BINARY_DIR}/gauge.bin
         --preview ${CMAKE_CURRENT_BINARY_DIR}/gauge.png
-    DEPENDS art/gauge.py art/rd2png.py art/palettes.png
+    DEPENDS art/gauge.py art/rd2png.py art/palettes.png art/backdrop.png
     VERBATIM
 )
 

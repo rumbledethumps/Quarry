@@ -296,8 +296,8 @@ later, such as a rare bonus. The art leaves room for it.
 
 The energy gauge is a sight glass down the right of the screen, the one
 instrument the operator watches all day: a glass tube with the fuel in
-it, between two brass fittings, each a pipe off the edge of the screen
-into a hex nut that grips the glass. It is 16 wide, 4 px in from the
+it, between two fittings, each a pipe off the edge of the screen into a
+ring that grips the glass. It is 16 wide, 4 px in from the
 edge, over the right curtain, and `levels/levels.py` keeps every level's
 post clear of it.
 
@@ -325,7 +325,12 @@ post clear of it.
   as a real bubble does breaking through. A bubble is never taken from
   another: every one rises all the way, and is free again once its drop
   is back in.
-- The fittings are stand-ins, in a dull brass, not gold, to be replaced.
+- The fittings are the pipe of the upgrade screen's backdrop, in its own
+  steel colors, not brass, which would be taken for the safety yellow: a
+  length of the U-shaped pipe behind the crusher in `art/backdrop.png`,
+  14 wide, and the ring where it joins, 16 wide, each widened by
+  repeating a plain column, as the frames' posts are, and outlined in the
+  sprites' navy. The bottom one is the top one turned over.
 - Still to come: more bubbles at other times, the fuel sloshing, and a
   look for low fuel. The
   beeps and the machine's lamp warn of it now.
@@ -573,7 +578,7 @@ darkest first. Each class of art gets a row of its own:
 | shade | the sled row at half, for the machine behind the ball and a dim sled |
 | holo | the holographic cursor of the upgrade screen and the menus, whose colors shimmer |
 | liquid | the fuel in the energy gauge |
-| brass | the gauge's fittings |
+| fitting | the gauge's fittings, the backdrop's colors of its pipe |
 | glass | the curtain row through the gauge's glass, and its outline and glint, loaded with each curtain set |
 
 The upgrade panels have a palette of their own, 256 colors, outside these rows, since they are a tile layer, and so do the menus, 16 colors. Each frame set brings its own 16 colors, and the same darkened for its braces, with its pieces. Each talk brings its dwarf's 16 colors and its bubble's 4.
@@ -602,7 +607,7 @@ rows are left.
 | sled | the widths of `TUNE_WIDTHS`, up to 64, rounded up to 4 for the sprite; 8 tall, then its two tilts, 24 tall each |
 | jet | 7 frames, 8x12: the nozzle alone, 3 flames, 3 swiveled flames |
 | smoke | 3 frames, 8x8 |
-| energy gauge | 16 wide, the screen tall: the fittings 16x20, the glass 12x200 in 4 sprites, made for each level, the fuel in runs of 12x16 under its surface, and a bubble and its drop, 4x4 each; 1,728 bytes of a level's art |
+| energy gauge | 16 wide, the screen tall: a fitting 16x20, turned over for the bottom, the glass 12x200 in 4 sprites, made for each level, the fuel in runs of 12x16 under its surface, and a bubble and its drop, 4x4 each; 1,568 bytes of a level's art |
 | logo | 3 pieces, 64x64, as one 192x64 image |
 | curtains | 100x240 each, cut from a 256x240 curtain set |
 | cursor | 4 corners, 12x12, one image turned |
