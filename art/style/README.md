@@ -1,9 +1,10 @@
 # Quarry Art Style
 
 Quarry has two looks. The levels are **stone**: rough, organic quarry
-walls, and bricks of rock with their ore showing through. The player's
-equipment is **industrial**: heavy modern mining machinery, used every day
-and well looked after. Every new piece of art belongs to one of the two.
+walls. The player's equipment is **industrial**: heavy modern mining
+machinery, used every day and well looked after. Every new piece of art
+belongs to one of the two, but the bricks, which are plain colors, as in
+a classic brick breaker: see [Bricks](#bricks).
 
 The images in `ref/` set the look. Pass them as references when making new
 art, and compare new art against them.
@@ -18,22 +19,25 @@ bought its rank.
 | --- | --- |
 | LEVEL | One playfield of bricks. Mines are dug in levels, each deeper than the last. Its cart on the upgrade screen begins it. |
 | BRICK | A block of rock, broken by the ball. |
-| NUGGET | The ore that comes out of a broken brick, and flies to the counts. Nuggets buy upgrades. |
+| NUGGET | The token that comes out of a broken brick, a ball of its color, and flies to the counts. Nuggets buy upgrades. |
 | COIN | One for the first clear of each level, never again. Coins will open the upgrades' next tiers. |
 | SLED | The paddle, which floats on its jets. |
-| FUEL | What the gauge on the right shows. When it runs out, the sled falls and the level ends. |
+| FUEL | What the gauge on the right shows. When it runs out, the sled falls, and the level ends once the balls in play have fallen off the screen too. |
 | BALL | The ball, and the count of those left. |
-| UPGRADE | A panel on the upgrade screen's rail, and what it buys. |
+| HITS | What breaks a brick: each hit of the ball does its DAMAGE, and the brick breaks once the damage reaches its hits. |
+| THE DRY | The upgrade screen, as the menus and the dwarves call it: the change house at a mine, where miners change into their work clothes, hang their wet gear to dry, and wait for their shift. The code and this guide still call it the upgrade screen. |
+| UPGRADE | A panel on the rail in THE DRY, and what it buys. |
 | CART | A level, on the train of mine carts under the rail. |
 
 ## The Screen
 
 A level's playfield is framed in steel: a post on each side and a cap beam
 across the top, where the ball bounces. Outside the posts are the
-curtains, the rock walls of the quarry. Level 1 is the narrowest, 4 bricks
-across with half a brick of space at each wall. The widest is about 10
-bricks, with a little rock left on each side. Each level is laid out
-fresh, so the curtains never move while anyone watches.
+curtains, the rock walls of the quarry. Each level places its walls, to
+the pixel, each side on its own: level 1 is 4 bricks across with half a
+brick of space at each wall. The widest can be about 10 bricks, with a
+little rock left on each side. Each level is laid out fresh, so the
+curtains never move while anyone watches.
 
 The counts float over the curtains, with no panels behind them:
 
@@ -41,9 +45,8 @@ The counts float over the curtains, with no panels behind them:
   nugget beside it, a line for each, room for 8 or more.
 - **Lower left:** the count of balls, with a sprite of the ball beside it,
   in the same presentation as the nuggets.
-- **Right:** the energy gauge, a narrow vertical bar that rises and
-  falls. It is narrower than the counts on the left. The bar there now is
-  a placeholder.
+- **Right:** the energy gauge, a sight glass down the right edge, from
+  the top of the screen to its foot: see [The Energy Gauge](#the-energy-gauge).
 
 The digits are sprites, 6x8 with a 1 px black outline, so they read over
 any rock or steel. Each digit's outline overlaps the last one's, so a
@@ -68,12 +71,10 @@ comes later.
 
 ## Stone: the levels
 
-The curtains, the bricks, the break frames, the nuggets, and the logo.
+The curtains and the logo.
 
-- Rough, matte stone with chipped, irregular edges. Bricks are blocks of
-  rock, not cut gems: no facets, no glassy shine.
-- An ore shows as flecks, veins, or crystals in the rock. Each ore has its
-  own colors, and its nugget is a small rough lump of the same ore.
+- Rough, matte stone with chipped, irregular edges, not cut gems: no
+  facets, no glassy shine.
 - The curtains are quarry walls of ledges, boulders, and cracks, with no
   repeating tiles. Their inner edges are the walls of the playfield.
 - The curtains are the model for how stone is drawn: warm weathered
@@ -85,6 +86,37 @@ The curtains, the bricks, the break frames, the nuggets, and the logo.
   into `art/logo.png`, and turns any moss green to rock.
 
 References: `ref/old-logo-qu.png`, `ref/rock-crop.png`, `ref/logo-stone.png`, `ref/stone-wall.png`, `ref/ore-blocks.png`.
+
+### Bricks
+
+The bricks are plain colors, gray, red, green, blue and gold, in that
+order, picked with simulations of each kind of color blindness so every
+pair stays apart, and none white, as the ball is. Gray is a light gray,
+so it stands out from the steel of the frames and the machinery, as the
+colors do, and light enough that it is never taken for the red. `art/bricks.py` draws every piece
+of them by rule, and nothing is touched up by hand:
+
+- **Brick:** 24x8 with no gap of its own, its face the plain color and a
+  1 px bevel all round, light on the top and the left, dark on the bottom
+  and the right. Widths are multiples of 4. Each level, in
+  `levels/levels.py`, places its bricks, 2 px apart on levels 1 and 2.
+- **Cracks:** sprites over the brick, so they flip either way: black lines
+  with a gray lip under them, in sets of ten, a step for each 10% of a
+  brick broken, rounded up, so any damage shows the first. One crack grows
+  from inside the brick, up and down, a pixel or more each step, to reach
+  both edges, through the bevels, at the last. A second starts beside it
+  once the brick has 59% left, and grows faster, to reach both edges at
+  the last too.
+- **Chunks:** rough lumps of the brick's colors, lit like it, that fly up
+  and out when it breaks, fall, and turn over as they go.
+- **Nugget:** a sphere of the brick's color, lit from the upper left,
+  with a dark outline: 7 px across as it flies, and as tall as the digits
+  beside its count.
+- **Coin:** the same circle as the big nugget, in the sled row's gold,
+  beveled, with a square hole cut in the middle, clear inside an outline
+  of its own, as every edge is outlined.
+- **Ball:** a sphere shaded as the nuggets are, but a very bright white,
+  8 px across in play, and as tall as the digits by its count.
 
 ### Behind the Playfield
 
@@ -108,7 +140,11 @@ machines of the mine:
   set's own, so dark it is barely there, and nobody takes it for something
   to bounce off;
 - a machine bolted to the inside of the right wall. It is not explained.
-  It hints that it powers the energy gauge. Upgrades may add more machines
+  It hints that it powers the energy gauge. Where its top four louvers
+  were is a window, and in it, as in an old parking meter, a paddle that
+  slides up: green, yellow, and red when the fuel is low. The window is
+  clear, so the floor shows round the paddle, and the paddle nearly fills
+  it. Its red lamp blinks with each beep. Upgrades may add more machines
   along the walls.
 
 ### Curtain Sets
@@ -139,8 +175,12 @@ curtain keeps the rock's own edge, and the texture shows through past it.
 The shaft is the flat colors that run down the middle column for 32 rows
 or more. Where rock crosses the middle instead, the curtain's inner edge
 is a straight cut, which looks like a seam: reject that image.
-The rock is darkened, since this is underground, and cut to 15 colors of
-its own palette, and the texture's four colors are made from it. Each
+The rock is darkened, since this is underground, and cut to 13 colors of
+its own palette, and the texture's four colors are made from it: first to
+15, merging the closest colors, then to 13, merging the least used, which
+changes the fewest pixels. Merging the closest all the way to 13 joined
+big areas of the rock and changed the texture's tint. The row's other two
+colors are for the sight glass of the energy gauge. Each
 curtain is the 100 columns beside the middle. The build writes
 `curtain<n>.png` in the build folder to look at.
 
@@ -183,17 +223,16 @@ Diffusion or by hand, and `art/frames.py` cuts it to the game's sizes.
   tall, so the ball bounces where it always has. Where the
   art is wider, plain columns or rows of its web are left out, and where
   it is narrower, plain ones repeat, never a rivet, a brace or an edge.
-- A post is one image 48 rows tall, down the screen again and again. The
-  beam runs between the posts, butting into each, never behind one, in
-  pieces 48 wide from the left post, and where a playfield leaves half a
-  piece, an end piece of the beam's first 24 columns. Every playfield is a
-  multiple of 24 wide, so a frame's art repeats every 8, 12, 16 or 24 and
-  joins itself at every piece, and art that repeats every 12 or 24 fits a
-  whole number of times between the posts of every level, so it ends the
-  same at both. Nothing passes through anything else: a cap tops each post
-  with its own steel. Retro Diffusion spaces rivets unevenly, so a girder's
-  post and beam are each one 8 px cell of its art, a rivet and its plate,
-  repeated: the rivets fall every 8.
+- A post is one image 48 rows tall, down the screen again and again. A
+  playfield can be any width, to the pixel. The beam runs behind the
+  posts' caps, in pieces 48 wide, its art repeating every few px, 8 or 12,
+  from the middle of the screen, so it looks the same at both posts and
+  the posts can slide in and out over it. Each cap is solid across as
+  many of its inside columns as the beam's repeat, so the beam never
+  shows through it; a truss's cap is filled with its darkest steel behind
+  its bars. Retro Diffusion spaces rivets unevenly, so a girder's post and
+  beam are each one 8 px cell of its art, a rivet and its plate, repeated:
+  the rivets fall every 8, one at the middle of the screen.
 - The knee braces stand behind the ball and are barely there, so nobody
   takes one for something to bounce off: the set's colors darkened,
   without the rock or the shadows around them. Nothing behind the ball is
@@ -214,7 +253,11 @@ Diffusion or by hand, and `art/frames.py` cuts it to the game's sizes.
 - The concepts in `art/style/ref/frame-*.png` hold more looks for the next
   sets, such as the mine shaft frames of D1, D3 and D4.
 
-`art/screen.py` draws the machine, the digits, and the placeholder gauge.
+`art/screen.py` draws the machine, the digits, and the old energy bar, now
+only the upgrade screen's stand-in picture of the gauge. The machine's
+window is clear, and its meter's paddle, a sprite behind it, is drawn by
+hand in `art/gauge.py`, in the fitting row, as it is too small for any
+diffusion model.
 The machine uses the shade row, so its brightness is set there, not in its
 picture. Run it after a change there, then touch up any piece by hand.
 
@@ -258,10 +301,49 @@ later, such as a rare bonus. The art leaves room for it.
 
 ### The Energy Gauge
 
-The energy gauge is a narrow vertical bar on the right side of the
-screen. It reads like a thermometer with no bulb, built as an industrial
-indicator: a tube in a steel frame, with the level rising and falling in
-it. It leaves room on its left and right for effects at the level line.
+The energy gauge is a sight glass down the right of the screen, the one
+instrument the operator watches all day: a glass tube with the fuel in
+it, between two fittings, each a pipe off the edge of the screen into a
+ring that grips the glass. It is 16 wide, 4 px in from the
+edge, over the right curtain, and `levels/levels.py` keeps every level's
+post clear of it.
+
+- The glass is 12 wide with its outline, and exactly 200 tall: a row for
+  each step of the fuel's level, which moves a pixel at a time.
+- The glass shows the rock behind it, a little tinted, and that is what
+  makes it. As a level starts, `src/energy.c` copies the right curtain's
+  pixels under it into its image, and draws them in the glass row: the
+  curtain's 13 colors 15% of the way to a pale blue, which
+  `art/curtain.py` makes with each curtain set. Where the shaft is clear
+  behind it, it shows the darkest rock.
+- A glint runs down the glass 2 px in from its left, a flat color. A glint
+  that showed the rock through it too cost 400 bytes, and nobody could
+  tell.
+- The fuel is a pale blue, cool rocket fuel in the hue of the holographic
+  cursor, lit from the upper left, in 7 shades across: a rim at its left
+  wall, the glint, the brightest just past it, and darker to its right
+  wall. Its surface is a bright line, and it climbs a pixel up each wall.
+  It is in a row of its own, the liquid row, so its color can change, as
+  it may. `art/gauge.py` draws it and the fittings.
+- Each time the ball bounces off the sled, a bubble rises from the foot of
+  the fuel to its surface, a pale ring 3 across that sways a pixel either
+  way, while one of the 3 is free. At the surface it pops and throws up a
+  single drop of the fuel, which hops 3 px into the air and falls back in,
+  as a real bubble does breaking through. A bubble is never taken from
+  another: every one rises all the way, and is free again once its drop
+  is back in.
+- The fittings are the pipe of the upgrade screen's backdrop, in its own
+  steel colors, not brass, which would be taken for the safety yellow: a
+  length of the U-shaped pipe behind the crusher in `art/backdrop.png`,
+  14 wide, and the ring where it joins, 16 wide, each widened by
+  repeating a plain column, as the frames' posts are, and outlined in the
+  sprites' navy. The bottom one is the top one turned over.
+- Still to come: more bubbles at other times, the fuel sloshing, and a
+  look for low fuel. The beeps, the machine's lamp and its meter warn of
+  it now.
+- The Oracle, `ref/oracle.png`, was the design before: a steel scale with
+  a cursor riding it, a sight glass in the cursor and a clockwork chevron.
+  It is parked, as no model could draw its cursor at its size.
 
 ### The Upgrade Panels
 
@@ -383,6 +465,10 @@ in two.
 - The number sits in the middle of the cart, across and down, never a
   pixel off: rim to foot, the cart is centered on it, so the cart stands
   low in its cells, and its wheels need a fifth row.
+- The number is stencilled on, as a real cart's would be painted: bold
+  7x7 numerals of the carts' own, with a stencil's bridges, drawn by hand
+  in `art/carts.py`, in the rim's safety yellow with a dark shadow on the
+  cart picked, and a dull ochre on the rest.
 - A level cleared carries a small heap of ore over the rim. A cart's top
   two rows come with the heap and without.
 - The track is in the backdrop: `art/backdrop.py` draws a steel rail on
@@ -490,39 +576,45 @@ darkest first. Each class of art gets a row of its own:
 | Row | Used by |
 | --- | --- |
 | main | the ball |
-| bricks | one per ore: the brick, its break frames, its nugget, and its nugget sprite |
-| fx | the smoke and the energy gauge |
+| bricks | one per color: the brick, its cracks and chunks, and its nuggets |
+| fx | the smoke, and the old energy bar of the upgrade screen's picture |
 | logo | the title logo |
 | sled | the sleds, their jets and flames, the machine, the digits, and the coin |
 | texture | the texture behind the playfield, its first 4 colors, loaded with each curtain set |
 | curtain | the curtain set of the level, loaded with it |
 | shade | the sled row at half, for the machine behind the ball and a dim sled |
 | holo | the holographic cursor of the upgrade screen and the menus, whose colors shimmer |
+| liquid | the fuel in the energy gauge |
+| fitting | the gauge's fittings, the backdrop's colors of its pipe, then the meter's paddle and its shade, which the game sets green, yellow or red |
+| glass | the curtain row through the gauge's glass, and its outline and glint, loaded with each curtain set |
 
 The upgrade panels have a palette of their own, 256 colors, outside these rows, since they are a tile layer, and so do the menus, 16 colors. Each frame set brings its own 16 colors, and the same darkened for its braces, with its pieces. Each talk brings its dwarf's 16 colors and its bubble's 4.
 
 A jet's nozzle and its flame are one sprite, so the flames share the sled
-row. Every curtain set brings its own palette into the one curtain row.
-That is 8 rows and the ores, so 24 rows are left for ores.
+row. Every curtain set brings its own palette into the one curtain row,
+and the glass row from it. That is 11 rows and the 5 brick colors, so 16
+rows are left.
 
 ## Sizes
 
 | Art | Size |
 | --- | --- |
-| brick | 24x8 |
-| break frames | 2 frames, 24x16 |
-| nugget, nugget sprite of a count | 8x8 |
-| ball, ball sprite of the count | 8x8 |
+| brick | 24x8, 2 bits a pixel |
+| cracks | 6 sets of 10, 16x8, 2 bits a pixel, as many across a brick as fit |
+| chunks | 16, 8x8, 2 bits a pixel |
+| nugget | 8x8 as it flies, and 10 across in a 12x12 sprite by its count |
+| coin | 10 across in a 12x12 sprite, by its count |
+| ball | 8x8, and 10 across in a 12x12 sprite by its count |
 | digit | 8x12 sprite, a 6x8 digit with its outline |
 | texture | 320x240 at 2 bits a pixel |
 | post | 20 wide, up to 20 of it showing, in pieces 48 tall |
-| cap beam | 16 tall, in pieces 48 wide and an end piece 24 wide, and a cap 20x16 over each post |
+| cap beam | 16 tall, in pieces 48 wide, and a cap 20x16 over each post |
 | brace | 32x32 |
-| machine | 24x40 |
+| machine | 24x40, and its meter's paddle 12x8 behind its window, the paddle 10 wide |
 | sled | the widths of `TUNE_WIDTHS`, up to 64, rounded up to 4 for the sprite; 8 tall, then its two tilts, 24 tall each |
 | jet | 7 frames, 8x12: the nozzle alone, 3 flames, 3 swiveled flames |
 | smoke | 3 frames, 8x8 |
-| energy gauge | a narrow vertical bar; the placeholder is 8 wide, in pieces 8 tall |
+| energy gauge | 16 wide, the screen tall: a fitting 16x20, turned over for the bottom, the glass 12x200 in 4 sprites, made for each level, the fuel in runs of 12x16 under its surface, and a bubble and its drop, 4x4 each; with the meter's paddle, 1,616 bytes of a level's art |
 | logo | 3 pieces, 64x64, as one 192x64 image |
 | curtains | 100x240 each, cut from a 256x240 curtain set |
 | cursor | 4 corners, 12x12, one image turned |
@@ -543,16 +635,17 @@ size.
    style draws the pixels, so the prompt never says "pixel art". For a
    single piece, give a plain background, such as "on a plain black
    background", and remove it with `remove_bg`.
-3. Pass a reference: `ref/rock-crop.png` for stone, or a crop of up to
-   64x64 from `ref/sled-kit.png` for industrial. Keep references small
-   RGB PNGs. The API refused the indexed `art/logo.png`.
+3. Pass references from `ref/`: `ref/rock-crop.png` for stone,
+   `ref/sled-kit.png` for industrial, and the others of
+   [The Reference Images](#the-reference-images) for what they show. Pass
+   them as RGB PNGs: the API refused the indexed `art/logo.png`.
 4. Reduce the colors to 15 with Retro Diffusion's `color_reducer`, which
    is free, or map them onto a row with its `palette_converter`.
 5. Convert it with `art/rd2png.py`:
 
    ```bash
-   python3 art/rd2png.py ore.png art/brick.png --palette-out row.png
-   python3 art/rd2png.py nugget.png art/nugget.png --palette art/palettes.png --row 4
+   python3 art/rd2png.py piece.png art/piece.png --palette-out row.png
+   python3 art/rd2png.py piece.png art/piece.png --palette art/palettes.png --row 8
    ```
 
    The first writes the colors as a palette row, to add to
@@ -565,8 +658,6 @@ The blocks of the looks:
 
 - **Stone:** "rough matte quarried stone, chipped edges, dark outline,
   light from the upper left"
-- **Ore:** the stone block, then the ore, such as "granite with
-  copper-green malachite veins", then "matte stone, not polished gems"
 - **Curtain:** "the whole wall dark and muted like a backdrop behind
   gameplay"
 - **Industrial:** "heavy modern mining machinery, safety-yellow paint over
@@ -586,9 +677,10 @@ The blocks of the looks:
 | `ref/rock-crop.png` | 64x64 of the rock of the first curtain set: how stone is drawn. A reference for a stone piece, such as the logo. Not for a curtain set: it is zoomed in, so the rock comes out too big. |
 | `ref/logo-stone.png` | The logo as Retro Diffusion made it, before `art/logo.py`: `rd_pro__typography`, 192x64, with `rock-crop.png` and `old-logo-qu.png` as references: "\"QUARRY\" in big bold blocky capital letters, carefully carved from solid stone by a master stonemason: clean even letterforms with crisp chiseled bevels and flat faces, every letter whole and unbroken, only a few small natural chips and fine hairline marks, all the letters the same warm weathered sandstone with subtle flecks like the reference rock, cool blue-grey stone only in the shadowed bevels, a dark outline and a dark shadow under the letters, light from the upper left, on a plain white background". One of three, and the one with moss, which `art/logo.py` turns to rock; the others were plainer, or cracked with stray dots. |
 | `ref/stone-wall.png` | The organic shapes of the curtains, and the warm sandstone turning to cool granite. It is too bright as it is. |
-| `ref/ore-blocks.png` | Matte ore rock and the pairing of each brick with its nugget. Eight candidate ores: limestone, gold-flecked sandstone, malachite in granite, iron ore, coal, silver in slate, rose quartz, and amber in basalt. Level 1's white is the limestone. |
+| `ref/ore-blocks.png` | Matte ore rock and the pairing of each brick with its nugget. Eight candidate ores: limestone, gold-flecked sandstone, malachite in granite, iron ore, coal, silver in slate, rose quartz, and amber in basalt. The bricks became plain colors instead. |
 | `ref/sled-kit.png` | The colors, the chevrons, the bolts, and the thrusters. Keep the scuffs and leave out the rust specks. Its tops are not flat: the new sled has the flat, overhanging top plate of [The Sled](#the-sled). |
-| `ref/ui-kit.png` | Graphite panels with yellow trim, gauges, and meters. Its vertical meter is a start for the energy gauge. |
+| `ref/ui-kit.png` | Graphite panels with yellow trim, gauges, and meters. Its vertical meter was the start for the energy gauge. |
+| `ref/oracle.png`, `ref/oracle-cursor.png` | The Oracle, a design for the energy gauge, parked, drawn to the pixel as a layout for a model to make finer, not as final art: the scale with its pips and rack, and the cursor at 70%, 33x23, with its sight glass, the chevron notch, the coloured chevron, and the gear. `oracle-cursor.png` is the cursor on level 1, the cave wall showing through its glass. |
 | `ref/frame-B2.png`, `ref/frame-B3.png` | Concepts for the playfield's frame: lattice towers of angle iron with X bracing, a zigzag truss beam, bolted gussets. Gray steel, see-through. |
 | `ref/frame-C1.png`, `ref/frame-C3.png` | Concepts for the frame: riveted I-beam columns, a riveted plate girder, gusset plates in the corners, in the panels' graphite steel. |
 | `ref/frame-D1.png`, `ref/frame-D3.png`, `ref/frame-D4.png` | Concepts for the frame: a mine shaft frame of plain steel posts, a crossbeam and knee braces. D1 drew a whole mine around it; only its frame counts. A first frame set redrawn from D3 at the game's scale came out muddy, its edges noise, and was dropped. |

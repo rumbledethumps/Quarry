@@ -34,14 +34,29 @@ build has cheats too: in play, Shift and Right adds a ball, Shift and Left
 takes one away, and Shift and Up or Down adds or takes away a segment of
 energy. On the upgrade screen, Shift and Right or Left raises or lowers the
 upgrade picked, for nothing, or, on the levels, opens the next level or
-locks the last one again.
+locks the last one again. On any screen, Shift and a number brings in that
+talk of the dwarves, in the order of `TALKS` in `art/talk.py`, to see how
+it looks there, without counting it as seen.
 
 The playfield is framed in gray steel the ball bounces off, riveted
 girders or an open truss, a frame set picked at random for each new level,
-as its rock walls are. The paddle floats on thrusters. The energy bar drains from the first
-launch, and when it is empty the paddle falls and the level ends. Each
-brick you break turns into a nugget that flies to the counts at the top
-left. The first clear of a level earns a coin, and opens the next level.
+as its rock walls are. The paddle floats on thrusters. The energy bar
+drains from the first launch, and when it is empty the paddle falls and
+the level ends. When the last brick breaks, or the last ball is lost, the
+paddle flies home, down off the screen under its own power: only out of
+fuel does it fall.
+
+The bricks are plain colors, gray, red, green, blue and gold, which stay
+apart with any kind of color blindness. Each level sets the hits its
+bricks take: on level 1 gray takes one, and on level 2 gray two and red
+three. Each hit of the ball does its damage, which HEAVIER BALL on the
+upgrade screen raises, and a brick cracks more with each hit, its cracks a sprite over it, flipped and
+placed at random for each brick when the level's screen opens. A brick
+that breaks flies apart in chunks, and its nugget, a small ball of its
+color, flies to the counts at the top left. A color's line of the counts
+shows once its first nugget lands there, and the coins' once the first
+level is cleared. The first clear of a level earns a coin, and opens the
+next level.
 When a level ends, its menu says how, LEVEL COMPLETE, OUT OF BALLS or
 OUT OF FUEL, and goes to the upgrade screen, replays the level, or goes to
 the main menu. Esc in a level pauses it, with Restart too. The menus are
@@ -51,14 +66,19 @@ cursor picks in them.
 The upgrade screen is coming together. Panels hang from a rail, one for
 each upgrade, and slide left and right; the one in the middle lights up,
 and the button buys it. Left, right and the button repeat while held. The
-panels have their final frames and a stand-in font, and hang in front of a
+panels have their final frames and font, and hang in front of a
 workshop whose cogs turn and whose vent puffs steam, their trolleys riding
 the rail; their pictures are still stand-ins. Down goes to a train of mine
 carts on a track, a cart for each level, where the button begins the level
 picked. A level newly open is still locked the first time the screen shows
 it: the screen opens on the level just cleared, the padlock on the next
 cart shakes and breaks, and the train slides over to the new level, picked.
-Levels 2 to 10 are stand-ins: level 1 a column wider each time.
+Each level places its own walls and bricks, so a playfield can be any
+width, and its walls any distance from its bricks, each side on its own.
+Level 1 is 4 by 4 gray bricks, 2 px apart, with half a brick of room for
+the ball at each wall, and level 2 the same with red ones in the middle of
+its top two rows. Levels 3 to 10 are level 2 again until they are
+designed.
 
 A new game starts with a cartoon dwarf miner coming up in the lower left
 corner, his speech bubble coming in beside him with a welcome, a stand-in
@@ -69,7 +89,7 @@ and more for them to say, are coming.
 
 The game saves when a level starts or ends, when it pauses, and when an
 upgrade is bought, in `SAVE:quarry.save`, with what the dwarves have
-already said. Resume on the title screen, there once there is a save,
+already said and the lines of the counts reached. Resume on the title screen, there once there is a save,
 opens the upgrade screen from there, on its level select; from a level, it
 opens on the upgrades. New Game starts over at level 1, and replaces the
 save, once Yes answers whether to; Esc is No.
@@ -91,6 +111,10 @@ because the game would not fit in the 6502's memory or keep up with 60
 steps a second otherwise. Debug only adds the debug information.
 
 - `src/tuning.h` holds every gameplay number.
+- `levels/levels.py` lays out the levels: each is a short function, with
+  what it is for said first, that places its walls and its bricks on the
+  screen, to the pixel. The build checks them, writes them for the game,
+  and draws each in `levels/` in the build folder, to look at.
 - `src/sfx.c` holds the sound effects, as notes for the PSG.
 - `src/xram.h` is the XRAM layout.
 - `art/` holds the art as indexed PNGs. `art/png2bin.py` converts them
@@ -109,8 +133,9 @@ ctest --test-dir build/llvm-mos/debug -R energy --output-on-failure
 
 - `controls` works every key and gamepad control.
 - `energy` drains the energy bar and runs out of energy.
-- `nuggets` breaks bricks and follows their nuggets to the panel.
-- `upgrades` works the menu when a level ends and the upgrade screen, and earns a coin.
+- `nuggets` breaks bricks into chunks and follows their nuggets to the panel.
+- `upgrades` works the menu when a level ends and the upgrade screen, earns a
+  coin, and cracks and breaks a red brick of level 2.
 - `saves` works the title screen and the pause menu, and reads the save.
 - `sound` sets off every sound effect and reads the PSG's channels.
 - `talk` brings in the dwarves: the welcome, the coin, and the upgrade

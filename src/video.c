@@ -43,16 +43,21 @@ void video_blank(void)
    0: the backdrop of the upgrade screen, or the texture of the title and
       a level, which each screen programs itself, with the scenery and the
       bricks over it.
-   1: the upgrade screen's panels and carts, and the paddle, its flames
-      and smoke, and the ball.
+   1: the upgrade screen's panels and carts, with the locks, or on a
+      level, its own sprites: the cracks over the bricks, the chunks of
+      the bricks breaking, and the paddle, its flames and smoke, and the
+      ball.
    2: the menus, or a dwarf's speech bubble in their place, with the
       gauge, the counts, the upgrade screen's pictures, the dwarf and the
       holographic cursor over them. */
-void video_start(void)
+void video_start(uint8_t level)
 {
     xreg_vga_mode5(MODE5_CUSTOM, XRAM_SCENERY,
                    sizeof(scenery_t) / sizeof(mode5_csprite_t) + BRICKS_MAX, 0);
-    xreg_vga_mode5(MODE5_CUSTOM, XRAM_ACTORS, sizeof(actors_t) / sizeof(mode5_csprite_t), 1);
+    if (level)
+        xreg_vga_mode5(MODE5_CUSTOM, XRAM_LEVEL_SPRITES, LEVEL_SPRITES, 1);
+    else
+        xreg_vga_mode5(MODE5_CUSTOM, XRAM_LOCKS, sizeof(locks_t) / sizeof(mode5_csprite_t), 1);
     video_menus();
     xreg_vga_mode5(MODE5_CUSTOM, XRAM_HUD, sizeof(hud_t) / sizeof(mode5_csprite_t), 2);
 }
@@ -70,14 +75,25 @@ void video_talk(void)
     xreg_vga_mode2(MODE2_2BPP | MODE2_8X8, XRAM_TALK_CONFIG, 2);
 }
 
-/* Every sprite of every plane, as a plain hidden sprite. Whatever shows a
-   sprite again sets it up first. */
-void video_hide_sprites(void)
+static void hide(unsigned from, unsigned to)
 {
     unsigned sprite;
 
-    for (sprite = XRAM_SCENERY; sprite < XRAM_MENU_MAP; sprite += sizeof(mode5_csprite_t))
+    for (sprite = from; sprite < to; sprite += sizeof(mode5_csprite_t))
         sprite_set(sprite, XRAM_BALL_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(8, 8));
+}
+
+/* A level's own sprites, in its art, as plain hidden sprites. */
+void video_hide_level_sprites(void)
+{
+    hide(XRAM_LEVEL_SPRITES, XRAM_LEVEL_SPRITES + sizeof(level_sprites_t));
+}
+
+/* Every sprite of every plane, as a plain hidden sprite, but a level's
+   own. Whatever shows a sprite again sets it up first. */
+void video_hide_sprites(void)
+{
+    hide(XRAM_SCENERY, XRAM_MENU_MAP);
 }
 
 /* Every cell of the menus clear, tile 0. */
@@ -204,7 +220,14 @@ void sprite_flip(unsigned sprite)
    MODE5_HDOUBLE and MODE5_VDOUBLE. */
 void sprite_attributes(unsigned sprite, uint8_t attributes)
 {
-    xram0_poke8(sprite + offsetof(mode5_csprite_t, attributes), MODE5_4BPP | attributes);
+    sprite_mode(sprite, MODE5_4BPP | attributes);
+}
+
+/* A sprite's bits a pixel, such as MODE5_2BPP, with its flips and
+   doubling. */
+void sprite_mode(unsigned sprite, uint8_t attributes)
+{
+    xram0_poke8(sprite + offsetof(mode5_csprite_t, attributes), attributes);
 }
 
 /* A count in outlined digits, from the count sprites from first, with its

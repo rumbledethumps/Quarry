@@ -9,18 +9,24 @@
 #define TUNE_BALLS 5          /* balls at the start of a level */
 #define TUNE_BALL_SPEED 640   /* 2.5 px per step */
 
-/* Energy. A full bar holds this many steps of thrust, and it drains from
-   the first launch of a level until the level ends. */
+/* Energy. A full gauge holds this many steps of thrust, and it drains
+   from the first launch of a level until the level ends. */
 #define TUNE_ENERGY 1440      /* 24 seconds */
 #define TUNE_ENERGY_DRAIN 1   /* per step */
-#define TUNE_ENERGY_LOW 288   /* the bar turns orange: the last 4.8 seconds */
+#define TUNE_ENERGY_MID 720   /* the meter's paddle turns yellow: the last 12 seconds */
+#define TUNE_ENERGY_LOW 288   /* it turns red, and the beeps start: the last 4.8 seconds */
 
 /* Out of energy: the flames sputter, then the paddle falls. */
 #define TUNE_SPUTTER_STEPS 45 /* how long the flames sputter */
 #define TUNE_FALL_GRAVITY 20  /* the falling paddle speeds up this much each step */
 
-/* Bricks */
-#define TUNE_BRICKS_Y 32      /* the top of the first row of bricks */
+/* The level cleared or out of balls, the paddle flies home, down off the
+   screen under its own power, speeding up gently to its speed. */
+#define TUNE_LEAVE_ACCEL 4
+#define TUNE_LEAVE_SPEED 192  /* 0.75 px per step */
+
+/* Bricks. Where they are, and the hits that break each, are each level's,
+   in levels/levels.py. */
 
 /* Nuggets fly from a broken brick to the left panel this many pixels a
    step, along the longer of across and down. */
@@ -29,7 +35,7 @@
 /* Paddle */
 #define TUNE_PADDLE_Y 208     /* hover height, the top of the paddle */
 
-/* Upgrades, paid in white nuggets. Each rank of an upgrade has its
+/* Upgrades, paid in gray nuggets. Each rank of an upgrade has its
    value, starting with the value before any upgrade, and each rank after
    the first has its cost. The build draws a sled for each width, with
    its jets. */
@@ -38,6 +44,8 @@
 #define TUNE_JETS {1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3} /* under the sled of each width, 3 at most */
 #define TUNE_SPEEDS {512, 576, 640, 704, 768} /* 2 to 3 px per step */
 #define TUNE_SPEED_COSTS {6, 10, 16, 24}
+#define TUNE_DAMAGES {1, 2, 3, 4}  /* a brick's hits each hit of the ball takes */
+#define TUNE_DAMAGE_COSTS {10, 20, 40}
 
 /* The paddle is cut into six zones of equal width. The two in the center
    send the ball up steeply, the zones beside them at 45 degrees, and the

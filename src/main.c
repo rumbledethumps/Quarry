@@ -1,4 +1,5 @@
 #include <rp6502.h>
+#include <stdlib.h>
 #include "bricks.h"
 #include "cursor.h"
 #include "debug.h"
@@ -32,12 +33,13 @@
 #define STATE_PAUSE 6
 
 /* The menus. The items of each are numbered from 1, as menu_step()
-   returns them. */
-static const char *const end_items[] = {"UPGRADES", "REPLAY", "MAIN MENU"};
+   returns them. The menus and the dwarves call the upgrade screen THE
+   DRY, the change house at a mine where miners wait for their shift. */
+static const char *const end_items[] = {"THE DRY", "REPLAY", "MAIN MENU"};
 #define END_UPGRADES 1
 #define END_REPLAY 2
 #define END_MAIN_MENU 3
-static const char *const pause_items[] = {"RESUME", "UPGRADES", "RESTART", "MAIN MENU"};
+static const char *const pause_items[] = {"RESUME", "THE DRY", "RESTART", "MAIN MENU"};
 #define PAUSE_RESUME 1
 #define PAUSE_UPGRADES 2
 #define PAUSE_RESTART 3
@@ -66,25 +68,22 @@ static uint8_t game_state;
 static uint8_t level = 1; /* the level being played, from 1 */
 static uint8_t level_how; /* how it ended, as play_step() returned */
 
-/* Lays out the level, centers the playfield with its frame and curtains,
-   and sets up the paddle and every ball, ready to play. It starts from no
-   sprites and the level's own art, so nothing is left of another screen. */
+/* Lays out the level, its playfield with its frame and curtains, and sets
+   up the paddle and every ball, ready to play. It starts from no
+   sprites and the level's own art, so nothing is left of another screen.
+   The bricks' cracks are new only with the screen, as its rock is. */
 static void level_setup(void)
 {
-    int16_t width;
-
     video_hide_sprites();
     cursor_hide();
-    scene_level(upgrade_ranks[UPGRADE_WIDTH]);
+    if (scene_level(upgrade_ranks[UPGRADE_WIDTH]))
+        bricks_shuffle();
     play_init();
     bricks_layout(level);
-    width = bricks_cols * BRICK_W + 2 * bricks_margin;
-    play_left = (SCREEN_W - width) / 2;
-    play_right = play_left + width;
     frame_start(play_left, play_right);
     menu_clear();
-    bricks_start(play_left + bricks_margin, TUNE_BRICKS_Y);
-    nuggets_start(1);
+    bricks_start();
+    nuggets_start();
     play_start();
 }
 
@@ -125,16 +124,6 @@ static void level_end(uint8_t how)
         end_menu(LEVEL_OVER_WAIT);
     game_state = STATE_MENU;
     save_write();
-}
-
-/* The last dwarf has gone: the menu waiting for him opens, or the upgrade
-   screen's cursor comes back. */
-static void talk_over(void)
-{
-    if (game_state == STATE_MENU)
-        end_menu(TALK_OVER_WAIT);
-    else if (game_state == STATE_SHOP)
-        shop_resume();
 }
 
 /* Resume is left off until there is a save. */
@@ -180,6 +169,32 @@ static void pause_close(void)
     DEBUG_LOG("resume\n");
 }
 
+/* The last dwarf has gone: the menu waiting for him opens, or the upgrade
+   screen's cursor comes back. Only the test keys bring one over the pause
+   menu, the title or its question, and they come back too. */
+static void talk_over(void)
+{
+    switch (game_state)
+    {
+    case STATE_MENU:
+        end_menu(TALK_OVER_WAIT);
+        break;
+    case STATE_SHOP:
+        shop_resume();
+        break;
+    case STATE_PAUSE:
+        menu_open(&pause_menu, PAUSE_RESUME - 1, 0, 0);
+        break;
+    case STATE_TITLE:
+        title_show();
+        break;
+    case STATE_CONFIRM:
+        title_open(&title_menu);
+        menu_open(&confirm_menu, CONFIRM_NO - 1, 0, 0);
+        break;
+    }
+}
+
 static void wait_vsync(void)
 {
     static uint8_t last;
@@ -198,6 +213,12 @@ int main(void)
 {
     uint8_t talked = 0; /* whether a dwarf talked the step before */
 
+    /* The game's random numbers are the C library's rand(), a 16-bit
+       xorshift, quick and even enough for play, seeded once from the RIA's
+       lrand. On the hardware lrand is better but slower, 10 us a call to
+       rand()'s 6, worth it only for its 31 bits at once, as a screen uses
+       them to pick its look. */
+    srand((unsigned)ria_attr_get(RIA_ATTR_LRAND) | 1);
     video_init();
     scene_menus();
     input_init();
@@ -217,6 +238,12 @@ int main(void)
             shop_draw();
         input_read();
         sfx_step();
+#ifndef NDEBUG
+        /* In a debug build, Shift and a number brings in that talk, to see
+           how it looks on any screen. */
+        if (shift_digit && shift_digit <= TALKS)
+            talk_queue(shift_digit);
+#endif
         if (talk_step())
         {
             /* A dwarf takes the input, and the screen under him carries on. */

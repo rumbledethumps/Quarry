@@ -72,9 +72,11 @@ STEAM_LUMA = 110
 STEAM_FRAMES = 5  # growing, whole, then thinning
 # The cogs: the middle, the radius to the tips of the teeth, the teeth, and
 # how they look inside: spokes, or a disc with rings. They mesh, so they
-# turn opposite ways.
-GEARS = (dict(x=0, y=158, radius=22, teeth=11, spokes=6, turn=1),
+# turn opposite ways. The frames turn a cog by a tooth and start again, so
+# spokes only turn smoothly if the teeth are a whole number of them apart.
+GEARS = (dict(x=0, y=158, radius=22, teeth=11, spokes=0, turn=1),
          dict(x=16, y=199, radius=21, teeth=10, spokes=0, turn=-1))
+assert all(not g['spokes'] or g['teeth'] % g['spokes'] == 0 for g in GEARS), 'a cog with spokes needs a whole number of teeth to a spoke'
 GEAR_FRAMES = 4
 FRONT = ((23, 130, 52, 169), (0, 204, 48, 224))  # the box and the plate in front of the cogs
 TRUSS_H = 56  # the art's truss and what hangs from it, which the wall under it replaces

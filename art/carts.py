@@ -11,7 +11,10 @@ the number is a plate in the cart's two middle cells of row PLATE_ROW,
 drawn here over the art's own plate. A level cleared carries a heap of ore
 over the rim, so the cart's top two rows come with the heap and without.
 The cell after each cart holds the coupling to the next, at the wheels'
-axles. The number's digits come lit and dim, in the panels' font.
+axles. The number is stencilled on in the rim's safety yellow, as a real
+cart's would be painted, its digits of the carts' own, NUMERALS, drawn by
+hand: bold, 7x7, with the bridges of a stencil. They come lit, with a
+shadow, on the cart picked, and dim, a dull ochre, on the rest.
 
 A locked level's plate is blank, under a padlock: art/padlock.png, from
 Retro Diffusion, 16x16, a sprite with a palette of its own, its body over
@@ -27,11 +30,11 @@ Python standard library is used.
 
 import argparse
 import os
+import random
 import struct
 from collections import Counter
 
 from curtain import reduce
-from panel_font import GLYPHS
 from rd2png import rgba, write_png
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -49,9 +52,25 @@ PLATE_Y0, PLATE_Y1 = PLATE_ROW * 8, PLATE_ROW * 8 + 8
 # The colors that must stay as they are: the plate and the digits.
 PLATE = (30, 38, 48)
 SHADOW = (18, 24, 32)
-CREAM, CREAM2 = (246, 242, 232), (206, 199, 184)
-DIMTXT = (104, 110, 118)
+YELLOW = (251, 204, 11)  # the rim's paint, in art/cart.png
+OCHRE = (125, 102, 6)    # the same, dim
+NUMERALS = {
+    '0': ['.##.##.', '##...##', '##...##', '##...##', '##...##', '##...##', '.##.##.'],
+    '1': ['...##..', '..###..', '...##..', '...##..', '...##..', '...##..', '..####.'],
+    '2': ['.#####.', '##...##', '.....##', '..####.', '.##....', '##.....', '###.###'],
+    '3': ['######.', '.....##', '.....##', '.##.##.', '.....##', '.....##', '######.'],
+    '4': ['##...##', '##...##', '##...##', '###.###', '.....##', '.....##', '.....##'],
+    '5': ['###.###', '##.....', '##.....', '######.', '.....##', '.....##', '######.'],
+    '6': ['.##.##.', '##.....', '##.....', '###.##.', '##...##', '##...##', '.##.##.'],
+    '7': ['###.###', '.....##', '....##.', '...##..', '..##...', '..##...', '..##...'],
+    '8': ['.##.##.', '##...##', '##...##', '.##.##.', '##...##', '##...##', '.##.##.'],
+    '9': ['.##.##.', '##...##', '##...##', '.##.###', '.....##', '.....##', '.##.##.'],
+}
 ORE, ORE2 = (214, 214, 220), (150, 150, 160)
+# A heap of ore is lumps of it in its shades of pale and gray, each as its
+# color and its shadow, and how many of the lumps are of it.
+ORE_SHADES = [((ORE, ORE2), 3), (((190, 194, 188), ORE2), 2), ((ORE2, (106, 118, 119)), 2)]
+HEAP_LUMPS, HEAP_SEED = 16, 3
 # The padlock: its body over the plate, its shackle over the rim.
 LOCK_LEFT, LOCK_BODY = 8, 7  # its left in the cart, and its first row of body
 LOCK_TOP = PLATE_Y0 - LOCK_BODY
@@ -87,13 +106,29 @@ def cart(heaped):
         img[axle - 1][x] = img[axle + 1][x] = shades[0]
         img[axle][x] = shades[len(shades) // 2]
     if heaped:
-        for x in range(3, W - 3):
-            # Flat across its top, with no lone pixel on the peak.
-            top = RIM - 1 - min(4, int(5 * (1 - ((x - W / 2) / (W / 2 - 3)) ** 2)))
-            for y in range(top, RIM):
-                img[y][x] = ORE2 if (x * 7 + y * 3) % 5 == 0 else ORE
-            img[top][x] = shades[0]
+        heap(img, shades[0])
     return img
+
+
+def heap(img, outline):
+    """The heap of ore over the rim, flat across its top with no lone pixel
+    on the peak, and outlined. Inside, lumps of ore packed in no pattern,
+    each the pixels nearest a point scattered over it, a little wider than
+    tall, in one of the ore's shades, shadowed where it sits against the
+    next."""
+    rnd = random.Random(HEAP_SEED)
+    tops = {x: RIM - 1 - min(4, int(5 * (1 - ((x - W / 2) / (W / 2 - 3)) ** 2))) for x in range(3, W - 3)}
+    inside = [(x, y) for x, top in tops.items() for y in range(top + 1, RIM)]
+    shades = rnd.choices([k for k, _ in ORE_SHADES], [n for _, n in ORE_SHADES], k=HEAP_LUMPS)
+    points = [(rnd.uniform(3, W - 3), rnd.uniform(RIM - 5, RIM)) for _ in range(HEAP_LUMPS)]
+    near = lambda x, y: min(range(HEAP_LUMPS), key=lambda i: (0.5 * (x + 0.5 - points[i][0])) ** 2 +
+                            (y + 0.5 - points[i][1]) ** 2)
+    lump = {(x, y): near(x, y) for x, y in inside}
+    for (x, y), i in lump.items():
+        color, shadow = shades[i]
+        img[y][x] = shadow if lump.get((x, y + 1), i) != i or lump.get((x + 1, y), i) != i else color
+    for x, top in tops.items():
+        img[top][x] = outline
 
 
 def coupling(img):
@@ -107,17 +142,18 @@ def coupling(img):
     return cell
 
 
-def plate_cell(ch, colors):
-    """A cell of the plate, with a glyph of the panels' font, or none."""
+def plate_cell(ch, lit=False):
+    """A cell of the plate, with a numeral, lit and with its shadow, or dim,
+    or none."""
     cell = [[PLATE] * 8 for _ in range(8)]
     if ch:
-        # A pixel in from the left, so two digits sit in the middle of the plate.
-        on = {(x + 1, y) for y, line in enumerate(GLYPHS[ch]) for x, c in enumerate(line) if c == '#'}
+        on = {(x, y) for y, line in enumerate(NUMERALS[ch]) for x, c in enumerate(line) if c == '#'}
+        if lit:
+            for x, y in on:
+                if (x + 1, y + 1) not in on:
+                    cell[y + 1][x + 1] = SHADOW
         for x, y in on:
-            if (x + 1, y + 1) not in on and x + 1 < 8 and y + 1 < 8:
-                cell[y + 1][x + 1] = SHADOW
-        for x, y in on:
-            cell[y][x] = colors[0] if y < 4 else colors[1]
+            cell[y][x] = YELLOW if lit else OCHRE
     return cell
 
 
@@ -182,13 +218,13 @@ def main():
                 continue
             add(f'BODY_{r}_{c}', body[r][c])
     add('COUPLING', link)
-    add('PLATE', plate_cell(None, None))
+    add('PLATE', plate_cell(None))
     for d in '0123456789':
-        add(f'DIGIT_{d}', plate_cell(d, (CREAM, CREAM2)))
+        add(f'DIGIT_{d}', plate_cell(d, lit=True))
     for d in '0123456789':
-        add(f'DIM_{d}', plate_cell(d, (DIMTXT, DIMTXT)))
+        add(f'DIM_{d}', plate_cell(d))
 
-    palette, index = palette_of([heaped, plain, link], [PLATE, SHADOW, CREAM, CREAM2, DIMTXT], 15)
+    palette, index = palette_of([heaped, plain, link], [PLATE, SHADOW, YELLOW, OCHRE], 15)
     lock = padlock()
     lock_palette, lock_index = palette_of([lock], [], 15)
 
@@ -255,10 +291,10 @@ def main():
             for x in range(W + 8):
                 img[FOOT][x] = img[FOOT + 1][x] = (120, 126, 130)
             return img
-        lit = lambda n: plate_cell(str(n), (CREAM, CREAM2))
-        dim = lambda n: plate_cell(str(n), (DIMTXT, DIMTXT))
+        lit = lambda n: plate_cell(str(n), lit=True)
+        dim = lambda n: plate_cell(str(n))
         carts = [compose(heaped_cells, [lit(0), lit(1)]), compose(heaped_cells, [dim(0), dim(2)]),
-                 compose(body, [dim(0), dim(3)]), compose(body, [plate_cell(None, None)] * 2, True)]
+                 compose(body, [dim(0), dim(3)]), compose(body, [plate_cell(None)] * 2, True)]
         out = [[c for img in carts for c in img[y]] for y in range(H + 2)]
         rows = [[v for c in row for v in ((c + (255,)) if c else (40, 10, 60, 255))] for row in out]
         write_png(args.preview, len(out[0]), len(out), 6, rows)

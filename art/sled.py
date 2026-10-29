@@ -28,7 +28,7 @@ import re
 from rd2png import rgba, write_png
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SLED_ROW = 4  # the sled row of art/palettes.png
+SLED_ROW = 8  # the sled row of art/palettes.png
 TILTS = (1, 2)
 TILT_ROWS = 24  # SLED_TILT_ROWS in src/xram.h
 SLOT = 64 * (8 + 2 * TILT_ROWS) // 2  # SLED_SLOT in src/xram.h

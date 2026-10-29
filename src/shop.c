@@ -40,22 +40,22 @@
 
 #define SPRITE(i) (XRAM_MENU_SPRITES + (i) * sizeof(mode5_csprite_t))
 
-/* Each panel has PANEL_SPRITES sprites: its picture, then an icon for
-   each of up to 4 currencies of its cost, then the trolley over each of
-   its hangers, which rides the rail. The two halves of the lock that
-   breaks follow, then the padlocks of the carts. The cart picked is open and in the middle, so the locked ones are
-   all to its right, and no more than LOCKS of them show. */
+/* Each slot of the panels has PANEL_SPRITES sprites, for the panel in
+   it: its picture, then an icon for each of up to 4 currencies of its
+   cost, then the trolley over each of its hangers, which rides the rail. The locks are on plane 1, in the
+   actors' place: the two halves of the lock that breaks, and the padlocks
+   of the carts. The cart picked is open and in the middle, so the locked
+   ones are all to its right, and no more than LOCKS of them show. */
 #define PANEL_SPRITES (PICTURE_SPRITES + 4 + PANEL_HANGERS)
 #define PICTURE_SPRITES 4
 #define TROLLEY_SPRITES (PICTURE_SPRITES + 4) /* a panel's first trolley */
-#define LOCKS 4
-#define PANEL_SPRITE(p, i) SPRITE((p) * PANEL_SPRITES + (i))
-#define HALF_SPRITES (PANELS * PANEL_SPRITES) /* the first, which the tests read too */
-#define LOCK_SPRITES (HALF_SPRITES + 2)
-#define HALF_SPRITE(i) SPRITE(HALF_SPRITES + (i))
-#define LOCK_SPRITE(i) SPRITE(LOCK_SPRITES + (i))
+#define PANEL_SLOT(p) ((p) % PANEL_SLOTS)
+#define PANEL_SPRITE(p, i) SPRITE(PANEL_SLOT(p) * PANEL_SPRITES + (i))
+#define PANEL_AT(p, row) (XRAM_PANELS + (row) * PANEL_MAP_COLS + PANEL_SLOT(p) * PANEL_PITCH)
+#define HALF_SPRITE(i) (XRAM_HALF_SPRITES + (i) * sizeof(mode5_csprite_t))
+#define LOCK_SPRITE(i) (XRAM_LOCK_SPRITES + (i) * sizeof(mode5_csprite_t))
 
-_Static_assert(PANELS * PANEL_SPRITES + 2 + LOCKS <= MENU_SPRITES, "MENU_SPRITES is too few.");
+_Static_assert(PANEL_SLOTS * PANEL_SPRITES <= MENU_SPRITES, "MENU_SPRITES is too few.");
 
 /* The unlock of a level newly open, on the cart beside the level just
    cleared, which is picked: a wait, the lock shaking harder and harder,
@@ -93,7 +93,8 @@ static const uint8_t hanger_x[PANEL_HANGERS] = PANEL_HANGER_X;  /* from a panel'
 _Static_assert(PANEL_LAYOUTS == PANELS, "art/panels.py needs a layout for each panel.");
 
 /* The first panels are the upgrades; the rest are stand-ins. */
-static const char *const panel_titles[PANELS] = {"WIDER SLED", "FASTER SLED", "MORE ENERGY",
+#define PANEL_ENERGY 3
+static const char *const panel_titles[PANELS] = {"WIDER SLED", "FASTER SLED", "HEAVIER BALL", "MORE ENERGY",
                                                  "SPECIAL BRICKS"};
 
 /* The levels are a train of mine carts along the bottom, the one picked
@@ -136,8 +137,13 @@ static uint8_t panel_lit[PANELS]; /* whether each panel's contents are lit */
    move them and the panels to scroll. */
 static uint8_t pictures_dirty;
 static int16_t drawn_scroll;
-static int16_t picture_x[PANELS * PANEL_SPRITES]; /* from the panel's left */
-static uint8_t picture_shown[PANELS * PANEL_SPRITES];
+static int16_t picture_x[PANEL_SLOTS * PANEL_SPRITES]; /* from the panel's left */
+static uint8_t picture_shown[PANEL_SLOTS * PANEL_SPRITES];
+
+/* The panel in each slot of the map and of the sprites, or PANELS for
+   none: the one the rail has slid to, the one before it, and the two
+   after, in slots side by side, as the map wraps. */
+static uint8_t slot_holds[PANEL_SLOTS];
 
 /* The pictures of the panels near the one picked are in slots of XRAM,
    panel p's in slot p % PICTURE_SLOTS: the three that show, and the next
@@ -194,7 +200,7 @@ static void row_draw(uint8_t p, uint8_t row, const uint8_t *tiles, uint8_t n)
 
     for (i = 0; i < PANEL_INSIDE; i++)
         line[i] = (i >= first && i < first + n ? tiles[i - first] : PANEL_TILE_GLYPH) + dim;
-    xram0_write(XRAM_PANELS + row * PANEL_MAP_COLS + p * PANEL_PITCH + PANEL_BORDER, line, sizeof line);
+    xram0_write(PANEL_AT(p, row) + PANEL_BORDER, line, sizeof line);
 }
 
 /* Text centered on a row inside panel p. */
@@ -220,7 +226,7 @@ static void panel_light(uint8_t p, uint8_t on)
     panel_lit[p] = on;
     for (row = TOP_ROW + 1; row < TOP_ROW + panel_heights[p] - 1; row++)
     {
-        unsigned at = XRAM_PANELS + row * PANEL_MAP_COLS + p * PANEL_PITCH + 1;
+        unsigned at = PANEL_AT(p, row) + 1;
         xram0_read(line, at, sizeof line);
         for (i = 0; i < sizeof line; i++)
         {
@@ -243,7 +249,7 @@ static uint8_t can_buy(uint8_t u)
 {
     uint16_t cost = upgrades_cost(u);
 
-    return cost && nuggets[BRICK_WHITE] >= cost;
+    return cost && nuggets[BRICK_GRAY] >= cost;
 }
 
 /* What the next rank does, as the numbers now and then, with the units. */
@@ -252,9 +258,12 @@ static void effect_draw(uint8_t p)
     char text[PANEL_INSIDE + 1];
     char *at = text;
     uint8_t rank = upgrade_ranks[p], max = rank >= upgrades_max(p);
-    const char *units = p == UPGRADE_WIDTH ? " PX" : " PX/S";
+    static const char *const units[UPGRADES] = {" PX", " PX/S", " DAMAGE"};
     /* A speed is in 1/256 px a step, at 60 steps a second. */
-#define VALUE(l) (p == UPGRADE_WIDTH ? upgrades_width_at(l) : (uint16_t)(upgrades_speed_at(l) * 60u / 256))
+#define VALUE(l)                                                                                         \
+    (p == UPGRADE_WIDTH   ? upgrades_width_at(l)                                                         \
+     : p == UPGRADE_SPEED ? (uint16_t)(upgrades_speed_at(l) * 60u / 256)                                 \
+                          : upgrades_damage_at(l))
 
     at = put_number(at, VALUE(rank));
     if (!max)
@@ -262,7 +271,7 @@ static void effect_draw(uint8_t p)
         at = put_text(at, " \x10 ");
         at = put_number(at, VALUE(rank + 1));
     }
-    at = put_text(at, units);
+    at = put_text(at, units[p]);
     *at = 0;
     text_draw(p, EFFECT_ROW, text);
 #undef VALUE
@@ -293,7 +302,7 @@ static void panel_draw(uint8_t p)
     {
         char number[6];
         uint8_t n = put_number(number, upgrades_cost(p)) - number;
-        /* The cost's icon is a sprite in the cell before it. */
+        /* The cost's icon is a sprite in the two cells before it. */
         tiles[0] = tiles[1] = PANEL_TILE_GLYPH;
         for (i = 0; i < n; i++)
             tiles[2 + i] = can_buy(p) ? glyph(number[i]) : PANEL_TILE_SHORT + number[i] - '0';
@@ -344,7 +353,8 @@ static void pictures_load(void)
 
 /* A panel's picture and cost icons, where it is now. The pictures are
    stand-ins, doubled: the sled for width, the sled with its flames lit
-   for speed, the energy gauge, and a brick. */
+   for speed, a ball under a brick for damage, the energy gauge, and a
+   brick. */
 static void pictures_draw(uint8_t p)
 {
     int16_t x = panel_x(p), top = PANEL_Y + PICTURE_ROW * 8;
@@ -367,7 +377,7 @@ static void pictures_draw(uint8_t p)
             sled_show(PANEL_SPRITE(p, 0), PICTURE_SPRITES, x + (PANEL_COLS * 8 - w) / 2, top + 7, rank,
                       SLED_DOUBLE | dim | (p == UPGRADE_SPEED ? SLED_FLAMES : 0), XRAM_PICTURE(p % PICTURE_SLOTS));
     }
-    else if (p == 2)
+    else if (p == PANEL_ENERGY)
     {
         static const uint8_t pieces[] = {ENERGY_TOP, ENERGY_FULL, ENERGY_BOTTOM};
         for (i = 0; i < sizeof pieces; i++)
@@ -380,39 +390,52 @@ static void pictures_draw(uint8_t p)
     }
     else
     {
-        sprite_set(PANEL_SPRITE(p, 0), XRAM_BRICK_IMAGE, XRAM_PALETTE_BRICK(BRICK_WHITE),
+        int16_t y = p == UPGRADE_DAMAGE ? top + 4 : top + (PICTURE_H - 2 * BRICK_H) / 2;
+        sprite_set(PANEL_SPRITE(p, 0), XRAM_BRICK_IMAGE, XRAM_PALETTE_BRICK(BRICK_GRAY),
                    MODE5_SIZE(BRICK_W, BRICK_H));
-        sprite_attributes(PANEL_SPRITE(p, 0), MODE5_HDOUBLE | MODE5_VDOUBLE);
-        sprite_move(PANEL_SPRITE(p, 0), x + PANEL_COLS * 4 - BRICK_W, top + (PICTURE_H - 2 * BRICK_H) / 2);
+        sprite_mode(PANEL_SPRITE(p, 0), MODE5_2BPP | MODE5_HDOUBLE | MODE5_VDOUBLE);
+        sprite_move(PANEL_SPRITE(p, 0), x + PANEL_COLS * 4 - BRICK_W, y);
+        if (p == UPGRADE_DAMAGE)
+        {
+            sprite_set(PANEL_SPRITE(p, 1), XRAM_BALL_ICON_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(ICON_SIZE, ICON_SIZE));
+            sprite_attributes(PANEL_SPRITE(p, 1), MODE5_HDOUBLE | MODE5_VDOUBLE);
+            sprite_move(PANEL_SPRITE(p, 1), x + PANEL_COLS * 4 - ICON_ROUND, y + 2 * BRICK_H + 2);
+        }
     }
     if (p < UPGRADES && upgrades_cost(p) && !talk_busy())
     {
-        /* In the first cell of the cost's row, as panel_draw() centers it,
-           but not while a dwarf talks, as it would show over his bubble. */
+        /* The big nugget of the counts, in the middle of the two cells
+           before the cost, as panel_draw() centers it, and of its row, but
+           not while a dwarf talks, as it would show over his bubble. */
         char number[6];
         uint8_t first = (PANEL_INSIDE - 2 - (put_number(number, upgrades_cost(p)) - number)) / 2;
-        sprite_set(PANEL_SPRITE(p, PICTURE_SPRITES), XRAM_NUGGET_IMAGE, XRAM_PALETTE_BRICK(BRICK_WHITE),
-                   MODE5_SIZE(8, 8));
-        sprite_move(PANEL_SPRITE(p, PICTURE_SPRITES), x + (PANEL_BORDER + first) * 8, PANEL_Y + COST_ROW * 8);
+        sprite_set(PANEL_SPRITE(p, PICTURE_SPRITES), XRAM_NUGGET_ICON_IMAGE, XRAM_PALETTE_BRICK(BRICK_GRAY),
+                   MODE5_SIZE(ICON_SIZE, ICON_SIZE));
+        sprite_move(PANEL_SPRITE(p, PICTURE_SPRITES), x + (PANEL_BORDER + first) * 8 + 3, PANEL_Y + COST_ROW * 8 - 1);
     }
 }
 
-/* Every panel's pictures, drawn from scratch where the panels are now,
-   and where each sprite is in its panel, to move it with the panel. */
+/* The pictures of the panels in their slots, drawn from scratch where the
+   panels are now, and where each sprite is in its panel, to move it with
+   the panel. An empty slot's sprites hide. */
 static void pictures_place(void)
 {
-    uint8_t p, i;
+    uint8_t s, i;
 
     xram0_poke16(XRAM_PANEL_CONFIG + offsetof(mode2_config_t, x_pos_px), PANEL_LEFT - panel_scroll);
-    for (p = 0; p < PANELS; p++)
+    for (s = 0; s < PANEL_SLOTS; s++)
     {
-        pictures_draw(p);
+        uint8_t p = slot_holds[s];
+        if (p < PANELS)
+            pictures_draw(p);
         for (i = 0; i < PANEL_SPRITES; i++)
         {
             int16_t pos[2];
-            uint8_t n = p * PANEL_SPRITES + i;
-            xram0_read(pos, PANEL_SPRITE(p, i), sizeof pos);
-            picture_x[n] = pos[0] - panel_x(p);
+            uint8_t n = s * PANEL_SPRITES + i;
+            if (p >= PANELS)
+                sprite_hide(SPRITE(n));
+            xram0_read(pos, SPRITE(n), sizeof pos);
+            picture_x[n] = p < PANELS ? pos[0] - panel_x(p) : 0;
             picture_shown[n] = pos[1] != SPRITE_HIDDEN_Y;
         }
     }
@@ -422,19 +445,72 @@ static void pictures_place(void)
 /* The panels, and every picture shown on them, moved to scroll. */
 static void pictures_move(void)
 {
-    uint8_t p, i;
+    uint8_t s, i;
 
     xram0_poke16(XRAM_PANEL_CONFIG + offsetof(mode2_config_t, x_pos_px), PANEL_LEFT - panel_scroll);
-    for (p = 0; p < PANELS; p++)
+    for (s = 0; s < PANEL_SLOTS; s++)
         for (i = 0; i < PANEL_SPRITES; i++)
-            if (picture_shown[p * PANEL_SPRITES + i])
+            if (picture_shown[s * PANEL_SPRITES + i])
             {
-                int16_t x = panel_x(p) + picture_x[p * PANEL_SPRITES + i];
-                xram0_poke16(PANEL_SPRITE(p, i) + offsetof(mode5_csprite_t, x_pos_px), x);
+                int16_t x = panel_x(slot_holds[s]) + picture_x[s * PANEL_SPRITES + i];
+                xram0_poke16(SPRITE(s * PANEL_SPRITES + i) + offsetof(mode5_csprite_t, x_pos_px), x);
                 if (i >= TROLLEY_SPRITES)
-                    xram0_poke16(PANEL_SPRITE(p, i) + offsetof(mode5_csprite_t, xram_sprite_ptr), trolley_image(x));
+                    xram0_poke16(SPRITE(s * PANEL_SPRITES + i) + offsetof(mode5_csprite_t, xram_sprite_ptr),
+                                 trolley_image(x));
             }
     drawn_scroll = panel_scroll;
+}
+
+/* Whether panel p is in its slot. */
+static uint8_t in_slot(uint8_t p)
+{
+    return slot_holds[PANEL_SLOT(p)] == p;
+}
+
+/* The four panels around where the rail has slid to, each in its slot:
+   the one it is on or past, the one before it and the two after, as far
+   as there are panels, and empty slots clear. Only three show at once,
+   even mid-slide, and a slot changes panels only as the rail passes a
+   panel, when neither the panel it held nor the one it takes shows. The
+   new one's frame loads into the map, and its contents draw, lit if it is
+   the one picked. Returns whether a slot changed. */
+static uint8_t panels_fill(void)
+{
+    int8_t first = panel_scroll / PANEL_STEP - 1, k;
+    uint8_t changed = 0;
+
+    for (k = first; k < first + PANEL_SLOTS; k++)
+    {
+        uint8_t s = (uint8_t)(k + PANEL_SLOTS) % PANEL_SLOTS, p = k >= 0 && k < PANELS ? k : PANELS, row;
+
+        if (slot_holds[s] == p)
+            continue;
+        slot_holds[s] = p;
+        changed = 1;
+        if (p == PANELS)
+        {
+            for (row = 0; row < PANEL_ROWS; row++)
+                xram0_set(XRAM_PANELS + row * PANEL_MAP_COLS + s * PANEL_PITCH, 0, PANEL_COLS);
+            continue;
+        }
+        scene_panel_frame(p, XRAM_PANELS + s * PANEL_PITCH);
+        panel_lit[p] = 1;
+        panel_draw(p);
+        if (p != panel_picked)
+            panel_light(p, 0);
+    }
+    return changed;
+}
+
+/* The panels of the upgrades, drawn again where they are in their slots,
+   after a rank changes. */
+static void upgrades_draw(void)
+{
+    uint8_t p;
+
+    for (p = 0; p < UPGRADES; p++)
+        if (in_slot(p))
+            panel_draw(p);
 }
 
 /* The levels shown open: all that are, but one being unlocked until its
@@ -632,10 +708,9 @@ static void cheats_step(void)
             return;
         upgrade_ranks[u] += up ? 1 : -1;
         pictures_load();
-        for (i = 0; i < UPGRADES; i++)
-            panel_draw(i);
+        upgrades_draw();
         pictures_dirty = 1;
-        DEBUG_LOG("cheat: %s %u\n", u == UPGRADE_WIDTH ? "width" : "speed", upgrade_ranks[u]);
+        DEBUG_LOG("cheat: upgrade %u, rank %u\n", u, upgrade_ranks[u]);
         return;
     }
     if (up && levels_cleared < LEVELS)
@@ -711,7 +786,7 @@ void shop_open(uint8_t on)
     cursor_hide();
     input_repeat_stop();
     menu_clear();
-    nuggets_start(1);
+    nuggets_start();
     cursor_on = on;
     asking = ASK_NONE;
     unlocking = save_levels_open() > levels_shown ? save_levels_open() : 0;
@@ -724,14 +799,10 @@ void shop_open(uint8_t on)
     talk_once(TALK_UPGRADES);
     panel_scroll = panel_picked * PANEL_STEP;
     cart_scroll = (level_picked - 1) * CART_STEP;
-    /* The map comes lit. Every panel dims but the one picked. */
-    for (p = 0; p < PANELS; p++)
-    {
-        panel_lit[p] = 1;
-        panel_draw(p);
-        if (p != panel_picked)
-            panel_light(p, 0);
-    }
+    /* Every slot of the map fills anew. */
+    for (p = 0; p < PANEL_SLOTS; p++)
+        slot_holds[p] = PANELS + 1;
+    panels_fill();
     for (p = 0; p < PICTURE_SLOTS; p++)
         slot_panel[p] = PANELS;
     pictures_load();
@@ -762,10 +833,12 @@ void shop_idle(void)
     cart_scroll = ease(cart_scroll, (level_picked - 1) * CART_STEP);
 }
 
-/* The last dwarf has gone, and the cursor and the cost icons come back. */
+/* The last dwarf has gone, and the cursor comes back. A question a test
+   key's dwarf took the place of goes. */
 void shop_resume(void)
 {
-    pictures_dirty = 1;
+    if (asking)
+        unask();
     cursor_aim();
 }
 
@@ -775,11 +848,21 @@ void shop_resume(void)
    frame is drawn. While a question is up, nothing moves but the cursor. */
 void shop_draw(void)
 {
+    static uint8_t talking;
     uint8_t p;
 
     machines_draw();
+    /* As a dwarf comes, or the last goes, the pictures draw again, so the
+       cost icons hide from his bubble, or come back. */
+    if (talk_busy() != talking)
+    {
+        talking = !talking;
+        pictures_dirty = 1;
+    }
     if (!asking)
     {
+        if (panel_scroll != drawn_scroll && panels_fill())
+            pictures_dirty = 1;
         if (pictures_dirty)
             pictures_place();
         else if (panel_scroll != drawn_scroll)
@@ -790,10 +873,10 @@ void shop_draw(void)
             lock_move();
         pictures_dirty = lock_dirty = 0;
     }
-    for (p = 0; p < PANELS; p++)
-        if (panel_lit[p] != (p == panel_picked))
+    for (p = 0; p < PANEL_SLOTS; p++)
+        if (slot_holds[p] < PANELS && panel_lit[slot_holds[p]] != (slot_holds[p] == panel_picked))
         {
-            panel_light(p, p == panel_picked);
+            panel_light(slot_holds[p], slot_holds[p] == panel_picked);
             pictures_dirty = 1; /* the pictures light or dim with it, next frame */
         }
 }
@@ -876,9 +959,8 @@ uint8_t shop_step(void)
         else if (panel_picked < UPGRADES && upgrades_buy(panel_picked))
         {
             sfx_play(SFX_BUY, SFX_CENTER);
-            for (i = 0; i < UPGRADES; i++)
-                panel_draw(i);
-            nuggets_start(1);
+            upgrades_draw();
+            nuggets_start();
             pictures_load();
             pictures_dirty = 1;
             save_write();

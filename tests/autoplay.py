@@ -37,7 +37,7 @@ def main():
     play_top = sym['BEAM_H']
     paddle_y, paddle_w = sym['TUNE_PADDLE_Y'], game.ram('paddle_width')
     ball = sym['BALL_SIZE']
-    bricks = sym['LEVEL1_COLS'] * sym['LEVEL1_ROWS']
+    bricks = sym['LEVEL1_BRICKS']
     balls = sym['TUNE_BALLS']
 
     def predict(x, y, dx, dy):
@@ -125,14 +125,14 @@ def main():
     if how == 'cleared':
         game.talk_ok()  # the dwarf with the coin, before the menu
     title = {'cleared': 'LEVEL COMPLETE', 'out of energy': 'OUT OF FUEL', 'out of balls': 'OUT OF BALLS'}[how]
-    check(game.shows(title) and game.shows('UPGRADES') and game.shows('REPLAY'),
+    check(game.shows(title) and game.shows('THE DRY') and game.shows('REPLAY'),
           f'the menu says {title} when the level ends')
     if how != 'out of energy':
         images = set()
         for _ in range(30):
             game.run()
             images.add(game.sprites('XRAM_JET_SPRITES', 1)[0][2])
-        check(len(images) > 1, 'the flames still burn after the level ends')
+        check(len(images) > 1, 'the flames still burn as the sled flies home')
     game.run(90)
     check(game.shown('XRAM_BRICKS', bricks) == left, 'a sprite for each brick left')
     counted = game.ram('nuggets', 2)
@@ -150,7 +150,7 @@ def main():
     check(game.ram('nuggets', 2) == counted, 'the nuggets are kept')
     check(count() == balls, 'the count of balls comes back')
     check(game.ram('energy', 2) == full, 'the energy is full again')
-    check(not game.shows('UPGRADES'), 'the menu is gone')
+    check(not game.shows('THE DRY'), 'the menu is gone')
     game.close()
     print('PASS')
 

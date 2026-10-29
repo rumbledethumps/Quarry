@@ -8,6 +8,7 @@
 #define HID_KEY_P 0x13
 #define HID_KEY_S 0x16
 #define HID_KEY_W 0x1A
+#define HID_KEY_1 0x1E /* to 9, one after another */
 
 #define HID_KEY_ENTER 0x28
 #define HID_KEY_ESCAPE 0x29

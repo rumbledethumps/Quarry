@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Convert Quarry's PNG art into data for the RP6502 VGA.
 
-  png2bin.py image [--tile WxH] in.png out.bin
-      An indexed PNG whose palette indexes are the 4-bit colors, 0 to 15.
-      The image is cut into tiles of WxH, read left to right, then top to
-      bottom, and each tile is written row by row, two pixels to a byte,
-      the left pixel in the high nibble. Without --tile, the whole image is
-      one tile. This is the format of mode 2 tiles and mode 5 sprites.
+  png2bin.py image [--tile WxH] [--bpp 2] in.png out.bin
+      An indexed PNG whose palette indexes are the 4-bit colors, 0 to 15,
+      or with --bpp 2 the 2-bit colors, 0 to 3. The image is cut into
+      tiles of WxH, read left to right, then top to bottom, and each tile
+      is written row by row, two pixels to a byte, or four at 2 bits, the
+      left pixel in the high bits. Without --tile, the whole image is one
+      tile. This is the format of mode 2 tiles and mode 5 sprites.
 
   png2bin.py palette in.png out.bin
       A PNG 16 pixels wide. Each row is a 16-color palette, written as
@@ -103,22 +104,25 @@ def read_png(path):
     return width, height, color, rows, plte, trns
 
 
-def image(path, tile):
+def image(path, tile, bpp=4):
     width, height, color, rows, _, _ = read_png(path)
     if color != 3:
         fail(f'{path}: an image must be an indexed PNG')
     tw, th = tile or (width, height)
-    if tw % 2 or width % tw or height % th:
+    per_byte = 8 // bpp
+    if tw % per_byte or width % tw or height % th:
         fail(f'{path}: {width}x{height} does not divide into {tw}x{th} tiles')
     out = bytearray()
     for ty in range(0, height, th):
         for tx in range(0, width, tw):
             for y in range(ty, ty + th):
-                for x in range(tx, tx + tw, 2):
-                    left, right = rows[y][x][0], rows[y][x + 1][0]
-                    if left > 15 or right > 15:
-                        fail(f'{path}: pixel near {x},{y} uses an index above 15')
-                    out.append(left << 4 | right)
+                for x in range(tx, tx + tw, per_byte):
+                    byte = 0
+                    for p in rows[y][x:x + per_byte]:
+                        if p[0] >= 1 << bpp:
+                            fail(f'{path}: pixel near {x},{y} uses an index above {(1 << bpp) - 1}')
+                        byte = byte << bpp | p[0]
+                    out.append(byte)
     return out
 
 
@@ -157,10 +161,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('mode', choices=['image', 'palette'])
     parser.add_argument('--tile', type=tile_size, help='tile size, WxH')
+    parser.add_argument('--bpp', type=int, choices=[2, 4], default=4, help='bits a pixel of an image')
     parser.add_argument('input')
     parser.add_argument('output')
     args = parser.parse_args()
-    data = image(args.input, args.tile) if args.mode == 'image' else palette(args.input)
+    data = image(args.input, args.tile, args.bpp) if args.mode == 'image' else palette(args.input)
     with open(args.output, 'wb') as f:
         f.write(data)
 

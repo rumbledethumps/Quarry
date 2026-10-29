@@ -3,20 +3,22 @@
 
   screen.py
 
-Writes art/machine.png, art/digits.png, art/energy.png, art/coin.png and
+Writes art/machine.png, art/digits.png, art/energy.png and
 art/cursor.png. Run it after a change to the drawing here, then touch up
 any of them by hand. The frame of the playfield comes from art/frames.py.
 
 The machine is drawn for the left wall, stands behind the ball, and the
-right wall shows it with MODE5_HFLIP. The digits are 6x8 with a 1 px
-outline, in 8x12 sprites. The energy gauge is a placeholder until its
-redesign.
+right wall shows it with MODE5_HFLIP. Its window is clear, for the meter
+behind it, which art/gauge.py draws. The digits are 6x8 with a 1 px
+outline, in 8x12 sprites. The old energy bar is now only the upgrade
+screen's stand-in picture of the gauge, whose sight glass is
+art/gauge.py's.
 
-The machine, the digits and the coin use the sled row of
-art/palettes.png, the gauge the fx row, and the cursor the holo row.
-The coin is a placeholder: a plain gold disc. The cursor is one corner of the
-holographic outline of the upgrade screen and the menus, and MODE5_HFLIP and
-MODE5_VFLIP turn it for the other three.
+The machine and the digits use the sled row of art/palettes.png, the
+gauge the fx row, and the cursor the holo row. The coin is drawn by
+art/bricks.py. The cursor is one corner of the holographic outline of the
+upgrade screen and the menus, and MODE5_HFLIP and MODE5_VFLIP turn it for
+the other three.
 """
 
 import os
@@ -24,7 +26,7 @@ import os
 from rd2png import rgba, write_png
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SLED_ROW, FX_ROW, HOLO_ROW = 4, 2, 8
+SLED_ROW, FX_ROW, HOLO_ROW = 8, 6, 12
 
 # The sled row, by index.
 OUT, G0, TAIL, G1, Y1, G2, RED, G3, ORANGE, Y2, Y3, Y4, Y5, CREAM = range(1, 15)
@@ -45,7 +47,10 @@ def machine():
     for x in range(4, 20, 4):
         rows[4][x] = OUT  # the hazard marks on its lid
         rows[5][x + 1] = OUT
-    for y in range(12, 26, 2):
+    for y in range(9, 19):
+        for x in range(5, 19):
+            rows[y][x] = OUT if y in (9, 18) or x in (5, 18) else 0  # the meter's window
+    for y in range(20, 26, 2):
         for x in range(6, 18):
             rows[y][x] = G0  # its vents
     for y in range(29, 34):
@@ -89,7 +94,7 @@ def digit(ch):
 
 
 def gauge():
-    """The placeholder energy gauge, in the fx row: the top, a full, a low and
+    """The old energy bar, in the fx row: the top, a full, a low and
     an empty segment, and the bottom, 8x8 each."""
     DARK, EMPTY, STEEL, PALE, FULL, LIGHT, LOW = 1, 2, 4, 5, 11, 12, 13
     pieces = []
@@ -110,21 +115,6 @@ def gauge():
             rows[7] = [DARK] * 8
         pieces.append(rows)
     return [[c for piece in pieces for c in piece[y]] for y in range(8)]
-
-
-def coin():
-    """The placeholder coin, 8x8: a gold disc with a dark outline, lit from
-    the upper left."""
-    shape = ['..####..',
-             '.#hhhh#.',
-             '#hHffff#',
-             '#hffffr#',
-             '#hffffr#',
-             '#hffffr#',
-             '.#rrrr#.',
-             '..####..']
-    colors = {'.': 0, '#': OUT, 'h': Y4, 'H': Y5, 'f': Y3, 'r': Y1}
-    return [[colors[c] for c in line] for line in shape]
 
 
 def cursor(n=11, size=12):
@@ -167,7 +157,7 @@ def main():
     for name, rows, colors in (
         ('machine', machine(), sled),
         ('digits', strip([digit(c) for c in '0123456789']), sled), ('energy', gauge(), fx),
-        ('coin', coin(), sled), ('cursor', cursor(), holo),
+        ('cursor', cursor(), holo),
     ):
         write_png(os.path.join(HERE, f'{name}.png'), len(rows[0]), len(rows), 3, rows, colors)
 

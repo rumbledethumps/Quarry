@@ -5,78 +5,271 @@
 #include "tuning.h"
 #include "video.h"
 #include "xram.h"
+#include <stdlib.h>
 
-#define BAR_SPRITE(i) (XRAM_ENERGY_SPRITES + (i) * sizeof(mode5_csprite_t))
-#define BAR_IMAGE(i) (XRAM_ENERGY_IMAGES + (i) * sizeof(energy_image_t))
-#define BAR_PIECE_H 8
+#define GAUGE_SPRITE(field, i) (XRAM_GAUGE_SPRITES + offsetof(gauge_sprites_t, field) + (i) * sizeof(mode5_csprite_t))
+#define GLASS_ROW_BYTES (GLASS_W / 2)
+#define PIECE_H 64 /* of the glass, the tallest a sprite can be */
 
 /* While the energy is low, a beep every LOW_BEEP_STEPS steps, and the
    machine's lamp lights with each for LAMP_STEPS, so the machine reads as
    what powers the paddle. */
 #define LOW_BEEP_STEPS 180
-#define LAMP_STEPS 12
+#define LAMP_STEPS 24
 
-/* The energy each segment of the bar stands for. */
-#define SEGMENT_ENERGY ((TUNE_ENERGY + ENERGY_SEGMENTS - 1) / ENERGY_SEGMENTS)
+/* The machine's meter shows how the fuel stands: its paddle is green, then
+   yellow from TUNE_ENERGY_MID, and red from TUNE_ENERGY_LOW. When that
+   changes, the paddle slides down out of sight a px every METER_STEPS
+   steps, and back up in its new color. A level starts with it down, and
+   it comes up green, as a meter's does when its knob is turned. */
+#define METER_STEPS 2
+
+/* A bubble rises BUBBLE_SPEED sixteenths of a px a step, from the foot of
+   the fuel to its surface, and sways a px either way as it goes, a step of
+   the sway every 8 px. At the surface it pops and throws up a drop, which
+   hops up to DROP_PEAK px over the surface and falls back in, and then
+   the bubble is free again. */
+#define BUBBLE_SPEED 16
+#define BUBBLE_SPRITE(i) GAUGE_SPRITE(bubbles, i)
+#define DROP_PEAK 3
+
+/* The energy a cheat adds or takes away, a twelfth of a full gauge. */
+#define CHEAT_ENERGY ((TUNE_ENERGY + 11) / 12)
 
 _Static_assert(TUNE_ENERGY_LOW < TUNE_ENERGY, "TUNE_ENERGY_LOW must be less than TUNE_ENERGY.");
+_Static_assert(GLASS_PIECES == (GLASS_H + PIECE_H - 1) / PIECE_H, "GLASS_PIECES is wrong.");
+_Static_assert(LIQUID_SEGMENTS * LIQUID_H <= GLASS_H, "The runs of fuel fit in the glass.");
 
 uint16_t energy;
 uint8_t energy_draining;
 
-static uint8_t lit_shown; /* segments lit on the bar */
+static int16_t gauge_x, glass_y; /* the gauge's left, and its glass's top */
+static uint8_t rows;             /* of fuel in the glass */
+static uint8_t rows_drawn;       /* as its sprites show them */
+static uint16_t bubble_y[BUBBLES]; /* the top of each bubble, in 1/16 px, or 0 for none */
+static uint8_t bubble_x[BUBBLES];  /* its left, from the glass's, before it sways; its drop's, once popped */
+static uint8_t bubble_pop[BUBBLES]; /* steps of its drop's hop, from 1, once it pops */
+static const int8_t sway[] = {0, 1, 0, -1};
+static const uint8_t hop[] = {1, 1, 2, 2, DROP_PEAK, DROP_PEAK, DROP_PEAK, DROP_PEAK, DROP_PEAK, DROP_PEAK, 2, 2, 1, 1};
 static uint8_t beep_steps;
 static uint8_t lamp_steps;
-static uint8_t low_shown; /* the lit segments are orange */
+static uint8_t meter_color; /* the paddle's, from METER_GREEN */
+static uint8_t meter_risen; /* px, from 0, down, to METER_RISE, up */
+static uint8_t meter_steps;
+static uint8_t meter_drawn; /* the px risen and the color its sprite shows */
 
-/* Lights a segment for each SEGMENT_ENERGY left, or part of it, from the
-   bottom up. They turn from yellow to orange when the energy is low. */
-static void bar_draw(void)
+/* The glass, from the rock behind it: each row the right curtain's pixels
+   there, in the glass palette, an outline down each side, and the glint. */
+static void glass_make(void)
 {
-    uint8_t lit = (energy + SEGMENT_ENERGY - 1) / SEGMENT_ENERGY;
-    uint8_t low = energy <= TUNE_ENERGY_LOW;
+    uint8_t row[GLASS_W], bytes[GLASS_ROW_BYTES], y, i;
+    unsigned image = XRAM_GLASS_IMAGE;
+
+    row[0] = row[GLASS_W - 1] = GLASS_OUTLINE;
+    for (y = 0; y < GLASS_H; y++)
+    {
+        frame_rock(row + 1, gauge_x + GLASS_X + 1, glass_y + y, GLASS_W - 2);
+        row[GLINT_COL] = GLASS_GLINT;
+        for (i = 0; i < GLASS_ROW_BYTES; i++)
+            bytes[i] = row[2 * i] << 4 | row[2 * i + 1];
+        xram0_write(image, bytes, sizeof bytes);
+        image += sizeof bytes;
+    }
+}
+
+/* The rows of fuel for the energy: a row for each GLASS_H-th of
+   TUNE_ENERGY, or part of one. */
+static void rows_count(void)
+{
+    rows = ((uint32_t)energy * GLASS_H + TUNE_ENERGY - 1) / TUNE_ENERGY;
+}
+
+/* A bubble from the foot of the fuel, if there is fuel and a bubble free.
+   None is ever taken from another, so each rises all the way. It starts
+   somewhere across the glass, where it and its sway stay inside the
+   outline. */
+void energy_bubble(void)
+{
     uint8_t i;
 
-    if (lit == lit_shown && low == low_shown)
+    if (!rows)
         return;
-    for (i = 0; i < ENERGY_SEGMENTS; i++)
+    for (i = 0; i < BUBBLES; i++)
+        if (!bubble_y[i])
+        {
+            bubble_y[i] = (glass_y + GLASS_H - BUBBLE_SIZE) << 4;
+            bubble_x[i] = 2 + rand() % (GLASS_W - 6);
+            return;
+        }
+}
+
+/* Each bubble a step up, until its top reaches the surface, where it pops,
+   and its drop a step through its hop, and when the drop is back in the
+   fuel, the bubble is gone. */
+static void bubbles_step(void)
+{
+    int16_t surface = glass_y + GLASS_H - rows;
+    uint8_t i;
+
+    for (i = 0; i < BUBBLES; i++)
     {
-        uint8_t image = i < ENERGY_SEGMENTS - lit ? ENERGY_EMPTY : low ? ENERGY_LOW : ENERGY_FULL;
-        xram0_poke16(BAR_SPRITE(1 + i) + offsetof(mode5_csprite_t, xram_sprite_ptr), BAR_IMAGE(image));
+        if (!bubble_y[i])
+            continue;
+        if (bubble_pop[i])
+        {
+            if (++bubble_pop[i] > sizeof hop)
+                bubble_y[i] = bubble_pop[i] = 0;
+        }
+        else
+        {
+            int16_t y = (bubble_y[i] -= BUBBLE_SPEED) >> 4;
+
+            if (y <= surface + 1)
+            {
+                bubble_x[i] += sway[y >> 3 & 3] + 1; /* the drop, from the middle of the ring */
+                bubble_pop[i] = 1;
+            }
+        }
     }
-    lit_shown = lit;
-    low_shown = low;
+}
+
+/* Every METER_STEPS steps, the paddle moves a px: down while its color is
+   not the fuel's, taking the fuel's once it is down, and then up. */
+static void meter_step(void)
+{
+    uint8_t color = energy <= TUNE_ENERGY_LOW ? METER_RED : energy <= TUNE_ENERGY_MID ? METER_YELLOW : METER_GREEN;
+
+    if (++meter_steps < METER_STEPS)
+        return;
+    meter_steps = 0;
+    if (color != meter_color)
+    {
+        if (meter_risen)
+            meter_risen--;
+        else
+            meter_color = color;
+    }
+    else if (meter_risen < METER_RISE)
+        meter_risen++;
+}
+
+/* A bubble's sprite at x, y with its image, in one write. */
+static void bubble_show(unsigned sprite, unsigned image, int16_t x, int16_t y)
+{
+    int16_t s[3];
+
+    s[0] = x;
+    s[1] = y;
+    s[2] = image;
+    xram0_write(sprite, s, sizeof s);
+}
+
+/* The gauge's sprites as the fuel and the bubbles are, and the meter's, at
+   the start of a step, as a level draws all of its sprites, back to
+   front. The fuel is its surface, over the runs of it from the foot of the
+   glass up, each shown whole or not at all. The surface reaches down to
+   the first run, or to the foot of the glass, so it never shows past the
+   nut. */
+void energy_draw(void)
+{
+    int16_t foot = glass_y + GLASS_H, top = foot - rows;
+    uint8_t i;
+
+    if ((meter_risen << 2 | meter_color) != meter_drawn)
+    {
+        frame_meter(meter_risen, meter_color);
+        meter_drawn = meter_risen << 2 | meter_color;
+    }
+    if (rows != rows_drawn)
+    {
+        for (i = 0; i < LIQUID_SEGMENTS; i++)
+        {
+            int16_t run = foot - (i + 1) * LIQUID_H;
+
+            if (run >= top)
+                sprite_move(GAUGE_SPRITE(liquid, i), gauge_x + GLASS_X, run);
+            else
+                sprite_hide(GAUGE_SPRITE(liquid, i));
+        }
+        if (rows)
+        {
+            uint8_t h = rows + 1 < LIQUID_H ? (rows + 4) & ~3 : LIQUID_H;
+
+            xram0_poke8(XRAM_SURFACE_SPRITE + offsetof(mode5_csprite_t, width_height), MODE5_SIZE(GLASS_W, h));
+            sprite_move(XRAM_SURFACE_SPRITE, gauge_x + GLASS_X, top - 1);
+        }
+        else
+            sprite_hide(XRAM_SURFACE_SPRITE);
+        rows_drawn = rows;
+    }
+    for (i = 0; i < BUBBLES; i++)
+    {
+        if (!bubble_y[i])
+            sprite_hide(BUBBLE_SPRITE(i));
+        else if (bubble_pop[i])
+            bubble_show(BUBBLE_SPRITE(i), XRAM_DROP_IMAGE, gauge_x + GLASS_X + bubble_x[i], top - hop[bubble_pop[i] - 1]);
+        else
+        {
+            int16_t y = bubble_y[i] >> 4;
+
+            bubble_show(BUBBLE_SPRITE(i), XRAM_BUBBLE_IMAGE, gauge_x + GLASS_X + bubble_x[i] + sway[y >> 3 & 3], y);
+        }
+    }
 }
 
 #ifndef NDEBUG
-/* A cheat: adds segments of energy, up to full, or takes them away. */
-void energy_cheat(int8_t segments)
+/* A cheat: adds a twelfth of the energy, up to full, or takes it away. */
+void energy_cheat(int8_t steps)
 {
-    int16_t more = energy + segments * (int16_t)SEGMENT_ENERGY;
+    int16_t more = energy + steps * (int16_t)CHEAT_ENERGY;
 
     energy = more < 0 ? 0 : more > TUNE_ENERGY ? TUNE_ENERGY : more;
-    bar_draw();
+    rows_count();
     DEBUG_LOG("cheat: energy %u\n", energy);
 }
 #endif
 
-/* A full bar, with its top left at x, y. */
+/* A full gauge, with its top left at x, y: its glass made from the rock
+   behind it, which must be in place. */
 void energy_start(int16_t x, int16_t y)
 {
     uint8_t i;
 
     energy = TUNE_ENERGY;
     energy_draining = 0;
-    for (i = 0; i < ENERGY_SEGMENTS + 2; i++)
+    gauge_x = x;
+    glass_y = y + FITTING_H;
+    glass_make();
+    for (i = 0; i < GLASS_PIECES; i++)
     {
-        uint8_t image = i == 0 ? ENERGY_TOP : i == ENERGY_SEGMENTS + 1 ? ENERGY_BOTTOM : ENERGY_EMPTY;
-        sprite_set(BAR_SPRITE(i), BAR_IMAGE(image), XRAM_PALETTE_FX, MODE5_SIZE(8, BAR_PIECE_H));
-        sprite_move(BAR_SPRITE(i), x, y + i * BAR_PIECE_H);
+        uint8_t top = i * PIECE_H, h = i < GLASS_PIECES - 1 ? PIECE_H : GLASS_H - top;
+
+        sprite_set(GAUGE_SPRITE(glass, i), XRAM_GLASS_IMAGE + top * GLASS_ROW_BYTES, XRAM_PALETTE_GLASS,
+                   MODE5_SIZE(GLASS_W, h));
+        sprite_move(GAUGE_SPRITE(glass, i), x + GLASS_X, glass_y + top);
     }
-    lit_shown = 0;
-    low_shown = 0;
+    for (i = 0; i < LIQUID_SEGMENTS; i++)
+        sprite_set(GAUGE_SPRITE(liquid, i), XRAM_LIQUID_IMAGE, XRAM_PALETTE_LIQUID, MODE5_SIZE(GLASS_W, LIQUID_H));
+    sprite_set(XRAM_SURFACE_SPRITE, XRAM_SURFACE_IMAGE, XRAM_PALETTE_LIQUID, MODE5_SIZE(GLASS_W, LIQUID_H));
+    for (i = 0; i < BUBBLES; i++)
+    {
+        bubble_y[i] = bubble_pop[i] = 0;
+        sprite_set(BUBBLE_SPRITE(i), XRAM_BUBBLE_IMAGE, XRAM_PALETTE_LIQUID, MODE5_SIZE(BUBBLE_SIZE, BUBBLE_SIZE));
+    }
+    for (i = 0; i < 2; i++)
+    {
+        sprite_set(GAUGE_SPRITE(fittings, i), XRAM_FITTING_IMAGE, XRAM_PALETTE_FITTING, MODE5_SIZE(GAUGE_W, FITTING_H));
+        if (i)
+            sprite_attributes(GAUGE_SPRITE(fittings, i), MODE5_VFLIP);
+        sprite_move(GAUGE_SPRITE(fittings, i), x, i ? glass_y + GLASS_H : y);
+    }
+    rows_count();
+    rows_drawn = 0xFF;
     lamp_steps = 0;
-    bar_draw();
+    meter_color = METER_GREEN;
+    meter_risen = meter_steps = 0;
+    meter_drawn = 0xFF;
+    energy_draw();
 }
 
 static void beep(uint8_t sound)
@@ -91,6 +284,8 @@ void energy_step(void)
 {
     uint16_t was = energy;
 
+    bubbles_step();
+    meter_step();
     if (lamp_steps && !--lamp_steps)
         frame_lamp(0);
     if (!energy_draining || !energy)
@@ -106,5 +301,13 @@ void energy_step(void)
     }
     else if (energy <= TUNE_ENERGY_LOW && energy && ++beep_steps >= LOW_BEEP_STEPS)
         beep(SFX_LOW_BEEP);
-    bar_draw();
+    rows_count();
+}
+
+/* After the level ends, and while a dwarf talks, the bubbles still rise
+   and pop, and the meter's paddle still slides. */
+void energy_idle(void)
+{
+    bubbles_step();
+    meter_step();
 }

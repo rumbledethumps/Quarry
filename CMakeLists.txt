@@ -20,10 +20,13 @@ function(quarry_art output mode png)
 endfunction()
 
 quarry_art(palettes.bin palette palettes.png)
-quarry_art(brick.bin image brick.png)
-quarry_art(break.bin image break.png --tile 24x16)
+quarry_art(brick.bin image brick.png --bpp 2)
+quarry_art(cracks.bin image cracks.png --tile 16x8 --bpp 2)
+quarry_art(chunks.bin image chunks.png --tile 8x8 --bpp 2)
 quarry_art(nugget.bin image nugget.png)
+quarry_art(nugget-icon.bin image nugget-icon.png)
 quarry_art(ball.bin image ball.png)
+quarry_art(ball-icon.bin image ball-icon.png)
 quarry_art(jet.bin image jet.png --tile 8x12)
 quarry_art(smoke.bin image smoke.png --tile 8x8)
 quarry_art(energy.bin image energy.png --tile 8x8)
@@ -110,7 +113,7 @@ add_custom_command(
     COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/art/carts.py ${CMAKE_CURRENT_BINARY_DIR}/carts.bin
         ${CMAKE_CURRENT_BINARY_DIR}/carts.h --preview ${CMAKE_CURRENT_BINARY_DIR}/carts.png
-    DEPENDS art/carts.py art/cart.png art/padlock.png art/curtain.py art/panel_font.py art/panels.py art/rd2png.py
+    DEPENDS art/carts.py art/cart.png art/padlock.png art/curtain.py art/rd2png.py
     VERBATIM
 )
 
@@ -144,6 +147,19 @@ add_custom_command(
     VERBATIM
 )
 
+# The levels, from levels/levels.py, as ROM:levels, and levels.h, which
+# counts them. levels.py also writes a picture of each to levels/ in the
+# build folder.
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/levels.bin ${CMAKE_CURRENT_BINARY_DIR}/levels.h
+    COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/levels/levels.py ${CMAKE_CURRENT_BINARY_DIR}/levels.bin
+        ${CMAKE_CURRENT_BINARY_DIR}/levels.h --preview ${CMAKE_CURRENT_BINARY_DIR}/levels
+    DEPENDS levels/levels.py art/rd2png.py art/png2bin.py art/brick.png art/palettes.png
+        src/bricks.h src/xram.h src/play.c src/tuning.h
+    VERBATIM
+)
+
 # A sled for each width of src/tuning.h, drawn by art/sled.py, which also
 # writes them to look at in sleds/ in the build folder.
 add_custom_command(
@@ -154,14 +170,27 @@ add_custom_command(
     VERBATIM
 )
 
+# The energy gauge's fitting, from the pipe of art/backdrop.png, and its
+# fuel and bubbles, drawn by art/gauge.py, which also writes gauge.png to
+# look at. A level makes its glass from its rock.
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/gauge.bin
+    COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/art/gauge.py ${CMAKE_CURRENT_BINARY_DIR}/gauge.bin
+        --preview ${CMAKE_CURRENT_BINARY_DIR}/gauge.png
+    DEPENDS art/gauge.py art/rd2png.py art/palettes.png art/backdrop.png
+    VERBATIM
+)
+
 add_executable(quarry)
 rp6502_align(quarry "XRAM_.*")
 rp6502_asset(quarry help src/help.txt)
 rp6502_asset(quarry XRAM(XRAM_PALETTES) ${CMAKE_CURRENT_BINARY_DIR}/palettes.bin)
 rp6502_asset(quarry XRAM(XRAM_BRICK_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/brick.bin)
-rp6502_asset(quarry XRAM(XRAM_BREAK_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/break.bin)
 rp6502_asset(quarry XRAM(XRAM_NUGGET_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/nugget.bin)
+rp6502_asset(quarry XRAM(XRAM_NUGGET_ICON_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/nugget-icon.bin)
 rp6502_asset(quarry XRAM(XRAM_BALL_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/ball.bin)
+rp6502_asset(quarry XRAM(XRAM_BALL_ICON_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/ball-icon.bin)
 rp6502_asset(quarry XRAM(XRAM_JET_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/jet.bin)
 rp6502_asset(quarry XRAM(XRAM_SMOKE_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/smoke.bin)
 rp6502_asset(quarry XRAM(XRAM_ENERGY_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/energy.bin)
@@ -173,6 +202,10 @@ rp6502_asset(quarry XRAM(XRAM_CURSOR_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/cursor.b
 rp6502_asset(quarry backdrop ${CMAKE_CURRENT_BINARY_DIR}/backdrop.bin)
 rp6502_asset(quarry logo ${CMAKE_CURRENT_BINARY_DIR}/logo.bin)
 rp6502_asset(quarry sleds ${CMAKE_CURRENT_BINARY_DIR}/sleds.bin)
+rp6502_asset(quarry cracks ${CMAKE_CURRENT_BINARY_DIR}/cracks.bin)
+rp6502_asset(quarry chunks ${CMAKE_CURRENT_BINARY_DIR}/chunks.bin)
+rp6502_asset(quarry gauge ${CMAKE_CURRENT_BINARY_DIR}/gauge.bin)
+rp6502_asset(quarry levels ${CMAKE_CURRENT_BINARY_DIR}/levels.bin)
 rp6502_asset(quarry panels ${CMAKE_CURRENT_BINARY_DIR}/panels.bin)
 rp6502_asset(quarry carts ${CMAKE_CURRENT_BINARY_DIR}/carts.bin)
 rp6502_asset(quarry menus ${CMAKE_CURRENT_BINARY_DIR}/menus.bin)
@@ -219,6 +252,7 @@ target_sources(quarry PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}/carts.h
     ${CMAKE_CURRENT_BINARY_DIR}/menus.h
     ${CMAKE_CURRENT_BINARY_DIR}/talks.h
+    ${CMAKE_CURRENT_BINARY_DIR}/levels.h
 )
 target_include_directories(quarry PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -239,3 +273,11 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     rp6502_test(NAME sound COMMAND tests/sound.py ${QUARRY_ROM})
     rp6502_test(NAME talk COMMAND tests/talk.py ${QUARRY_ROM})
 endif()
+
+# A spike, not part of the game: spikes/rng.c compares random number
+# generators on the 6502, for speed and for how even they are. Its ROM is
+# rng.rp6502, to run on the hardware.
+add_executable(rng)
+target_sources(rng PRIVATE spikes/rng.c spikes/rng-asm.s)
+set_source_files_properties(spikes/rng-asm.s PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
+rp6502_executable(rng DATA default RESET default)

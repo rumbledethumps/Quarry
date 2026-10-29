@@ -13,14 +13,15 @@
 /* The ball is the size of its image. */
 #define BALL_SIZE 8
 
-/* The count of balls is at the bottom left, the ball and then its digits,
-   and the energy gauge at the right edge, clear of the right post of the
-   widest level, which ends at 312. */
+/* The count of balls is at the bottom left, the ball, as big as the
+   digits, and then its digits, and the energy gauge down the right edge,
+   over the right curtain, from the top of the screen to its foot.
+   levels/levels.py keeps every level's right post clear of it. */
 #define BALLS_X 4
 #define BALLS_Y 227
 #define BALLS_MAX 99
-#define GAUGE_X 312
-#define GAUGE_Y 64
+#define GAUGE_X 300
+#define GAUGE_Y 0
 
 #define BALL_DOCKED 0 /* on the paddle, waiting for launch */
 #define BALL_FLYING 1
@@ -51,13 +52,13 @@ static int16_t ball_vy;
 void play_init(void)
 {
     sprite_set(XRAM_BALL_SPRITE, XRAM_BALL_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(8, 8));
-    sprite_set(XRAM_BALL_ICON, XRAM_BALL_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(8, 8));
+    sprite_set(XRAM_BALL_ICON, XRAM_BALL_ICON_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(ICON_SIZE, ICON_SIZE));
 }
 
 /* The count of balls not yet launched. */
 static void balls_draw(void)
 {
-    video_count(XRAM_BALL_DIGITS, BALL_DIGITS, BALLS_X + 9, BALLS_Y - 1, balls);
+    video_count(XRAM_BALL_DIGITS, BALL_DIGITS, BALLS_X + 12, BALLS_Y - 1, balls);
 }
 
 /* The ball sits on the middle of the paddle, and goes where it goes, even
@@ -73,7 +74,7 @@ void play_start(void)
 {
     energy_start(GAUGE_X, GAUGE_Y);
     balls = TUNE_BALLS;
-    sprite_move(XRAM_BALL_ICON, BALLS_X, BALLS_Y);
+    sprite_move(XRAM_BALL_ICON, BALLS_X, BALLS_Y - 1);
     balls_draw();
     paddle_start();
     ball_dock();
@@ -92,7 +93,8 @@ static void ball_launch(void)
     DEBUG_LOG("launch, %u balls left\n", balls);
 }
 
-/* x is the ball's left edge, which overlaps the paddle. */
+/* x is the ball's left edge, which overlaps the paddle. Each bounce sends a
+   bubble up the fuel gauge. */
 static void paddle_bounce(int16_t x)
 {
     int16_t across = x + BALL_SIZE - PX(paddle_x);
@@ -103,6 +105,7 @@ static void paddle_bounce(int16_t x)
     ball_vx = zone_vx[zone];
     ball_vy = zone_vy[zone];
     sfx_play(SFX_PADDLE, x + BALL_SIZE / 2);
+    energy_bubble();
     DEBUG_LOG("paddle zone %u\n", zone);
 }
 
@@ -183,8 +186,8 @@ static void ball_step(void)
 
 #ifndef NDEBUG
 /* The cheats of a debug build: Shift and right or left adds a ball or takes
-   one away, and Shift and up or down adds a segment of energy or takes one
-   away. A ball on the paddle keeps the one it is. */
+   one away, and Shift and up or down adds a twelfth of the energy or
+   takes one away. A ball on the paddle keeps the one it is. */
 static void cheats_step(void)
 {
     if ((shift_pressed & SHIFT_RIGHT) && balls < BALLS_MAX)
@@ -204,8 +207,11 @@ static void cheats_step(void)
 #endif
 
 /* When the energy runs out, the paddle sputters and falls, and the level
-   ends when it is gone. A ball in flight plays on until then, but a lost
-   one is not replaced. */
+   ends once it is gone and no ball is in play. A ball in flight plays on,
+   breaking bricks, until it falls off the bottom of the screen, and a lost
+   one is not replaced, nor makes a sound, as the sled's fall was the
+   sound of it. A ball on the paddle rides it down, and falls on off the
+   screen once it is gone. */
 uint8_t play_step(void)
 {
 #ifndef NDEBUG
@@ -229,46 +235,57 @@ uint8_t play_step(void)
         if (!bricks_left)
         {
             ball_state = BALL_GONE;
+            paddle_leave();
             DEBUG_LOG("level cleared\n");
             return PLAY_CLEARED;
         }
         if (PX(ball_y) >= SCREEN_H)
         {
-            sfx_play(SFX_LOST, PX(ball_x));
             DEBUG_LOG("ball lost\n");
             if (paddle_state != PADDLE_HOVER)
-                ball_state = BALL_GONE;
-            else if (balls)
-                ball_dock();
+                ball_state = BALL_GONE; /* out of energy, and the sled's fall was its sound */
             else
             {
-                ball_state = BALL_GONE;
-                DEBUG_LOG("out of balls\n");
-                return PLAY_OUT;
+                sfx_play(SFX_LOST, PX(ball_x));
+                if (balls)
+                    ball_dock();
+                else
+                {
+                    ball_state = BALL_GONE;
+                    paddle_leave();
+                    DEBUG_LOG("out of balls\n");
+                    return PLAY_OUT;
+                }
             }
         }
         break;
     }
     if (paddle_state == PADDLE_GONE)
     {
-        ball_state = BALL_GONE;
-        return PLAY_NO_ENERGY;
+        if (ball_state == BALL_DOCKED)
+        {
+            ball_state = BALL_FLYING;
+            ball_vx = 0;
+            ball_vy = TUNE_BALL_SPEED;
+        }
+        else if (ball_state == BALL_GONE)
+            return PLAY_NO_ENERGY;
     }
     return PLAY_ON;
 }
 
 /* After the level ends, the flames still burn, a falling paddle still
-   falls off the screen, and the last nuggets still fly to the panel. The
-   nuggets step before the bricks, so a new one stays where its brick was
-   until the next step. */
+   falls off the screen, the last nuggets still fly to the panel, the last
+   chunks still fall, and the gauge's bubbles still rise. */
 void play_idle(void)
 {
     paddle_step(0);
+    energy_idle();
     nuggets_step();
     bricks_step();
 }
 
-/* Finishes every break and lands every nugget at once, so the counts are
+/* Ends every break and lands every nugget at once, so the counts are
    whole. */
 void play_finish(void)
 {
@@ -276,10 +293,10 @@ void play_finish(void)
     nuggets_land();
 }
 
-/* The nuggets of a color still to land: breaking, or in flight. */
+/* The nuggets of a color still to land, in flight. */
 uint8_t play_pending(uint8_t color)
 {
-    return bricks_pending(color) + nuggets_flying(color);
+    return nuggets_flying(color);
 }
 
 /* The ball is drawn first, as early in the vertical blank as it can be. */
@@ -291,4 +308,6 @@ void play_draw(void)
         sprite_move(XRAM_BALL_SPRITE, PX(ball_x), PX(ball_y));
     paddle_draw();
     nuggets_draw();
+    bricks_draw();
+    energy_draw();
 }

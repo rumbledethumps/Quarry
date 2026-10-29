@@ -19,24 +19,24 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'
 from rp6502 import Symbols  # noqa: E402
 
 SAVE = 'quarry.save'
-TAG = b'QRY4'
+TAG = b'QRY6'
 TITLE_ITEMS = ['RESUME', 'NEW GAME']
 SYM = Symbols(os.path.splitext(rom())[0] + '.sym')
 NO_RANKS = (0,) * SYM['UPGRADES']
-NEW_GAME = (0, 0, NO_RANKS, 0, 1, 1, 0)  # as read_save() gives it
+NEW_GAME = (0, 0, NO_RANKS, 0, 1, 1, 0, 0)  # as read_save() gives it
 
 
 def read_save(folder):
-    """The save, save_t of src/save.c, as (white nuggets, coins, upgrade
-    ranks, levels cleared, level picked, levels shown open, talks seen), or
-    None."""
+    """The save, save_t of src/save.c, as (gray nuggets, coins, upgrade
+    ranks, levels cleared, level picked, levels shown open, talks seen,
+    lines of the counts shown), or None."""
     path = os.path.join(folder, SAVE)
     if not os.path.exists(path):
         return None
     data = open(path, 'rb').read()
     check(len(data) == SYM['SAVE_BYTES'] and data[:4] == TAG, f'the save is a good one: {data!r}')
     colors, upgrades = SYM['BRICK_COLORS'], SYM['UPGRADES']
-    values = struct.unpack(f'<{colors}HH{upgrades}B4B', data[4:])
+    values = struct.unpack(f'<{colors}HH{upgrades}B5B', data[4:])
     nuggets, coins = values[:colors], values[colors]
     ranks, rest = values[colors + 1:colors + 1 + upgrades], values[colors + 1 + upgrades:]
     return (nuggets[0], coins, ranks) + rest
@@ -82,13 +82,14 @@ def main():
     game.tap('escape')
     game.until('game_state', 'STATE_PAUSE', 10)
     game.run(2)
-    check(all(game.shows(w) for w in ['PAUSED', 'RESUME', 'UPGRADES', 'RESTART', 'MAIN MENU']),
+    check(all(game.shows(w) for w in ['PAUSED', 'RESUME', 'THE DRY', 'RESTART', 'MAIN MENU']),
           'the pause menu')
-    broken = game.sym['LEVEL1_COLS'] * game.sym['LEVEL1_ROWS'] - game.ram('bricks_left')
+    broken = game.sym['LEVEL1_BRICKS'] - game.ram('bricks_left')
     saved = read_save(folder)
     check(saved and saved[0] == broken, f'pausing saves a nugget for each broken brick, {saved} for {broken}')
     welcome = 1 << game.sym['TALK_WELCOME'] - 1
     check(saved[6] == welcome, "and that the dwarf's welcome was seen")
+    check(saved[7] == 1 << game.sym['BRICK_GRAY'], "and that the gray nuggets' line of the counts shows")
     ball = 'XRAM_BALL_SPRITE'
     tape = f'XRAM_MENU_PALETTE+{game.sym["MENU_TAPE"] * 2}'
     where, energy = game.sprite(ball), game.ram('energy', 2)
@@ -119,7 +120,7 @@ def main():
     game.poke('balls', 0)
     game.wait('out of balls', 3000)
     game.run(2)
-    broken = game.sym['LEVEL1_COLS'] * game.sym['LEVEL1_ROWS'] - game.ram('bricks_left')
+    broken = game.sym['LEVEL1_BRICKS'] - game.ram('bricks_left')
     check(read_save(folder) and read_save(folder)[0] == broken, f'a level ending saves, {broken} nuggets')
 
     # Esc does nothing on the menu when a level ends. Replay plays the level
@@ -146,7 +147,7 @@ def main():
     game.tap('down')  # RESTART
     game.tap('space')
     game.until('game_state', 'STATE_PLAY', 30)
-    check(game.ram('bricks_left') == game.sym['LEVEL1_COLS'] * game.sym['LEVEL1_ROWS'],
+    check(game.ram('bricks_left') == game.sym['LEVEL1_BRICKS'],
           'Restart starts the level over')
     check(look() == cave, 'with its curtains, texture and frame')
     print('ok: Replay and Restart')
@@ -155,7 +156,7 @@ def main():
     # the title, where Resume can be picked now.
     game.paused_poke([('balls', 0, 1), ('ball_state', 1, 1)])
     game.wait('out of balls', 3000)
-    game.menu_choose('UPGRADES')
+    game.menu_choose('THE DRY')
     game.talk_ok()
     game.poke('nuggets', 20, 2)
     left = 20 - game.ram('width_costs', 2)  # after the first width
@@ -201,6 +202,7 @@ def main():
     game.tap('space')
     game.until('game_state', 'STATE_SHOP', 120)
     check(game.ram('nuggets', 2) == left, 'Resume opens the upgrade screen with the nuggets')
+    check(game.shown('XRAM_NUGGET_ICONS', game.sym['BRICK_COLORS']) == 1, 'and their line of the counts')
     check(game.ram('upgrade_ranks') == 1, 'and the upgrade')
     check(game.ram('cursor_on') == game.sym['SHOP_ON_LEVELS'], 'on the level select, coming from the title')
     game.tap('space')

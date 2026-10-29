@@ -3,6 +3,7 @@
 #include "video.h"
 #include "xram.h"
 #include <fcntl.h>
+#include <panels.h>
 #include <rp6502.h>
 #include <stdio.h>
 #include <string.h>
@@ -11,11 +12,13 @@
 /* Each screen has art of its own in XRAM_ART, read from the ROM's assets
    when the screen starts. The upgrade screen has its backdrop, its panels
    and carts, and slots for the pictures of the panels near the middle,
-   which load as the panels come near. The title has a texture, a curtain set and the logo, and a level a
-   texture, a curtain set, a frame set and its own sled. The texture, the
-   curtain set and the frame set are picked at random only when the screen
-   changes, so a level played again keeps its rock and its frame, and
-   nobody sees them change. */
+   which load as the panels come near. The title has a texture, a curtain
+   set and the logo, and a level a texture, a curtain set, a frame set,
+   the cracks and the chunks of its bricks, the fittings and the fuel of
+   the energy gauge, and its own sled. The texture,
+   the curtain set and the frame set are picked at random only when the
+   screen changes, so a level played again keeps its rock and its frame,
+   and nobody sees them change. */
 
 #define SCENE_MENU 1
 #define SCENE_LEVEL 2
@@ -23,7 +26,7 @@
 
 /* The curtain sets, ROM:curtain1 and on, and the textures, ROM:texture1
    and on. A curtain set holds its palette, then the 4 colors of the
-   texture, then the curtains. */
+   texture, then the palette of the gauge's glass, then the curtains. */
 #define CURTAIN_SETS 4 /* QUARRY_CURTAIN_SETS of CMakeLists.txt */
 #define TEXTURES 4
 
@@ -34,16 +37,22 @@ _Static_assert(CURTAIN_SETS <= 9 && TEXTURES <= 9 && FRAME_SETS <= 9, "An asset'
 
 /* The bytes of each asset, as a screen loads it, which tests/assets.py
    checks the assets against. A curtain set holds its palette, then the 4
-   colors of the texture, then the curtains. */
+   colors of the texture, then the palette of the gauge's glass, then the
+   curtains. */
 #define BACKDROP_BYTES (XRAM_PICTURE(0) - XRAM_BACKDROP)
-#define PANELS_BYTES (XRAM_CART_PALETTE - XRAM_PANEL_PALETTE)
+#define PANEL_ART_BYTES (XRAM_PANELS - XRAM_PANEL_PALETTE) /* the palette and the tiles */
+#define PANEL_FRAME_BYTES (PANEL_ROWS * PANEL_COLS)
+#define PANELS_BYTES (PANEL_ART_BYTES + PANEL_LAYOUTS * PANEL_FRAME_BYTES)
 #define CARTS_BYTES (XRAM_CART_TILES + CART_TILES * sizeof(cart_tile_t) - XRAM_CART_PALETTE)
 #define MENUS_BYTES (XRAM_MENU_TILES + MENU_TILES * sizeof(menu_tile_t) - XRAM_MENU_PALETTE)
 #define LOGO_BYTES sizeof(((xram_layout_t *)0)->art.cave.logo_images)
 #define TEXTURE_BYTES sizeof(((xram_layout_t *)0)->art.cave.texture)
 #define CURTAIN_PALETTE_BYTES sizeof(((palettes_t *)0)->curtain)
-#define CURTAIN_SET_BYTES (CURTAIN_PALETTE_BYTES + 4 * sizeof(uint16_t) + 2 * CURTAIN_BYTES)
+#define CURTAIN_SET_BYTES (2 * CURTAIN_PALETTE_BYTES + 4 * sizeof(uint16_t) + 2 * CURTAIN_BYTES)
 #define FRAME_SET_BYTES sizeof(frame_set_t)
+#define CRACKS_BYTES sizeof(((level_art_t *)0)->cracks)
+#define CHUNKS_BYTES sizeof(((level_art_t *)0)->chunks)
+#define GAUGE_BYTES offsetof(gauge_art_t, glass)
 #define TALK_BYTES sizeof(talk_t)
 
 static uint8_t scene;
@@ -112,10 +121,10 @@ static void backdrop_band(uint8_t band, unsigned palette, unsigned tiles, unsign
 }
 
 /* The upgrade screen's art and its layers: the backdrop for plane 0, in
-   its three bands, and for plane 1 the panels from PANEL_Y and the carts
-   from CART_Y, which the upgrade screen slides and fills in: the panels'
-   palette, tiles and the map of their frames, and the carts' palette and
-   tiles. Nothing shows until scene_menu_show(), once the upgrade screen
+   its three bands, and for plane 1 the panels from PANEL_Y, their map
+   wrapping, and the carts from CART_Y, which the upgrade screen slides and
+   fills in: the panels' palette and tiles, and the carts' palette and
+   tiles. The panels' frames load into their map as they come near. Nothing shows until scene_menu_show(), once the upgrade screen
    has put everything in its place. */
 void scene_menu(void)
 {
@@ -131,8 +140,9 @@ void scene_menu(void)
                   BACKDROP_MIDDLE_Y, BACKDROP_MIDDLE_ROWS);
     backdrop_band(2, XRAM_BAND_PALETTE(bottom), XRAM_BAND_TILES(bottom), XRAM_BAND_MAP(bottom),
                   BACKDROP_BOTTOM_Y, BACKDROP_BOTTOM_ROWS);
-    load("ROM:panels", 0, XRAM_PANEL_PALETTE, PANELS_BYTES);
+    load("ROM:panels", 0, XRAM_PANEL_PALETTE, PANEL_ART_BYTES);
     memset(&config, 0, sizeof config);
+    config.x_wrap = true;
     config.y_pos_px = PANEL_Y;
     config.width_tiles = PANEL_MAP_COLS;
     config.height_tiles = PANEL_ROWS;
@@ -142,6 +152,7 @@ void scene_menu(void)
     xram0_write(XRAM_PANEL_CONFIG, &config, sizeof config);
     load("ROM:carts", 0, XRAM_CART_PALETTE, CARTS_BYTES);
     xram0_set(XRAM_CART_MAP, 0, sizeof(((xram_layout_t *)0)->art.menu.cart_map));
+    config.x_wrap = false;
     config.y_pos_px = CART_Y;
     config.width_tiles = CART_MAP_COLS;
     config.height_tiles = CART_ROWS;
@@ -161,7 +172,7 @@ void scene_menu_show(void)
         return;
     menu_shown = 1;
     next_frame();
-    video_start();
+    video_start(0);
     xreg_vga_mode2(BAND_MODE(BACKDROP_TOP_BPP), XRAM_BACKDROP_CONFIG(0), 0, BACKDROP_TOP_Y,
                    BACKDROP_TOP_Y + BACKDROP_TOP_ROWS * 16);
     xreg_vga_mode2(BAND_MODE(BACKDROP_MIDDLE_BPP), XRAM_BACKDROP_CONFIG(1), 0, BACKDROP_MIDDLE_Y,
@@ -172,16 +183,18 @@ void scene_menu_show(void)
     xreg_vga_mode2(MODE2_4BPP | MODE2_8X8, XRAM_CART_CONFIG, 1, CART_Y, CART_Y + CART_ROWS * 8);
 }
 
-/* The curtain set: its palette, the colors it gives the texture, and its
-   curtains. */
+/* The curtain set: its palette, the colors it gives the texture, the
+   gauge's glass, and its curtains. */
 static void curtains_load(void)
 {
     char curtain[] = "ROM:curtain1";
+    long at = CURTAIN_PALETTE_BYTES + 4 * sizeof(uint16_t);
 
     curtain[11] = '1' + curtain_set;
     load(curtain, 0, XRAM_PALETTE_CURTAIN, CURTAIN_PALETTE_BYTES);
     load(curtain, CURTAIN_PALETTE_BYTES, XRAM_PALETTE_TEXTURE, 4 * sizeof(uint16_t));
-    load(curtain, CURTAIN_PALETTE_BYTES + 4 * sizeof(uint16_t), XRAM_CURTAINS, 2 * CURTAIN_BYTES);
+    load(curtain, at, XRAM_PALETTE_GLASS, CURTAIN_PALETTE_BYTES);
+    load(curtain, at + CURTAIN_PALETTE_BYTES, XRAM_CURTAINS, 2 * CURTAIN_BYTES);
     DEBUG_LOG("curtains %u\n", curtain_set + 1);
 }
 
@@ -212,27 +225,36 @@ void scene_title(void)
 {
     if (scene_change(SCENE_TITLE))
     {
-        video_start();
+        video_start(0);
         cave();
     }
     load("ROM:logo", 0, XRAM_LOGO_IMAGES, LOGO_BYTES);
 }
 
-/* A level: a cave and its frame set, if it comes from another screen, and
-   the sled of a rank of the width upgrade. */
-void scene_level(uint8_t sled_rank)
+/* A level: a cave, its frame set, the cracks and chunks of its bricks and
+   the gauge's fittings and fuel, if it comes from another screen, and the sled of a rank of the width
+   upgrade. Its own sprites start hidden, before plane 1 shows them.
+   Returns whether the screen changed. */
+uint8_t scene_level(uint8_t sled_rank)
 {
-    if (scene_change(SCENE_LEVEL))
+    uint8_t changed = scene_change(SCENE_LEVEL);
+
+    video_hide_level_sprites();
+    if (changed)
     {
         char frame[] = "ROM:frame1";
 
-        video_start();
+        video_start(1);
         cave();
         frame[9] = '1' + frame_set;
         load(frame, 0, XRAM_FRAME, FRAME_SET_BYTES);
+        load("ROM:cracks", 0, XRAM_CRACK_IMAGES, CRACKS_BYTES);
+        load("ROM:chunks", 0, XRAM_CHUNK_IMAGES, CHUNKS_BYTES);
+        load("ROM:gauge", 0, XRAM_GAUGE_ART, GAUGE_BYTES);
         DEBUG_LOG("frame %u\n", frame_set + 1);
     }
     load("ROM:sleds", (long)sled_rank * SLED_SLOT, XRAM_LEVEL_SLED, SLED_SLOT);
+    return changed;
 }
 
 /* The curtain set after this one, or before it, in its place, while the
@@ -241,6 +263,24 @@ void scene_curtains(int8_t step)
 {
     curtain_set = (curtain_set + CURTAIN_SETS + step) % CURTAIN_SETS;
     curtains_load();
+}
+
+/* The frame of panel p of the upgrade screen into the map, from the
+   column at, in place of what was there. */
+void scene_panel_frame(uint8_t p, unsigned at)
+{
+    int fd = open("ROM:panels", O_RDONLY);
+    uint8_t row;
+
+    if (fd < 0)
+    {
+        DEBUG_LOG("no ROM:panels\n");
+        return;
+    }
+    lseek(fd, PANEL_ART_BYTES + (long)p * PANEL_FRAME_BYTES, SEEK_SET);
+    for (row = 0; row < PANEL_ROWS; row++)
+        read_xram(at + row * PANEL_MAP_COLS, PANEL_COLS, fd);
+    close(fd);
 }
 
 /* The flat sled of a rank of the width upgrade into a slot of the upgrade

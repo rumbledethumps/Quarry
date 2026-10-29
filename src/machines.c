@@ -2,6 +2,7 @@
 #include "video.h"
 #include "xram.h"
 #include <rp6502.h>
+#include <stdlib.h>
 
 /* What moves in the upgrade screen's backdrop: the two cogs at the left of
    the floor turn all the time, and now and then the vent by the piston
@@ -30,7 +31,7 @@ static uint8_t dirty;
 
 static void steam_later(void)
 {
-    steam_wait = STEAM_WAIT + ria_attr_get(RIA_ATTR_LRAND) % STEAM_WAIT;
+    steam_wait = STEAM_WAIT + rand() % STEAM_WAIT;
 }
 
 void machines_start(void)

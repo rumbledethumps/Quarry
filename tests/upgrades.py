@@ -9,6 +9,7 @@ from their own text cells. Exits 0 when every check passes.
 """
 
 import os
+import struct
 import sys
 
 from game import Game, check
@@ -16,7 +17,7 @@ from game import Game, check
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'art'))
 from panels import FONT  # noqa: E402
 
-END_ITEMS = ['UPGRADES', 'REPLAY', 'MAIN MENU']
+END_ITEMS = ['THE DRY', 'REPLAY', 'MAIN MENU']
 
 
 def tuning(game):
@@ -54,7 +55,7 @@ def main():
 
     def panel_tiles(p, row):
         """The tiles inside panel p, on a row of its map."""
-        cols, left = sym['PANEL_MAP_COLS'], p * sym['PANEL_PITCH'] + sym['PANEL_BORDER']
+        cols, left = sym['PANEL_MAP_COLS'], p % sym['PANEL_SLOTS'] * sym['PANEL_PITCH'] + sym['PANEL_BORDER']
         return game.xram(sym['XRAM_PANELS'] + row * cols + left, sym['PANEL_INSIDE'])
 
     def panel(p, row):
@@ -73,15 +74,16 @@ def main():
     def settle():
         game.run(40)
 
-    # The level ends: the menu, with UPGRADES picked, takes no choice for a
+    # The level ends: the menu, with THE DRY picked, takes no choice for a
     # moment.
     game.tap('space')
     game.poke('balls', 0)
     game.wait('out of balls', 3000)
     game.run(2)
     check(game.ram('game_state') == sym['STATE_MENU'], 'the menu opens when the level ends')
+    check(game.ram('paddle_state') == sym['PADDLE_LEAVING'], 'and out of balls, the sled flies home')
     check(all(game.shows(w) for w in ['OUT OF BALLS'] + END_ITEMS), 'it says OUT OF BALLS, with its items')
-    check(end_picked() == 'UPGRADES', 'UPGRADES is picked')
+    check(end_picked() == 'THE DRY', 'THE DRY is picked')
     check(cursor_on_item('end_menus', 0), 'and the cursor is on it at once')
     game.tap('space')
     game.run(10)
@@ -99,7 +101,7 @@ def main():
         game.tap(key)
         check(end_picked() == was, f'{key} does not move the pick')
     game.tap('up')
-    check(end_picked() == 'UPGRADES', 'up from the first stays: the menu does not wrap')
+    check(end_picked() == 'THE DRY', 'up from the first stays: the menu does not wrap')
     for _ in END_ITEMS:
         game.tap('down')
     check(end_picked() == 'MAIN MENU', 'down from the last stays')
@@ -112,7 +114,7 @@ def main():
     # The upgrade screen, with no nuggets: a panel for each upgrade, the
     # first lit in the middle, and nothing to buy.
     game.poke('nuggets', 0, 2)
-    game.menu_choose('UPGRADES', wait=False)
+    game.menu_choose('THE DRY', wait=False)
     game.talk_ok()  # the dwarf's first word on the screen
     game.run(20)  # past the flicker of the panel in the middle
     check(game.ram('panel_picked') == 0 and game.ram('cursor_on') == sym['ON_RAIL'],
@@ -122,6 +124,8 @@ def main():
     widths = tune['TUNE_WIDTHS']
     check(panel(0, sym['EFFECT_ROW']) == f'{widths[0]} \x10 {widths[1]} PX', 'and what the next width is')
     check(panel(0, sym['COST_ROW']) == str(tune['TUNE_WIDTH_COSTS'][0]), 'and what it costs')
+    check(panel(2, sym['TITLE_ROW']) == 'HEAVIER BALL' and panel(2, sym['EFFECT_ROW']) == '1 \x10 2 DAMAGE',
+          "and the ball's damage has its panel")
     check(panel_lit(0) and not panel_lit(1), 'the middle panel is lit and the next one dim')
     game.tap('space')
     game.cmd('expect-not "bought"')
@@ -179,6 +183,7 @@ def main():
     # held, every other rank, then MAX. The count shows what is left.
     have = 200
     game.poke('nuggets', have, 2)
+    game.poke('counts_shown', 1 << sym['BRICK_GRAY'])
     game.tap('space')
     game.wait('bought width 1', 10)
     have -= tune['TUNE_WIDTH_COSTS'][0]
@@ -275,18 +280,32 @@ def main():
     clear()
     check(game.ram('coins', 2) == 1 and game.ram('levels_cleared') == 1, 'a coin for clearing level 1')
     check(game.count('XRAM_COIN_DIGITS', sym['COUNT_DIGITS']) == 1, 'the count shows it')
+
+    # The sled flies home, down off the screen under its own power: level,
+    # its flames burning, with no smoke.
+    check(game.ram('paddle_state') == sym['PADDLE_LEAVING'], 'the sled flies home when the level is cleared')
+    sled, size, heights = 'XRAM_SLED_SPRITE', game.sizes('XRAM_SLED_SPRITE', 1)[0], []
+    for _ in range(150):
+        if game.ram('paddle_state') == sym['PADDLE_GONE']:
+            break
+        heights.append(game.sprite(sled)[1])
+        check(game.sizes(sled, 1)[0] == size and game.shown('XRAM_SMOKE_SPRITES', sym['JETS_MAX']) == 0 and
+              game.sprites('XRAM_JET_SPRITES', 1)[0][2] != sym['XRAM_JET_IMAGES'] + sym['JET_NOZZLE'] *
+              sym['JET_IMAGE_BYTES'], 'level, its flames burning, with no smoke')
+        game.run(1)
+    check(game.ram('paddle_state') == sym['PADDLE_GONE'] and heights == sorted(heights) and
+          heights[-1] > heights[0] and game.shown(sled, 1) == 0, 'down off the screen')
     game.talk_ok()  # the dwarf hands it over
     game.menu_choose('REPLAY')
     clear()
     check(game.ram('coins', 2) == 1, 'no coin for clearing it again')
-    game.menu_choose('UPGRADES')
+    game.menu_choose('THE DRY')
     game.run(5)
     check(game.ram('level_picked') == 1 and game.ram('cart_scroll', 2) == 0,
           'the upgrade screen opens on level 1, just cleared')
-    sprite = lambda i: sym['XRAM_MENU_SPRITES'] + i * sym['SPRITE_BYTES']
-    check(game.ram('unlocking') == 2 and game.shown(sprite(sym['HALF_SPRITES']), 2) == 2,
+    check(game.ram('unlocking') == 2 and game.shown(sym['XRAM_HALF_SPRITES'], 2) == 2,
           'and the lock of level 2 shows, to break')
-    check(game.shown(sprite(sym['LOCK_SPRITES']), sym['LOCKS']) == sym['LOCKS'],
+    check(game.shown(sym['XRAM_LOCK_SPRITES'], sym['LOCKS']) == sym['LOCKS'],
           'with padlocks on the carts locked after it')
     game.wait('unlocked 2', 200)
     check(game.ram('levels_shown') == 2 and game.ram('unlocking') == 0 and game.ram('level_picked') == 2,
@@ -299,10 +318,49 @@ def main():
     check(game.shows('BEGIN LEVEL 2?'), 'and asks to begin level 2')
     game.tap('space')
     game.until('game_state', 'STATE_PLAY', 30)
-    check(game.ram('bricks_left') == (sym['LEVEL1_COLS'] + 1) * sym['LEVEL1_ROWS'],
-          'level 2 is a column wider')
-    game.close()
+    game.run(2)
     print('ok: a coin for the first clear, and the next level')
+
+    # Level 2 is level 1 with red bricks in the middle of its top two rows,
+    # and tougher: the gray take two hits and the red three. Each hit cracks
+    # a red brick more, by the steps of CRACK_STATES it is broken, rounded
+    # up, and the third breaks it, into red chunks and a red nugget, whose
+    # line of the counts shows once it lands.
+    bricks, step = sym['LEVEL2_BRICKS'], sym['SPRITE_BYTES']
+    gray, red = sym['XRAM_PALETTE_BRICKS'], sym['XRAM_PALETTE_BRICKS'] + 32 * sym['BRICK_RED']
+    palette = lambda addr: struct.unpack('<H', game.xram(addr + 6, 2))[0]
+    colors = [palette(sym['XRAM_BRICKS'] + i * step) for i in range(bricks)]
+    reds = [i for i, c in enumerate(colors) if c == red]
+    check(game.ram('bricks_left') == bricks and reds == [1, 2, 5, 6] and colors.count(gray) == bricks - 4,
+          f'level 2 has red bricks in the middle of its top two rows: {colors}')
+    check(all(game.ram(f'brick_hits+{i}') == (3 if i in reds else 2) for i in range(bricks)),
+          'the gray take two hits, and the red three')
+    x, y = game.ram('brick_x+2', 2), game.ram('brick_y+2', 2)
+    game.tap('space', 2)
+    game.paused_poke([('ball_x', x + 8 << 8, 4), ('ball_y', sym['BEAM_H'] + 4 << 8, 4), ('ball_vx', 0, 2),
+                      ('ball_vy', 512, 2)])
+    for hit in (1, 2):
+        steps = -(-hit * sym['CRACK_STATES'] // 3)
+        game.wait(f'cracked 1, {hit} of 3', 60)
+        game.run(1)
+        cx, cy, image, crack_palette, _, mode = struct.unpack('<hhHHBB',
+                                                               game.xram(sym['XRAM_CRACK_SPRITES'] + step, step))
+        state = (image - sym['XRAM_CRACK_IMAGES']) // sym['CRACK_IMAGE_BYTES'] % sym['CRACK_STATES'] + 1
+        check(x <= cx <= x + sym['BRICK_W'] - sym['CRACK_W'] and cy == y and state == steps and
+              mode & 3 == sym['MODE5_2BPP'] and crack_palette == red + 2 * sym['BRICK_CRACK_COLORS'],
+              f'hit {hit} cracks a red brick {steps} steps of {sym["CRACK_STATES"]}: it shows {state}')
+    game.wait('brick 1,', 60)
+    game.run(1)
+    check(game.shown(sym['XRAM_CRACK_SPRITES'] + step, 1) == 0, 'the third breaks it, and its cracks are gone')
+    first = (game.ram('chunk_next') - sym['CHUNKS_PER_BREAK']) % sym['CHUNKS_MAX']
+    check(palette(sym['XRAM_CHUNK_SPRITES'] + first * step) == red, 'it breaks into red chunks')
+    game.wait('nugget landed', 120)
+    game.run(1)
+    icon = sym['XRAM_NUGGET_ICONS'] + sym['BRICK_RED'] * step
+    check(game.sprite(icon) == (sym['ICON_X'], sym['ICON_TOP'] + (sym['BRICK_RED'] + 1) * sym['LINE_H'] - 1) and
+          game.ram(f'nuggets+{2 * sym["BRICK_RED"]}', 2) == 1, 'its nugget lands in the red line of the counts')
+    game.close()
+    print('ok: level 2, and a red brick')
     print('PASS')
 
 

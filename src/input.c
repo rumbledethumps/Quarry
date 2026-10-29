@@ -5,6 +5,7 @@
 uint8_t input_held;
 uint8_t input_pressed;
 uint8_t shift_pressed;
+uint8_t shift_digit;
 
 /* A held key repeats after REPEAT_DELAY steps, then every REPEAT_STEPS. */
 #define REPEAT_DELAY 20
@@ -12,12 +13,19 @@ uint8_t shift_pressed;
 
 static uint8_t shift_held;
 static uint8_t shift_steps;
+static uint8_t digit_held;
 static uint8_t repeat_keys; /* the INPUT_ bits of the last press input_repeat() saw */
 static uint8_t repeat_steps;
 
 static void shift_read(const uint8_t *keys)
 {
-    uint8_t held = 0;
+    uint8_t held = 0, digit = 0, d;
+
+    for (d = 9; d; d--)
+        if (KEYBOARD_PRESSED(keys, HID_KEY_1 + d - 1))
+            digit = d;
+    shift_digit = digit != digit_held ? digit : 0;
+    digit_held = digit;
 
     if (KEYBOARD_PRESSED(keys, HID_KEY_ARROW_RIGHT))
         held |= SHIFT_RIGHT;
@@ -69,7 +77,7 @@ void input_read(void)
     arrows = !KEYBOARD_PRESSED(keys, HID_KEY_SHIFT_LEFT) &&
              !KEYBOARD_PRESSED(keys, HID_KEY_SHIFT_RIGHT);
     if (arrows)
-        shift_held = shift_pressed = 0;
+        shift_held = shift_pressed = shift_digit = digit_held = 0;
     else
         shift_read(keys);
     if (KEYBOARD_PRESSED(keys, HID_KEY_A) ||

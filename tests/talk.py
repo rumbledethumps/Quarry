@@ -121,7 +121,7 @@ def main():
     game.paused_poke([('bricks_left', 0, 1)])
     game.wait('level cleared', 10)
     game.run(1)
-    game.cmd('expect-not "menu UPGRADES"')  # the end menu, as menu_open() logs it
+    game.cmd('expect-not "menu THE DRY"')  # the end menu, as menu_open() logs it
     talk('TALK_COIN')
     game.run(30)
     check(not game.shows('LEVEL COMPLETE'), 'the dwarf with the coin comes before the menu')
@@ -135,11 +135,12 @@ def main():
     # and the unlock goes on under him. Then another says what the screen is
     # for. The cursor is off until each OK, and comes back to the rail after.
     game.run(sym['TALK_OVER_WAIT'])
-    game.tap('space')  # UPGRADES
+    game.tap('space')  # THE DRY
     game.until('game_state', 'STATE_SHOP', 60)
     talk('TALK_UNLOCK')
     check(game.shown(cursor, 4) == 0, 'no cursor while he comes in')
-    icon = sym['XRAM_MENU_SPRITES'] + (game.ram('panel_picked') * sym['PANEL_SPRITES'] + sym['PICTURE_SPRITES']) * \
+    icon = sym['XRAM_MENU_SPRITES'] + (game.ram('panel_picked') % sym['PANEL_SLOTS'] * sym['PANEL_SPRITES'] +
+                                       sym['PICTURE_SPRITES']) * \
         sym['SPRITE_BYTES']
     check(game.shown(icon, 1) == 0, "nor the cost icon that would show over his bubble")
     game.until('talk_state', 'TALK_READY', 120)
@@ -174,9 +175,31 @@ def main():
     game.wait('level cleared', 10)
     talk('TALK_COIN')
     game.talk_ok()
-    game.menu_choose('UPGRADES')
+    game.menu_choose('THE DRY')
     game.wait('unlocked 3', 200)
     check(game.ram('talk_state') == sym['TALK_OFF'], 'the unlock and the screen are told of once')
+    print('ok: the second first clear')
+
+    # In a debug build, Shift and a number brings in that talk on any screen,
+    # and the screen comes back after it.
+    def shift_number(n):
+        game.cmd('press lshift')
+        game.tap(str(n))
+        game.cmd('release lshift')
+        game.wait(f'talk {n}\\n', 30)
+        game.talk_ok()
+
+    shift_number(sym['TALK_WELCOME'])
+    check(game.ram('cursor_on') == sym['ON_RAIL'] and game.shown(cursor, 4) == 4,
+          'Shift and 1 brings in the welcome on the upgrade screen, and its cursor comes back')
+    game.tap('escape')
+    game.tap('space')  # YES, return to the title
+    game.until('game_state', 'STATE_TITLE', 60)
+    game.run(5)
+    shift_number(sym['TALKS'])
+    check(game.ram('game_state') == sym['STATE_TITLE'] and game.shows('NEW GAME') and game.shows('PROGRESS'),
+          f'and Shift and {sym["TALKS"]} the last talk on the title, which comes back after')
+    print('ok: Shift and a number brings in a talk')
     print('PASS')
 
 

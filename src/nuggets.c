@@ -6,11 +6,15 @@
 #define ICON_SPRITE(c) (XRAM_NUGGET_ICONS + (c) * sizeof(mode5_csprite_t))
 #define NUGGET_SPRITE(i) (XRAM_NUGGET_SPRITES + (i) * sizeof(mode5_csprite_t))
 
-/* The counts are at the top left: the coins, then a line for each color
-   reached, each its icon and its count in outlined digits. */
+/* The counts are at the top left: the coins, then a line for each color,
+   each its icon, as tall as the digits, and its count in outlined digits.
+   A line shows once the first of its color lands, and the coins' once the
+   first level is cleared. A nugget flies to the middle of its icon. */
 #define ICON_X 4
 #define ICON_TOP 5
 #define LINE_H 12
+#define DIGITS_X (ICON_X + 12)
+#define NUGGET_TO_X (ICON_X + 1)
 #define DIGITS(c) (XRAM_NUGGET_DIGITS + (c) * COUNT_DIGITS * sizeof(mode5_csprite_t))
 
 /* A nugget in flight, stepped along its line like Bresenham's. */
@@ -27,23 +31,40 @@ typedef struct
 
 uint16_t nuggets[BRICK_COLORS];
 uint16_t coins;
+uint8_t counts_shown;
 
 static flight_t flights[NUGGETS_MAX];
-static uint8_t lines; /* colors shown in the counts */
 
 static int16_t icon_y(uint8_t color)
 {
     return ICON_TOP + (color + 1) * LINE_H;
 }
 
+/* A line of the counts, its icon and its count, or neither while it is
+   not shown. */
+static void line_draw(unsigned icon, unsigned digits, uint8_t shown, int16_t y, uint16_t n)
+{
+    uint8_t i;
+
+    if (shown)
+    {
+        sprite_move(icon, ICON_X, y - 1);
+        video_count(digits, COUNT_DIGITS, DIGITS_X, y - 1, n);
+        return;
+    }
+    sprite_hide(icon);
+    for (i = 0; i < COUNT_DIGITS; i++)
+        sprite_hide(digits + i * sizeof(mode5_csprite_t));
+}
+
 static void count_draw(uint8_t color)
 {
-    video_count(DIGITS(color), COUNT_DIGITS, ICON_X + 9, icon_y(color) - 1, nuggets[color]);
+    line_draw(ICON_SPRITE(color), DIGITS(color), counts_shown & 1 << color, icon_y(color), nuggets[color]);
 }
 
 static void coins_draw(void)
 {
-    video_count(XRAM_COIN_DIGITS, COUNT_DIGITS, ICON_X + 9, ICON_TOP - 1, coins);
+    line_draw(XRAM_COIN_ICON, XRAM_COIN_DIGITS, counts_shown & COUNT_COINS, ICON_TOP, coins);
 }
 
 /* A coin, for the first clear of a level. */
@@ -51,6 +72,7 @@ void coins_add(void)
 {
     if (coins < 0xFFFF)
         coins++;
+    counts_shown |= COUNT_COINS;
     coins_draw();
 }
 
@@ -58,8 +80,8 @@ void nuggets_add(uint8_t color)
 {
     if (nuggets[color] < 0xFFFF)
         nuggets[color]++;
-    if (color < lines)
-        count_draw(color);
+    counts_shown |= 1 << color;
+    count_draw(color);
 }
 
 /* Lands every nugget still in flight at once. */
@@ -87,25 +109,19 @@ uint8_t nuggets_flying(uint8_t color)
     return n;
 }
 
-/* Shows the coins and a line for each of the first colors, and lands any
+/* Shows the lines of the counts that have been reached, and lands any
    nugget still in flight. */
-void nuggets_start(uint8_t colors)
+void nuggets_start(void)
 {
     uint8_t i;
 
-    lines = colors;
     nuggets_land();
-    sprite_set(XRAM_COIN_ICON, XRAM_COIN_IMAGE, XRAM_PALETTE_SLED, MODE5_SIZE(8, 8));
-    sprite_move(XRAM_COIN_ICON, ICON_X, ICON_TOP);
+    sprite_set(XRAM_COIN_ICON, XRAM_COIN_IMAGE, XRAM_PALETTE_SLED, MODE5_SIZE(ICON_SIZE, ICON_SIZE));
     coins_draw();
     for (i = 0; i < BRICK_COLORS; i++)
     {
-        sprite_set(ICON_SPRITE(i), XRAM_NUGGET_IMAGE, XRAM_PALETTE_BRICK(i), MODE5_SIZE(8, 8));
-        if (i < colors)
-        {
-            sprite_move(ICON_SPRITE(i), ICON_X, icon_y(i));
-            count_draw(i);
-        }
+        sprite_set(ICON_SPRITE(i), XRAM_NUGGET_ICON_IMAGE, XRAM_PALETTE_BRICK(i), MODE5_SIZE(ICON_SIZE, ICON_SIZE));
+        count_draw(i);
     }
     for (i = 0; i < NUGGETS_MAX; i++)
         sprite_set(NUGGET_SPRITE(i), XRAM_NUGGET_IMAGE, XRAM_PALETTE_BRICK(0), MODE5_SIZE(8, 8));
@@ -131,7 +147,7 @@ void nuggets_spawn(int16_t x, int16_t y, uint8_t color)
     f->color = color;
     f->x = x;
     f->y = y;
-    f->to_x = ICON_X;
+    f->to_x = NUGGET_TO_X;
     f->to_y = icon_y(color);
     f->dx = f->to_x > x ? f->to_x - x : x - f->to_x;
     f->dy = f->to_y > y ? y - f->to_y : f->to_y - y;

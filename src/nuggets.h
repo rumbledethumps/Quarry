@@ -11,7 +11,12 @@ extern uint16_t nuggets[BRICK_COLORS];
 /* The coins, one for the first clear of each level. */
 extern uint16_t coins;
 
-void nuggets_start(uint8_t colors);
+/* The lines of the counts the player has reached: a bit for each color,
+   from 1 << BRICK_GRAY, and COUNT_COINS. */
+#define COUNT_COINS (1 << BRICK_COLORS)
+extern uint8_t counts_shown;
+
+void nuggets_start(void);
 void nuggets_spawn(int16_t x, int16_t y, uint8_t color);
 void nuggets_add(uint8_t color);
 void coins_add(void);
