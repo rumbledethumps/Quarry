@@ -188,8 +188,12 @@ def main():
     rows = check_fuel(game, 'the gauge falls with the energy')
     print(f'low: {rows} rows of fuel')
 
-    # Out of energy: the flames sputter and the player loses control.
-    game.paused_poke([('energy', 30, 2)])
+    # Out of energy: the flames sputter and the player loses control. The
+    # ball is put in flight in the middle of the playfield, rising slowly,
+    # so it is still in flight when the paddle has gone.
+    left = game.ram('play_left', 2, signed=True)
+    game.paused_poke([('energy', 30, 2), ('ball_state', sym['BALL_FLYING'], 1), ('ball_x', (left + 20) << 8, 4),
+                      ('ball_y', 120 << 8, 4), ('ball_vx', 0, 2), ('ball_vy', -64, 2)])
     game.wait('out of energy', 40)
     check(game.ram('paddle_state') == sym['PADDLE_SPUTTER'], 'the paddle sputters')
     x = game.px('paddle_x')
@@ -218,9 +222,18 @@ def main():
     check(game.px('paddle_y') > top + 4, 'the paddle falls')
     game.wait('paddle gone', 120)
     game.run(2)
-    check(game.ram('game_state') != sym['STATE_PLAY'], 'the level ends')
+    ball = 'XRAM_BALL_SPRITE'
+    check(game.ram('game_state') == sym['STATE_PLAY'] and game.ram('ball_state') == sym['BALL_FLYING'],
+          'with the paddle gone, the level plays on while the ball is in flight')
+    check(game.shown(ball, 1) == 1, 'and the ball still shows')
+    game.run(30)
+    check(game.ram('game_state') == sym['STATE_PLAY'] and game.shown(ball, 1) == 1, 'and goes on')
+    game.paused_poke([('ball_y', 200 << 8, 4), ('ball_vy', 512, 2)])
+    game.wait('ball lost', 30)
+    game.run(2)
+    check(game.ram('game_state') != sym['STATE_PLAY'], 'the level ends once the ball falls off the screen')
     check(game.shows('OUT OF FUEL'), 'the menu says OUT OF FUEL')
-    print(f'puff of {puff} smoke pixels, then the paddle fell off the screen')
+    print(f'puff of {puff} smoke pixels, the paddle fell off the screen, and the ball played on until it fell')
 
     # Replay plays again, with a full bar.
     game.menu_choose('REPLAY')
@@ -239,11 +252,11 @@ def main():
     game.cmd('release space')
     check(game.ram('balls') == sym['TUNE_BALLS'], 'no launch once out of energy')
     game.wait('paddle falls', sym['TUNE_SPUTTER_STEPS'])
-    ball = 'XRAM_BALL_SPRITE'
     game.run(15)
     middle = game.sprite(pieces)[1] + game.ram('paddle_width') // 2 * sym['TILT_MAX'] // 8
     check(game.sprite(ball)[1] == middle - 8, 'the ball rides the middle of the tilted paddle')
     game.wait('paddle gone', 120)
+    game.wait('ball lost', 10)
     game.run(2)
     check(game.shows('OUT OF FUEL'), 'the menu says OUT OF FUEL again')
 

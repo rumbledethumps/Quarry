@@ -207,8 +207,10 @@ static void cheats_step(void)
 #endif
 
 /* When the energy runs out, the paddle sputters and falls, and the level
-   ends when it is gone. A ball in flight plays on until then, but a lost
-   one is not replaced. */
+   ends once it is gone and no ball is in play. A ball in flight plays on,
+   breaking bricks, until it falls off the bottom of the screen, and a lost
+   one is not replaced. A ball on the paddle rides it down, and falls on
+   off the screen once it is gone. */
 uint8_t play_step(void)
 {
 #ifndef NDEBUG
@@ -256,8 +258,14 @@ uint8_t play_step(void)
     }
     if (paddle_state == PADDLE_GONE)
     {
-        ball_state = BALL_GONE;
-        return PLAY_NO_ENERGY;
+        if (ball_state == BALL_DOCKED)
+        {
+            ball_state = BALL_FLYING;
+            ball_vx = 0;
+            ball_vy = TUNE_BALL_SPEED;
+        }
+        else if (ball_state == BALL_GONE)
+            return PLAY_NO_ENERGY;
     }
     return PLAY_ON;
 }

@@ -22,7 +22,7 @@ bought its rank.
 | NUGGET | The token that comes out of a broken brick, a ball of its color, and flies to the counts. Nuggets buy upgrades. |
 | COIN | One for the first clear of each level, never again. Coins will open the upgrades' next tiers. |
 | SLED | The paddle, which floats on its jets. |
-| FUEL | What the gauge on the right shows. When it runs out, the sled falls and the level ends. |
+| FUEL | What the gauge on the right shows. When it runs out, the sled falls, and the level ends once the balls in play have fallen off the screen too. |
 | BALL | The ball, and the count of those left. |
 | HITS | What breaks a brick: each hit of the ball does its DAMAGE, and the brick breaks once the damage reaches its hits. |
 | UPGRADE | A panel on the upgrade screen's rail, and what it buys. |
