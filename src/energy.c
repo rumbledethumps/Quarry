@@ -19,11 +19,10 @@
 
 /* The machine's meter shows how the fuel stands: its paddle is green, then
    yellow from TUNE_ENERGY_MID, and red from TUNE_ENERGY_LOW. When that
-   changes, the paddle flips down a frame every METER_STEPS steps, and back
-   up in its new color. A level starts with it down, and it flips up green,
-   as a meter's does when its knob is turned. */
-#define METER_STEPS 3
-#define METER_UP (METER_FRAMES - 1)
+   changes, the paddle slides down out of sight a px every METER_STEPS
+   steps, and back up in its new color. A level starts with it down, and
+   it comes up green, as a meter's does when its knob is turned. */
+#define METER_STEPS 2
 
 /* A bubble rises BUBBLE_SPEED sixteenths of a px a step, from the foot of
    the fuel to its surface, and sways a px either way as it goes, a step of
@@ -55,9 +54,9 @@ static const uint8_t hop[] = {1, 1, 2, 2, DROP_PEAK, DROP_PEAK, DROP_PEAK, DROP_
 static uint8_t beep_steps;
 static uint8_t lamp_steps;
 static uint8_t meter_color; /* the paddle's, from METER_GREEN */
-static uint8_t meter_frame; /* how far up it is, from 0, down, to METER_UP */
+static uint8_t meter_risen; /* px, from 0, down, to METER_RISE, up */
 static uint8_t meter_steps;
-static uint8_t meter_drawn; /* the frame and the color its sprite shows */
+static uint8_t meter_drawn; /* the px risen and the color its sprite shows */
 
 /* The glass, from the rock behind it: each row the right curtain's pixels
    there, in the glass palette, an outline down each side, and the glint. */
@@ -134,8 +133,8 @@ static void bubbles_step(void)
     }
 }
 
-/* Every METER_STEPS steps, the paddle flips a frame: down while its color
-   is not the fuel's, taking the fuel's once it is down, and then up. */
+/* Every METER_STEPS steps, the paddle moves a px: down while its color is
+   not the fuel's, taking the fuel's once it is down, and then up. */
 static void meter_step(void)
 {
     uint8_t color = energy <= TUNE_ENERGY_LOW ? METER_RED : energy <= TUNE_ENERGY_MID ? METER_YELLOW : METER_GREEN;
@@ -145,13 +144,13 @@ static void meter_step(void)
     meter_steps = 0;
     if (color != meter_color)
     {
-        if (meter_frame)
-            meter_frame--;
+        if (meter_risen)
+            meter_risen--;
         else
             meter_color = color;
     }
-    else if (meter_frame < METER_UP)
-        meter_frame++;
+    else if (meter_risen < METER_RISE)
+        meter_risen++;
 }
 
 /* A bubble's sprite at x, y with its image, in one write. */
@@ -176,10 +175,10 @@ void energy_draw(void)
     int16_t foot = glass_y + GLASS_H, top = foot - rows;
     uint8_t i;
 
-    if ((meter_frame << 2 | meter_color) != meter_drawn)
+    if ((meter_risen << 2 | meter_color) != meter_drawn)
     {
-        frame_meter(meter_frame, meter_color);
-        meter_drawn = meter_frame << 2 | meter_color;
+        frame_meter(meter_risen, meter_color);
+        meter_drawn = meter_risen << 2 | meter_color;
     }
     if (rows != rows_drawn)
     {
@@ -268,7 +267,7 @@ void energy_start(int16_t x, int16_t y)
     rows_drawn = 0xFF;
     lamp_steps = 0;
     meter_color = METER_GREEN;
-    meter_frame = meter_steps = 0;
+    meter_risen = meter_steps = 0;
     meter_drawn = 0xFF;
     energy_draw();
 }
@@ -306,7 +305,7 @@ void energy_step(void)
 }
 
 /* After the level ends, and while a dwarf talks, the bubbles still rise
-   and pop, and the meter's paddle still flips. */
+   and pop, and the meter's paddle still slides. */
 void energy_idle(void)
 {
     bubbles_step();

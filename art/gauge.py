@@ -27,16 +27,15 @@ fuel, the palest on its upper left, the fuel showing through its middle,
 in a sprite BUBBLE_SIZE square. The drop is a single pixel of the fuel at
 that sprite's top left.
 
-The meter is what shows through the window of the machine on the right
-wall, METER_W by METER_H, as an old parking meter's does: a white face,
-shadowed under the top of the window, and a paddle on it, which flips up
-from under the foot of the window. Its frames are drawn here by hand,
-METER_FRAMES of them: the paddle down, two on its way up, and up. Its
-colors are METER_PADDLE and METER_SHADE, which the game sets to green,
-yellow or red.
+The meter is the paddle that shows through the window of the machine on
+the right wall, as an old parking meter's does, METER_W by METER_H, drawn
+here by hand: a tab with a rounded top, nearly as wide as the window,
+which the game slides up behind the machine from under the foot of the
+window. Its colors are METER_PADDLE and METER_SHADE, which the game sets
+to green, yellow or red.
 
 The fitting is in the fitting row of art/palettes.png, the backdrop's own
-colors of it, with the meter's after them, and the fuel in the liquid row,
+colors of it, with the paddle's after them, and the fuel in the liquid row,
 so its colors can change without touching the fitting. --preview writes the pieces side by side, to
 look at.
 """
@@ -50,7 +49,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 LIQUID_ROW, FITTING_ROW = 13, 14  # of art/palettes.png
 GAUGE_W, FITTING_H = 16, 20
 GLASS_W, LIQUID_H, GLINT_COL, BUBBLE_SIZE = 12, 16, 2, 4  # as src/xram.h
-METER_W, METER_H, METER_PADDLE, METER_SHADE = 12, 8, 12, 13  # as src/xram.h
+METER_W, METER_H, METER_PADDLE, METER_SHADE = 12, 8, 10, 11  # as src/xram.h
 
 OUTLINE = (16, 19, 28)  # the navy of the sprites
 # In art/backdrop.png, a row of the U-shaped pipe's left leg, between its
@@ -69,46 +68,17 @@ LINE = [SURFACE] * 6 + [L7, L7, L6, L5]
 BUBBLE = [[0, SURFACE, 0, 0], [SURFACE, 0, GLINT, 0], [0, GLINT, 0, 0], [0, 0, 0, 0]]
 DROP = [[L6, 0, 0, 0]] + [[0] * BUBBLE_SIZE for _ in range(BUBBLE_SIZE - 1)]
 
-# The meter's frames: its face, its shadow, the outline, and the paddle and
-# its shade. The paddle is hinged under the foot of the window and flips up
-# toward the viewer, so on its way up it is shorter, and in shade.
-FACE, SHADOW = (238, 236, 226), (176, 174, 166)
-METER_COLORS = {'.': FACE, '-': SHADOW, '#': OUTLINE}
-PADDLE = {'o': METER_PADDLE, 'x': METER_SHADE}
-METER = [
-    ['------------',
-     '............',
-     '............',
-     '............',
-     '............',
-     '............',
-     '............',
-     '............'],
-    ['------------',
-     '............',
-     '............',
-     '............',
-     '............',
-     '...######...',
-     '..#xxxxxx#..',
-     '..#xxxxxx#..'],
-    ['------------',
-     '............',
-     '............',
-     '....####....',
-     '...#ooox#...',
-     '..#ooooox#..',
-     '..#ooooox#..',
-     '..#xxxxxx#..'],
-    ['------------',
-     '............',
-     '....####....',
-     '...#ooox#...',
-     '..#ooooox#..',
-     '..#ooooox#..',
-     '..#ooooox#..',
-     '..#ooooox#..'],
-]
+# The meter's paddle: its outline, and its color and its shade, lit from
+# the upper left.
+PADDLE = {'.': 0, '#': 1, 'o': METER_PADDLE, 'x': METER_SHADE}
+METER = ['...######...',
+         '..#ooooox#..',
+         '.#ooooooox#.',
+         '.#ooooooox#.',
+         '.#ooooooox#.',
+         '.#ooooooox#.',
+         '.#ooooooox#.',
+         '.#ooooooox#.']
 
 
 def widen(pixels, at, n):
@@ -140,11 +110,9 @@ def fuel():
 
 
 def meter(row):
-    """The meter's frames, in the fitting row."""
-    frames = [[[PADDLE[c] if c in PADDLE else row.index(METER_COLORS[c], 1) for c in line] for line in frame]
-              for frame in METER]
-    assert all(len(f) == METER_H and all(len(line) == METER_W for line in f) for f in frames)
-    return frames
+    """The meter's paddle, in the fitting row."""
+    assert row[1] == OUTLINE and len(METER) == METER_H and all(len(line) == METER_W for line in METER)
+    return [[PADDLE[c] for c in line] for line in METER]
 
 
 def pack(rows):
@@ -163,16 +131,15 @@ def main():
     row = [p[:3] for p in palettes[FITTING_ROW]]
     top = [[row.index(c, 1) if c else 0 for c in line] for line in fitting()]
     run, surface = fuel()
-    frames = meter(row)
+    paddle = meter(row)
     with open(args.output, 'wb') as f:
-        f.write(pack(top) + pack(run) + pack(surface) + pack(BUBBLE) + pack(DROP) +
-                b''.join(pack(frame) for frame in frames))
+        f.write(pack(top) + pack(run) + pack(surface) + pack(BUBBLE) + pack(DROP) + pack(paddle))
     if args.preview:
         # The fitting row's colors, then the liquid row's after them.
         used = METER_SHADE + 1
         colors = palettes[FITTING_ROW][:used] + palettes[LIQUID_ROW][1:10]
         shift = lambda rows: [[c and c + used - 1 for c in row] for row in rows]
-        pieces = [top, top[::-1], shift(run), shift(surface), shift(BUBBLE), shift(DROP)] + frames
+        pieces = [top, top[::-1], shift(run), shift(surface), shift(BUBBLE), shift(DROP), paddle]
         gap = [0] * 4
         rows = [sum(([p[y][x] if y < len(p) else 0 for x in range(len(p[0]))] + gap for p in pieces), [])
                 for y in range(FITTING_H)]

@@ -29,8 +29,8 @@ static const uint8_t curtain_rows[] = {64, 64, 64, 48};
 #define LAMP_COLOR 7
 #define LAMP_OFF COLOR_FROM_RGBA(92, 32, 13, 255) /* the red of the shade row */
 #define LAMP_ON COLOR_FROM_RGBA(255, 64, 32, 255)
-#define METER_X 6
-#define METER_Y 10
+#define METER_X 6  /* the meter's paddle, across the window */
+#define METER_Y 11 /* its top, when it is up */
 
 /* The meter's paddle and its shade in each of its colors, from
    METER_GREEN. */
@@ -148,8 +148,8 @@ void frame_start(int16_t left, int16_t right)
           left, BEAM_H, 0);
     piece(SCENERY(braces, 1), XRAM_BRACE_IMAGE, XRAM_FRAME_SHADE, MODE5_SIZE(BRACE_SIZE, BRACE_SIZE),
           right - BRACE_SIZE, BEAM_H, 1);
-    piece(SCENERY(meter, 0), XRAM_METER_IMAGES, XRAM_PALETTE_FITTING, MODE5_SIZE(METER_W, METER_H),
-          right - MACHINE_W + METER_X, MACHINE_Y + METER_Y, 0);
+    piece(SCENERY(meter, 0), XRAM_METER_IMAGE, XRAM_PALETTE_FITTING, MODE5_SIZE(METER_W, METER_H),
+          right - MACHINE_W + METER_X, MACHINE_Y + METER_Y + METER_RISE, 0);
     piece(SCENERY(machine, 0), XRAM_MACHINE_IMAGE, XRAM_PALETTE_SHADE, MODE5_SIZE(MACHINE_W, MACHINE_H),
           right - MACHINE_W, MACHINE_Y, 1);
     frame_curtains(left - shows + CURTAIN_UNDER, right + shows - CURTAIN_UNDER);
@@ -181,12 +181,12 @@ void frame_lamp(uint8_t on)
     xram0_poke16(XRAM_PALETTE_SHADE + LAMP_COLOR * sizeof(uint16_t), on ? LAMP_ON : LAMP_OFF);
 }
 
-/* The machine's meter with its paddle at frame, from 0, down, to
-   METER_FRAMES - 1, up, in color, from METER_GREEN. */
-void frame_meter(uint8_t frame, uint8_t color)
+/* The machine's meter with its paddle risen px, from 0, down, to
+   METER_RISE, up, in color, from METER_GREEN. */
+void frame_meter(uint8_t risen, uint8_t color)
 {
-    xram0_poke16(XRAM_METER_SPRITE + offsetof(mode5_csprite_t, xram_sprite_ptr),
-                 XRAM_METER_IMAGES + frame * METER_IMAGE_BYTES);
+    xram0_poke16(XRAM_METER_SPRITE + offsetof(mode5_csprite_t, y_pos_px),
+                 MACHINE_Y + METER_Y + METER_RISE - risen);
     xram0_poke16(XRAM_PALETTE_FITTING + METER_PADDLE * sizeof(uint16_t), paddle_colors[color][0]);
     xram0_poke16(XRAM_PALETTE_FITTING + METER_SHADE * sizeof(uint16_t), paddle_colors[color][1]);
 }
