@@ -679,8 +679,18 @@ carries on. There are three:
   on his left side as drawn, and on his right side turned round, it
   darkened half of him and the background behind it. The game shows his
   right side, turned round to face his bubble, on the left.
-- The miner, `art/dwarves/miner.png`, stands in for the others until each
-  is drawn, turned round on the right. He is the third of four,
+- The foreman, `art/dwarves/foreman-1-left.png`, the first of four,
+  `rd_pro__default`, 128x80: "Head and shoulders of a cartoon dwarf mine
+  foreman, serious but not mean, facing a little to the right as if
+  talking to someone: a big bushy beard, a rounded steel mining helmet
+  with a lamp on the front, sturdy work clothes, clean bold shapes with a
+  crisp dark outline, smooth flat shading in a few colors, light from the
+  upper left, on a plain flat pure green background". His right side,
+  `foreman-1-right.png`, is that turned round and lit again from the upper
+  left, as the friendly dwarf's was: the edit changed about two fifths of
+  his pixels.
+- The miner, `art/dwarves/miner.png`, stands in for the committeeman until
+  he is drawn, turned round on the right. He is the third of four,
   `rd_pro__default`, 96x96: "Head and shoulders of a friendly cartoon
   dwarf miner, as a character portrait in a 16-bit game's dialogue,
   facing a little to the right as if talking to someone: a big bushy
