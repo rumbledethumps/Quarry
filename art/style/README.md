@@ -693,8 +693,21 @@ carries on. There are three:
   right. On the right he is the same turned round: lit again from the
   upper left, the edit changed about two fifths of his pixels, and the
   user kept him as drawn.
-- The miner, `art/dwarves/miner.png`, stands in for the committeeman until
-  he is drawn, turned round on the right. He is the third of four,
+- The committeeman, `art/dwarves/committeeman-5-right.png`, the first of
+  two in his third round, `rd_pro__default`, 128x80: "Head and shoulders
+  of a cartoon dwarf union steward, obsessed with his appearance, facing a
+  little to the left as if talking to someone, his face friendly but
+  untrustworthy and full of himself: a big bushy beard with braids and
+  beads in it, a rounded steel mining helmet with a lamp on the front, no
+  arms or hands in the picture, clean bold shapes with a crisp dark
+  outline, smooth flat shading in a few colors, light from the upper
+  left, on a plain flat pure green background". His first round shouted
+  at the player with a hand raised, and his second reached toward his
+  bubble, too wide for a dwarf, so the user had arms and hands left out.
+  The top of his helmet runs off the top of the image. On the left he is
+  the same turned round.
+- The miner, `art/dwarves/miner.png`, is the dwarf all three stood in for
+  while they were drawn. He is the third of four,
   `rd_pro__default`, 96x96: "Head and shoulders of a friendly cartoon
   dwarf miner, as a character portrait in a 16-bit game's dialogue,
   facing a little to the right as if talking to someone: a big bushy

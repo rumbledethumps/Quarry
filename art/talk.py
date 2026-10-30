@@ -64,7 +64,7 @@ LEFT, RIGHT = 'left', 'right'
 DWARVES = {
     'FRIENDLY': {LEFT: ('friendly-red-right', True), RIGHT: ('friendly-red-right', False)},
     'FOREMAN': {LEFT: ('foreman-1-left', False), RIGHT: ('foreman-1-left', True)},
-    'COMMITTEEMAN': {LEFT: ('miner', False), RIGHT: ('miner', True)},
+    'COMMITTEEMAN': {LEFT: ('committeeman-5-right', True), RIGHT: ('committeeman-5-right', False)},
 }
 
 # The talks shown only once, and each one's bit of the save's talks seen.
