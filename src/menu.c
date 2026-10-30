@@ -5,7 +5,6 @@
 #include "sfx.h"
 #include "video.h"
 #include "xram.h"
-#include <string.h>
 
 /* A menu box: its frame, then, with a title, a gap, the title and a thin
    rule under it, then each item ITEM_ROWS tall, its text in the middle row, then a gap and
