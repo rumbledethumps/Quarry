@@ -15,7 +15,7 @@
    with a tag that names its layout, so a save of another layout is not
    read as this one. */
 #define SAVE_PATH "SAVE:quarry.save"
-#define SAVE_TAG "QRY7"
+#define SAVE_TAG "QRY8"
 
 typedef struct
 {

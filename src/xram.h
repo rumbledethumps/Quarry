@@ -317,7 +317,7 @@ typedef struct
    need no more. The art of their frames leaves the gap between them.
    art/panels.py makes the tiles, their palette and each panel's frame,
    and writes build/panels.h. */
-#define PANELS 4
+#define PANELS 5
 #define PANEL_COLS 20
 #define PANEL_PITCH PANEL_COLS
 #define PANEL_SLOTS 4 /* the panels around the one picked, each in a slot of the map */
@@ -351,7 +351,8 @@ typedef struct
    loads before it slides into view. A picture is a flat sled, in the sled's
    colors, or one in its own, lit and dim: the weight, art/weight.png and
    art/weight-colors.png, or the jerrycan, art/jerrycan.png and
-   art/jerrycan-colors.png. */
+   art/jerrycan-colors.png. The balls' panel needs none: it shows the
+   count of balls, the counts' icon with the number in the panels' font. */
 #define PICTURE_SLOTS 4
 #define PICTURE_BYTES 1024
 #define WEIGHT_W 40

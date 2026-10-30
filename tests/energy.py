@@ -200,6 +200,9 @@ def main():
     game.run(90)
     check(game.ram('energy', 2) == full, 'no energy drains before the first launch')
 
+    # A new game has only the ball on the sled, and losing it would end the
+    # level, so some spares let play go on while the gauge is checked.
+    game.poke('balls', 4)
     game.cmd('press space')
     game.wait('launch', 5)
     game.cmd('release space')
@@ -297,7 +300,8 @@ def main():
     game.cmd('press space')
     game.run(4)
     game.cmd('release space')
-    check(game.ram('ball_state') == sym['BALL_DOCKED'] and game.ram('balls') == sym['TUNE_BALLS'] - 1,
+    # The replay starts with the balls for no BALLS bought, one on the sled.
+    check(game.ram('ball_state') == sym['BALL_DOCKED'] and game.ram('balls') == game.ram('ball_counts') - 1,
           'no launch once out of energy')
     game.wait('paddle falls', sym['TUNE_SPUTTER_STEPS'])
     game.run(15)

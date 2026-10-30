@@ -52,7 +52,7 @@ fuel does it fall.
 The bricks are plain colors, gray, red, green, blue and gold, which stay
 apart with any kind of color blindness. Each level sets the hits its
 bricks take: on level 1 gray takes one, and on level 2 gray two and red
-three. Each hit of the ball does its damage, which HEAVIER BALL on the
+three. Each hit of the ball does its damage, which WEIGHT on the
 upgrade screen raises, and a brick cracks more with each hit, its cracks a sprite over it, flipped and
 placed at random for each brick when the level's screen opens. A brick
 that breaks flies apart in chunks, and its nugget, a small ball of its
@@ -67,11 +67,13 @@ framed in marching caution tape, and the upgrade screen's holographic
 cursor picks in them.
 
 The upgrade screen is coming together. Panels hang from a rail, one for
-each upgrade, and slide left and right; the one in the middle lights up,
-and the button buys it. Left, right and the button repeat while held. The
-panels have their final frames and font, and hang in front of a
-workshop whose cogs turn and whose vent puffs steam, their trolleys riding
-the rail; their pictures are still stand-ins. Down goes to a train of mine
+each upgrade, BALLS, WEIGHT, EFFICIENCY, SPEED and SIZE, and slide left
+and right; the one in the middle lights up, and the button buys it. A
+new game starts with one ball a level, and BALLS adds more. A cost is in
+nuggets of one color, gray unless it says another. Left, right and the
+button repeat while held. The panels have their final frames and font,
+and hang in front of a workshop whose cogs turn and whose vent puffs
+steam, their trolleys riding the rail. Down goes to a train of mine
 carts on a track, a cart for each level, where the button begins the level
 picked. A level newly open is still locked the first time the screen shows
 it: the screen opens on the level just cleared, the padlock on the next

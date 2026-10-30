@@ -8,6 +8,7 @@
 #include "sfx.h"
 #include "talk.h"
 #include "tuning.h"
+#include "upgrades.h"
 #include "video.h"
 #include "xram.h"
 
@@ -141,7 +142,7 @@ static void ball_come_step(void)
 void play_start(uint8_t again)
 {
     energy_start(GAUGE_X, GAUGE_Y, again);
-    balls = TUNE_BALLS;
+    balls = upgrades_balls();
     sprite_move(XRAM_BALL_ICON, BALLS_X, BALLS_Y - 1);
     balls_draw();
     paddle_start(again);

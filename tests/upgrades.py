@@ -15,22 +15,32 @@ import sys
 from game import Game, check, rom
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'art'))
-from panels import FONT  # noqa: E402
+from panels import FONT, LAYOUTS  # noqa: E402
 import menus  # noqa: E402
 
 END_ITEMS = ['TO THE DRY', 'REPLAY', 'MAIN MENU']
 
+# The upgrades in the order of their panels: the name of tuning.h's values,
+# the table of them in src/upgrades.c and the bytes of each, and the name of
+# its ranks and costs.
+UPGRADES = [('BALLS', 'ball_counts', 1, 'BALL'), ('DAMAGES', 'damages', 1, 'DAMAGE'),
+            ('BURNS', 'burns', 1, 'BURN'), ('SPEEDS', 'speeds', 2, 'SPEED'), ('WIDTHS', 'widths', 1, 'WIDTH')]
+
 
 def tuning(game):
-    """The upgrade tables of src/upgrades.c, from RAM."""
-    width_ranks, speed_ranks, burn_ranks = (game.sym[f'{u}_RANKS'] for u in ('WIDTH', 'SPEED', 'BURN'))
-    table = lambda name, count, size: [game.ram(f'{name}+{i * size}', size) for i in range(count)]
-    return {'TUNE_WIDTHS': table('widths', width_ranks + 1, 1),
-            'TUNE_WIDTH_COSTS': table('width_costs', width_ranks, 2),
-            'TUNE_SPEEDS': table('speeds', speed_ranks + 1, 2),
-            'TUNE_SPEED_COSTS': table('speed_costs', speed_ranks, 2),
-            'TUNE_BURNS': table('burns', burn_ranks + 1, 1),
-            'TUNE_BURN_COSTS': table('burn_costs', burn_ranks, 2)}
+    """The upgrade tables of src/upgrades.c, from RAM: each upgrade's values,
+    from the one before any upgrade, and the cost of each rank after it,
+    which tuning.h gives with its color in the top bits. The costs here are
+    the counts of nuggets, and TUNE_BALL_COLORS and the like their colors."""
+    shift = game.sym['COST_COLOR_SHIFT']
+    tune = {}
+    for values, table, size, name in UPGRADES:
+        ranks = game.sym[f'{name}_RANKS']
+        tune[f'TUNE_{values}'] = [game.ram(f'{table}+{i * size}', size) for i in range(ranks + 1)]
+        costs = [game.ram(f'{name.lower()}_costs+{2 * i}', 2) for i in range(ranks)]
+        tune[f'TUNE_{name}_COSTS'] = [c & ((1 << shift) - 1) for c in costs]
+        tune[f'TUNE_{name}_COLORS'] = [c >> shift for c in costs]
+    return tune
 
 
 def main():
@@ -40,6 +50,13 @@ def main():
     game.cmd('pad 0 connect')
     game.new_game()
     game.run(5)
+
+    # A new game's level starts with the balls before any upgrade: one on
+    # the sled, and the rest in the count.
+    first = tune['TUNE_BALLS'][0]
+    check(game.ram('ball_state') == sym['BALL_DOCKED'] and game.ram('balls') == first - 1 and
+          game.count('XRAM_BALL_DIGITS', sym['BALL_DIGITS']) == first - 1,
+          f'a new game starts with {first} ball: one on the sled, and {first - 1} in the count')
 
     def end_picked():
         """The item picked on the menu when a level ends, end_menus in
@@ -70,15 +87,77 @@ def main():
             text += FONT[i] if i < len(FONT) else str(i - len(FONT)) if i < len(FONT) + 10 else '?'
         return text.strip()
 
+    def short(p, row):
+        """For each tile of a row of panel p that isn't blank, whether it is
+        one of the short digits, as a cost that can't be paid shows, and not
+        the font's."""
+        dim, font = sym['PANEL_TILE_DIM'], len(FONT)
+        return [(t - 1) % dim >= font for t in panel_tiles(p, row) if (t - 1) % dim]
+
     def panel_lit(p):
         """Whether panel p's contents are lit: its plate a lit tile."""
         return panel_tiles(p, sym['TITLE_ROW'])[0] <= sym['PANEL_TILE_DIM']
+
+    def panel_left(p):
+        """Where panel p's left edge is, as the rail has slid."""
+        return sym['PANEL_LEFT'] + p * sym['PANEL_STEP'] - game.ram('panel_scroll', 2)
+
+    def slot_sprite(p, i):
+        """Sprite i of panel p's slot, as PANEL_SPRITE in src/shop.c."""
+        slots, sprites = sym['PANEL_SLOTS'], sym['PANEL_SPRITES']
+        return sym['XRAM_MENU_SPRITES'] + (p % slots * sprites + i) * sym['SPRITE_BYTES']
+
+    def cost_icon(p):
+        """The image and colors of the icon by panel p's cost."""
+        return struct.unpack('<HH', game.xram(slot_sprite(p, sym['PICTURE_SPRITES']) + 4, 4))
+
+    nugget = lambda color: (sym['XRAM_NUGGET_ICON_IMAGE'], sym['XRAM_PALETTE_BRICKS'] + 32 * color)
+
+    def cursor_on_panel():
+        """Whether the holographic cursor is around the panel in the middle,
+        a few px out from its frame, as tall as art/panels.py makes it, or out
+        from there as far as it breathes, up to 2 px."""
+        rows, size, step = LAYOUTS[game.ram('panel_picked')]['rows'], sym['CURSOR_SIZE'], sym['SPRITE_BYTES']
+        left, top = game.sprite(sym['XRAM_CURSOR_SPRITES'])
+        right, bottom = game.sprite(sym['XRAM_CURSOR_SPRITES'] + 3 * step)
+        out = sym['PANEL_LEFT'] - 3 - left
+        return (0 <= out <= 2 and top == sym['PANEL_Y'] + sym['TOP_ROW'] * 8 - 3 - out and
+                right + size == sym['PANEL_LEFT'] + sym['PANEL_COLS'] * 8 + 3 + out and
+                bottom + size == sym['PANEL_Y'] + (rows + 1) * 8 + 3 + out)
+
+    def balls_picture(n):
+        """The balls panel's picture is the count of balls a level starts
+        with: n, in the panels' font, centered on its row with the two cells
+        before it, and the ball icon of the counts in those cells."""
+        row, dim, icon = sym['BALLS_ROW'], sym['PANEL_TILE_DIM'], sym['ICON_SIZE']
+        filled = [c for c, t in enumerate(panel_tiles(0, row)) if (t - 1) % dim]
+        first = filled[0] if filled else 0
+        before, after = first - 2, sym['PANEL_INSIDE'] - first - len(str(n))
+        check(panel(0, row) == str(n) and not any(short(0, row)) and 0 <= after - before <= 1,
+              f'the balls panel shows {n}, in its font, centered with two cells before it: {panel(0, row)!r}')
+        x, y, image, colors, size = struct.unpack('<hhHHB', game.xram(slot_sprite(0, 0), 9))
+        cells = panel_left(0) + (sym['PANEL_BORDER'] + before) * 8
+        check(image == sym['XRAM_BALL_ICON_IMAGE'] and colors == sym['XRAM_PALETTE_MAIN'] and
+              size == (icon // 4 - 1) << 4 | (icon // 4 - 1) and cells <= x and x + icon <= cells + 16 and
+              y == sym['PANEL_Y'] + row * 8 - 1, f'and the ball icon of the counts in those cells: {x}, {y}')
+
+    def sled_picture(p):
+        """Panel p's picture is the sled of rank SLED_PICTURE, doubled and
+        centered on the panel, with its jets."""
+        rank = sym['SLED_PICTURE']
+        width, doubled = tune['TUNE_WIDTHS'][rank], sym['MODE5_HDOUBLE'] | sym['MODE5_VDOUBLE']
+        x, _, _, _, size, attributes = struct.unpack('<hhHHBB', game.xram(slot_sprite(p, 0), 10))
+        jets = game.shown(slot_sprite(p, 1), sym['PICTURE_SPRITES'] - 1)
+        check(size == (8 // 4 - 1) << 4 | ((width + 3) // 4 - 1) and attributes & doubled == doubled and
+              x == panel_left(p) + (sym['PANEL_COLS'] * 8 - 2 * width) // 2 and jets == game.ram(f'jets+{rank}'),
+              f'panel {p} shows the sled of rank {rank}, {width} px, doubled and centered, with its {jets} jets')
 
     def settle():
         game.run(40)
 
     # The level ends: the menu, with TO THE DRY picked, takes no choice for a
-    # moment.
+    # moment. The count is emptied, whatever a new game starts with, so the
+    # ball launched is the last.
     game.tap('space')
     game.poke('balls', 0)
     game.wait('out of balls', 3000)
@@ -122,42 +201,51 @@ def main():
     game.run(20)  # past the flicker of the panel in the middle
     check(game.ram('panel_picked') == 0 and game.ram('cursor_on') == sym['ON_RAIL'],
           'it opens on the rail, with the first panel picked')
-    check(panel(0, sym['TITLE_ROW']) == 'SIZE' and panel(1, sym['TITLE_ROW']) == 'SPEED',
+    check(cursor_on_panel(), 'and the cursor around it, as tall as its frame')
+    title, effect, cost = sym['TITLE_ROW'], sym['EFFECT_ROW'], sym['COST_ROW']
+    check([panel(p, title) for p in range(3)] == ['BALLS', 'WEIGHT', 'EFFICIENCY'],
           'the panels show their titles')
-    widths = tune['TUNE_WIDTHS']
-    check(panel(0, sym['EFFECT_ROW']) == f'{widths[0]} \x10 {widths[1]} PX', 'and what the next width is')
-    check(panel(0, sym['COST_ROW']) == str(tune['TUNE_WIDTH_COSTS'][0]), 'and what it costs')
-    check(panel(2, sym['TITLE_ROW']) == 'WEIGHT' and panel(2, sym['EFFECT_ROW']) == '1 \x10 2 DAMAGE',
-          "and the ball's damage has its panel")
+    counts = tune['TUNE_BALLS']
+    check(panel(0, effect) == f'{counts[0]} \x10 {counts[1]} BALLS', 'and what the next count of balls is')
+    check(panel(0, cost) == str(tune['TUNE_BALL_COSTS'][0]) and cost_icon(0) == nugget(sym['BRICK_GRAY']),
+          'and what it costs, by a gray nugget')
+    balls_picture(counts[0])
+    damages = tune['TUNE_DAMAGES']
+    check(panel(1, effect) == f'{damages[0]} \x10 {damages[1]} DAMAGE', "the ball's damage has its panel")
+    burns = [f'{b // 10}.{b % 10}' for b in tune['TUNE_BURNS']]
+    check(panel(2, effect) == f'{burns[0]} \x10 {burns[1]} L/S' and
+          panel(2, cost) == str(tune['TUNE_BURN_COSTS'][0]),
+          f'and efficiency, in liters a second: {panel(2, effect)!r}')
     check(panel_lit(0) and not panel_lit(1), 'the middle panel is lit and the next one dim')
     # The size and speed panels' picture is the smallest sled with two jets.
     rank = sym['SLED_PICTURE']
     check(game.ram(f'jets+{rank}') == 2 and game.ram(f'jets+{rank - 1}') < 2,
           f'size and speed show the sled of rank {rank}, the smallest with two jets')
-    # The weight panel's picture is the weight, centered at the top of its
-    # plate, a whole cell clear of the title, in its own colors, dim, as the
-    # panel is.
+    # The weight and efficiency panels' pictures are the weight and the
+    # jerrycan, centered at the top of their plates, a whole cell clear of
+    # the title, in their own colors, dim, as the panels are.
     build = os.path.dirname(os.path.dirname(rom()))
     art = lambda name: open(os.path.join(build, name), 'rb').read()
 
     def own_picture(p, name):
-        sprite = sym['XRAM_MENU_SPRITES'] + p % sym['PANEL_SLOTS'] * sym['PANEL_SPRITES'] * sym['SPRITE_BYTES']
-        x, y, image, colors, size = struct.unpack('<hhHHB', game.xram(sprite, 9))
+        x, y, image, colors, size = struct.unpack('<hhHHB', game.xram(slot_sprite(p, 0), 9))
         w, h = sym[f'{name.upper()}_W'], sym[f'{name.upper()}_H']
-        left = sym['PANEL_LEFT'] + p * sym['PANEL_STEP'] - game.ram('panel_scroll', 2)
-        check(size == (h // 4 - 1) << 4 | (w // 4 - 1) and x == left + (8 * sym['PANEL_COLS'] - w) // 2 and
+        check(size == (h // 4 - 1) << 4 | (w // 4 - 1) and x == panel_left(p) + (8 * sym['PANEL_COLS'] - w) // 2 and
               y == sym['PANEL_Y'] + sym['PICTURE_ROW'] * 8 and y + h + 8 <= sym['PANEL_Y'] + sym['TITLE_ROW'] * 8,
               f'the {name} is {w} across, centered on its panel, a cell clear of the title: {x}, {y}')
         check(game.xram(image, w * h // 2) == art(f'{name}.bin') and
               game.xram(colors, 32) == art(f'{name}-colors.bin')[32:], f'the {name} is in its own colors, dim')
 
-    own_picture(2, 'weight')
+    own_picture(1, 'weight')
+    own_picture(2, 'jerrycan')
     game.tap('space')
     game.cmd('expect-not "bought"')
-    check(game.ram('upgrade_ranks', 2) == 0, 'no upgrade without the nuggets')
+    check(game.ram('upgrade_ranks', sym['UPGRADES']) == 0, 'no upgrade without the nuggets')
 
     # Right slides the panels left, the next one lit in the middle, and the
-    # picture slides with its panel. At the last panel, right does nothing.
+    # picture slides with its panel. The panels after come in as it goes:
+    # speed, in pixels a second, and size, in pixels, each with the sled.
+    # At the last panel, right does nothing.
     picture = game.sprite(f'XRAM_MENU_SPRITES')[0]
     game.tap('right')
     settle()
@@ -166,15 +254,25 @@ def main():
     check(game.sprite(f'XRAM_MENU_SPRITES')[0] == picture - sym['PANEL_STEP'],
           'the picture slides with its panel')
     check(panel_lit(1) and not panel_lit(0), 'and it is lit, the one it left dim')
-    burns = [f'{b // 10}.{b % 10}' for b in tune['TUNE_BURNS']]
-    check(panel(3, sym['TITLE_ROW']) == 'EFFICIENCY' and
-          panel(3, sym['EFFECT_ROW']) == f'{burns[0]} \x10 {burns[1]} L/S' and
-          panel(3, sym['COST_ROW']) == str(tune['TUNE_BURN_COSTS'][0]),
-          f'and the last, efficiency, in liters a second: {panel(3, sym["EFFECT_ROW"])!r}')
-    own_picture(3, 'jerrycan')
+    check(cursor_on_panel(), 'the cursor stays around the panel in the middle')
+    speeds = [s * 60 // 256 for s in tune['TUNE_SPEEDS']]
+    check(panel(3, title) == 'SPEED' and panel(3, effect) == f'{speeds[0]} \x10 {speeds[1]} PX/S' and
+          panel(3, cost) == str(tune['TUNE_SPEED_COSTS'][0]),
+          f'the speed panel comes in, in pixels a second: {panel(3, effect)!r}')
+    sled_picture(3)
+    game.tap('right')
+    settle()
+    check(cursor_on_panel(), 'the cursor stays around the panel in the middle')
+    widths = tune['TUNE_WIDTHS']
+    check(panel(4, title) == 'SIZE' and panel(4, effect) == f'{widths[0]} \x10 {widths[1]} PX' and
+          panel(4, cost) == str(tune['TUNE_WIDTH_COSTS'][0]),
+          f'and the last, size, in pixels: {panel(4, effect)!r}')
+    sled_picture(4)
     for _ in range(sym['PANELS']):
         game.tap('right')
+    settle()
     check(game.ram('panel_picked') == sym['PANELS'] - 1, 'right stops at the last panel')
+    check(cursor_on_panel(), 'the cursor is around it')
     for _ in range(sym['PANELS']):
         game.tap('left')
     settle()
@@ -191,17 +289,20 @@ def main():
     print('ok: the panels slide')
 
     # The cheats of a debug build: on the rail, Shift and right or left raise
-    # or lower the upgrade picked, for nothing, and repeat while held.
+    # or lower the upgrade picked, for nothing, and repeat while held. Balls,
+    # on the first panel, has few ranks, so held, it goes to the top and
+    # stops there.
     game.cmd('press lshift')
     game.tap('right')
     check(game.ram('upgrade_ranks') == 1 and game.ram('nuggets', 2) == 0,
-          'Shift and right raises the width, for nothing')
+          'Shift and right raises the balls, for nothing')
+    balls_picture(counts[1])
     game.tap('left')
     check(game.ram('upgrade_ranks') == 0, 'Shift and left lowers it')
     game.cmd('press right')
     game.run(sym['REPEAT_DELAY'] + 2 * sym['REPEAT_STEPS'] + 2)
     game.cmd('release right')
-    check(game.ram('upgrade_ranks') >= 3, 'held, it repeats')
+    check(game.ram('upgrade_ranks') == sym['BALL_RANKS'], 'held, it repeats, up to the top rank and no further')
     game.cmd('press left')
     game.run(sym['REPEAT_DELAY'] + sym['REPEAT_STEPS'] * sym['UPGRADE_RANKS_MAX'])
     game.cmd('release left')
@@ -210,11 +311,72 @@ def main():
     check(game.ram('upgrade_ranks') == 0, 'and back down to none')
     print('ok: the upgrade cheats')
 
-    # With nuggets: a rank of width at its cost, then, with the button
-    # held, every other rank, then MAX. The count shows what is left.
+    # With nuggets: each rank of balls, at its cost in gray, and the panel's
+    # count goes up with each.
     have = 200
     game.poke('nuggets', have, 2)
     game.poke('counts_shown', 1 << sym['BRICK_GRAY'])
+    for rank, (price, color) in enumerate(zip(tune['TUNE_BALL_COSTS'], tune['TUNE_BALL_COLORS']), 1):
+        check(color == sym['BRICK_GRAY'] and panel(0, cost) == str(price), f'balls {rank} costs {price} gray')
+        game.tap('space')
+        game.wait(f'bought balls {rank}', 10)
+        game.run(2)
+        have -= price
+        check(game.ram('nuggets', 2) == have, f'balls {rank} is bought for {price}')
+        balls_picture(counts[rank])
+    print('ok: bought the balls')
+
+    # Weight's first rank costs red nuggets. With gray enough but no red, it
+    # can't be bought: its cost shows in short digits, by a red nugget. With
+    # red, it buys, and spends the red, not the gray. The next rank shows
+    # its own cost and color.
+    game.tap('right')
+    price, color = tune['TUNE_DAMAGE_COSTS'][0], tune['TUNE_DAMAGE_COLORS'][0]
+    check(color == sym['BRICK_RED'], 'weight 1 costs red nuggets')
+    check(panel(1, cost) == str(price) and all(short(1, cost)),
+          f'with no red, its cost, {price}, is in short digits')
+    check(cost_icon(1) == nugget(color), 'by a red nugget')
+    game.tap('space')
+    game.cmd('expect-not "bought"')
+    check(game.ram(f'upgrade_ranks+{sym["UPGRADE_DAMAGE"]}') == 0 and game.ram('nuggets', 2) == have,
+          'gray nuggets do not buy it')
+    # Just the red it costs, so none is left over for level 2, which counts
+    # the first red nugget there.
+    red = f'nuggets+{2 * color}'
+    game.poke(red, price, 2)
+    game.tap('space')
+    game.wait('bought damage 1', 10)
+    game.run(2)
+    check(game.ram(red, 2) == 0 and game.ram('nuggets', 2) == have,
+          f'with red, it buys for {price} red, and no gray')
+    price, color = tune['TUNE_DAMAGE_COSTS'][1], tune['TUNE_DAMAGE_COLORS'][1]
+    check(panel(1, cost) == str(price) and cost_icon(1) == nugget(color),
+          'and the next rank shows its cost, by a nugget of its color')
+    # Lowered again with the cheat, so the ball takes a single hit off a
+    # brick on level 2, where the hits are counted.
+    game.cmd('press lshift')
+    game.tap('left')
+    game.cmd('release lshift')
+    game.run(2)
+    check(game.ram(f'upgrade_ranks+{sym["UPGRADE_DAMAGE"]}') == 0, 'the cheat lowers the weight again')
+    print('ok: weight, in red nuggets')
+
+    # A rank of fuel efficiency, on the next panel, and of speed, on the one
+    # after.
+    game.tap('right')
+    game.tap('space')
+    game.wait('bought efficiency 1', 10)
+    have -= tune['TUNE_BURN_COSTS'][0]
+    check(game.ram('nuggets', 2) == have, 'fuel efficiency 1 costs its cost')
+    game.tap('right')
+    game.tap('space')
+    game.wait('bought speed 1', 10)
+    have -= tune['TUNE_SPEED_COSTS'][0]
+    check(game.ram('nuggets', 2) == have, 'speed 1 costs its cost')
+
+    # On the last panel, a rank of width at its cost, then, with the button
+    # held, every other rank, then MAX. The count shows what is left.
+    game.tap('right')
     game.tap('space')
     game.wait('bought width 1', 10)
     have -= tune['TUNE_WIDTH_COSTS'][0]
@@ -224,27 +386,15 @@ def main():
     game.cmd('release space')
     game.wait(f'bought width {len(tune["TUNE_WIDTH_COSTS"])}', 10)
     have -= sum(tune['TUNE_WIDTH_COSTS'][1:])
-    check(game.ram('upgrade_ranks') == len(tune['TUNE_WIDTH_COSTS']) and game.ram('nuggets', 2) == have,
+    width_rank = f'upgrade_ranks+{sym["UPGRADE_WIDTH"]}'
+    check(game.ram(width_rank) == len(tune['TUNE_WIDTH_COSTS']) and game.ram('nuggets', 2) == have,
           'held, the button buys every rank, each at its cost')
     check(game.count('XRAM_NUGGET_DIGITS', sym['COUNT_DIGITS']) == have, 'the count shows what is left')
     game.tap('space')
     game.cmd('expect-not "bought"')
     check(game.ram('nuggets', 2) == have, 'nothing more to buy at the top rank')
-    check(panel(0, sym['COST_ROW']) == 'MAX', 'the top rank shows MAX')
+    check(panel(4, cost) == 'MAX', 'the top rank shows MAX')
     print('ok: bought every width')
-
-    # A rank of speed, on the next panel, and of fuel efficiency, on the last.
-    game.tap('right')
-    game.tap('space')
-    game.wait('bought speed 1', 10)
-    have -= tune['TUNE_SPEED_COSTS'][0]
-    check(game.ram('nuggets', 2) == have, 'speed 1 costs its cost')
-    game.tap('right')
-    game.tap('right')
-    game.tap('space')
-    game.wait('bought efficiency 1', 10)
-    have -= tune['TUNE_BURN_COSTS'][0]
-    check(game.ram('nuggets', 2) == have, 'fuel efficiency 1 costs its cost')
 
     # Down goes to the levels, where only the open ones can be picked.
     game.tap('down')
@@ -302,6 +452,10 @@ def main():
     check(game.sizes('XRAM_SLED_SPRITE', 1)[0] == size, f'the sled shows {width} px wide')
     jets = game.ram(f'jets+{len(tune["TUNE_WIDTH_COSTS"])}')
     check(game.shown('XRAM_JET_SPRITES', sym['JETS_MAX']) == jets, f'with its {jets} jets')
+    balls = counts[len(tune['TUNE_BALL_COSTS'])]
+    check(game.ram('ball_state') == sym['BALL_DOCKED'] and game.ram('balls') == balls - 1 and
+          game.count('XRAM_BALL_DIGITS', sym['BALL_DIGITS']) == balls - 1,
+          f'the level starts with the {balls} balls bought: one on the sled, and {balls - 1} in the count')
     check(game.ram('nuggets', 2) == have, 'the nuggets left are kept')
     # Short of the wall: the steps it takes from the middle of the playfield.
     x = game.px('paddle_x')

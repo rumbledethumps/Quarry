@@ -44,7 +44,8 @@ def main():
     game = Game()
     sym = game.sym
     steps, rise, paddle_y = sym['TUNE_BUILD_STEPS'], sym['TUNE_RISE_STEPS'], sym['TUNE_PADDLE_Y']
-    bricks, balls = sym['LEVEL1_BRICKS'], sym['TUNE_BALLS']
+    bricks = sym['LEVEL1_BRICKS']
+    balls = game.ram('ball_counts')  # a new game's, before any upgrade
     sled, ball = 'XRAM_SLED_SPRITE', 'XRAM_BALL_SPRITE'
     count = lambda: game.count('XRAM_BALL_DIGITS', sym['BALL_DIGITS'])
 
@@ -114,14 +115,15 @@ def main():
     print('ok: the ball came from the count, and the meter came up')
 
     # A lost ball: the next flies from the count, which drops as it leaves,
-    # and the fuel drains the while.
+    # and the fuel drains the while. Two spare balls in the count, so there
+    # is a next one, and one is left to show the count drop.
     game.tap('space')
     game.wait('launch', 5)
     game.run(20)
-    game.paused_poke([('ball_y', 225 << 8, 4), ('ball_vx', 0, 2), ('ball_vy', 600, 2)])
+    game.paused_poke([('balls', 2, 1), ('ball_y', 225 << 8, 4), ('ball_vx', 0, 2), ('ball_vy', 600, 2)])
     game.wait('ball lost', 10)
     game.wait('ball comes', 5)
-    check(count() == balls - 2, 'the next ball leaves the count')
+    check(count() == 1 and game.ram('balls') == 1, 'the next ball leaves the count')
     energy = game.ram('energy', 2)
     game.wait('ball landed', 120)
     check(game.ram('energy', 2) < energy, 'the fuel drains while it comes')
@@ -171,7 +173,9 @@ def main():
     game.tap('space')
     game.wait('launch', 5)
     game.run(20)
-    game.paused_poke([('ball_y', 225 << 8, 4), ('ball_vx', 0, 2), ('ball_vy', 600, 2), ('energy', 30 * game.ram('burns'), 2)])
+    # A spare ball in the count, so one comes when this one is lost.
+    game.paused_poke([('balls', 1, 1), ('ball_y', 225 << 8, 4), ('ball_vx', 0, 2), ('ball_vy', 600, 2),
+                      ('energy', 30 * game.ram('burns'), 2)])
     game.wait('ball comes', 10)
     game.wait('out of energy', 40)
     check(game.ram('ball_state') == sym['BALL_COMING'], 'out of fuel, the ball still comes to the sled')

@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'
 from rp6502 import Symbols  # noqa: E402
 
 SAVE = 'quarry.save'
-TAG = b'QRY7'
+TAG = b'QRY8'
 SYM = Symbols(os.path.splitext(rom())[0] + '.sym')
 NO_RANKS = (0,) * SYM['UPGRADES']
 NEW_GAME = (0, 0, NO_RANKS, 0, 1, 1, 0, 0)  # as read_save() gives it
@@ -181,9 +181,10 @@ def main():
     game.menu_choose('TO THE DRY')
     game.talk_ok()
     game.poke('nuggets', 20, 2)
-    left = 20 - game.ram('width_costs', 2)  # after the first width
+    count = lambda cost: cost & ((1 << game.sym['COST_COLOR_SHIFT']) - 1)  # its nuggets, without its color
+    left = 20 - count(game.ram('ball_costs', 2))  # after a ball more, on the first panel, in gray
     game.tap('enter')
-    game.wait('bought width 1', 10)
+    game.wait('bought balls 1', 10)
     check(read_save(folder)[:3] == (left, 0, (1,) + NO_RANKS[1:]), 'buying saves the upgrade bought')
     game.tap('escape')
     check(game.shows('RETURN TO TITLE?'), 'Esc asks to go back to the title')
@@ -233,9 +234,10 @@ def main():
     game.tap('space')
     game.tap('space')  # YES, begin the level
     game.until('game_state', 'STATE_PLAY', 60)
-    game.run(2)
-    check(game.ram('paddle_width') == game.ram('widths+1'), 'the level has the upgrade, on the paddle')
-    print(f'ok: came back, and Continue Game brought back {left} nuggets and a wider paddle')
+    game.ready()
+    check(game.ram('balls') == game.ram('ball_counts+1') - 1,
+          'the level has the upgrade, a ball more, with one of them on the sled')
+    print(f'ok: came back, and Continue Game brought back {left} nuggets and a ball more')
 
     # Main Menu from the pause menu goes to the title. Delete Save asks
     # first, in the panels' place, with No picked. Esc and No keep the save.
@@ -288,8 +290,9 @@ def main():
     game.until('game_state', 'STATE_PLAY', 60)
     game.run(2)
     check(read_save(folder) == NEW_GAME, 'Start Game saves a new game')
-    check(game.ram('showing') == game.sym['TALK_FOREMAN'] and game.ram('paddle_width') == game.ram('widths'),
-          "and starts over, with the foreman's word")
+    # The foreman's word holds the level, so no ball has come to the sled yet.
+    check(game.ram('showing') == game.sym['TALK_FOREMAN'] and game.ram('balls') == game.ram('ball_counts'),
+          "and starts over, with the foreman's word and the balls of a new game")
     print('ok: Delete Save asked first, Esc and No kept the save, and Yes deleted it')
     game.close()
 

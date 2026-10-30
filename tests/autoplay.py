@@ -5,9 +5,10 @@
 
 The bot reads the ball and the paddle sprites each step and steers the
 paddle under the ball with the arrow keys. With --miss N it lets the first
-N balls fall. Every step it checks that the ball stays inside the playfield
-and never moves farther a step than its speed, TUNE_BALL_SPEED, rounded up
-to a whole pixel. It stops at the end of the level,
+N balls fall, or as many as the level has. Every step it checks that the
+ball stays inside the playfield and never moves farther a step than its
+speed, TUNE_BALL_SPEED, rounded up to a whole pixel. It stops at the end
+of the level,
 reports how the level ended, checks a nugget landed for each broken brick,
 then chooses Play on the end-of-level menu and checks that the level starts
 again. It runs on a Release ROM too.
@@ -38,7 +39,10 @@ def main():
     paddle_y, paddle_w = sym['TUNE_PADDLE_Y'], game.ram('paddle_width')
     ball = sym['BALL_SIZE']
     bricks = sym['LEVEL1_BRICKS']
-    balls = sym['TUNE_BALLS']
+    # A level starts with the balls of the BALLS upgrade's rank, the first
+    # in a new game, where one lost ball ends the level.
+    rank = game.ram(f"upgrade_ranks+{sym['UPGRADE_BALLS']}")
+    balls = game.ram(f'ball_counts+{rank}')
 
     def predict(x, y, dx, dy):
         """The ball's left edge when it reaches the paddle, off the side walls."""

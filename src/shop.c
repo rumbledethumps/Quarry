@@ -74,8 +74,8 @@ _Static_assert(PANEL_SLOTS * PANEL_SPRITES <= MENU_SPRITES, "MENU_SPRITES is too
    PANEL_BORDER cells thick all around, which leaves PANEL_INSIDE cells
    across inside. The rows of the panel cells: the hangers, the top of the
    frame, the picture, the title, the pips, what the next rank does, and
-   two lines of cost. Each panel's frame is as tall as art/panels.py makes
-   it. */
+   two lines of cost. The balls' picture is a count, on a row of its own.
+   Each panel's frame is as tall as art/panels.py makes it. */
 #define PANEL_LEFT ((SCREEN_W - PANEL_COLS * 8) / 2)
 #define PANEL_STEP (PANEL_PITCH * 8)
 #define PANEL_BORDER 2
@@ -83,6 +83,7 @@ _Static_assert(PANEL_SLOTS * PANEL_SPRITES <= MENU_SPRITES, "MENU_SPRITES is too
 #define TOP_ROW 1
 #define PICTURE_ROW 3 /* 6 rows, 48 px */
 #define PICTURE_H 48
+#define BALLS_ROW 5
 #define TITLE_ROW 9
 #define PIPS_ROW 10
 #define EFFECT_ROW 12
@@ -100,7 +101,10 @@ static const uint8_t hanger_x[PANEL_HANGERS] = PANEL_HANGER_X;  /* from a panel'
 _Static_assert(PANEL_LAYOUTS == PANELS, "art/panels.py needs a layout for each panel.");
 
 /* A panel for each upgrade. */
-static const char *const panel_titles[PANELS] = {"SIZE", "SPEED", "WEIGHT", "EFFICIENCY"};
+static const char *const panel_titles[PANELS] = {
+    [UPGRADE_BALLS] = "BALLS", [UPGRADE_DAMAGE] = "WEIGHT", [UPGRADE_EFFICIENCY] = "EFFICIENCY",
+    [UPGRADE_SPEED] = "SPEED", [UPGRADE_WIDTH] = "SIZE",
+};
 
 _Static_assert(PANELS == UPGRADES, "A panel for each upgrade.");
 
@@ -250,7 +254,7 @@ static uint8_t can_buy(uint8_t u)
 {
     uint16_t cost = upgrades_cost(u);
 
-    return cost && nuggets[BRICK_GRAY] >= cost;
+    return cost && nuggets[upgrades_cost_color(u)] >= cost;
 }
 
 /* Upgrade u's value at a rank, as its panel shows it. A speed is in 1/256
@@ -266,7 +270,8 @@ static char *put_value(char *at, uint8_t u, uint8_t rank)
         *at++ = '0' + burn % 10;
         return at;
     }
-    return put_number(at, u == UPGRADE_WIDTH   ? upgrades_width_at(rank)
+    return put_number(at, u == UPGRADE_BALLS   ? upgrades_balls_at(rank)
+                          : u == UPGRADE_WIDTH ? upgrades_width_at(rank)
                           : u == UPGRADE_SPEED ? (uint16_t)(upgrades_speed_at(rank) * 60u / 256)
                                                : upgrades_damage_at(rank));
 }
@@ -277,7 +282,10 @@ static void effect_draw(uint8_t p)
     char text[PANEL_INSIDE + 1];
     char *at = text;
     uint8_t rank = upgrade_ranks[p], max = rank >= upgrades_max(p);
-    static const char *const units[UPGRADES] = {" PX", " PX/S", " DAMAGE", " L/S"};
+    static const char *const units[UPGRADES] = {
+        [UPGRADE_BALLS] = " BALLS", [UPGRADE_DAMAGE] = " DAMAGE", [UPGRADE_EFFICIENCY] = " L/S",
+        [UPGRADE_SPEED] = " PX/S", [UPGRADE_WIDTH] = " PX",
+    };
 
     at = put_value(at, p, rank);
     if (!max)
@@ -290,14 +298,40 @@ static void effect_draw(uint8_t p)
     text_draw(p, EFFECT_ROW, text);
 }
 
+/* A count on a row of panel p, centered with the two cells before it,
+   which its icon, a sprite, goes in: in short digits if it is a cost that
+   can't be paid. */
+static void count_draw(uint8_t p, uint8_t row, uint16_t n, uint8_t shorts)
+{
+    uint8_t tiles[PANEL_INSIDE];
+    char number[6];
+    uint8_t len = put_number(number, n) - number, i;
+
+    tiles[0] = tiles[1] = PANEL_TILE_GLYPH;
+    for (i = 0; i < len; i++)
+        tiles[2 + i] = shorts ? PANEL_TILE_SHORT + number[i] - '0' : glyph(number[i]);
+    row_draw(p, row, tiles, 2 + len);
+}
+
+/* The left edge of a count's icon, in the middle of the two cells before
+   it, as count_draw() centers them, on panel p at x. */
+static int16_t count_icon_x(int16_t x, uint16_t n)
+{
+    char number[6];
+
+    return x + (PANEL_BORDER + (PANEL_INSIDE - 2 - (put_number(number, n) - number)) / 2) * 8 + 3;
+}
+
 /* A panel's contents: its title, a pip for each rank, filled for each
    bought, what the next rank does, and its cost, in short digits while it
-   can't be paid, or MAX. The frame is the map's, as art/panels.py made
-   it. */
+   can't be paid, or MAX. The balls' panel has the count of balls over its
+   title. The frame is the map's, as art/panels.py made it. */
 static void panel_draw(uint8_t p)
 {
     uint8_t tiles[PANEL_INSIDE], i;
 
+    if (p == UPGRADE_BALLS)
+        count_draw(p, BALLS_ROW, upgrades_balls(), 0);
     text_draw(p, TITLE_ROW, panel_titles[p]);
     {
         uint8_t max = upgrades_max(p), rank = upgrade_ranks[p];
@@ -307,15 +341,7 @@ static void panel_draw(uint8_t p)
     }
     effect_draw(p);
     if (upgrades_cost(p))
-    {
-        char number[6];
-        uint8_t n = put_number(number, upgrades_cost(p)) - number;
-        /* The cost's icon is a sprite in the two cells before it. */
-        tiles[0] = tiles[1] = PANEL_TILE_GLYPH;
-        for (i = 0; i < n; i++)
-            tiles[2 + i] = can_buy(p) ? glyph(number[i]) : PANEL_TILE_SHORT + number[i] - '0';
-        row_draw(p, COST_ROW, tiles, 2 + n);
-    }
+        count_draw(p, COST_ROW, upgrades_cost(p), !can_buy(p));
     else
         text_draw(p, COST_ROW, "MAX");
 }
@@ -340,14 +366,14 @@ static uint8_t picture_ready(uint8_t p)
 }
 
 /* Loads the pictures of the panels near the one picked that aren't in
-   their slots yet. */
+   their slots yet. The balls' panel has none to load. */
 static void pictures_load(void)
 {
     int8_t first = panel_picked - (heading < 0 ? 2 : 1);
     uint8_t p = first > 0 ? first : 0;
 
     for (; p <= first + 3 && p < PANELS; p++)
-        if (!picture_ready(p))
+        if (p != UPGRADE_BALLS && !picture_ready(p))
         {
             uint8_t slot = p % PICTURE_SLOTS;
             if (p == UPGRADE_DAMAGE)
@@ -360,10 +386,12 @@ static void pictures_load(void)
         }
 }
 
-/* A panel's picture and cost icons, where it is now: for size and speed,
-   the smallest sled with two jets, doubled, its flames lit, and for weight
-   and efficiency, the weight and the jerrycan, each at the top of the
-   plate, a whole cell clear of the title. */
+/* A panel's picture and cost icons, where it is now: for balls, the icon
+   of the count of balls panel_draw() puts over the title, the balls a
+   level starts with, for size and speed, the smallest sled with two jets,
+   doubled, its flames lit, and for weight and efficiency, the weight and
+   the jerrycan, each at the top of the plate, a whole cell clear of the
+   title. */
 static void pictures_draw(uint8_t p)
 {
     int16_t x = panel_x(p), top = PANEL_Y + PICTURE_ROW * 8;
@@ -378,7 +406,12 @@ static void pictures_draw(uint8_t p)
                    MODE5_SIZE(BACKDROP_TROLLEY_W, BACKDROP_TROLLEY_H));
         sprite_move(PANEL_SPRITE(p, TROLLEY_SPRITES + i), tx, BACKDROP_TROLLEY_Y);
     }
-    if (p == UPGRADE_WIDTH || p == UPGRADE_SPEED)
+    if (p == UPGRADE_BALLS)
+    {
+        sprite_set(PANEL_SPRITE(p, 0), XRAM_BALL_ICON_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(ICON_SIZE, ICON_SIZE));
+        sprite_move(PANEL_SPRITE(p, 0), count_icon_x(x, upgrades_balls()), PANEL_Y + BALLS_ROW * 8 - 1);
+    }
+    else if (p == UPGRADE_WIDTH || p == UPGRADE_SPEED)
     {
         uint8_t w = upgrades_width_at(SLED_PICTURE) * 2;
         if (picture_ready(p))
@@ -394,14 +427,12 @@ static void pictures_draw(uint8_t p)
     }
     if (upgrades_cost(p) && !talk_busy())
     {
-        /* The big nugget of the counts, in the middle of the two cells
-           before the cost, as panel_draw() centers it, and of its row, but
-           not while a dwarf talks, as it would show over his bubble. */
-        char number[6];
-        uint8_t first = (PANEL_INSIDE - 2 - (put_number(number, upgrades_cost(p)) - number)) / 2;
-        sprite_set(PANEL_SPRITE(p, PICTURE_SPRITES), XRAM_NUGGET_ICON_IMAGE, XRAM_PALETTE_BRICK(BRICK_GRAY),
+        /* The big nugget of the counts, of the cost's color, before the
+           cost, but not while a dwarf talks, as it would show over his
+           bubble. */
+        sprite_set(PANEL_SPRITE(p, PICTURE_SPRITES), XRAM_NUGGET_ICON_IMAGE, XRAM_PALETTE_BRICK(upgrades_cost_color(p)),
                    MODE5_SIZE(ICON_SIZE, ICON_SIZE));
-        sprite_move(PANEL_SPRITE(p, PICTURE_SPRITES), x + (PANEL_BORDER + first) * 8 + 3, PANEL_Y + COST_ROW * 8 - 1);
+        sprite_move(PANEL_SPRITE(p, PICTURE_SPRITES), count_icon_x(x, upgrades_cost(p)), PANEL_Y + COST_ROW * 8 - 1);
     }
 }
 

@@ -89,8 +89,9 @@ def main():
     played(game, 'PADDLE', 20)
     print('ok: wall and paddle')
 
-    # A lost ball whistles down.
-    game.paused_poke([('ball_x', 100 << 8, 4), ('ball_y', 225 << 8, 4),
+    # A lost ball whistles down. A spare ball in the count, so the level
+    # goes on after this one is lost.
+    game.paused_poke([('balls', 1, 1), ('ball_x', 100 << 8, 4), ('ball_y', 225 << 8, 4),
                        ('ball_vx', 0, 2), ('ball_vy', 600, 2)])
     played(game, 'LOST', 20)
     game.run(1)

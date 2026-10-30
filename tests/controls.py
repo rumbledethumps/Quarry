@@ -25,7 +25,7 @@ def main():
     state = os.path.join(tempfile.mkdtemp(), 'controls.state')
     game = Game()
     num_lock = 1 << game.sym['KEYBOARD_NUM_LOCK']  # in the first byte of the key bitmap
-    start_balls = game.sym['TUNE_BALLS']
+    start_balls = game.ram('ball_counts')  # the balls a new game's level starts with
 
     # Enter held from boot, as when it loaded the game, does not choose on the
     # title screen.
@@ -137,6 +137,9 @@ def main():
     # takes one away, and Shift and up or down a twelfth of the energy. With
     # Shift, the arrows neither move nor launch.
     game.cmd(f'state load "{state}"')
+    # A new game's only ball is on the paddle, which leaves the count empty
+    # and nothing for Shift and left to take away: give the count a spare.
+    game.poke('balls', game.ram('balls') + 1)
     x, balls, energy = game.sprite(paddle)[0], game.ram('balls'), game.ram('energy', 2)
     game.cmd('press lshift')
     game.tap('right')

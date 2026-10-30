@@ -109,10 +109,11 @@ def main():
           'and its line of the counts shows them')
     check(game.shown('XRAM_COIN_ICON', 1) == 0, "the coins' line waits for the first clear")
 
-    # The count lasts into the next level, and keeps counting there.
-    game.wait('ball lost', 3000)
-    game.paused_poke([('balls', 0, 1), ('ball_state', 1, 1)])
-    game.wait('out of balls', 600)
+    # The count lasts into the next level, and keeps counting there. With
+    # the count of balls emptied, however many the level starts with, the
+    # ball in play is the last, and losing it ends the level.
+    game.poke('balls', 0)
+    game.wait('out of balls', 3000)
     before = game.ram('nuggets', 2)
     game.menu_choose('REPLAY')
     game.ready()

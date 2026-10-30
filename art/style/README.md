@@ -23,7 +23,7 @@ bought its rank.
 | COIN | One for the first clear of each level, never again. Coins will open the upgrades' next tiers. |
 | SLED | The paddle, which floats on its jets. |
 | FUEL | What the gauge on the right shows, 100 liters full, burned in liters a second, L/S. EFFICIENCY burns less. When it runs out, the sled falls, and the level ends once the balls in play have fallen off the screen too. |
-| BALL | The ball, and the count of those left. |
+| BALL | The ball, and the count of those left. BALLS, on the upgrade screen, is how many a level starts with. |
 | HITS | What breaks a brick: each hit of the ball does its DAMAGE, and the brick breaks once the damage reaches its hits. |
 | THE DRY | The upgrade screen, as the dwarves call it, and the menus' TO THE DRY: the change house at a mine, where miners change into their work clothes, hang their wet gear to dry, and wait for their shift. The code and this guide still call it the upgrade screen. |
 | UPGRADE | A panel on the rail in THE DRY, and what it buys. |
@@ -401,7 +401,7 @@ post clear of it.
 ### The Upgrade Panels
 
 The upgrade screen's panels hang from a rail and slide across it. Each is
-20 cells by up to 18, in an 8-bit tile layer of its own, with 256 colors
+20 cells by 18, in an 8-bit tile layer of its own, with 256 colors
 and 256 tiles. The frame is two cells thick, drawn 3 px in from the edge of
 its cells, so two panels side by side have a 6 px gap. The frame is
 graphite steel with no yellow: there is nothing to be careful of here.
@@ -449,7 +449,10 @@ graphite steel with no yellow: there is nothing to be careful of here.
   hose cut off, as it read as a leak. The rest of its colors, but its black
   outline and its display's green, were cut by median cut to make 15,
   keeping the fuel's exact. `art/jerrycan-colors.png` holds them lit and at
-  half, as the weight's does.
+  half, as the weight's does. BALLS shows the count of balls a level
+  starts with, as the counts of a level do: the ball's icon, a sprite,
+  and the number in the panels' font, so it dims with the panel. It
+  changes as BALLS is bought.
 
 ### The Title's Panels
 
