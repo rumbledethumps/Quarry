@@ -19,7 +19,9 @@ below, the tail reaching out of its side toward his mouth, and its lines
 are the panels' font in ink, a row of cells between them. The last line
 ends with an OK, at the right, which the game puts in once the bubble has
 come in, but on the title, where he stays while the player picks from the
-menu above him. The bubble is cut into tiles, the same ones shared.
+menu above him. The bubble is cut into tiles, the same ones shared. The
+bubble the committeeman hands his coin over in has room at its left for
+the big coin of art/bricks.py, which the game shows over it.
 
 TALKS lists what the dwarves say: each one's name, the dwarf, his side,
 where his bubbles go, and his bubbles, one after another, each its lines,
@@ -52,7 +54,8 @@ BUBBLE_COLS = 28
 BUBBLE_ROWS = 10
 BUBBLE_TILES = 48
 DWARF_ASSET_BYTES = 6 + 8 * DWARF_PIECES + 32 + DWARF_BYTES
-BUBBLE_ASSET_BYTES = 10 + 8 + 16 * BUBBLE_TILES + BUBBLE_ROWS * BUBBLE_COLS
+BIG_COIN_SIZE = 56
+BUBBLE_ASSET_BYTES = 12 + 8 + 16 * BUBBLE_TILES + BUBBLE_ROWS * BUBBLE_COLS
 SCREEN_W, SCREEN_H = 320, 240
 
 # The dwarves, each a portrait in art/dwarves/, and the way he faces in it.
@@ -80,12 +83,16 @@ SEEN = {'FOREMAN': 0, 'UNLOCK': 2, 'DRY': 3}
 # his side. On the upgrade screen its foot is just over the carts, so they
 # show, or for what he says of the panels, low over the carts, so the
 # panels show. On the title he stays, with no OK, and his bubble is a row
-# shorter, clear of the panel over it.
+# shorter, clear of the panel over it. The committeeman's bubble with the
+# coin he hands over has the big coin at the left of it, in COIN_COLS of
+# its cells, and it is as tall as a bubble can be.
 BUBBLE_GAP = 68
+COIN_COLS = 8
 LEVEL = {'foot': SCREEN_H - 24}
 DRY = {'foot': 196}
 DRY_LOW = dict(LEVEL)
 TITLE = dict(LEVEL, stays=True)
+COIN = dict(LEVEL, coin=True)
 
 # What the dwarves say: the talks but the coins', each with a key of its
 # own in a debug build, then the coins', from COIN1, one for each level, and
@@ -107,17 +114,18 @@ TALKS = [
     # The upgrade screen, as level 2 unlocks.
     ('UNLOCK', 'FOREMAN', RIGHT, DRY,
      [['EVERY TIME YOU CLEAR A', 'LEVEL THE NEXT BECOMES', 'AVAILABLE.']]),
-    # The first clear of each level, before its menu, with its coin.
-    ('COIN1', 'COMMITTEEMAN', RIGHT, LEVEL,
-     [['NICE WORK!', "HERE'S A UNION COIN."]]),
-    ('COIN2', 'COMMITTEEMAN', RIGHT, LEVEL,
-     [["AREN'T YOU QUITE THE", "NIPPER. YOU'VE EARNED", 'ANOTHER COIN.']]),
-    ('COIN3', 'COMMITTEEMAN', RIGHT, LEVEL,
-     [["DIDN'T ANYONE EXPLAIN", 'THE COINS TO YOU?']]),
-    ('COIN4', 'COMMITTEEMAN', RIGHT, LEVEL,
-     [['KEEP SAVING THESE', 'COINS FOR POWERFUL', 'UPGRADES.']]),
+    # The first clear of each level, before its menu, with its coin, which
+    # is in the bubble beside the words.
+    ('COIN1', 'COMMITTEEMAN', RIGHT, COIN,
+     [['NICE WORK!', "HERE'S A", 'UNION COIN.']]),
+    ('COIN2', 'COMMITTEEMAN', RIGHT, COIN,
+     [["AREN'T YOU QUITE", 'THE NIPPER.', "YOU'VE EARNED", 'ANOTHER COIN.']]),
+    ('COIN3', 'COMMITTEEMAN', RIGHT, COIN,
+     [["DIDN'T ANYONE", 'EXPLAIN THE', 'COINS TO YOU?']]),
+    ('COIN4', 'COMMITTEEMAN', RIGHT, COIN,
+     [['KEEP SAVING', 'THESE COINS FOR', 'POWERFUL', 'UPGRADES.']]),
     ('COIN5', 'COMMITTEEMAN', RIGHT, LEVEL,
-     [["YOU'VE EARNED 5 COINS AND", 'COMPLETED THE GAME.'],
+     [(COIN, ["YOU'VE EARNED", '5 COINS AND', 'COMPLETED THE', 'GAME.']),
       ["SORRY, THE COINS DON'T", 'DO ANYTHING YET.'],
       ['THANK YOU FOR PLAYING MY', 'GAME JAM ENTRY.']]),
 ]
@@ -257,17 +265,26 @@ def pieces(img):
     return best[1]
 
 
-def bubble(lines, ok, side):
-    """The bubble, as rows of the 4 colors, with its OK cells as paper, and
-    the cell of the O. Its tail is on the side of the dwarf: on the left
-    for one on the left, the tail's column first, or on the right. The OK
-    ends the last line, at the right, a cell after it, with a cell clear
-    all round it for the cursor. Without one, the cell is 0, 0, which is a
-    corner of the picture, and there is no row under the last line."""
-    cols = max(max(len(line) for line in lines), len(lines[-1]) + 4 if ok else 0) + 2
+def bubble(lines, ok, side, coin):
+    """The bubble, as rows of the 4 colors, with its OK cells as paper, the
+    cell of the O, and where the big coin goes in it, from its top left, or
+    0, 0. Its tail is on the side of the dwarf: on the left for one on the
+    left, the tail's column first, or on the right. The OK ends the last
+    line, at the right, a cell after it, with a cell clear all round it for
+    the cursor. Without one, the cell is 0, 0, which is a corner of the
+    picture, and there is no row under the last line. With the coin, the
+    bubble is BUBBLE_ROWS tall, the coin in the middle of the first
+    COIN_COLS cells of its inside, and the lines after them, halfway
+    down."""
+    lead = COIN_COLS if coin else 0
+    cols = lead + max(max(len(line) for line in lines), len(lines[-1]) + 4 if ok else 0) + 2
     rows = 2 * len(lines) + (2 if ok else 1)
     if cols + 1 > BUBBLE_COLS or rows > BUBBLE_ROWS:
         raise SystemExit(f'talk.py: a bubble of {cols} by {rows} cells is too big')
+    first = 1  # the row of the first line
+    if coin:
+        first += (BUBBLE_ROWS - rows) // 2
+        rows = BUBBLE_ROWS
     w, h = 8 * (cols + 1), 8 * rows
     img = [[CLEAR] * w for _ in range(h)]
     at = 1 if side == LEFT else 0  # the picture's column of the bubble's left edge
@@ -290,8 +307,10 @@ def bubble(lines, ok, side):
         put(pixels(mirror(TAIL)), cols - 1, rows - 1 - TAIL_UP)
     for i, line in enumerate(lines):
         for j, ch in enumerate(line):
-            glyph(img, 8 * (at + 1 + j), 8 * (1 + 2 * i), ch)
-    return img, (at + cols - 4, rows - 3) if ok else (0, 0)
+            glyph(img, 8 * (at + 1 + lead + j), 8 * (first + 2 * i), ch)
+    coin_at = ((8 * (at + 1) + (8 * COIN_COLS - BIG_COIN_SIZE) // 2, 8 + (8 * (rows - 2) - BIG_COIN_SIZE) // 2)
+               if coin else (0, 0))
+    return img, (at + cols - 4, first + 2 * len(lines) - 2) if ok else (0, 0), coin_at
 
 
 def glyph(img, x0, y0, ch):
@@ -360,7 +379,7 @@ def bubble_asset(lines, side, where):
     """A bubble_t, and the bubble as RGBA rows to look at, with where it
     goes."""
     stays = where.get('stays', False)
-    pic, (ok_col, ok_row) = bubble(lines, not stays, side)
+    pic, (ok_col, ok_row), (coin_x, coin_y) = bubble(lines, not stays, side, where.get('coin', False))
     tiles, grid = cells(pic)
     ok = [row[:] for row in pic]
     for j, ch in enumerate('' if stays else 'OK'):
@@ -376,8 +395,8 @@ def bubble_asset(lines, side, where):
     cols = len(grid[0])
     x = BUBBLE_GAP if side == LEFT else SCREEN_W - BUBBLE_GAP - 8 * cols
     y = where['foot'] - len(grid) * 8
-    data = struct.pack('<hhBBBBBB', x, y, len(grid), cols, ok_col, ok_row,
-                       tiles.index(ok_cells[0]), tiles.index(ok_cells[1]))
+    data = struct.pack('<hhBBBBBBBB', x, y, len(grid), cols, ok_col, ok_row,
+                       tiles.index(ok_cells[0]), tiles.index(ok_cells[1]), coin_x, coin_y)
     data += b''.join(color16(c) for c in COLORS)
     for t in tiles + [tiles[0]] * (BUBBLE_TILES - len(tiles)):
         for row in t:

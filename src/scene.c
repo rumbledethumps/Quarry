@@ -15,7 +15,8 @@
    which load as the panels come near. The title has a texture, a curtain
    set, the logo and its panels, and a level a texture, a curtain set, a frame set,
    the cracks and the chunks of its bricks, the fittings and the fuel of
-   the energy gauge, and its own sled. The texture,
+   the energy gauge, and its own sled, and room for the big coin, which
+   loads with the committeeman's bubble. The texture,
    the curtain set and the frame set are picked at random only when the
    screen changes, so a level played again keeps its rock and its frame,
    and nobody sees them change. */
@@ -58,6 +59,7 @@ _Static_assert(CURTAIN_SETS <= 9 && TEXTURES <= 9 && FRAME_SETS <= 9, "An asset'
 #define GAUGE_BYTES offsetof(gauge_art_t, glass)
 #define DWARF_ASSET_BYTES sizeof(dwarf_t)
 #define BUBBLE_ASSET_BYTES sizeof(bubble_t)
+#define BIG_COIN_BYTES sizeof(big_coin_image_t)
 
 static uint8_t scene;
 static uint8_t curtain_set; /* the one shown, from 0 */
@@ -344,4 +346,14 @@ void scene_dwarf(uint8_t dwarf)
 void scene_bubble(uint8_t bubble)
 {
     load("ROM:bubbles", (long)(bubble - 1) * BUBBLE_ASSET_BYTES, XRAM_TALK_BUBBLE, BUBBLE_ASSET_BYTES);
+}
+
+/* The big coin, for a bubble with it, in a level's own art. Returns
+   whether a level is up to have it. */
+uint8_t scene_big_coin(void)
+{
+    if (scene != SCENE_LEVEL)
+        return 0;
+    load("ROM:big_coin", 0, XRAM_BIG_COIN_IMAGE, BIG_COIN_BYTES);
+    return 1;
 }

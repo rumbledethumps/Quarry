@@ -35,7 +35,8 @@ def main():
     exact = {'palettes': 'PALETTES_BYTES', 'backdrop': 'BACKDROP_BYTES', 'panels': 'PANELS_BYTES',
              'carts': 'CARTS_BYTES', 'menus': 'MENUS_BYTES', 'logo': 'LOGO_BYTES',
              'title_panels': 'TITLE_PANELS_BYTES',
-             'cracks': 'CRACKS_BYTES', 'chunks': 'CHUNKS_BYTES', 'gauge': 'GAUGE_BYTES'}
+             'cracks': 'CRACKS_BYTES', 'chunks': 'CHUNKS_BYTES', 'gauge': 'GAUGE_BYTES',
+             'big-coin': 'BIG_COIN_BYTES'}
     counted = {'dwarves': ('TALK_DWARVES', 'DWARF_ASSET_BYTES'), 'bubbles': ('TALK_BUBBLES', 'BUBBLE_ASSET_BYTES')}
     exact.update({name: 'TEXTURE_BYTES' for name in numbered('texture', sym['TEXTURES'])})
     exact.update({name: 'CURTAIN_SET_BYTES' for name in numbered('curtain', sym['CURTAIN_SETS'])})

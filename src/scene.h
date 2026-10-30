@@ -15,5 +15,6 @@ void scene_picture_sled(uint8_t slot, uint8_t rank);
 void scene_menus(void);
 void scene_dwarf(uint8_t dwarf);
 void scene_bubble(uint8_t bubble);
+uint8_t scene_big_coin(void);
 
 #endif

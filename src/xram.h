@@ -474,12 +474,15 @@ typedef struct
    the dwarf a portrait DWARF_SIZE square, in up to DWARF_PIECES sprites
    on plane 2 in his own colors, and the bubble a map of 2-bit tiles on
    plane 2's fill, BUBBLE_COLS by up to BUBBLE_ROWS, in place of the
-   menus. */
+   menus. The committeeman's bubble has the coin he hands over in it,
+   from art/bricks.py, BIG_COIN_SIZE square, a sprite on plane 2 in the
+   sled's colors. Only a level has room for it, in its own art. */
 #define DWARF_SIZE 80
 #define DWARF_PIECES 3
 #define DWARF_BYTES 2816
 #define BUBBLE_COLS 28
 #define BUBBLE_ROWS 10
+#define BIG_COIN_SIZE 56
 #define BUBBLE_TILES 48
 
 typedef MODE2_TILE(8, 8) panel_tile_t;
@@ -511,6 +514,7 @@ typedef MODE5_CUSTOM_IMAGE(4, POST_W, BEAM_H) cap_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, BRACE_SIZE, BRACE_SIZE) brace_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, MACHINE_W, MACHINE_H) machine_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 16, 16) lock_image_t;
+typedef MODE5_CUSTOM_IMAGE(4, BIG_COIN_SIZE, BIG_COIN_SIZE) big_coin_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 8, 16) half_lock_image_t;
 
 /* The palettes, in the order of the rows of art/palettes.png. */
@@ -587,7 +591,8 @@ typedef struct
    list: the gauge, the upgrade screen's pictures and trolleys, which
    slide under the counts, the nuggets in flight, which land under them
    too, the counts with their nugget, coin or ball, a dwarf, and last, over
-   them all, the holographic cursor's 4 corners. */
+   them all, the holographic cursor's 4 corners. On a level the first of
+   the pictures' is the big coin in the committeeman's bubble. */
 typedef struct
 {
     gauge_sprites_t gauge;
@@ -660,8 +665,9 @@ typedef struct
 } gauge_art_t;
 
 /* A level's own art: its frame set, the cracks and the chunks, as
-   ROM:cracks and ROM:chunks hold them, its sprites on plane 1, and the
-   energy gauge's images. */
+   ROM:cracks and ROM:chunks hold them, its sprites on plane 1, the
+   energy gauge's images, and the coin in the committeeman's bubble, as
+   ROM:big_coin holds it, which loads with his bubble. */
 typedef struct
 {
     frame_set_t frame;
@@ -669,6 +675,7 @@ typedef struct
     chunk_image_t chunks[CHUNK_IMAGES];
     level_sprites_t sprites;
     gauge_art_t gauge;
+    big_coin_image_t big_coin;
 } level_art_t;
 
 /* A piece of a dwarf: where it goes, from his top left, and its image,
@@ -702,13 +709,15 @@ typedef struct
 
 /* Where a speech bubble stands once it is in, how many rows and columns of
    cells it has, the cell of its OK and the OK's two tiles, which go in
-   when it shows. */
+   when it shows, and where the big coin is in it, from its top left, if
+   it has the coin, or 0, 0. */
 typedef struct
 {
     int16_t x, y;
     uint8_t rows, cols;
     uint8_t ok_col, ok_row;
     uint8_t ok_tiles[2];
+    uint8_t coin_x, coin_y;
 } bubble_head_t;
 
 /* A speech bubble, as ROM:bubbles holds them, one after another from 1:
@@ -851,6 +860,7 @@ typedef struct
 #define XRAM_BALL_DIGITS offsetof(xram_layout_t, hud.ball_digits)
 #define XRAM_NUGGET_SPRITES offsetof(xram_layout_t, hud.nuggets)
 #define XRAM_MENU_SPRITES offsetof(xram_layout_t, hud.menu)
+#define XRAM_BIG_COIN_SPRITE XRAM_MENU_SPRITES /* the first, which a level leaves free */
 #define XRAM_DWARF_SPRITES offsetof(xram_layout_t, hud.dwarf)
 #define XRAM_CURSOR_SPRITES offsetof(xram_layout_t, hud.cursor)
 #define XRAM_MENU_MAP offsetof(xram_layout_t, menu_map)
@@ -918,6 +928,7 @@ typedef struct
 #define XRAM_DROP_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.drop)
 #define XRAM_METER_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.meter)
 #define XRAM_GLASS_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.glass)
+#define XRAM_BIG_COIN_IMAGE offsetof(xram_layout_t, art.cave.level.big_coin)
 #define XRAM_LEVEL_SLED offsetof(xram_layout_t, art.cave.sled_images)
 #define XRAM_LOGO_IMAGES offsetof(xram_layout_t, art.cave.title.logo_images)
 #define XRAM_TITLE_PALETTE offsetof(xram_layout_t, art.cave.title.panel_palette)

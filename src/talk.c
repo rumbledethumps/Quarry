@@ -19,7 +19,8 @@
    the last goes. A talk of TALK_STAYS has no OK: he stays, and the screen
    under him keeps the input and the cursor, until another talk takes his
    place or the screen goes. He and his bubble are in the menus' place, so
-   the menus' tiles load again once the last has gone. */
+   the menus' tiles load again once the last has gone. A bubble can have
+   the big coin in it, which comes and goes with it, on a level. */
 
 #define QUEUE 4
 #define IN_STEPS 18
@@ -51,6 +52,7 @@ static uint8_t to_say;  /* his bubbles after it */
 static uint8_t steps;
 static uint16_t away;        /* his, as in coming and going */
 static uint16_t bubble_away; /* his bubble's */
+static uint8_t big_coin;     /* whether the bubble up has the big coin in it */
 static dwarf_head_t dwarf;   /* his, as it loaded */
 static bubble_head_t bubble; /* the bubble's */
 
@@ -122,13 +124,19 @@ static void bubble_config(int16_t x)
     xram0_write(XRAM_TALK_CONFIG, &config, sizeof config);
 }
 
-/* The bubble said loads off the screen, and talk_draw() brings it back. */
+/* The bubble said loads off the screen, and talk_draw() brings it back,
+   with the big coin, if it has it. */
 static void bubble_load(void)
 {
     bubble_config(SCREEN_W);
+    if (big_coin)
+        sprite_hide(XRAM_BIG_COIN_SPRITE);
     scene_bubble(said);
     xram0_read(&bubble, XRAM_TALK_BUBBLE, sizeof bubble);
     bubble_config(SCREEN_W);
+    big_coin = bubble.coin_y && scene_big_coin();
+    if (big_coin)
+        sprite_set(XRAM_BIG_COIN_SPRITE, XRAM_BIG_COIN_IMAGE, XRAM_PALETTE_SLED, MODE5_SIZE(BIG_COIN_SIZE, BIG_COIN_SIZE));
 }
 
 /* The next talk comes in from off the screen. The cursor goes, but for
@@ -176,6 +184,9 @@ static void talk_end(void)
 
     for (i = 0; i < DWARF_PIECES; i++)
         sprite_hide(DWARF(i));
+    if (big_coin)
+        sprite_hide(XRAM_BIG_COIN_SPRITE);
+    big_coin = 0;
     scene_menus();
     video_text_clear();
     video_menus();
@@ -303,4 +314,6 @@ void talk_draw(void)
     else
         x = bubble.x + (int16_t)((int32_t)(SCREEN_W - bubble.x) * bubble_away >> 8);
     xram0_poke16(XRAM_TALK_CONFIG + offsetof(mode2_config_t, x_pos_px), x);
+    if (big_coin)
+        sprite_move(XRAM_BIG_COIN_SPRITE, x + bubble.coin_x, bubble.y + bubble.coin_y);
 }

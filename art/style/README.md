@@ -154,6 +154,13 @@ of them by rule, and nothing is touched up by hand:
 - **Coin:** the same circle as the big nugget, in the sled row's gold,
   beveled, with a square hole cut in the middle, clear inside an outline
   of its own, as every edge is outlined.
+- **Big coin:** the coin the committeeman hands over, at the left of his
+  bubble: the same coin, 56 across, its square hole small, its sides level,
+  with a raised rim, and lettering embossed on it in the panels' font
+  squeezed to 5 wide: SMEGHEAD round the top, MI ESTAS FIŜO round the
+  bottom, JMC over the hole and 169 under it. It needs only to look like
+  text: just recognizable as those words to someone told what the top
+  says, and less so with the light on it.
 - **Ball:** a sphere shaded as the nuggets are, but a very bright white,
   8 px across in play, and as tall as the digits by its count.
 
@@ -624,7 +631,8 @@ carries on. There are three:
   of himself: he is meant to be on the player's side, but the union and
   the company battle it out with backroom deals and shifty stuff. That
   has to come across in his face. He stands on the right. Each first
-  clear of a level, he hands over its coin, before the menu opens. Level 1: "NICE WORK! HERE'S A UNION COIN." Level 2: "AREN'T YOU
+  clear of a level, he hands over its coin, before the menu opens, the
+  big coin in his bubble beside the words. Level 1: "NICE WORK! HERE'S A UNION COIN." Level 2: "AREN'T YOU
     QUITE THE NIPPER. YOU'VE EARNED ANOTHER COIN." Level 3: "DIDN'T ANYONE
     EXPLAIN THE COINS TO YOU?" Level 4: "KEEP SAVING THESE COINS FOR
     POWERFUL UPGRADES." Level 5, the last, in three bubbles: "YOU'VE EARNED
@@ -770,6 +778,7 @@ rows are left.
 | chunks | 16, 8x8, 2 bits a pixel |
 | nugget | 8x8 as it flies, and 10 across in a 12x12 sprite by its count |
 | coin | 10 across in a 12x12 sprite, by its count |
+| big coin | 56x56, at the left of the committeeman's bubble |
 | ball | 8x8, and 10 across in a 12x12 sprite by its count |
 | digit | 8x12 sprite, a 6x8 digit with its outline |
 | texture | 320x240 at 2 bits a pixel |

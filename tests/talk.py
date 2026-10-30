@@ -21,7 +21,7 @@ from game import Game, check, rom
 
 DWARF = '<hhBB'  # dwarf_head_t of src/xram.h, then its pieces
 PIECE = '<hhHBB'
-BUBBLE = '<hhBBBBBB'  # bubble_head_t
+BUBBLE = '<hhBBBBBBBB'  # bubble_head_t
 PAPER = (250, 246, 234)  # the bubble's, in art/talk.py
 FILL = (2, 13, 26)       # inside a menu, in art/menus.py
 
@@ -53,7 +53,7 @@ def main():
     game.until('game_state', 'STATE_PLAY')
     game.until('talk_state', 'TALK_IN', 10)
 
-    (dwarf_x, dwarf_y, parts), (bubble_x, bubble_y, rows, cols, ok_col, ok_row, ok0, ok1) = heads(game)
+    (dwarf_x, dwarf_y, parts), (bubble_x, bubble_y, rows, cols, ok_col, ok_row, ok0, ok1, *_) = heads(game)
     count = len(parts)
     pieces = sym['DWARF_PIECES']
     dwarf, cursor, hidden = sym['XRAM_DWARF_SPRITES'], sym['XRAM_CURSOR_SPRITES'], sym['SPRITE_HIDDEN_Y']
@@ -173,17 +173,22 @@ def main():
     game.cmd('expect-not "menu THE DRY"')  # the end menu, as menu_open() logs it
     talk('TALK_COIN1')
     game.run(2)
-    (dwarf_x, _, _), (bubble_x, _, _, cols, *_) = heads(game)
+    (dwarf_x, _, _), (bubble_x, bubble_y, _, cols, *_, coin_x, coin_y) = heads(game)
     check(dwarf_x == sym['SCREEN_W'] - sym['DWARF_SIZE'] and bubble_x + 8 * cols < dwarf_x + 16,
           f'the committeeman on the right, his bubble to his left: {dwarf_x}, {bubble_x}')
     coming = bubble()
     game.run(3)
     check(coming < bubble() <= bubble_x, f'coming in from the left: {coming}, {bubble()}')
+    coin = sym['XRAM_BIG_COIN_SPRITE']
+    check(game.sprite(coin) == (bubble() + coin_x, bubble_y + coin_y), 'the big coin coming in with it')
     game.run(30)
     check(bubble() == bubble_x, 'to its place')
+    check(game.sprite(coin) == (bubble_x + coin_x, bubble_y + coin_y) and coin_y and coin_x < 8 * cols // 2,
+          f'the big coin in the left of the bubble: {game.sprite(coin)}')
     check(not game.shows('LEVEL COMPLETE'), 'the dwarf with the coin comes before the menu')
     game.talk_ok()
     check(game.shows('LEVEL COMPLETE') and game.shown(cursor, 4) == 4, 'then the menu, with the cursor')
+    check(game.sprite(coin)[1] == hidden, 'and the big coin gone with him')
     game.tap('space')
     check(game.ram('game_state') == sym['STATE_MENU'], 'which takes no choice at once')
     print('ok: the coin, then the menu')
