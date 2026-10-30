@@ -92,13 +92,12 @@ void menu_open(const menu_t *menu, uint8_t pick, uint8_t disabled, uint8_t wait)
         video_box(menu->center - MENU_COLS / 2, menu->top, menu->center + MENU_COLS / 2 - 1, bottom());
         if (menu->title)
         {
-            video_text(menu->center - strlen(menu->title) / 2, menu->top + 2, menu->title);
+            video_text_centered(menu->center, menu->top + 2, menu->title);
             video_rule(menu->center - MENU_COLS / 2 + 2, menu->center + MENU_COLS / 2 - 3, menu->top + 3);
         }
         for (i = 0; i < menu->count; i++)
             if (!(disabled & (1 << i)))
-                video_text(menu->center - strlen(menu->items[i]) / 2,
-                           first_item_row() + place(i) * ITEM_ROWS + 1, menu->items[i]);
+                video_text_centered(menu->center, first_item_row() + place(i) * ITEM_ROWS + 1, menu->items[i]);
     }
     cursor_aim();
     waiting = wait;

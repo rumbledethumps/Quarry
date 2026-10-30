@@ -25,7 +25,7 @@ bought its rank.
 | FUEL | What the gauge on the right shows, 100 liters full, burned in liters a second, L/S. EFFICIENCY burns less. When it runs out, the sled falls, and the level ends once the balls in play have fallen off the screen too. |
 | BALL | The ball, and the count of those left. |
 | HITS | What breaks a brick: each hit of the ball does its DAMAGE, and the brick breaks once the damage reaches its hits. |
-| THE DRY | The upgrade screen, as the menus and the dwarves call it: the change house at a mine, where miners change into their work clothes, hang their wet gear to dry, and wait for their shift. The code and this guide still call it the upgrade screen. |
+| THE DRY | The upgrade screen, as the dwarves call it, and the menus' TO THE DRY: the change house at a mine, where miners change into their work clothes, hang their wet gear to dry, and wait for their shift. The code and this guide still call it the upgrade screen. |
 | UPGRADE | A panel on the rail in THE DRY, and what it buys. |
 | CART | A level, on the train of mine carts under the rail. |
 
@@ -595,7 +595,15 @@ shows, as the tape's 4 palette entries turn round.
 
 - `art/menus.py` builds the tiles: a glyph for each letter of the font,
   the frame's 4 corners and 4 edges, whose stripes join from cell to
-  cell, and the rule.
+  cell, the rule, and the halves.
+- Every title and item is centered in its box, which is 20 cells across.
+  Text an odd number of letters long goes half a cell over, in halves:
+  tiles of the right half of one letter and the left half of the next, a
+  tile for each pair side by side in `HALVES` of `art/menus.py`, with a
+  space at each end. RESTART, MAIN MENU, OUT OF FUEL and YES take 30,
+  which fit beside the dwarf the menus share their XRAM with. A new odd
+  text needs its pairs there; the upgrade screen's item says TO THE DRY,
+  10 letters, so it needs none.
 - A menu's title is set off from its items by a thin rule of light steel
   over its shadow, in the gap under it, two cells in from each side.
 - The holographic cursor of the upgrade screen picks in the menus too, a

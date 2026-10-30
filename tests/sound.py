@@ -122,7 +122,7 @@ def main():
     game.tap('down')
     played(game, 'MOVE', 5)
     game.tap('up')
-    game.menu_choose('THE DRY', wait=False)
+    game.menu_choose('TO THE DRY', wait=False)
     game.cmd('expect "upgrades"')  # past every click before the upgrade screen
     game.talk_ok()
     game.poke('nuggets', 50, 2)

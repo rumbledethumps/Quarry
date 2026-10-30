@@ -1,4 +1,5 @@
 #include "video.h"
+#include "debug.h"
 #include "xram.h"
 #include <string.h>
 
@@ -128,6 +129,33 @@ void video_text(uint8_t col, uint8_t row, const char *s)
         n++;
     }
     xram0_write(XRAM_MENU_MAP + row * TEXT_COLS + col, cells, n);
+}
+
+/* Text centered on the line between the columns center - 1 and center.
+   Text an even number of letters long is on its cells; text an odd number
+   goes half a cell over, a cell longer, in the halves of art/menus.py. A
+   pair of letters it has no half for shows clear, and a debug build says
+   so. */
+void video_text_centered(uint8_t center, uint8_t row, const char *s)
+{
+    static const char halves[] = MENU_HALVES;
+    uint8_t len = strlen(s), cells[TEXT_COLS], i, k;
+
+    if (!(len & 1))
+    {
+        video_text(center - len / 2, row, s);
+        return;
+    }
+    for (i = 0; i <= len; i++)
+    {
+        char a = i ? s[i - 1] : ' ', b = i < len ? s[i] : ' ';
+        for (k = 0; k < sizeof halves - 1 && (halves[k] != a || halves[k + 1] != b); k += 2)
+            ;
+        cells[i] = k < sizeof halves - 1 ? MENU_TILE_HALF + k / 2 : MENU_TILE_GLYPH;
+        if (k >= sizeof halves - 1)
+            DEBUG_LOG("no half for %c%c\n", a, b);
+    }
+    xram0_write(XRAM_MENU_MAP + row * TEXT_COLS + center - (len + 1) / 2, cells, len + 1);
 }
 
 /* A thin steel rule across the cells from left to right, on row. */

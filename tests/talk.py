@@ -170,7 +170,7 @@ def main():
     game.paused_poke([('bricks_left', 0, 1)])
     game.wait('level cleared', 10)
     game.run(1)
-    game.cmd('expect-not "menu THE DRY"')  # the end menu, as menu_open() logs it
+    game.cmd('expect-not "menu TO THE DRY"')  # the end menu, as menu_open() logs it
     talk('TALK_COIN1')
     game.run(2)
     (dwarf_x, _, _), (bubble_x, bubble_y, _, cols, *_, coin_x, coin_y) = heads(game)
@@ -197,7 +197,7 @@ def main():
     # means, and the unlock goes on under him. Then another says what the
     # screen is for, in two bubbles. The cursor is off until each OK, and comes back to the rail after.
     game.run(sym['TALK_OVER_WAIT'])
-    game.tap('space')  # THE DRY
+    game.tap('space')  # TO THE DRY
     game.until('game_state', 'STATE_SHOP', 60)
     talk('TALK_UNLOCK')
     check(game.shown(cursor, 4) == 0, 'no cursor while he comes in')
@@ -240,7 +240,7 @@ def main():
     game.wait('level cleared', 10)
     talk('TALK_COIN2')
     game.talk_ok()
-    game.menu_choose('THE DRY')
+    game.menu_choose('TO THE DRY')
     game.wait('unlocked 3', 200)
     check(game.ram('talk_state') == sym['TALK_OFF'], 'the unlock and the screen are told of once')
     print('ok: the second first clear')

@@ -38,6 +38,7 @@ sys.path.insert(0, os.path.join(HERE, '..', 'tools'))
 sys.path.insert(0, os.path.join(HERE, '..', 'art'))
 import rp6502  # noqa: E402
 from panels import FONT  # noqa: E402
+import menus  # noqa: E402
 import title_panels  # noqa: E402
 from png2bin import read_png  # noqa: E402
 
@@ -201,10 +202,12 @@ class Game(rp6502.Emu):
         return int(digits) if digits else None
 
     def letters(self, tiles):
-        """The menus' tiles as text: a letter for each glyph, and a space
+        """The menus' tiles as text: a letter for each glyph, the letter on
+        the right of each half, as text half a cell over reads, and a space
         for anything else."""
-        first = self.sym['MENU_TILE_GLYPH']
-        return ''.join(FONT[t - first] if 0 <= t - first < len(FONT) else ' ' for t in tiles)
+        first, half, halves = self.sym['MENU_TILE_GLYPH'], self.sym['MENU_TILE_HALF'], menus.pairs()
+        return ''.join(FONT[t - first] if 0 <= t - first < len(FONT) else
+                       halves[t - half][1] if 0 <= t - half < len(halves) else ' ' for t in tiles)
 
     def shows(self, text):
         """Whether the text is anywhere in the menus."""
@@ -262,10 +265,10 @@ class Game(rp6502.Emu):
         self.cmd(f'wait {name} {value} {frames}')
 
     def menu_choose(self, item, wait=True):
-        """Choose THE DRY, REPLAY or MAIN MENU on the menu when a level ends.
-        It opens with THE DRY picked and waits a second before it takes a
+        """Choose TO THE DRY, REPLAY or MAIN MENU on the menu when a level
+        ends. It opens with TO THE DRY picked and waits a second before it takes a
         choice. Works with a Release ROM too, which logs nothing."""
-        items = ['THE DRY', 'REPLAY', 'MAIN MENU']
+        items = ['TO THE DRY', 'REPLAY', 'MAIN MENU']
         states = ['STATE_SHOP', 'STATE_PLAY', 'STATE_TITLE']
         if wait:
             self.run(self.sym['LEVEL_OVER_WAIT'] + 10)

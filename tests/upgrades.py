@@ -16,8 +16,9 @@ from game import Game, check, rom
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'art'))
 from panels import FONT  # noqa: E402
+import menus  # noqa: E402
 
-END_ITEMS = ['THE DRY', 'REPLAY', 'MAIN MENU']
+END_ITEMS = ['TO THE DRY', 'REPLAY', 'MAIN MENU']
 
 
 def tuning(game):
@@ -76,7 +77,7 @@ def main():
     def settle():
         game.run(40)
 
-    # The level ends: the menu, with THE DRY picked, takes no choice for a
+    # The level ends: the menu, with TO THE DRY picked, takes no choice for a
     # moment.
     game.tap('space')
     game.poke('balls', 0)
@@ -85,7 +86,7 @@ def main():
     check(game.ram('game_state') == sym['STATE_MENU'], 'the menu opens when the level ends')
     check(game.ram('paddle_state') == sym['PADDLE_LEAVING'], 'and out of balls, the sled flies home')
     check(all(game.shows(w) for w in ['OUT OF BALLS'] + END_ITEMS), 'it says OUT OF BALLS, with its items')
-    check(end_picked() == 'THE DRY', 'THE DRY is picked')
+    check(end_picked() == 'TO THE DRY', 'THE DRY is picked')
     check(cursor_on_item('end_menus', 0), 'and the cursor is on it at once')
     game.tap('space')
     game.run(10)
@@ -103,7 +104,7 @@ def main():
         game.tap(key)
         check(end_picked() == was, f'{key} does not move the pick')
     game.tap('up')
-    check(end_picked() == 'THE DRY', 'up from the first stays: the menu does not wrap')
+    check(end_picked() == 'TO THE DRY', 'up from the first stays: the menu does not wrap')
     for _ in END_ITEMS:
         game.tap('down')
     check(end_picked() == 'MAIN MENU', 'down from the last stays')
@@ -116,7 +117,7 @@ def main():
     # The upgrade screen, with no nuggets: a panel for each upgrade, the
     # first lit in the middle, and nothing to buy.
     game.poke('nuggets', 0, 2)
-    game.menu_choose('THE DRY', wait=False)
+    game.menu_choose('TO THE DRY', wait=False)
     game.talk_ok()  # the dwarf's first word on the screen
     game.run(20)  # past the flicker of the panel in the middle
     check(game.ram('panel_picked') == 0 and game.ram('cursor_on') == sym['ON_RAIL'],
@@ -282,6 +283,15 @@ def main():
     # it with the paddle upgraded.
     game.tap('space')
     check(game.shows('BEGIN LEVEL 1?'), 'the button asks to begin the level')
+    # Text an odd number of letters long goes half a cell over, so it is
+    # centered in the box too: YES in the halves of art/menus.py, from a
+    # space to a space, either side of the box's middle.
+    center, top = game.ram('begin_menu'), game.ram('begin_menu+1')
+    yes_row = top + sym['HEAD_ROWS'] + 1
+    cells = game.xram(sym['XRAM_MENU_MAP'] + yes_row * sym['TEXT_COLS'] + center - 2, 4)
+    halves = menus.pairs()
+    check(list(cells) == [sym['MENU_TILE_HALF'] + halves.index(p) for p in (' Y', 'YE', 'ES', 'S ')],
+          f'YES goes half a cell over, centered in the box: {list(cells)}')
     game.tap('space')
     game.until('game_state', 'STATE_PLAY', 30)
     game.ready()
@@ -343,7 +353,7 @@ def main():
     game.menu_choose('REPLAY')
     clear()
     check(game.ram('coins', 2) == 1, 'no coin for clearing it again')
-    game.menu_choose('THE DRY')
+    game.menu_choose('TO THE DRY')
     game.run(5)
     check(game.ram('level_picked') == 1 and game.ram('cart_scroll', 2) == 0,
           'the upgrade screen opens on level 1, just cleared')
