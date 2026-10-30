@@ -188,10 +188,10 @@ def green(c):
     return c[1] > c[0] + 50 and c[1] > c[2] + 50
 
 
-def portrait(name, turned, side, head=False):
+def portrait(name, turned, side):
     """The dwarf as rows of colors, None clear, DWARF_SIZE square, his
     shoulders on the bottom row, turned round if asked, for the side of the
-    screen he stands on. With head, a cut keeps his head whole."""
+    screen he stands on."""
     w, h, px = rgba(os.path.join(HERE, 'dwarves', name + '.png'))
     px = [[p[:3] for p in (row[::-1] if turned else row)] for row in px]
     # A frame of its own goes: it has the corner's color, and he is inside
@@ -219,18 +219,13 @@ def portrait(name, turned, side, head=False):
     he = [(x, y) for y in range(h) for x in range(w) if (x, y) not in clear]
     left, top = min(x for x, _ in he), min(y for _, y in he)
     right, bottom = max(x for x, _ in he) + 1, max(y for _, y in he) + 1
-    # Cut to size: at the foot, and on the side against the screen's edge,
-    # but, with head, no further in than his head, whatever that cuts of the
-    # other side.
+    # Cut to size: at the foot, and on the side against the screen's edge.
     bottom = min(bottom, top + DWARF_SIZE)
     if right - left > DWARF_SIZE:
-        cols = [x for x, y in he if y < top + DWARF_SIZE // 2] if head else []
         if side == LEFT:
-            left = max(left, min([right - DWARF_SIZE] + cols))
-            right = left + DWARF_SIZE
-        else:
-            right = min(right, max([left + DWARF_SIZE] + [x + 1 for x in cols]))
             left = right - DWARF_SIZE
+        else:
+            right = left + DWARF_SIZE
     img = [[None if (x, y) in clear else px[y][x] for x in range(left, right)] for y in range(top, bottom)]
     w, h = right - left, bottom - top
     pad = (DWARF_SIZE - w) // 2
@@ -335,7 +330,7 @@ def color16(c):
 
 def dwarf_asset(dwarf, side):
     """A dwarf_t, and the dwarf as RGBA rows to look at."""
-    img = portrait(*DWARVES[dwarf][side][:2], side, *DWARVES[dwarf][side][2:])
+    img = portrait(*DWARVES[dwarf][side], side)
     counts = Counter(c for row in img for c in row if c)
     to = reduce(counts, 15)
     colors = sorted(set(to.values()), key=lambda c: 299 * c[0] + 587 * c[1] + 114 * c[2])

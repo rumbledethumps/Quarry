@@ -704,8 +704,10 @@ carries on. There are three:
   left, on a plain flat pure green background". His first round shouted
   at the player with a hand raised, and his second reached toward his
   bubble, too wide for a dwarf, so the user had arms and hands left out.
-  The top of his helmet runs off the top of the image. On the left he is
-  the same turned round.
+  The top of his helmet ran off the top of the image, so Retro Diffusion's
+  `outpainting` added 8 rows above him, "the rounded top of his steel
+  mining helmet", keeping every pixel below, and the crop takes 8 rows
+  from his foot instead. On the left he is the same turned round.
 - The miner, `art/dwarves/miner.png`, is the dwarf all three stood in for
   while they were drawn. He is the third of four,
   `rd_pro__default`, 96x96: "Head and shoulders of a friendly cartoon
