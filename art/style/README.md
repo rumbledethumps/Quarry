@@ -662,7 +662,10 @@ carries on. There are three:
   expression, clean bold shapes with a crisp dark outline, smooth flat
   shading in a few colors, light from the upper left, on a plain flat pure
   green background". He is drawn bigger than the miner: his shoulders
-  reach about 115 of the 128 columns, and off its left edge.
+  reach about 115 of the 128 columns, and off its left edge. He wears
+  `art/dwarves/friendly-red-left.png`, take 1 with Retro Diffusion's
+  `image_edit`: "Change his gray shirt to a red flannel shirt". The same
+  in blue, `friendly-blue-left.png`, is kept too.
 - The miner, `art/dwarves/miner.png`, stands in for the others until each
   is drawn, turned round on the right. He is the third of four,
   `rd_pro__default`, 96x96: "Head and shoulders of a friendly cartoon
