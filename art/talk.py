@@ -4,26 +4,31 @@
   talk.py out_dir header [--preview out.png --behind screen.png]
 
 A dwarf is a portrait Retro Diffusion drew, art/dwarves/name.png: his head
-and shoulders on a plain background, in a frame of its own. The frame is
-cut off, the background cleared from the edges in, and his colors brought
-down to 15. He is a few 4-bit sprites, a band across his head and a band
-across his shoulders, each as narrow as he is there, so the clear corners
-take no room.
+and shoulders on a plain background, wider than he is, or in a frame of
+its own, which is cut off. The background is cleared from the edges in,
+and he is cut to DWARF_SIZE square: at the foot, and if he is wider, on
+the side against the edge of the screen, so the arm toward his bubble
+stays whole. His colors are brought down to 15. He is a few 4-bit
+sprites, a band across his head and a band across his shoulders, each as
+narrow as he is there, so the clear corners take no room. Each dwarf has
+a portrait for each side of the screen, facing his bubble.
 
 His speech bubble is a map of 2-bit tiles: clear, ink, paper and a shade
 of paper along its foot. Its corners, edges and tail are drawn by hand
-below, the tail reaching out of its left side toward his mouth, and its
-lines are the panels' font in ink, a row of cells between them. The last
-line ends with an OK, at the right, which the game puts in once the
-bubble has come in, but on the title, where he stays while the player
-picks from the menu above him. The bubble is cut into tiles, the same
-ones shared.
+below, the tail reaching out of its side toward his mouth, and its lines
+are the panels' font in ink, a row of cells between them. The last line
+ends with an OK, at the right, which the game puts in once the bubble has
+come in, but on the title, where he stays while the player picks from the
+menu above him. The bubble is cut into tiles, the same ones shared.
 
-TALKS lists what the dwarves say: each one's name, the dwarf, his lines,
-and where he and his bubble stand when they are in. Each becomes
-out_dir/talkN.bin, from 1, a talk_t of src/xram.h, and the header gives
-their numbers as TALK_name, and TALK_STAYS a bit for each that stays. Only
-the Python standard library is used.
+TALKS lists what the dwarves say: each one's name, the dwarf, his side,
+the screen, and his bubbles, one after another, each its lines. Each
+dwarf on each side a talk uses is a dwarf_t of src/xram.h in
+out_dir/dwarves.bin, and each bubble a bubble_t in out_dir/bubbles.bin,
+one after another from 1. The header gives the talks' numbers as
+TALK_name, TALK_STAYS a bit for each that stays, and TALK_TABLE each
+one's dwarf, first bubble and how many. Only the Python standard library
+is used.
 """
 
 import argparse
@@ -44,30 +49,65 @@ DWARF_BYTES = 2816
 BUBBLE_COLS = 28
 BUBBLE_ROWS = 10
 BUBBLE_TILES = 48
-TALK_BYTES = 14 + 8 * DWARF_PIECES + 32 + DWARF_BYTES + 8 + 16 * BUBBLE_TILES + BUBBLE_ROWS * BUBBLE_COLS
-SCREEN_H = 240
+DWARF_ASSET_BYTES = 6 + 8 * DWARF_PIECES + 32 + DWARF_BYTES
+BUBBLE_ASSET_BYTES = 10 + 8 + 16 * BUBBLE_TILES + BUBBLE_ROWS * BUBBLE_COLS
+SCREEN_W, SCREEN_H = 320, 240
 
-# Where they stand: he is in the lower left corner, and his bubble beside
-# him, its tail under his beard. The bubble is placed by its left and its
-# foot, so the tail is as high whatever its lines. On the upgrade screen
-# its foot is over the carts, which show what he talks about. On the title
-# he stays, with no OK, and his bubble is a row shorter, clear of the panel
-# over it.
-LEVEL = {'dwarf': (0, SCREEN_H - DWARF_SIZE), 'bubble': (68, SCREEN_H - 24)}
-UPGRADES = {'dwarf': (0, SCREEN_H - DWARF_SIZE), 'bubble': (68, 196)}
+# The dwarves, and the portrait of each for each side of the screen, in
+# art/dwarves/, and whether to turn it round: on the left he faces right,
+# toward his bubble, and on the right, left, lit from the upper left either
+# way. Until each is drawn, the miner stands in for him, turned round on the
+# right.
+LEFT, RIGHT = 'left', 'right'
+DWARVES = {
+    'FRIENDLY': {LEFT: ('miner', False), RIGHT: ('miner', True)},
+    'FOREMAN': {LEFT: ('miner', False), RIGHT: ('miner', True)},
+    'COMMITTEEMAN': {LEFT: ('miner', False), RIGHT: ('miner', True)},
+}
+
+# Where they stand: he is in a lower corner, and his bubble beside him, its
+# tail under his beard. The bubble is placed by its foot, so the tail is as
+# high whatever its lines, and BUBBLE_GAP px from the edge of the screen on
+# his side. On the upgrade screen its foot is over the carts, which show
+# what he talks about. On the title he stays, with no OK, and his bubble is
+# a row shorter, clear of the panel over it.
+BUBBLE_GAP = 68
+LEVEL = {'foot': SCREEN_H - 24}
+DRY = {'foot': 196}
 TITLE = dict(LEVEL, stays=True)
 
+# What the dwarves say: the talks but the coins', each with a key of its
+# own in a debug build, then the coins', from COIN1, one for each level, and
+# COIN1's for a level past them.
 TALKS = [
-    # A new game's first level.
-    ('WELCOME', 'miner', ['WELCOME TO QUARRY.', 'BREAK SOME BRICKS AND', 'BUY SOME UPGRADES.'], LEVEL),
-    # Each first clear of a level, before its menu.
-    ('COIN', 'miner', ['CONGRATULATIONS!', "HERE'S A COIN. YOU CAN", 'SPEND IT IN THE DRY.'], LEVEL),
-    # The upgrade screen, as level 2 unlocks.
-    ('UNLOCK', 'miner', ['GREAT JOB! EACH LEVEL YOU', 'CLEAR UNLOCKS THE NEXT.', 'PICK ITS CART BELOW.'], UPGRADES),
-    # The first time on the upgrade screen, after any other.
-    ('UPGRADES', 'miner', ['THIS IS THE DRY. SPEND', 'YOUR NUGGETS HERE ON', 'UPGRADES THAT HELP YOU', 'CLEAR LEVELS.'], UPGRADES),
     # The title, with no save.
-    ('GREENHORN', 'miner', ['WELCOME, GREENHORN.', "HEAD ON IN WHEN YOU'RE", 'READY TO BREAK SOME ROCK.'], TITLE),
+    ('GREENHORN', 'FRIENDLY', LEFT, TITLE,
+     [['WELCOME, GREENHORN.', "HEAD ON IN WHEN YOU'RE", 'READY TO BREAK SOME ROCK.']]),
+    # The first time on the upgrade screen, after any other.
+    ('DRY', 'FRIENDLY', LEFT, DRY,
+     [['THIS IS THE DRY. USE THE', 'PANELS TO UPGRADE YOUR', 'MACHINES.'],
+      ['SELECT A CART TO BEGIN', 'MINING THAT LEVEL.']]),
+    # A new game's first level.
+    ('FOREMAN', 'FOREMAN', LEFT, LEVEL,
+     [['OVER HERE, GREENHORN.', 'PAY ATTENTION BECAUSE I', "WON'T REPEAT MYSELF."],
+      ['PUSH THE BUTTON TO LAUNCH', 'A WRECKING BALL THEN KEEP', 'IT FROM FALLING.'],
+      ["THAT'S ALL.", 'NOW GET TO WORK.']]),
+    # The upgrade screen, as level 2 unlocks.
+    ('UNLOCK', 'COMMITTEEMAN', RIGHT, DRY,
+     [['EVERY TIME YOU CLEAR A', 'LEVEL THE NEXT BECOMES', 'AVAILABLE.']]),
+    # The first clear of each level, before its menu, with its coin.
+    ('COIN1', 'COMMITTEEMAN', RIGHT, LEVEL,
+     [['NICE WORK!', "HERE'S A UNION COIN."]]),
+    ('COIN2', 'COMMITTEEMAN', RIGHT, LEVEL,
+     [["AREN'T YOU QUITE THE", "NIPPER. YOU'VE EARNED", 'ANOTHER COIN.']]),
+    ('COIN3', 'COMMITTEEMAN', RIGHT, LEVEL,
+     [["DIDN'T ANYONE EXPLAIN", 'THE COINS TO YOU?']]),
+    ('COIN4', 'COMMITTEEMAN', RIGHT, LEVEL,
+     [['KEEP SAVING THESE', 'COINS FOR POWERFUL', 'UPGRADES.']]),
+    ('COIN5', 'COMMITTEEMAN', RIGHT, LEVEL,
+     [["YOU'VE EARNED 5 COINS AND", 'COMPLETED THE GAME.'],
+      ["SORRY, THE COINS DON'T", 'DO ANYTHING YET.'],
+      ['THANK YOU FOR PLAYING MY', 'GAME JAM ENTRY.']]),
 ]
 
 CLEAR, INK, PAPER, SHADE = range(4)
@@ -129,31 +169,44 @@ def close(a, b, d):
     return sum((x - y) ** 2 for x, y in zip(a, b)) < d * d
 
 
-def portrait(name):
+def portrait(name, turned, side):
     """The dwarf as rows of colors, None clear, DWARF_SIZE square, his
-    shoulders on the bottom row."""
+    shoulders on the bottom row, turned round if asked, for the side of the
+    screen he stands on."""
     w, h, px = rgba(os.path.join(HERE, 'dwarves', name + '.png'))
-    px = [[p[:3] for p in row] for row in px]
-    frame = px[1][1]
+    px = [[p[:3] for p in (row[::-1] if turned else row)] for row in px]
+    # A frame of its own goes: it has the corner's color, and he is inside
+    # it, clear of every edge.
+    frame = px[0][0]
     inside = [(x, y) for y in range(h) for x in range(w) if not close(px[y][x], frame, 30)]
     left, top = min(x for x, _ in inside), min(y for _, y in inside)
     right, bottom = max(x for x, _ in inside) + 1, max(y for _, y in inside) + 1
-    img = [row[left:right] for row in px[top:bottom]]
-    w, h = right - left, bottom - top
+    if left and top and right < w and bottom < h:
+        px = [row[left:right] for row in px[top:bottom]]
+        w, h = right - left, bottom - top
     edge = [(x, y) for y in range(h) for x in range(w) if x in (0, w - 1) or y in (0, h - 1)]
-    ground = Counter(img[y][x] for x, y in edge).most_common(1)[0][0]
+    ground = Counter(px[y][x] for x, y in edge).most_common(1)[0][0]
     # The background, from the edges in.
-    todo = [(x, y) for x, y in edge if close(img[y][x], ground, 40)]
+    todo = [(x, y) for x, y in edge if close(px[y][x], ground, 40)]
     clear = set(todo)
     while todo:
         x, y = todo.pop()
         for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
-            if 0 <= nx < w and 0 <= ny < h and (nx, ny) not in clear and close(img[ny][nx], ground, 40):
+            if 0 <= nx < w and 0 <= ny < h and (nx, ny) not in clear and close(px[ny][nx], ground, 40):
                 clear.add((nx, ny))
                 todo.append((nx, ny))
-    img = [[None if (x, y) in clear else img[y][x] for x in range(w)] for y in range(h)]
-    if w > DWARF_SIZE or h > DWARF_SIZE:
-        raise SystemExit(f'talk.py: {name} is {w}x{h}, more than {DWARF_SIZE} square')
+    he = [(x, y) for y in range(h) for x in range(w) if (x, y) not in clear]
+    left, top = min(x for x, _ in he), min(y for _, y in he)
+    right, bottom = max(x for x, _ in he) + 1, max(y for _, y in he) + 1
+    # Cut to size: at the foot, and on the side against the screen's edge.
+    bottom = min(bottom, top + DWARF_SIZE)
+    if right - left > DWARF_SIZE:
+        if side == LEFT:
+            left = right - DWARF_SIZE
+        else:
+            right = left + DWARF_SIZE
+    img = [[None if (x, y) in clear else px[y][x] for x in range(left, right)] for y in range(top, bottom)]
+    w, h = right - left, bottom - top
     pad = (DWARF_SIZE - w) // 2
     img = [[None] * pad + row + [None] * (DWARF_SIZE - w - pad) for row in img]
     return [[None] * DWARF_SIZE for _ in range(DWARF_SIZE - h)] + img
@@ -185,18 +238,20 @@ def pieces(img):
     return best[1]
 
 
-def bubble(lines, ok):
+def bubble(lines, ok, side):
     """The bubble, as rows of the 4 colors, with its OK cells as paper, and
-    the cell of the O. The OK ends the last line, at the right, a cell after
-    it, with a cell clear all round it for the cursor. Without one, the cell
-    is 0, 0, which is the bubble's corner, and there is no row under the
-    last line."""
+    the cell of the O. Its tail is on the side of the dwarf: on the left
+    for one on the left, the tail's column first, or on the right. The OK
+    ends the last line, at the right, a cell after it, with a cell clear
+    all round it for the cursor. Without one, the cell is 0, 0, which is a
+    corner of the picture, and there is no row under the last line."""
     cols = max(max(len(line) for line in lines), len(lines[-1]) + 4 if ok else 0) + 2
     rows = 2 * len(lines) + (2 if ok else 1)
     if cols + 1 > BUBBLE_COLS or rows > BUBBLE_ROWS:
         raise SystemExit(f'talk.py: a bubble of {cols} by {rows} cells is too big')
     w, h = 8 * (cols + 1), 8 * rows
     img = [[CLEAR] * w for _ in range(h)]
+    at = 1 if side == LEFT else 0  # the picture's column of the bubble's left edge
 
     def put(art, col, row):
         for y, line in enumerate(art):
@@ -209,12 +264,15 @@ def bubble(lines, ok):
             cell = (CORNER if top and left else mirror(CORNER) if top and right else
                     FOOT if bottom and left else mirror(FOOT) if bottom and right else
                     TOP if top else BOTTOM if bottom else SIDE if left else mirror(SIDE) if right else INSIDE)
-            put(pixels(cell), c + 1, r)
-    put(pixels(TAIL), 0, rows - 1 - TAIL_UP)
+            put(pixels(cell), at + c, r)
+    if side == LEFT:
+        put(pixels(TAIL), 0, rows - 1 - TAIL_UP)
+    else:
+        put(pixels(mirror(TAIL)), cols - 1, rows - 1 - TAIL_UP)
     for i, line in enumerate(lines):
         for j, ch in enumerate(line):
-            glyph(img, 8 * (j + 2), 8 * (1 + 2 * i), ch)
-    return img, (cols - 3, rows - 3) if ok else (0, 0)
+            glyph(img, 8 * (at + 1 + j), 8 * (1 + 2 * i), ch)
+    return img, (at + cols - 4, rows - 3) if ok else (0, 0)
 
 
 def glyph(img, x0, y0, ch):
@@ -249,9 +307,9 @@ def color16(c):
     return struct.pack('<H', (b >> 3) << 11 | (g >> 3) << 6 | (r >> 3) | (32 if c else 0))
 
 
-def build(dwarf, lines, where):
-    """A talk_t, and its dwarf and bubble as RGBA rows to look at."""
-    img = portrait(dwarf)
+def dwarf_asset(dwarf, side):
+    """A dwarf_t, and the dwarf as RGBA rows to look at."""
+    img = portrait(*DWARVES[dwarf][side], side)
     counts = Counter(c for row in img for c in row if c)
     to = reduce(counts, 15)
     colors = sorted(set(to.values()), key=lambda c: 299 * c[0] + 587 * c[1] + 114 * c[2])
@@ -266,9 +324,23 @@ def build(dwarf, lines, where):
             images += bytes(line[i] << 4 | line[i + 1] for i in range(0, w, 2))
     if len(images) > DWARF_BYTES:
         raise SystemExit(f'talk.py: {dwarf} takes {len(images)} bytes, more than {DWARF_BYTES}')
+    x = 0 if side == LEFT else SCREEN_W - DWARF_SIZE
+    data = struct.pack('<hhBB', x, SCREEN_H - DWARF_SIZE, len(cut), 0)
+    data += b''.join(heads) + bytes(8 * (DWARF_PIECES - len(cut)))
+    data += b''.join(color16(c) for c in ([None] + colors + [None] * 15)[:16])
+    data += bytes(images) + bytes(DWARF_BYTES - len(images))
+    if len(data) != DWARF_ASSET_BYTES:
+        raise SystemExit(f'talk.py: a dwarf of {len(data)} bytes, not the {DWARF_ASSET_BYTES} of dwarf_t')
+    print(f'talk: {dwarf} on the {side} in {len(colors)} colors, {len(cut)} pieces, {len(images)} bytes')
+    shown = [[(*to[c], 255) if c else (0, 0, 0, 0) for c in row] for row in img]
+    return data, shown, (x, SCREEN_H - DWARF_SIZE)
 
+
+def bubble_asset(lines, side, where):
+    """A bubble_t, and the bubble as RGBA rows to look at, with where it
+    goes."""
     stays = where.get('stays', False)
-    pic, (ok_col, ok_row) = bubble(lines, not stays)
+    pic, (ok_col, ok_row) = bubble(lines, not stays, side)
     tiles, grid = cells(pic)
     ok = [row[:] for row in pic]
     for j, ch in enumerate('' if stays else 'OK'):
@@ -281,13 +353,11 @@ def build(dwarf, lines, where):
     if len(tiles) > BUBBLE_TILES:
         raise SystemExit(f'talk.py: the bubble takes {len(tiles)} tiles, more than {BUBBLE_TILES}')
 
-    dwarf_x, dwarf_y = where['dwarf']
-    bubble_x, bubble_y = where['bubble'][0], where['bubble'][1] - len(grid) * 8
-    data = struct.pack('<hhhhBBBBBB', dwarf_x, dwarf_y, bubble_x, bubble_y, len(grid), ok_col, ok_row,
-                       tiles.index(ok_cells[0]), tiles.index(ok_cells[1]), len(cut))
-    data += b''.join(heads) + bytes(8 * (DWARF_PIECES - len(cut)))
-    data += b''.join(color16(c) for c in ([None] + colors + [None] * 15)[:16])
-    data += bytes(images) + bytes(DWARF_BYTES - len(images))
+    cols = len(grid[0])
+    x = BUBBLE_GAP if side == LEFT else SCREEN_W - BUBBLE_GAP - 8 * cols
+    y = where['foot'] - len(grid) * 8
+    data = struct.pack('<hhBBBBBB', x, y, len(grid), cols, ok_col, ok_row,
+                       tiles.index(ok_cells[0]), tiles.index(ok_cells[1]))
     data += b''.join(color16(c) for c in COLORS)
     for t in tiles + [tiles[0]] * (BUBBLE_TILES - len(tiles)):
         for row in t:
@@ -296,53 +366,66 @@ def build(dwarf, lines, where):
     for r in range(BUBBLE_ROWS):
         row = grid[r] if r < len(grid) else []
         data += bytes(row + [0] * (BUBBLE_COLS - len(row)))
-    if len(data) != TALK_BYTES:
-        raise SystemExit(f'talk.py: a talk of {len(data)} bytes, not the {TALK_BYTES} of talk_t')
-
-    shown = [[(*to[c], 255) if c else (0, 0, 0, 0) for c in row] for row in img]
-    bubble_px = [[(*COLORS[c], 255) if c else (0, 0, 0, 0) for c in row] for row in ok]
-    print(f'talk: {dwarf} in {len(colors)} colors, {len(cut)} pieces, {len(images)} bytes; '
-          f'a bubble of {len(grid[0])} by {len(grid)} cells, {len(tiles)} tiles')
-    return data, shown, bubble_px, cut
+    if len(data) != BUBBLE_ASSET_BYTES:
+        raise SystemExit(f'talk.py: a bubble of {len(data)} bytes, not the {BUBBLE_ASSET_BYTES} of bubble_t')
+    print(f'talk: a bubble of {cols} by {len(grid)} cells, {len(tiles)} tiles')
+    shown = [[(*COLORS[c], 255) if c else (0, 0, 0, 0) for c in row] for row in ok]
+    return data, shown, (x, y)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('out_dir')
     parser.add_argument('header')
-    parser.add_argument('--count', type=int, help='how many talks the build expects')
     parser.add_argument('--preview', help='also write the first talk, in place, to look at')
     parser.add_argument('--behind', help='a screenshot to put the preview on')
     args = parser.parse_args()
-    if args.count is not None and args.count != len(TALKS):
-        raise SystemExit(f'talk.py: there are {len(TALKS)} talks, not {args.count}; set QUARRY_TALKS')
 
-    for n, (name, dwarf, lines, where) in enumerate(TALKS, 1):
-        data, shown, bubble_px, _ = build(dwarf, lines, where)
-        with open(os.path.join(args.out_dir, f'talk{n}.bin'), 'wb') as f:
-            f.write(data)
-        if args.preview and n == 1:
-            if args.behind:
-                w, h, back = rgba(args.behind)
-            else:
-                w, h, back = 320, 240, [[(20, 22, 28, 255)] * 320 for _ in range(240)]
-            out = [[p[:3] for p in row] for row in back]
-            for img, (x0, y0) in ((bubble_px, (where['bubble'][0], where['bubble'][1] - len(bubble_px))),
-                                  (shown, where['dwarf'])):
-                for y, row in enumerate(img):
-                    for x, p in enumerate(row):
-                        if p[3] and 0 <= x0 + x < w and 0 <= y0 + y < h:
-                            out[y0 + y][x0 + x] = p[:3]
-            write_png(args.preview, w, h, 2, [[v for c in row for v in c] for row in out])
+    dwarves, bubbles, table = [], [], []
+    for name, dwarf, side, where, said in TALKS:
+        if where.get('stays') and len(said) > 1:
+            raise SystemExit(f'talk.py: {name} stays, with no OK, so it has one bubble')
+        if (dwarf, side) not in dwarves:
+            dwarves.append((dwarf, side))
+        table.append((dwarves.index((dwarf, side)) + 1, len(bubbles) + 1, len(said)))
+        bubbles += [(lines, side, where) for lines in said]
+    built = [dwarf_asset(*d) for d in dwarves]
+    with open(os.path.join(args.out_dir, 'dwarves.bin'), 'wb') as f:
+        f.write(b''.join(data for data, *_ in built))
+    said = [bubble_asset(*b) for b in bubbles]
+    with open(os.path.join(args.out_dir, 'bubbles.bin'), 'wb') as f:
+        f.write(b''.join(data for data, *_ in said))
 
+    if args.preview:
+        if args.behind:
+            w, h, back = rgba(args.behind)
+        else:
+            w, h, back = 320, 240, [[(20, 22, 28, 255)] * 320 for _ in range(240)]
+        out = [[p[:3] for p in row] for row in back]
+        for _, img, (x0, y0) in (said[0], built[0]):
+            for y, row in enumerate(img):
+                for x, p in enumerate(row):
+                    if p[3] and 0 <= x0 + x < w and 0 <= y0 + y < h:
+                        out[y0 + y][x0 + x] = p[:3]
+        write_png(args.preview, w, h, 2, [[v for c in row for v in c] for row in out])
+
+    coins = [name for name, *_ in TALKS if name.startswith('COIN')]
+    if coins != [f'COIN{n}' for n in range(1, len(coins) + 1)] or TALKS[-len(coins)][0] != 'COIN1':
+        raise SystemExit('talk.py: the coins\' talks are last, COIN1 and on')
     with open(args.header, 'w') as f:
-        f.write('/* Made by art/talk.py. What the dwarves say, each ROM:talkN. */\n\n'
+        f.write('/* Made by art/talk.py. What the dwarves say: each talk a dwarf of\n'
+                '   ROM:dwarves and bubbles of ROM:bubbles, from 1. */\n\n'
                 '#ifndef TALKS_H\n#define TALKS_H\n\n')
         for n, (name, *_) in enumerate(TALKS, 1):
             f.write(f'#define TALK_{name} {n}\n')
         stays = sum(1 << n for n, talk in enumerate(TALKS) if talk[3].get('stays'))
         f.write(f'#define TALKS {len(TALKS)}\n'
-                f'#define TALK_STAYS 0x{stays:02X} /* a bit for each talk that stays, with no OK, from TALK 1 */\n\n'
+                f'#define TALK_COINS {len(coins)} /* from TALK_COIN1, the coin of each level */\n'
+                f'#define TALK_STAYS 0x{stays:04X} /* a bit for each talk that stays, with no OK, from TALK 1 */\n'
+                f'#define TALK_DWARVES {len(dwarves)}\n'
+                f'#define TALK_BUBBLES {len(bubbles)}\n'
+                '/* For each talk from 1: its dwarf, its first bubble, and how many. */\n'
+                '#define TALK_TABLE {' + ', '.join('{%d, %d, %d}' % t for t in table) + '}\n\n'
                 '#endif\n')
 
 

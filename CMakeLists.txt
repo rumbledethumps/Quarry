@@ -141,20 +141,15 @@ add_custom_command(
     VERBATIM
 )
 
-# What the dwarves say, from art/talk.py with the dwarves of art/dwarves/,
-# each as ROM:talk1 and on, and talks.h, which numbers them. There are
-# QUARRY_TALKS of them, as art/talk.py lists them, and talk.png is the
-# first, to look at.
-set(QUARRY_TALKS 5)
-set(QUARRY_TALK_BINS)
-foreach(n RANGE 1 ${QUARRY_TALKS})
-    list(APPEND QUARRY_TALK_BINS ${CMAKE_CURRENT_BINARY_DIR}/talk${n}.bin)
-endforeach()
+# What the dwarves say, from art/talk.py with the dwarves of art/dwarves/:
+# each dwarf as ROM:dwarves holds them, each bubble as ROM:bubbles, and
+# talks.h, which numbers the talks. talk.png is the first, to look at.
 add_custom_command(
-    OUTPUT ${QUARRY_TALK_BINS} ${CMAKE_CURRENT_BINARY_DIR}/talks.h
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/dwarves.bin ${CMAKE_CURRENT_BINARY_DIR}/bubbles.bin
+        ${CMAKE_CURRENT_BINARY_DIR}/talks.h
     COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/art/talk.py ${CMAKE_CURRENT_BINARY_DIR}
-        ${CMAKE_CURRENT_BINARY_DIR}/talks.h --count ${QUARRY_TALKS}
+        ${CMAKE_CURRENT_BINARY_DIR}/talks.h
         --preview ${CMAKE_CURRENT_BINARY_DIR}/talk.png
     DEPENDS art/talk.py art/curtain.py art/panel_font.py art/panels.py art/rd2png.py art/dwarves/miner.png
     VERBATIM
@@ -223,9 +218,8 @@ rp6502_asset(quarry panels ${CMAKE_CURRENT_BINARY_DIR}/panels.bin)
 rp6502_asset(quarry title_panels ${CMAKE_CURRENT_BINARY_DIR}/title_panels.bin)
 rp6502_asset(quarry carts ${CMAKE_CURRENT_BINARY_DIR}/carts.bin)
 rp6502_asset(quarry menus ${CMAKE_CURRENT_BINARY_DIR}/menus.bin)
-foreach(n RANGE 1 ${QUARRY_TALKS})
-    rp6502_asset(quarry talk${n} ${CMAKE_CURRENT_BINARY_DIR}/talk${n}.bin)
-endforeach()
+rp6502_asset(quarry dwarves ${CMAKE_CURRENT_BINARY_DIR}/dwarves.bin)
+rp6502_asset(quarry bubbles ${CMAKE_CURRENT_BINARY_DIR}/bubbles.bin)
 foreach(texture IN LISTS QUARRY_TEXTURES)
     rp6502_asset(quarry ${texture} ${CMAKE_CURRENT_BINARY_DIR}/${texture}.bin)
 endforeach()

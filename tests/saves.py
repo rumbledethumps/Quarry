@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'
 from rp6502 import Symbols  # noqa: E402
 
 SAVE = 'quarry.save'
-TAG = b'QRY6'
+TAG = b'QRY7'
 SYM = Symbols(os.path.splitext(rom())[0] + '.sym')
 NO_RANKS = (0,) * SYM['UPGRADES']
 NEW_GAME = (0, 0, NO_RANKS, 0, 1, 1, 0, 0)  # as read_save() gives it
@@ -37,7 +37,7 @@ def read_save(folder):
     data = open(path, 'rb').read()
     check(len(data) == SYM['SAVE_BYTES'] and data[:4] == TAG, f'the save is a good one: {data!r}')
     colors, upgrades = SYM['BRICK_COLORS'], SYM['UPGRADES']
-    values = struct.unpack(f'<{colors}HH{upgrades}B5B', data[4:])
+    values = struct.unpack(f'<{colors}HH{upgrades}B3BHB', data[4:])
     nuggets, coins = values[:colors], values[colors]
     ranks, rest = values[colors + 1:colors + 1 + upgrades], values[colors + 1 + upgrades:]
     return (nuggets[0], coins, ranks) + rest
@@ -91,7 +91,7 @@ def main():
     check(read_save(folder) is None, 'no save yet')
     game.new_game()
     check(read_save(folder) == NEW_GAME, 'a level starting saves a new game')
-    check(game.ram('showing') == game.sym['TALK_WELCOME'], "and the greeting went with the title, for level 1's")
+    check(game.ram('showing') == game.sym['TALK_FOREMAN'], "and the greeting went with the title, for the foreman's")
     print('ok: a new game from the greeting, saved when the level starts')
 
     # Pausing saves the nuggets, with those still on their way, and holds
@@ -107,8 +107,8 @@ def main():
     broken = game.sym['LEVEL1_BRICKS'] - game.ram('bricks_left')
     saved = read_save(folder)
     check(saved and saved[0] == broken, f'pausing saves a nugget for each broken brick, {saved} for {broken}')
-    welcome = 1 << game.sym['TALK_WELCOME'] - 1
-    check(saved[6] == welcome, "and that the dwarf's welcome was seen")
+    foreman = 1 << game.sym['TALK_FOREMAN'] - 1
+    check(saved[6] == foreman, "and that the foreman's word was seen")
     check(saved[7] == 1 << game.sym['BRICK_GRAY'], "and that the gray nuggets' line of the counts shows")
     ball = 'XRAM_BALL_SPRITE'
     tape = f'XRAM_MENU_PALETTE+{game.sym["MENU_TAPE"] * 2}'
@@ -289,8 +289,8 @@ def main():
     game.until('game_state', 'STATE_PLAY', 60)
     game.run(2)
     check(read_save(folder) == NEW_GAME, 'Start Game saves a new game')
-    check(game.ram('showing') == game.sym['TALK_WELCOME'] and game.ram('paddle_width') == game.ram('widths'),
-          'and starts over, with the welcome')
+    check(game.ram('showing') == game.sym['TALK_FOREMAN'] and game.ram('paddle_width') == game.ram('widths'),
+          "and starts over, with the foreman's word")
     print('ok: Delete Save asked first, Esc and No kept the save, and Yes deleted it')
     game.close()
 

@@ -61,8 +61,12 @@ def main():
     check(count() == balls, f'the count shows {balls}')
     print('ok: the level is empty under the welcome')
 
-    # As he goes, it builds up.
-    game.tap('space')  # OK
+    # As he goes, after his last bubble, it builds up.
+    for _ in range(game.ram('to_say')):
+        game.tap('space')
+        game.until('talk_state', 'TALK_READY', 60)
+        check(not game.ram('build_steps'), 'not before his last bubble')
+    game.tap('space')  # his last OK
     check(game.ram('talk_state') == sym['TALK_OUT'] and game.ram('build_steps') > 0, 'it builds up as he goes')
     heights, laid, rows, seen, launched = [], [], [], set(), False
     before, rose = None, 0

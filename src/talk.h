@@ -15,6 +15,7 @@ extern uint8_t talk_state;
 
 void talk_queue(uint8_t talk);
 void talk_once(uint8_t talk);
+uint8_t talk_coin(uint8_t level);
 uint8_t talk_busy(void);
 uint8_t talk_leaving(void);
 uint8_t talk_step(void);

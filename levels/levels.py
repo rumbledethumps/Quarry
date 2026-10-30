@@ -35,7 +35,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', 'art'))
 from rd2png import rgba, write_png  # noqa: E402
 
-LEVELS = 10
+LEVELS = 5
 
 
 def define(name, path):

@@ -792,11 +792,11 @@ void shop_open(uint8_t on)
     unlocking = save_levels_open() > levels_shown ? save_levels_open() : 0;
     if (unlocking)
         level_picked = unlocking - 1;
-    /* The first unlock has a dwarf say what it means, and the first time
-       here another says what the screen is for. */
+    /* The first unlock has the committeeman say what it means, and the
+       first time here a dwarf says what the screen is for, after him. */
     if (unlocking == 2)
         talk_once(TALK_UNLOCK);
-    talk_once(TALK_UPGRADES);
+    talk_once(TALK_DRY);
     panel_scroll = panel_picked * PANEL_STEP;
     cart_scroll = (level_picked - 1) * CART_STEP;
     /* Every slot of the map fills anew. */

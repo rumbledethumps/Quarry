@@ -124,16 +124,17 @@ class Game(rp6502.Emu):
         self.until('building', 0, 60 + 2 * self.sym['TUNE_BUILD_STEPS'])
 
     def talk_ok(self):
-        """Get past the dwarves: wait for each one's OK, press the button, and
-        wait until he has gone, and the next comes in, or the last has gone
-        and the screen under him has taken over again."""
-        off, coming = self.sym['TALK_OFF'], self.sym['TALK_IN']
+        """Get past the dwarves: wait for each bubble's OK, press the button,
+        and wait until his next bubble is in, or he has gone, and the next
+        comes in, or the last has gone and the screen under him has taken
+        over again."""
+        off, coming, next_bubble = self.sym['TALK_OFF'], self.sym['TALK_IN'], self.sym['TALK_WAIT']
         self.run(2)
         while self.ram('talk_state') != off:
             self.until('talk_state', 'TALK_READY', 120)
             self.tap('space')
             for _ in range(60):
-                if self.ram('talk_state') in (off, coming):
+                if self.ram('talk_state') in (off, coming, next_bubble):
                     break
                 self.run(1)
         self.run(2)

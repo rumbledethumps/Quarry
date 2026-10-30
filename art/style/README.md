@@ -588,53 +588,83 @@ shows, as the tape's 4 palette entries turn round.
 
 ## The Dwarves
 
-Now and then a cartoon dwarf comes up from the foot of the screen with
-something to say, in a speech bubble that comes in from the right at the
-same time, the two stopping together. Half a second later the OK shows at
-the end of the last line, with the holographic cursor close round it, and the
-button sends them back the way they came. Only one dwarf shows at a time,
-and the cursor is off while they come and go. They show when a screen
-opens, never in the middle of play, and the screen under them carries on:
+Now and then a cartoon dwarf comes up from the foot of the screen, in a
+lower corner, with something to say, in a speech bubble that comes in from
+the other side at the same time, the two stopping together. Half a second
+later the OK shows at the end of the last line, with the holographic
+cursor close round it. If he has more to say, the button brings his next
+bubble in its place at once, its OK half a second later, and after his
+last, it sends them back the way they came. Only one dwarf shows at a
+time, and the cursor is off while they come and go. They show when a
+screen opens, never in the middle of play, and the screen under them
+carries on. There are three:
 
-- the first level of a new game starts with a welcome, over the level
-  before it builds up, which it does as he goes;
-- each first clear of a level has a dwarf hand over its coin, before the
-  menu opens;
-- on the upgrade screen, as level 2 unlocks, one says what an unlock
-  means, as the unlock goes on over the carts, and the first time there,
-  another says what the screen is for, after any other;
-- on the title with no save, one greets the player. He has no OK, and
-  stays while the menu over him takes the input and keeps the cursor, and
-  goes with the title.
+- **The friendly dwarf**, down to earth and welcoming, the only one
+  without a helmet. He stands on the left.
+  - On the title with no save, he greets the player: "WELCOME,
+    GREENHORN. HEAD ON IN WHEN YOU'RE READY TO BREAK SOME ROCK." He has no
+    OK, and stays while the menu over him takes the input and keeps the
+    cursor, and goes with the title.
+  - The first time in THE DRY, in two bubbles: "THIS IS THE DRY. USE THE
+    PANELS TO UPGRADE YOUR MACHINES." and "SELECT A CART TO BEGIN MINING
+    THAT LEVEL."
+- **The foreman**, serious but not mean, seen once, at the start of the
+  first level, over the level before it builds up, which it does as he
+  goes. He stands on the left. In three bubbles: "OVER HERE, GREENHORN.
+  PAY ATTENTION BECAUSE I WON'T REPEAT MYSELF.", "PUSH THE BUTTON TO
+  LAUNCH A WRECKING BALL THEN KEEP IT FROM FALLING." and "THAT'S ALL. NOW
+  GET TO WORK."
+- **The committeeman**, the union's Poobah, Lord High Everything Else. He
+  stands on the right, for now.
+  - The first time in THE DRY after level 2 unlocks, as the unlock goes on
+    over the carts, and before the friendly dwarf's word if that is due
+    too: "EVERY TIME YOU CLEAR A LEVEL THE NEXT BECOMES AVAILABLE."
+  - Each first clear of a level, he hands over its coin, before the menu
+    opens. Level 1: "NICE WORK! HERE'S A UNION COIN." Level 2: "AREN'T YOU
+    QUITE THE NIPPER. YOU'VE EARNED ANOTHER COIN." Level 3: "DIDN'T ANYONE
+    EXPLAIN THE COINS TO YOU?" Level 4: "KEEP SAVING THESE COINS FOR
+    POWERFUL UPGRADES." Level 5, the last, in three bubbles: "YOU'VE EARNED
+    5 COINS AND COMPLETED THE GAME.", "SORRY, THE COINS DON'T DO ANYTHING
+    YET." and "THANK YOU FOR PLAYING MY GAME JAM ENTRY." A level with no
+    line of its own has level 1's.
 
 - A dwarf is a head-and-shoulders portrait, 80x80, in the outlined
   cartoon look of the sleds: bold shapes, a crisp dark outline, flat
-  shading in a few colors, light from the upper left, facing a little to
-  the right, toward his bubble. He stands in the lower left corner, his
-  shoulders on the foot of the screen, and covers the counts there. On the
-  upgrade screen his bubble's foot is just over the carts, so they show.
-  On the title, where he has no OK, his bubble has no row under its last
-  line.
-- Each dwarf is a portrait in `art/dwarves/` as Retro Diffusion drew it,
-  in a frame of its own on a plain background. `art/talk.py` cuts off the
-  frame, clears the background from the edges in, and brings him down to
-  15 colors of his own. He is up to 3 sprites, a band across his head and
-  a band across his shoulders, each as narrow as he is there, in 2816
-  bytes at most, so every dwarf keeps to about his outline.
-- The miner, `art/dwarves/miner.png`, the third of four, `rd_pro__default`,
-  96x96: "Head and shoulders of a friendly cartoon dwarf miner, as a
-  character portrait in a 16-bit game's dialogue, facing a little to the
-  right as if talking to someone: a big bushy beard, a rounded steel
-  mining helmet with a lamp on the front, bright eyes under bushy brows,
-  sturdy work clothes with suspenders, a cheerful knowing expression,
-  clean bold shapes with a crisp dark outline, smooth flat shading in a
-  few colors, light from the upper left, on a plain flat pure green
-  background". Other dwarves, a schoolmaster or a general, are to be the
-  same dwarf in other clothes, each a talk of its own.
+  shading in a few colors, light from the upper left, facing a little
+  toward his bubble. He stands in a lower corner, his shoulders on the foot
+  of the screen: on the left he covers the counts there, and on the right
+  the foot of the gauge. On the upgrade screen his bubble's foot is just
+  over the carts, so they show. On the title, where he has no OK, his
+  bubble has no row under its last line.
+- Each dwarf is made for both sides of the screen: a portrait for the
+  left, facing right, and one for the right, facing left, each lit from
+  the upper left. Both are kept in `art/dwarves/`, even while he is only
+  used on one side.
+- Each is made in two sets, a portrait for each side in each, and the
+  user picks one. A set not picked may be kept for later.
+- Retro Diffusion draws him on an image wider than he is, so his arms are
+  whole, and the crop is ours: `art/talk.py` clears the background from
+  the edges in, and cuts him to 80x80, at the foot, and if he is wider, on
+  the side against the edge of the screen, so the arm toward his bubble
+  stays whole. A frame Retro Diffusion draws round him is cut off first;
+  the miner's cut off a few pixels of his arms. He is brought down to 15
+  colors of his own, in up to 3 sprites, a band across his head and a band
+  across his shoulders, each as narrow as he is there, in 2816 bytes at
+  most, so every dwarf keeps to about his outline.
+- The miner, `art/dwarves/miner.png`, stands in for all three until each
+  is drawn, turned round on the right. He is the third of four,
+  `rd_pro__default`, 96x96: "Head and shoulders of a friendly cartoon
+  dwarf miner, as a character portrait in a 16-bit game's dialogue,
+  facing a little to the right as if talking to someone: a big bushy
+  beard, a rounded steel mining helmet with a lamp on the front, bright
+  eyes under bushy brows, sturdy work clothes with suspenders, a cheerful
+  knowing expression, clean bold shapes with a crisp dark outline, smooth
+  flat shading in a few colors, light from the upper left, on a plain flat
+  pure green background".
 - The bubble is a comic speech bubble in 4 colors: near-black ink, cream
   paper, and a darker cream along the inside of its foot. Its corners are
-  rounded, its outline a pixel wide, and its tail reaches out of its left
-  side, low down, to tuck under his beard. Its corners, edges and tail
+  rounded, its outline a pixel wide, and its tail reaches out of its side
+  toward him, low down, to tuck under his beard. Its corners, edges and tail
   are drawn by hand in `art/talk.py`.
 - His lines are the panels' font in ink, a blank row of cells between
   them, in capitals: the font has `, ' !` for the dwarves' speech too.
@@ -709,7 +739,7 @@ rows are left.
 | cursor | 4 corners, 12x12, one image turned |
 | dwarf | 80x80, in up to 3 sprites |
 | speech bubble | up to 28x10 cells of 8x8, the tail's column with them |
-| title's panels | 20 cells across, the menu's 10 rows, START GAME's 9 and the progress 7; 150 tiles of 4 bits and a map, 5,192 bytes, of which the title has 370 left |
+| title's panels | 20 cells across, the menu's 10 rows, START GAME's 9 and the progress 7; 150 tiles of 4 bits and a map, 5,192 bytes, of which the title has 238 left |
 
 The current sizes come from `src/xram.h`. RD Pro styles start at 12x12, so
 art 8 pixels tall is made as a larger study, then redrawn by hand at its

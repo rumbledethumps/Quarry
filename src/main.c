@@ -83,13 +83,13 @@ static void level_setup(void)
 }
 
 /* A level starts, set up from the start, and the game saves. The first
-   level of a game starts with a dwarf's welcome. */
+   level of a game starts with the foreman's word. */
 static void level_play(void)
 {
     menu_close();
     level_setup();
     game_state = STATE_PLAY;
-    talk_once(TALK_WELCOME);
+    talk_once(TALK_FOREMAN);
     save_write();
     DEBUG_LOG("level %u start\n", level);
 }
@@ -114,7 +114,7 @@ static void level_end(uint8_t how)
         levels_cleared = level;
         level_picked = save_levels_open();
         coins_add();
-        talk_queue(TALK_COIN);
+        talk_queue(talk_coin(level));
         DEBUG_LOG("coin for level %u\n", level);
     }
     else
@@ -230,10 +230,14 @@ int main(void)
         input_read();
         sfx_step();
 #ifndef NDEBUG
-        /* In a debug build, Shift and a number brings in that talk, to see
-           how it looks on any screen. */
-        if (shift_digit && shift_digit <= TALKS)
-            talk_queue(shift_digit);
+        /* In a debug build, Shift and the letters of the top row, Q, W, E
+           and on, bring in the talks but the coins', in order, and Shift
+           and a level's number, of a digit or two, the coin's for that
+           level as Shift is let go, to see how each looks on any screen. */
+        if (shift_letter && shift_letter < TALK_COIN1)
+            talk_queue(shift_letter);
+        if (shift_number)
+            talk_queue(talk_coin(shift_number));
 #endif
         if (talk_step())
         {

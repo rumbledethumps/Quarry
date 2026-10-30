@@ -681,31 +681,51 @@ typedef struct
     uint8_t unused;
 } dwarf_piece_t;
 
-/* Where a dwarf and his bubble stand once they are in, how many rows the
-   bubble has, the cell of its OK and the OK's two tiles, which go in when
-   it shows, and the pieces of the dwarf. */
+/* Where a dwarf stands once he is in, on his side of the screen, and his
+   pieces. */
 typedef struct
 {
-    int16_t dwarf_x, dwarf_y;
-    int16_t bubble_x, bubble_y;
-    uint8_t rows;
-    uint8_t ok_col, ok_row;
-    uint8_t ok_tiles[2];
+    int16_t x, y;
     uint8_t pieces;
+    uint8_t unused;
     dwarf_piece_t piece[DWARF_PIECES];
-} talk_head_t;
+} dwarf_head_t;
 
-/* What a dwarf says, as ROM:talk1 and on hold it: its head, then his
-   colors and his image, then the bubble's 4 colors, its tiles and its
-   map. */
+/* A dwarf, as ROM:dwarves holds them, one after another from 1: his head,
+   then his colors and his image. */
 typedef struct
 {
-    talk_head_t head;
+    dwarf_head_t head;
     uint16_t palette[16];
     uint8_t images[DWARF_BYTES];
-    uint16_t bubble_palette[4];
-    bubble_tile_t bubble_tiles[BUBBLE_TILES];
-    uint8_t bubble_map[BUBBLE_ROWS][BUBBLE_COLS];
+} dwarf_t;
+
+/* Where a speech bubble stands once it is in, how many rows and columns of
+   cells it has, the cell of its OK and the OK's two tiles, which go in
+   when it shows. */
+typedef struct
+{
+    int16_t x, y;
+    uint8_t rows, cols;
+    uint8_t ok_col, ok_row;
+    uint8_t ok_tiles[2];
+} bubble_head_t;
+
+/* A speech bubble, as ROM:bubbles holds them, one after another from 1:
+   its head, then its 4 colors, its tiles and its map. */
+typedef struct
+{
+    bubble_head_t head;
+    uint16_t palette[4];
+    bubble_tile_t tiles[BUBBLE_TILES];
+    uint8_t map[BUBBLE_ROWS][BUBBLE_COLS];
+} bubble_t;
+
+/* A dwarf talking, and his bubble up. */
+typedef struct
+{
+    dwarf_t dwarf;
+    bubble_t bubble;
 } talk_t;
 
 /* The title's own art: the logo, then its panels, from
@@ -836,12 +856,13 @@ typedef struct
 #define XRAM_MENU_MAP offsetof(xram_layout_t, menu_map)
 #define XRAM_MENU_PALETTE offsetof(xram_layout_t, menu_palette)
 #define XRAM_MENU_TILES offsetof(xram_layout_t, menu_tiles)
-#define XRAM_TALK offsetof(xram_layout_t, talk)
-#define XRAM_DWARF_PALETTE offsetof(xram_layout_t, talk.palette)
-#define XRAM_DWARF_IMAGES offsetof(xram_layout_t, talk.images)
-#define XRAM_BUBBLE_PALETTE offsetof(xram_layout_t, talk.bubble_palette)
-#define XRAM_BUBBLE_TILES offsetof(xram_layout_t, talk.bubble_tiles)
-#define XRAM_BUBBLE_MAP offsetof(xram_layout_t, talk.bubble_map)
+#define XRAM_TALK_DWARF offsetof(xram_layout_t, talk.dwarf)
+#define XRAM_DWARF_PALETTE offsetof(xram_layout_t, talk.dwarf.palette)
+#define XRAM_DWARF_IMAGES offsetof(xram_layout_t, talk.dwarf.images)
+#define XRAM_TALK_BUBBLE offsetof(xram_layout_t, talk.bubble)
+#define XRAM_BUBBLE_PALETTE offsetof(xram_layout_t, talk.bubble.palette)
+#define XRAM_BUBBLE_TILES offsetof(xram_layout_t, talk.bubble.tiles)
+#define XRAM_BUBBLE_MAP offsetof(xram_layout_t, talk.bubble.map)
 #define XRAM_BRICK_IMAGE offsetof(xram_layout_t, brick_image)
 #define XRAM_NUGGET_IMAGE offsetof(xram_layout_t, nugget_image)
 #define XRAM_NUGGET_ICON_IMAGE offsetof(xram_layout_t, nugget_icon_image)

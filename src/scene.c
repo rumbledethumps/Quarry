@@ -56,7 +56,8 @@ _Static_assert(CURTAIN_SETS <= 9 && TEXTURES <= 9 && FRAME_SETS <= 9, "An asset'
 #define CRACKS_BYTES sizeof(((level_art_t *)0)->cracks)
 #define CHUNKS_BYTES sizeof(((level_art_t *)0)->chunks)
 #define GAUGE_BYTES offsetof(gauge_art_t, glass)
-#define TALK_BYTES sizeof(talk_t)
+#define DWARF_ASSET_BYTES sizeof(dwarf_t)
+#define BUBBLE_ASSET_BYTES sizeof(bubble_t)
 
 static uint8_t scene;
 static uint8_t curtain_set; /* the one shown, from 0 */
@@ -333,11 +334,14 @@ void scene_menus(void)
     load("ROM:menus", 0, XRAM_MENU_PALETTE, MENUS_BYTES);
 }
 
-/* A talk, ROM:talk1 and on, in the menus' place. */
-void scene_talk(uint8_t talk)
+/* A dwarf of ROM:dwarves, from 1, in the menus' place. */
+void scene_dwarf(uint8_t dwarf)
 {
-    char path[] = "ROM:talk1";
+    load("ROM:dwarves", (long)(dwarf - 1) * DWARF_ASSET_BYTES, XRAM_TALK_DWARF, DWARF_ASSET_BYTES);
+}
 
-    path[8] = '0' + talk;
-    load(path, 0, XRAM_TALK, TALK_BYTES);
+/* A speech bubble of ROM:bubbles, from 1, beside the dwarf. */
+void scene_bubble(uint8_t bubble)
+{
+    load("ROM:bubbles", (long)(bubble - 1) * BUBBLE_ASSET_BYTES, XRAM_TALK_BUBBLE, BUBBLE_ASSET_BYTES);
 }

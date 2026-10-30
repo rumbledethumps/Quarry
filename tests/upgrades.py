@@ -306,8 +306,9 @@ def main():
           'the upgrade screen opens on level 1, just cleared')
     check(game.ram('unlocking') == 2 and game.shown(sym['XRAM_HALF_SPRITES'], 2) == 2,
           'and the lock of level 2 shows, to break')
-    check(game.shown(sym['XRAM_LOCK_SPRITES'], sym['LOCKS']) == sym['LOCKS'],
-          'with padlocks on the carts locked after it')
+    locked = min(sym['LOCKS'], sym['LEVELS'] - 2)
+    check(game.shown(sym['XRAM_LOCK_SPRITES'], sym['LOCKS']) == locked,
+          f'with padlocks on the {locked} carts locked after it')
     game.wait('unlocked 2', 200)
     check(game.ram('levels_shown') == 2 and game.ram('unlocking') == 0 and game.ram('level_picked') == 2,
           'the lock breaks, and level 2 shows open, picked')
