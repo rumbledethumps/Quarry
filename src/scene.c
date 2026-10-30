@@ -331,15 +331,28 @@ void scene_picture_sled(uint8_t slot, uint8_t rank)
 }
 
 #define WEIGHT_BYTES (WEIGHT_W * WEIGHT_H / 2)
-#define WEIGHT_COLORS_BYTES sizeof(((menu_art_t *)0)->picture_colors[0])
-_Static_assert(WEIGHT_BYTES <= PICTURE_BYTES, "The weight is too big for a picture.");
+#define JERRYCAN_BYTES (JERRYCAN_W * JERRYCAN_H / 2)
+#define PICTURE_COLORS_BYTES sizeof(((menu_art_t *)0)->picture_colors[0])
+_Static_assert(WEIGHT_BYTES <= PICTURE_BYTES && JERRYCAN_BYTES <= PICTURE_BYTES, "A picture is too big for its slot.");
 
-/* The weight, the picture of the weight panel, and its colors, into slot
+/* A picture in its own colors, and its colors, lit and dim, into slot
    slot. */
+static void picture_own(uint8_t slot, const char *image, unsigned bytes, const char *colors)
+{
+    load(image, 0, XRAM_PICTURE(slot), bytes);
+    load(colors, 0, XRAM_PICTURE_COLORS(slot, 0), PICTURE_COLORS_BYTES);
+}
+
+/* The weight, the weight panel's picture. */
 void scene_picture_weight(uint8_t slot)
 {
-    load("ROM:weight", 0, XRAM_PICTURE(slot), WEIGHT_BYTES);
-    load("ROM:weight_colors", 0, XRAM_PICTURE_COLORS(slot, 0), WEIGHT_COLORS_BYTES);
+    picture_own(slot, "ROM:weight", WEIGHT_BYTES, "ROM:weight_colors");
+}
+
+/* The jerrycan, the efficiency panel's picture. */
+void scene_picture_jerrycan(uint8_t slot)
+{
+    picture_own(slot, "ROM:jerrycan", JERRYCAN_BYTES, "ROM:jerrycan_colors");
 }
 
 /* The menus' palette and tiles, at the start, and again after a dwarf has

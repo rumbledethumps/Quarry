@@ -138,16 +138,19 @@ def main():
     # panel is.
     build = os.path.dirname(os.path.dirname(rom()))
     art = lambda name: open(os.path.join(build, name), 'rb').read()
-    weight = sym['XRAM_MENU_SPRITES'] + 2 % sym['PANEL_SLOTS'] * sym['PANEL_SPRITES'] * sym['SPRITE_BYTES']
-    x, y, image, colors, size = struct.unpack('<hhHHB', game.xram(weight, 9))
-    w = sym['WEIGHT_W']
-    top = sym['PANEL_Y'] + sym['PICTURE_ROW'] * 8
-    check(size == (sym['WEIGHT_H'] // 4 - 1) << 4 | (w // 4 - 1) and
-          x == sym['PANEL_LEFT'] + 2 * sym['PANEL_STEP'] + (8 * sym['PANEL_COLS'] - w) // 2 and y == top and
-          y + sym['WEIGHT_H'] + 8 <= sym['PANEL_Y'] + sym['TITLE_ROW'] * 8,
-          f'the weight is {w} across, centered on its panel, a cell clear of the title: {x}, {y}')
-    check(game.xram(image, sym['WEIGHT_BYTES']) == art('weight.bin') and
-          game.xram(colors, 32) == art('weight-colors.bin')[32:], 'in its own colors, dim')
+
+    def own_picture(p, name):
+        sprite = sym['XRAM_MENU_SPRITES'] + p % sym['PANEL_SLOTS'] * sym['PANEL_SPRITES'] * sym['SPRITE_BYTES']
+        x, y, image, colors, size = struct.unpack('<hhHHB', game.xram(sprite, 9))
+        w, h = sym[f'{name.upper()}_W'], sym[f'{name.upper()}_H']
+        left = sym['PANEL_LEFT'] + p * sym['PANEL_STEP'] - game.ram('panel_scroll', 2)
+        check(size == (h // 4 - 1) << 4 | (w // 4 - 1) and x == left + (8 * sym['PANEL_COLS'] - w) // 2 and
+              y == sym['PANEL_Y'] + sym['PICTURE_ROW'] * 8 and y + h + 8 <= sym['PANEL_Y'] + sym['TITLE_ROW'] * 8,
+              f'the {name} is {w} across, centered on its panel, a cell clear of the title: {x}, {y}')
+        check(game.xram(image, w * h // 2) == art(f'{name}.bin') and
+              game.xram(colors, 32) == art(f'{name}-colors.bin')[32:], f'the {name} is in its own colors, dim')
+
+    own_picture(2, 'weight')
     game.tap('space')
     game.cmd('expect-not "bought"')
     check(game.ram('upgrade_ranks', 2) == 0, 'no upgrade without the nuggets')
@@ -167,6 +170,7 @@ def main():
           panel(3, sym['EFFECT_ROW']) == f'{burns[0]} \x10 {burns[1]} L/S' and
           panel(3, sym['COST_ROW']) == str(tune['TUNE_BURN_COSTS'][0]),
           f'and the last, efficiency, in liters a second: {panel(3, sym["EFFECT_ROW"])!r}')
+    own_picture(3, 'jerrycan')
     for _ in range(sym['PANELS']):
         game.tap('right')
     check(game.ram('panel_picked') == sym['PANELS'] - 1, 'right stops at the last panel')

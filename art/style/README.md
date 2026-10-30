@@ -444,7 +444,13 @@ graphite steel with no yellow: there is nothing to be careful of here.
   Retro Diffusion drew it, `ref/ton-weight.png`, and its `color_reducer`
   cut it to 15 colors with no dithering. SIZE and SPEED both show the
   smallest sled with two jets, the game's own, doubled, its flames lit,
-  the same at every rank. EFFICIENCY still shows a stand-in.
+  the same at every rank. EFFICIENCY's is `art/jerrycan.png`, 40x40, Retro
+  Diffusion's `ref/jerrycan.png` with its yellow paint mapped by lightness
+  onto the fuel's own colors, the liquid row of `art/palettes.png`, and its
+  hose cut off, as it read as a leak. The rest of its colors, but its black
+  outline and its display's green, were cut by median cut to make 15,
+  keeping the fuel's exact. `art/jerrycan-colors.png` holds them lit and at
+  half, as the weight's does.
 
 ### The Title's Panels
 
@@ -791,7 +797,7 @@ rows are left.
 | nugget | 8x8 as it flies, and 10 across in a 12x12 sprite by its count |
 | coin | 10 across in a 12x12 sprite, by its count |
 | big coin | 44x44, at the left of the committeeman's bubble |
-| panel picture | up to 1 KB at 4 bits a pixel, such as 64x32, 44x44 or 36x56; the weight is 40x40 |
+| panel picture | up to 1 KB at 4 bits a pixel, such as 64x32, 44x44 or 36x56; the weight and the jerrycan are 40x40 |
 | ball | 8x8, and 10 across in a 12x12 sprite by its count |
 | digit | 8x12 sprite, a 6x8 digit with its outline |
 | texture | 320x240 at 2 bits a pixel |
@@ -880,6 +886,7 @@ The blocks of the looks:
 | `ref/panel-frame.png` | Frame 1, the upgrade panel's frame as Retro Diffusion made it: `rd_pro__default`, 154x138, with a 64x64 crop of a gauge frame from `ui-kit.png`: "A single heavy mechanical display panel seen straight on, filling the whole image: a thick frame of dark graphite gunmetal steel around all four edges, the frame about a tenth of the panel's width, built from bolted steel plates with seams and rivets, a different mechanical bracket or clamp at each corner, a thin bright bevel along the inner edge, worn edges but clean and well maintained, no yellow, no hazard stripes, no rust, the inside one plain flat dark blue-grey plate with nothing on it, slightly futuristic heavy machinery, light from the upper left". Chosen for its simplicity. |
 | `ref/big-coin.png` | The big coin as Retro Diffusion made it: `rd_pro__default`, 56x56, no references, the prompt as written (`bypass_prompt_expansion`): "A gold coin seen straight on, filling the whole image, its edge touching all four sides: a small square hole in the middle with its sides level, a raised rim round the edge, and embossed lettering in narrow blocky capitals: SMEGHEAD round the top and MI ESTAS FIŜO round the bottom, both reading left to right, JMC in a straight line above the hole and 169 in a straight line below it. Clean bold shapes with a crisp dark outline round the coin and the hole, smooth flat shading in a few colors, light from the upper left, on a plain flat pure green background". It drew the coin 44 across in a green square inside a tan border. The other take, at 48 with the prompt rewritten, filled the image, in 33 colors with no outline. Before them, `image_edit` on the code's mock-up at 48 and 56 shrank the coin to about half and lost the lettering. |
 | `ref/ton-weight.png` | WEIGHT's picture as Retro Diffusion made it: `rd_pro__default`, 44x44, no references, the prompt as written (`bypass_prompt_expansion`), `remove_bg`: "an icon for an upgrade that adds weight: a cartoon ton weight, in the style of heavy modern machinery, light from the upper left, on a plain white background". The weight filled 40x39 of it, in 34 colors, on a clear background. Before it: "wrecking ball" drew a ball on a chain with a glow, and "classic cartoon weight" with the prompt rewritten drew a smiling kettlebell with arms. Without the rewrite it drew the trapezoid, but on a gray square, as a background left unstated does. "Dumbbell" at 64x32 came out as a barbell, and `rd_plus__skill_icon` drew small blobs with 9 px clear all round. |
+| `ref/jerrycan.png` | EFFICIENCY's picture as Retro Diffusion made it: `rd_pro__default`, 44x44, no references, the prompt as written (`bypass_prompt_expansion`), `remove_bg`: "an icon for an upgrade that burns less fuel: a jerrycan, in the style of heavy modern machinery, light from the upper left, on a plain white background". The second of two takes: a yellow and black jerrycan with a green display and a hose. |
 | `ref/old-logo-qu.png` | 64x64 of the old logo's QU: fine, flecked rock at a small scale. The reference for the curtain sets, and the one that made the first. |
 | `ref/rock-crop.png` | 64x64 of the rock of the first curtain set: how stone is drawn. A reference for a stone piece, such as the logo. Not for a curtain set: it is zoomed in, so the rock comes out too big. |
 | `ref/logo-stone.png` | The logo as Retro Diffusion made it, before `art/logo.py`: `rd_pro__typography`, 192x64, with `rock-crop.png` and `old-logo-qu.png` as references: "\"QUARRY\" in big bold blocky capital letters, carefully carved from solid stone by a master stonemason: clean even letterforms with crisp chiseled bevels and flat faces, every letter whole and unbroken, only a few small natural chips and fine hairline marks, all the letters the same warm weathered sandstone with subtle flecks like the reference rock, cool blue-grey stone only in the shadowed bevels, a dark outline and a dark shadow under the letters, light from the upper left, on a plain white background". One of three, and the one with moss, which `art/logo.py` turns to rock; the others were plainer, or cracked with stray dots. |

@@ -13,6 +13,7 @@ void scene_curtains(int8_t step);
 void scene_panel_frame(uint8_t p, unsigned at);
 void scene_picture_sled(uint8_t slot, uint8_t rank);
 void scene_picture_weight(uint8_t slot);
+void scene_picture_jerrycan(uint8_t slot);
 void scene_menus(void);
 void scene_dwarf(uint8_t dwarf);
 void scene_bubble(uint8_t bubble);

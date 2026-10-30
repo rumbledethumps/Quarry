@@ -349,12 +349,15 @@ typedef struct
 /* The pictures of the panels nearest the middle, each up to PICTURE_BYTES:
    the three that show, and the next one the way the rail moves, which
    loads before it slides into view. A picture is a flat sled, in the sled's
-   colors, or the weight, art/weight.png, in its own, lit and dim, from
-   art/weight-colors.png. */
+   colors, or one in its own, lit and dim: the weight, art/weight.png and
+   art/weight-colors.png, or the jerrycan, art/jerrycan.png and
+   art/jerrycan-colors.png. */
 #define PICTURE_SLOTS 4
 #define PICTURE_BYTES 1024
 #define WEIGHT_W 40
 #define WEIGHT_H 40
+#define JERRYCAN_W 40
+#define JERRYCAN_H 40
 
 /* The texture behind a level's playfield, from art/texture.py: a bitmap at
    2 bits a pixel that wraps. */

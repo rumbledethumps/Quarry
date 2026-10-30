@@ -89,7 +89,8 @@ _Static_assert(PANEL_SLOTS * PANEL_SPRITES <= MENU_SPRITES, "MENU_SPRITES is too
 #define COST_ROW 14
 static const uint8_t panel_heights[PANELS] = PANEL_HEIGHTS; /* the rows of each frame */
 
-_Static_assert(WEIGHT_H + 8 <= PICTURE_H, "The weight leaves a whole cell clear of the title.");
+_Static_assert(WEIGHT_H + 8 <= PICTURE_H && JERRYCAN_H + 8 <= PICTURE_H,
+               "The pictures leave a whole cell clear of the title.");
 
 /* The size and speed panels' picture: the sled of this rank, the smallest
    with two jets, as tests/upgrades.py checks. */
@@ -351,11 +352,13 @@ static void pictures_load(void)
     uint8_t p = first > 0 ? first : 0;
 
     for (; p <= first + 3 && p < PANELS; p++)
-        if (p != UPGRADE_EFFICIENCY && !picture_ready(p))
+        if (!picture_ready(p))
         {
             uint8_t slot = p % PICTURE_SLOTS;
             if (p == UPGRADE_DAMAGE)
                 scene_picture_weight(slot);
+            else if (p == UPGRADE_EFFICIENCY)
+                scene_picture_jerrycan(slot);
             else
                 scene_picture_sled(slot, SLED_PICTURE);
             slot_panel[slot] = p;
@@ -363,9 +366,9 @@ static void pictures_load(void)
 }
 
 /* A panel's picture and cost icons, where it is now: for size and speed,
-   the smallest sled with two jets, doubled, its flames lit; the weight for
-   weight, at the top of the plate, a whole cell clear of the title; and a
-   stand-in for efficiency, the old energy bar, doubled. */
+   the smallest sled with two jets, doubled, its flames lit, and for weight
+   and efficiency, the weight and the jerrycan, each at the top of the
+   plate, a whole cell clear of the title. */
 static void pictures_draw(uint8_t p)
 {
     int16_t x = panel_x(p), top = PANEL_Y + PICTURE_ROW * 8;
@@ -387,23 +390,12 @@ static void pictures_draw(uint8_t p)
             sled_show(PANEL_SPRITE(p, 0), PICTURE_SPRITES, x + (PANEL_COLS * 8 - w) / 2, top + 7, SLED_PICTURE,
                       SLED_DOUBLE | dim | SLED_FLAMES, XRAM_PICTURE(p % PICTURE_SLOTS));
     }
-    else if (p == UPGRADE_EFFICIENCY)
-    {
-        static const uint8_t pieces[] = {ENERGY_TOP, ENERGY_FULL, ENERGY_BOTTOM};
-        for (i = 0; i < sizeof pieces; i++)
-        {
-            sprite_set(PANEL_SPRITE(p, i), XRAM_ENERGY_IMAGES + pieces[i] * sizeof(energy_image_t),
-                       XRAM_PALETTE_FX, MODE5_SIZE(8, 8));
-            sprite_attributes(PANEL_SPRITE(p, i), MODE5_HDOUBLE | MODE5_VDOUBLE);
-            sprite_move(PANEL_SPRITE(p, i), x + PANEL_COLS * 4 - 8, top + i * 16);
-        }
-    }
     else if (picture_ready(p))
     {
-        uint8_t slot = p % PICTURE_SLOTS;
-        sprite_set(PANEL_SPRITE(p, 0), XRAM_PICTURE(slot), XRAM_PICTURE_COLORS(slot, !lit(p)),
-                   MODE5_SIZE(WEIGHT_W, WEIGHT_H));
-        sprite_move(PANEL_SPRITE(p, 0), x + (PANEL_COLS * 8 - WEIGHT_W) / 2, top);
+        uint8_t slot = p % PICTURE_SLOTS, weight = p == UPGRADE_DAMAGE;
+        uint8_t w = weight ? WEIGHT_W : JERRYCAN_W, h = weight ? WEIGHT_H : JERRYCAN_H;
+        sprite_set(PANEL_SPRITE(p, 0), XRAM_PICTURE(slot), XRAM_PICTURE_COLORS(slot, !lit(p)), MODE5_SIZE(w, h));
+        sprite_move(PANEL_SPRITE(p, 0), x + (PANEL_COLS * 8 - w) / 2, top);
     }
     if (upgrades_cost(p) && !talk_busy())
     {
