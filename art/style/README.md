@@ -616,8 +616,11 @@ carries on. There are three:
   PAY ATTENTION BECAUSE I WON'T REPEAT MYSELF.", "PUSH THE BUTTON TO
   LAUNCH A WRECKING BALL THEN KEEP IT FROM FALLING." and "THAT'S ALL. NOW
   GET TO WORK."
-- **The committeeman**, the union's Poobah, Lord High Everything Else. He
-  stands on the right, for now.
+- **The committeeman**, the union steward, the union's Poobah, Lord High
+  Everything Else. He is friendly but not entirely trustworthy, and full
+  of himself: he is meant to be on the player's side, but the union and
+  the company battle it out with backroom deals and shifty stuff. That
+  has to come across in his face. He stands on the right, for now.
   - The first time in THE DRY after level 2 unlocks, as the unlock goes on
     over the carts, and before the friendly dwarf's word if that is due
     too: "EVERY TIME YOU CLEAR A LEVEL THE NEXT BECOMES AVAILABLE."
