@@ -1,4 +1,5 @@
 #include "video.h"
+#include "debug.h"
 #include "xram.h"
 #include <string.h>
 
@@ -130,27 +131,31 @@ void video_text(uint8_t col, uint8_t row, const char *s)
     xram0_write(XRAM_MENU_MAP + row * TEXT_COLS + col, cells, n);
 }
 
-/* A number, left aligned in width cells, spaces after it. */
-void video_number(uint8_t col, uint8_t row, uint16_t n, uint8_t width)
+/* Text centered on the line between the columns center - 1 and center.
+   Text an even number of letters long is on its cells; text an odd number
+   goes half a cell over, a cell longer, in the halves of art/menus.py. A
+   pair of letters it has no half for shows clear, and a debug build says
+   so. */
+void video_text_centered(uint8_t center, uint8_t row, const char *s)
 {
-    char text[6];
-    uint8_t i, len = 0;
+    static const char halves[] = MENU_HALVES;
+    uint8_t len = strlen(s), cells[TEXT_COLS], i, k;
 
-    do
+    if (!(len & 1))
     {
-        text[len++] = '0' + n % 10;
-        n /= 10;
-    } while (n);
-    for (i = 0; i < len / 2; i++)
-    {
-        char c = text[i];
-        text[i] = text[len - 1 - i];
-        text[len - 1 - i] = c;
+        video_text(center - len / 2, row, s);
+        return;
     }
-    while (len < width)
-        text[len++] = ' ';
-    text[len] = 0;
-    video_text(col, row, text);
+    for (i = 0; i <= len; i++)
+    {
+        char a = i ? s[i - 1] : ' ', b = i < len ? s[i] : ' ';
+        for (k = 0; k < sizeof halves - 1 && (halves[k] != a || halves[k + 1] != b); k += 2)
+            ;
+        cells[i] = k < sizeof halves - 1 ? MENU_TILE_HALF + k / 2 : MENU_TILE_GLYPH;
+        if (k >= sizeof halves - 1)
+            DEBUG_LOG("no half for %c%c\n", a, b);
+    }
+    xram0_write(XRAM_MENU_MAP + row * TEXT_COLS + center - (len + 1) / 2, cells, len + 1);
 }
 
 /* A thin steel rule across the cells from left to right, on row. */
@@ -159,9 +164,9 @@ void video_rule(uint8_t left, uint8_t right, uint8_t row)
     xram0_set(XRAM_MENU_MAP + row * TEXT_COLS + left, MENU_TILE_RULE, right - left + 1);
 }
 
-/* A dark box in cells from left, top to right, bottom: framed in caution
-   tape and steel, or BOX_PLAIN, without. */
-void video_box(uint8_t left, uint8_t top, uint8_t right, uint8_t bottom, uint8_t frame)
+/* A dark box in cells from left, top to right, bottom, framed in caution
+   tape and steel. */
+void video_box(uint8_t left, uint8_t top, uint8_t right, uint8_t bottom)
 {
     uint8_t cells[TEXT_COLS];
     uint8_t row, col, n = right - left + 1;
@@ -176,7 +181,7 @@ void video_box(uint8_t left, uint8_t top, uint8_t right, uint8_t bottom, uint8_t
             uint8_t edge_col = col == 0 ? 0 : col == n - 1 ? 2 : 1;
             static const uint8_t pieces[3][3] = {{0, 4, 1}, {6, 0xFF, 7}, {2, 5, 3}};
             uint8_t piece = pieces[edge_row][edge_col];
-            cells[col] = frame == BOX_PLAIN || piece == 0xFF ? MENU_TILE_GLYPH : MENU_TILE_FRAME + piece;
+            cells[col] = piece == 0xFF ? MENU_TILE_GLYPH : MENU_TILE_FRAME + piece;
         }
         xram0_write(XRAM_MENU_MAP + row * TEXT_COLS + left, cells, n);
     }

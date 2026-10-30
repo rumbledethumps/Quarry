@@ -8,9 +8,9 @@ and play again.
 preset: llvm-mos/Release
 publish: quarry.zip
 -->
-[![Quarry](https://rumbledethumps.github.io/Quarry/quarry/screenshot.png)](https://rumbledethumps.github.io/Quarry/quarry/)
+[![Quarry](https://rumbledethumps.github.io/quarry/quarry/screenshot.png)](https://rumbledethumps.github.io/quarry/quarry/)
 
-[Play it in your browser](https://rumbledethumps.github.io/Quarry/quarry/).
+[Play it in your browser](https://rumbledethumps.github.io/quarry/quarry/).
 
 ## Controls
 
@@ -34,9 +34,12 @@ build has cheats too: in play, Shift and Right adds a ball, Shift and Left
 takes one away, and Shift and Up or Down adds or takes away a segment of
 energy. On the upgrade screen, Shift and Right or Left raises or lowers the
 upgrade picked, for nothing, or, on the levels, opens the next level or
-locks the last one again. On any screen, Shift and a number brings in that
-talk of the dwarves, in the order of `TALKS` in `art/talk.py`, to see how
-it looks there, without counting it as seen.
+locks the last one again. On any screen, Shift and the letters of the top
+row, Q, W, E and R, bring in the talks of the dwarves, in the order of
+`TALKS` in `art/talk.py`, but the coins', and Shift and a level's number,
+of one digit or two, brings in the coin's for that level as Shift is let
+go, each to see how it looks there, without counting it as seen. With
+Shift, WASD and P are not moves or the menu.
 
 The playfield is framed in gray steel the ball bounces off, riveted
 girders or an open truss, a frame set picked at random for each new level,
@@ -77,15 +80,16 @@ Each level places its own walls and bricks, so a playfield can be any
 width, and its walls any distance from its bricks, each side on its own.
 Level 1 is 4 by 4 gray bricks, 2 px apart, with half a brick of room for
 the ball at each wall, and level 2 the same with red ones in the middle of
-its top two rows. Levels 3 to 10 are level 2 again until they are
-designed.
+its top two rows. There are 5 levels, and levels 3 to 5 are level 2 again
+until they are designed.
 
-A new game starts with a cartoon dwarf miner coming up in the lower left
-corner, his speech bubble coming in beside him with a welcome, a stand-in
-for now. The button on its OK sends them away. He comes back with the coin
-for each first clear, and on the upgrade screen to explain the first
-unlock and, the first time there, what the screen is for. More dwarves,
-and more for them to say, are coming.
+Three cartoon dwarves have something to say, each coming up in a lower
+corner with his speech bubble coming in beside him. The button on its OK
+brings his next bubble, or sends them away. A friendly dwarf greets the
+player on the title with no save, and says what the upgrade screen is for
+the first time there. The foreman starts a new game's first level, and on
+the upgrade screen explains the first unlock. The union's committeeman
+hands over the coin for each first clear.
 
 The game saves when a level starts or ends, when it pauses, and when an
 upgrade is bought, in `SAVE:quarry.save`, with what the dwarves have

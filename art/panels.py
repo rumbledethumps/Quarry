@@ -58,7 +58,6 @@ LAYOUTS = [
     dict(rows=18, start=5, top='H......Bb..H', bottom='Bb........Bb', left='....Bb....', right='Bb......Bb'),
     dict(rows=16, start=2, top='H......Bb..H', bottom='....Bb......', left='Bb......', right='...Bb...'),
     dict(rows=16, start=4, top='H...Bb.....H', bottom='Bb......Bb..', left='...Bb...', right='Bb......'),
-    dict(rows=14, start=7, top='H..........H', bottom='..Bb..Bb....', left='..Bb..', right='Bb....'),
 ]
 
 # The cells of art/panel-frame.png that plain steel and bolts come from.

@@ -12,22 +12,25 @@ import os
 import struct
 import sys
 
-from game import Game, check
+from game import Game, check, rom
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'art'))
 from panels import FONT  # noqa: E402
+import menus  # noqa: E402
 
-END_ITEMS = ['THE DRY', 'REPLAY', 'MAIN MENU']
+END_ITEMS = ['TO THE DRY', 'REPLAY', 'MAIN MENU']
 
 
 def tuning(game):
     """The upgrade tables of src/upgrades.c, from RAM."""
-    width_ranks, speed_ranks = game.sym['WIDTH_RANKS'], game.sym['SPEED_RANKS']
+    width_ranks, speed_ranks, burn_ranks = (game.sym[f'{u}_RANKS'] for u in ('WIDTH', 'SPEED', 'BURN'))
     table = lambda name, count, size: [game.ram(f'{name}+{i * size}', size) for i in range(count)]
     return {'TUNE_WIDTHS': table('widths', width_ranks + 1, 1),
             'TUNE_WIDTH_COSTS': table('width_costs', width_ranks, 2),
             'TUNE_SPEEDS': table('speeds', speed_ranks + 1, 2),
-            'TUNE_SPEED_COSTS': table('speed_costs', speed_ranks, 2)}
+            'TUNE_SPEED_COSTS': table('speed_costs', speed_ranks, 2),
+            'TUNE_BURNS': table('burns', burn_ranks + 1, 1),
+            'TUNE_BURN_COSTS': table('burn_costs', burn_ranks, 2)}
 
 
 def main():
@@ -74,7 +77,7 @@ def main():
     def settle():
         game.run(40)
 
-    # The level ends: the menu, with THE DRY picked, takes no choice for a
+    # The level ends: the menu, with TO THE DRY picked, takes no choice for a
     # moment.
     game.tap('space')
     game.poke('balls', 0)
@@ -83,7 +86,7 @@ def main():
     check(game.ram('game_state') == sym['STATE_MENU'], 'the menu opens when the level ends')
     check(game.ram('paddle_state') == sym['PADDLE_LEAVING'], 'and out of balls, the sled flies home')
     check(all(game.shows(w) for w in ['OUT OF BALLS'] + END_ITEMS), 'it says OUT OF BALLS, with its items')
-    check(end_picked() == 'THE DRY', 'THE DRY is picked')
+    check(end_picked() == 'TO THE DRY', 'THE DRY is picked')
     check(cursor_on_item('end_menus', 0), 'and the cursor is on it at once')
     game.tap('space')
     game.run(10)
@@ -101,7 +104,7 @@ def main():
         game.tap(key)
         check(end_picked() == was, f'{key} does not move the pick')
     game.tap('up')
-    check(end_picked() == 'THE DRY', 'up from the first stays: the menu does not wrap')
+    check(end_picked() == 'TO THE DRY', 'up from the first stays: the menu does not wrap')
     for _ in END_ITEMS:
         game.tap('down')
     check(end_picked() == 'MAIN MENU', 'down from the last stays')
@@ -114,19 +117,41 @@ def main():
     # The upgrade screen, with no nuggets: a panel for each upgrade, the
     # first lit in the middle, and nothing to buy.
     game.poke('nuggets', 0, 2)
-    game.menu_choose('THE DRY', wait=False)
+    game.menu_choose('TO THE DRY', wait=False)
     game.talk_ok()  # the dwarf's first word on the screen
     game.run(20)  # past the flicker of the panel in the middle
     check(game.ram('panel_picked') == 0 and game.ram('cursor_on') == sym['ON_RAIL'],
           'it opens on the rail, with the first panel picked')
-    check(panel(0, sym['TITLE_ROW']) == 'WIDER SLED' and panel(1, sym['TITLE_ROW']) == 'FASTER SLED',
+    check(panel(0, sym['TITLE_ROW']) == 'SIZE' and panel(1, sym['TITLE_ROW']) == 'SPEED',
           'the panels show their titles')
     widths = tune['TUNE_WIDTHS']
     check(panel(0, sym['EFFECT_ROW']) == f'{widths[0]} \x10 {widths[1]} PX', 'and what the next width is')
     check(panel(0, sym['COST_ROW']) == str(tune['TUNE_WIDTH_COSTS'][0]), 'and what it costs')
-    check(panel(2, sym['TITLE_ROW']) == 'HEAVIER BALL' and panel(2, sym['EFFECT_ROW']) == '1 \x10 2 DAMAGE',
+    check(panel(2, sym['TITLE_ROW']) == 'WEIGHT' and panel(2, sym['EFFECT_ROW']) == '1 \x10 2 DAMAGE',
           "and the ball's damage has its panel")
     check(panel_lit(0) and not panel_lit(1), 'the middle panel is lit and the next one dim')
+    # The size and speed panels' picture is the smallest sled with two jets.
+    rank = sym['SLED_PICTURE']
+    check(game.ram(f'jets+{rank}') == 2 and game.ram(f'jets+{rank - 1}') < 2,
+          f'size and speed show the sled of rank {rank}, the smallest with two jets')
+    # The weight panel's picture is the weight, centered at the top of its
+    # plate, a whole cell clear of the title, in its own colors, dim, as the
+    # panel is.
+    build = os.path.dirname(os.path.dirname(rom()))
+    art = lambda name: open(os.path.join(build, name), 'rb').read()
+
+    def own_picture(p, name):
+        sprite = sym['XRAM_MENU_SPRITES'] + p % sym['PANEL_SLOTS'] * sym['PANEL_SPRITES'] * sym['SPRITE_BYTES']
+        x, y, image, colors, size = struct.unpack('<hhHHB', game.xram(sprite, 9))
+        w, h = sym[f'{name.upper()}_W'], sym[f'{name.upper()}_H']
+        left = sym['PANEL_LEFT'] + p * sym['PANEL_STEP'] - game.ram('panel_scroll', 2)
+        check(size == (h // 4 - 1) << 4 | (w // 4 - 1) and x == left + (8 * sym['PANEL_COLS'] - w) // 2 and
+              y == sym['PANEL_Y'] + sym['PICTURE_ROW'] * 8 and y + h + 8 <= sym['PANEL_Y'] + sym['TITLE_ROW'] * 8,
+              f'the {name} is {w} across, centered on its panel, a cell clear of the title: {x}, {y}')
+        check(game.xram(image, w * h // 2) == art(f'{name}.bin') and
+              game.xram(colors, 32) == art(f'{name}-colors.bin')[32:], f'the {name} is in its own colors, dim')
+
+    own_picture(2, 'weight')
     game.tap('space')
     game.cmd('expect-not "bought"')
     check(game.ram('upgrade_ranks', 2) == 0, 'no upgrade without the nuggets')
@@ -141,6 +166,12 @@ def main():
     check(game.sprite(f'XRAM_MENU_SPRITES')[0] == picture - sym['PANEL_STEP'],
           'the picture slides with its panel')
     check(panel_lit(1) and not panel_lit(0), 'and it is lit, the one it left dim')
+    burns = [f'{b // 10}.{b % 10}' for b in tune['TUNE_BURNS']]
+    check(panel(3, sym['TITLE_ROW']) == 'EFFICIENCY' and
+          panel(3, sym['EFFECT_ROW']) == f'{burns[0]} \x10 {burns[1]} L/S' and
+          panel(3, sym['COST_ROW']) == str(tune['TUNE_BURN_COSTS'][0]),
+          f'and the last, efficiency, in liters a second: {panel(3, sym["EFFECT_ROW"])!r}')
+    own_picture(3, 'jerrycan')
     for _ in range(sym['PANELS']):
         game.tap('right')
     check(game.ram('panel_picked') == sym['PANELS'] - 1, 'right stops at the last panel')
@@ -202,12 +233,18 @@ def main():
     check(panel(0, sym['COST_ROW']) == 'MAX', 'the top rank shows MAX')
     print('ok: bought every width')
 
-    # A rank of speed, on the next panel.
+    # A rank of speed, on the next panel, and of fuel efficiency, on the last.
     game.tap('right')
     game.tap('space')
     game.wait('bought speed 1', 10)
     have -= tune['TUNE_SPEED_COSTS'][0]
     check(game.ram('nuggets', 2) == have, 'speed 1 costs its cost')
+    game.tap('right')
+    game.tap('right')
+    game.tap('space')
+    game.wait('bought efficiency 1', 10)
+    have -= tune['TUNE_BURN_COSTS'][0]
+    check(game.ram('nuggets', 2) == have, 'fuel efficiency 1 costs its cost')
 
     # Down goes to the levels, where only the open ones can be picked.
     game.tap('down')
@@ -246,9 +283,18 @@ def main():
     # it with the paddle upgraded.
     game.tap('space')
     check(game.shows('BEGIN LEVEL 1?'), 'the button asks to begin the level')
+    # Text an odd number of letters long goes half a cell over, so it is
+    # centered in the box too: YES in the halves of art/menus.py, from a
+    # space to a space, either side of the box's middle.
+    center, top = game.ram('begin_menu'), game.ram('begin_menu+1')
+    yes_row = top + sym['HEAD_ROWS'] + 1
+    cells = game.xram(sym['XRAM_MENU_MAP'] + yes_row * sym['TEXT_COLS'] + center - 2, 4)
+    halves = menus.pairs()
+    check(list(cells) == [sym['MENU_TILE_HALF'] + halves.index(p) for p in (' Y', 'YE', 'ES', 'S ')],
+          f'YES goes half a cell over, centered in the box: {list(cells)}')
     game.tap('space')
     game.until('game_state', 'STATE_PLAY', 30)
-    game.run(2)
+    game.ready()
     width, speed = widths[-1], tune['TUNE_SPEEDS'][1]
     check(game.ram('paddle_width') == width, f'the paddle is {width} px wide now')
     check(game.ram('paddle_speed', 2) == speed, f'and moves {speed} a step')
@@ -267,10 +313,18 @@ def main():
     check(abs(moved - (steps - 1) * speed / 256) <= speed / 256 + 1,
           f'the paddle moves at its new speed, {moved} px in {steps} steps')
     print(f'ok: a {width} px paddle moving {speed / 256} px a step')
+    game.cmd('press space')
+    game.wait('launch', 5)
+    game.cmd('release space')
+    full = game.ram('energy', 2)
+    game.run(60)
+    burn, burned = tune['TUNE_BURNS'][1], full - game.ram('energy', 2)
+    check(55 * burn <= burned <= 65 * burn, f'and the fuel burns {burn} a step, burned {burned} in 60')
 
     # The first clear of level 1 earns a coin and opens level 2, which the
     # upgrade screen picks. Clearing it again earns nothing.
     def clear():
+        game.ready()
         game.tap('space')
         game.run(20)
         game.paused_poke([('bricks_left', 0, 1)])
@@ -299,14 +353,15 @@ def main():
     game.menu_choose('REPLAY')
     clear()
     check(game.ram('coins', 2) == 1, 'no coin for clearing it again')
-    game.menu_choose('THE DRY')
+    game.menu_choose('TO THE DRY')
     game.run(5)
     check(game.ram('level_picked') == 1 and game.ram('cart_scroll', 2) == 0,
           'the upgrade screen opens on level 1, just cleared')
     check(game.ram('unlocking') == 2 and game.shown(sym['XRAM_HALF_SPRITES'], 2) == 2,
           'and the lock of level 2 shows, to break')
-    check(game.shown(sym['XRAM_LOCK_SPRITES'], sym['LOCKS']) == sym['LOCKS'],
-          'with padlocks on the carts locked after it')
+    locked = min(sym['LOCKS'], sym['LEVELS'] - 2)
+    check(game.shown(sym['XRAM_LOCK_SPRITES'], sym['LOCKS']) == locked,
+          f'with padlocks on the {locked} carts locked after it')
     game.wait('unlocked 2', 200)
     check(game.ram('levels_shown') == 2 and game.ram('unlocking') == 0 and game.ram('level_picked') == 2,
           'the lock breaks, and level 2 shows open, picked')
@@ -318,7 +373,7 @@ def main():
     check(game.shows('BEGIN LEVEL 2?'), 'and asks to begin level 2')
     game.tap('space')
     game.until('game_state', 'STATE_PLAY', 30)
-    game.run(2)
+    game.ready()
     print('ok: a coin for the first clear, and the next level')
 
     # Level 2 is level 1 with red bricks in the middle of its top two rows,

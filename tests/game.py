@@ -16,7 +16,9 @@ commands take the same names, and expressions of them, wherever they take
 a number, as in "wait game_state STATE_PLAY", so a test holds no addresses
 and no copies of the game's numbers. Text on the
 screen is read from the menus' map at XRAM_MENU_MAP, a tile a byte, each
-tile from MENU_TILE_GLYPH a letter of the panels' font, and the sprites
+tile from MENU_TILE_GLYPH a letter of the panels' font. The title's panels
+are known by their map, which is one of art/title_panels.py's, but for the
+progress, from TITLE_TILE_GLYPH a letter of its font. The sprites are read
 from their lists in XRAM.
 
 The script's frames do not line up with the game's steps, so a read of the
@@ -36,6 +38,8 @@ sys.path.insert(0, os.path.join(HERE, '..', 'tools'))
 sys.path.insert(0, os.path.join(HERE, '..', 'art'))
 import rp6502  # noqa: E402
 from panels import FONT  # noqa: E402
+import menus  # noqa: E402
+import title_panels  # noqa: E402
 from png2bin import read_png  # noqa: E402
 
 
@@ -105,18 +109,26 @@ class Game(rp6502.Emu):
         self.booted = True
 
     def new_game(self):
-        """From the title screen with no save, where New Game is picked,
-        start a new game, and get past the dwarf's welcome."""
+        """From the title screen with no save, where Start Game is all
+        there is, start a new game, get past the dwarf's welcome, and wait
+        for the level to build up."""
         if not self.booted:
             self.boot()
         self.tap('space')
         self.until('game_state', 'STATE_PLAY')
         self.talk_ok()
+        self.ready()
+
+    def ready(self):
+        """Wait for the level to build up, until its ball has landed on the
+        sled, ready to launch."""
+        self.until('building', 0, 60 + 2 * self.sym['TUNE_BUILD_STEPS'])
 
     def talk_ok(self):
-        """Get past the dwarves: wait for each one's OK, press the button, and
-        wait until he has gone, and the next comes in, or the last has gone
-        and the screen under him has taken over again."""
+        """Get past the dwarves: wait for each bubble's OK, press the button,
+        and wait until his next bubble comes in, or he has gone, and the next
+        comes in, or the last has gone and the screen under him has taken
+        over again."""
         off, coming = self.sym['TALK_OFF'], self.sym['TALK_IN']
         self.run(2)
         while self.ram('talk_state') != off:
@@ -190,16 +202,43 @@ class Game(rp6502.Emu):
         return int(digits) if digits else None
 
     def letters(self, tiles):
-        """The menus' tiles as text: a letter for each glyph, and a space
+        """The menus' tiles as text: a letter for each glyph, the letter on
+        the right of each half, as text half a cell over reads, and a space
         for anything else."""
-        first = self.sym['MENU_TILE_GLYPH']
-        return ''.join(FONT[t - first] if 0 <= t - first < len(FONT) else ' ' for t in tiles)
+        first, half, halves = self.sym['MENU_TILE_GLYPH'], self.sym['MENU_TILE_HALF'], menus.pairs()
+        return ''.join(FONT[t - first] if 0 <= t - first < len(FONT) else
+                       halves[t - half][1] if 0 <= t - half < len(halves) else ' ' for t in tiles)
 
     def shows(self, text):
         """Whether the text is anywhere in the menus."""
         cols = self.sym['TEXT_COLS']
         data = self.xram('XRAM_MENU_MAP', cols * self.sym['TEXT_ROWS'])
         return any(text in self.letters(data[r:r + cols]) for r in range(0, len(data), cols))
+
+    def title_panels(self):
+        """The title's panels as they show: 'SAVE' or 'START', the map of
+        art/title_panels.py they are, but for the progress, or None, off the
+        screen."""
+        cols, rows, row = self.sym['TITLE_COLS'], self.sym['TITLE_ROWS'], self.sym['TITLE_PROGRESS_ROW']
+        x = struct.unpack('<h', self.xram('XRAM_PANEL_CONFIG+2', 2))[0]
+        if x >= self.sym['SCREEN_W']:
+            return None
+        size = cols * rows
+        shown = self.xram('XRAM_TITLE_MAP', size)
+        asset = open(os.path.join(os.path.dirname(os.path.dirname(rom())), 'title_panels.bin'), 'rb').read()
+        but = lambda m: m[:row * cols] + m[(row + 1) * cols:]
+        for name in title_panels.MAPS:
+            at = self.sym['TITLE_ART_BYTES'] + self.sym[f'TITLE_MAP_{name}'] * size
+            if but(asset[at:at + size]) == but(shown):
+                return name
+        fail('the title shows panels of none of its maps')
+
+    def progress(self):
+        """The progress on the title's panels, as text."""
+        cols, row, first = self.sym['TITLE_COLS'], self.sym['TITLE_PROGRESS_ROW'], self.sym['TITLE_TILE_GLYPH']
+        font = title_panels.FONT
+        line = self.xram(f'XRAM_TITLE_MAP+{row * cols}', cols)
+        return ''.join(font[t - first] if 0 <= t - first < len(font) else '#' for t in line).strip('#').strip()
 
     def screen(self, path):
         """The screen, as rows of RGB tuples."""
@@ -226,10 +265,10 @@ class Game(rp6502.Emu):
         self.cmd(f'wait {name} {value} {frames}')
 
     def menu_choose(self, item, wait=True):
-        """Choose THE DRY, REPLAY or MAIN MENU on the menu when a level ends.
-        It opens with THE DRY picked and waits a second before it takes a
+        """Choose TO THE DRY, REPLAY or MAIN MENU on the menu when a level
+        ends. It opens with TO THE DRY picked and waits a second before it takes a
         choice. Works with a Release ROM too, which logs nothing."""
-        items = ['THE DRY', 'REPLAY', 'MAIN MENU']
+        items = ['TO THE DRY', 'REPLAY', 'MAIN MENU']
         states = ['STATE_SHOP', 'STATE_PLAY', 'STATE_TITLE']
         if wait:
             self.run(self.sym['LEVEL_OVER_WAIT'] + 10)

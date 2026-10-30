@@ -121,19 +121,24 @@ void sled_show(unsigned sprites, uint8_t count, int16_t x, int16_t y, uint8_t ra
 
 /* The paddle is a sled, a picture of the sled for its width from
    art/sleds/, and a sprite for each of its jets, so they can swivel. Its
-   width, jets and speed come from the upgrades bought so far. */
-void paddle_start(void)
+   width, jets and speed come from the upgrades bought so far. It starts
+   below the screen, in the middle, to rise into place as the level builds
+   up, but on the level played again while it hovers, when it stays where
+   it is, under the player's control. */
+void paddle_start(uint8_t again)
 {
     uint8_t i;
 
-    paddle_state = PADDLE_HOVER;
     state_steps = 0;
+    steer = 0;
+    if (again && paddle_state == PADDLE_HOVER)
+        return;
+    paddle_state = PADDLE_RISING;
     paddle_width = upgrades_width();
     paddle_speed = upgrades_speed();
     paddle_x = FIX((play_left + play_right - paddle_width) / 2);
-    paddle_y = FIX(TUNE_PADDLE_Y);
+    paddle_y = FIX(SCREEN_H);
     paddle_left = 0;
-    steer = 0;
     sled_rank = upgrade_ranks[UPGRADE_WIDTH];
     sled_tilt = 0;
     sled_jets = upgrades_jets_at(sled_rank);
@@ -144,6 +149,26 @@ void paddle_start(void)
     for (i = 0; i < JETS_MAX; i++)
         sprite_set(SMOKE_SPRITE(i), SMOKE_IMAGE(0), XRAM_PALETTE_FX, MODE5_SIZE(8, 8));
     paddle_moved = 1;
+}
+
+/* The rising paddle where it is at step of the level's build-up, from
+   below the screen, slowing as it comes into place by TUNE_RISE_STEPS,
+   where it hovers, under the player's control. */
+void paddle_rise(uint8_t step)
+{
+    uint8_t left = step < TUNE_RISE_STEPS ? TUNE_RISE_STEPS - step : 0;
+
+    if (paddle_state != PADDLE_RISING)
+        return;
+    paddle_y = FIX(TUNE_PADDLE_Y) +
+               (int32_t)FIX(SCREEN_H - TUNE_PADDLE_Y) * left * left / (TUNE_RISE_STEPS * TUNE_RISE_STEPS);
+    paddle_moved = 1;
+    if (!left)
+    {
+        paddle_state = PADDLE_HOVER;
+        state_steps = 0;
+        DEBUG_LOG("paddle in place\n");
+    }
 }
 
 /* The level is cleared, or the last ball is lost: a hovering paddle flies
@@ -254,7 +279,7 @@ static void jet_draw(uint8_t i, int16_t x, int16_t y, uint8_t tilt)
         sprite_hide(JET_SPRITE(i));
         return;
     }
-    if (paddle_state == PADDLE_HOVER || paddle_state == PADDLE_LEAVING)
+    if (paddle_state == PADDLE_HOVER || paddle_state == PADDLE_LEAVING || paddle_state == PADDLE_RISING)
     {
         frame = JET_FLAME + flame_cycle[(state_steps / FLAME_STEPS + i * 3) & 7];
         if (steer)

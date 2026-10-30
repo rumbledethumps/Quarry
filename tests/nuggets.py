@@ -115,7 +115,7 @@ def main():
     game.wait('out of balls', 600)
     before = game.ram('nuggets', 2)
     game.menu_choose('REPLAY')
-    game.run(5)
+    game.ready()
     check(game.ram('nuggets', 2) == before, 'the count lasts into the next level')
     check(count() == before, 'the count shows it')
 

@@ -28,6 +28,7 @@ extern int16_t bricks_hit_bottom;
 void bricks_layout(uint8_t level);
 void bricks_shuffle(void);
 void bricks_start(void);
+void bricks_lay(uint8_t step);
 uint8_t bricks_hit(int16_t x, int16_t y, uint8_t w, uint8_t h);
 uint8_t bricks_touch(int16_t x, int16_t y, uint8_t w, uint8_t h);
 void bricks_step(void);

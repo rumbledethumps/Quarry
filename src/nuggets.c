@@ -76,7 +76,7 @@ void coins_add(void)
     coins_draw();
 }
 
-void nuggets_add(uint8_t color)
+static void nuggets_add(uint8_t color)
 {
     if (nuggets[color] < 0xFFFF)
         nuggets[color]++;

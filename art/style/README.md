@@ -22,10 +22,10 @@ bought its rank.
 | NUGGET | The token that comes out of a broken brick, a ball of its color, and flies to the counts. Nuggets buy upgrades. |
 | COIN | One for the first clear of each level, never again. Coins will open the upgrades' next tiers. |
 | SLED | The paddle, which floats on its jets. |
-| FUEL | What the gauge on the right shows. When it runs out, the sled falls, and the level ends once the balls in play have fallen off the screen too. |
+| FUEL | What the gauge on the right shows, 100 liters full, burned in liters a second, L/S. EFFICIENCY burns less. When it runs out, the sled falls, and the level ends once the balls in play have fallen off the screen too. |
 | BALL | The ball, and the count of those left. |
 | HITS | What breaks a brick: each hit of the ball does its DAMAGE, and the brick breaks once the damage reaches its hits. |
-| THE DRY | The upgrade screen, as the menus and the dwarves call it: the change house at a mine, where miners change into their work clothes, hang their wet gear to dry, and wait for their shift. The code and this guide still call it the upgrade screen. |
+| THE DRY | The upgrade screen, as the dwarves call it, and the menus' TO THE DRY: the change house at a mine, where miners change into their work clothes, hang their wet gear to dry, and wait for their shift. The code and this guide still call it the upgrade screen. |
 | UPGRADE | A panel on the rail in THE DRY, and what it buys. |
 | CART | A level, on the train of mine carts under the rail. |
 
@@ -39,12 +39,39 @@ brick of space at each wall. The widest can be about 10 bricks, with a
 little rock left on each side. Each level is laid out fresh, so the
 curtains never move while anyone watches.
 
+A level builds up as it starts, over `TUNE_BUILD_STEPS`, 2 seconds for
+now. It opens with the frame and the curtains, but no bricks, no sled, the
+gauge empty and the meter down, and if a dwarf has something to say, he
+says it over that. The build-up starts as he goes, or at once without him,
+and everything in it starts together:
+
+- The sled rises from below the screen, slowing into its place by
+  `TUNE_RISE_STEPS`, where it is the player's.
+- The bricks are laid one at a time, evenly over the time, bottom row
+  first, each row left to right.
+- The gauge fills from empty at the rate that fills it in that time, and
+  its bubbles rise with it: see [The Energy Gauge](#the-energy-gauge).
+- A ball flies from the count of balls to its place on the sled, leaving
+  so as to land as the time is up, and chasing the sled if it moves. The
+  count drops as the ball leaves it. Once it lands, it can be launched,
+  and the meter comes up green.
+
+Played again, it builds up over what is left: each fresh brick is laid
+over whatever was there, broken, cracked or whole, the gauge rises only
+once the fill reaches the fuel it holds, and the meter, if it is up,
+slides down first. The end menu covers the machine, and the meter goes
+down under it. A sled hovering at a restart stays where it is, and is the
+player's at once; the ball in play goes at once. A sled sputtering or
+falling goes at once, to rise again. Every lost ball's replacement flies
+from the count the same way, while the fuel drains; if the fuel runs out
+as it comes, it chases the falling sled down.
+
 The counts float over the curtains, with no panels behind them:
 
 - **Upper left:** a count for each kind of nugget, with a sprite of the
   nugget beside it, a line for each, room for 8 or more.
-- **Lower left:** the count of balls, with a sprite of the ball beside it,
-  in the same presentation as the nuggets.
+- **Lower left:** the count of balls not yet in play, with a sprite of the
+  ball beside it, in the same presentation as the nuggets.
 - **Right:** the energy gauge, a sight glass down the right edge, from
   the top of the screen to its foot: see [The Energy Gauge](#the-energy-gauge).
 
@@ -63,11 +90,23 @@ most of XRAM to itself.
 
 The title has the same cave as a level, with no frame: a texture behind
 everything and a curtain set, both picked at random each time, with the
-curtains just outside the word QUARRY. Under the logo are the menu,
-RESUME and NEW GAME, and under it a box as wide as the menu with the
-progress of the save, as a percent. There is no sled on the title, and no
-way to exit the game: every menu leads to another screen. More decoration
-comes later.
+curtains just outside the word QUARRY. Under the logo hang panels like
+the upgrade screen's: see [The Title's Panels](#the-titles-panels). There
+is no sled on the title, and no way to exit the game: every menu leads to
+another screen.
+
+- With a save, the menu's panel holds CONTINUE GAME, picked, and DELETE
+  SAVE, and the progress of the save is on a panel of its own that hangs
+  from it on two hangers: PROGRESS 42%, with a space more under 10%, so
+  the line is always as long and centers on the cells, and at 100%,
+  100% COMPLETE!
+- With none, as the first time, a smaller panel holds START GAME alone,
+  and a dwarf in the lower left greets the player: "WELCOME, GREENHORN.
+  HEAD ON IN WHEN YOU'RE READY TO BREAK SOME ROCK." His bubble has no OK,
+  and he stays while the player picks. START GAME begins level 1.
+- DELETE SAVE asks first, in a box of caution tape in the panels' place,
+  with NO picked, and Esc is NO too. YES deletes the save, and the title
+  of none shows at once, with the dwarf coming in. No game starts.
 
 ## Stone: the levels
 
@@ -115,6 +154,15 @@ of them by rule, and nothing is touched up by hand:
 - **Coin:** the same circle as the big nugget, in the sled row's gold,
   beveled, with a square hole cut in the middle, clear inside an outline
   of its own, as every edge is outlined.
+- **Big coin:** the coin the committeeman hands over, at the left of his
+  bubble, `art/big-coin.png`, 44 across in its own 14 colors: gold, its
+  square hole small, its sides level, with a raised rim, and lettering
+  embossed on it: SMEGHEAD round the top, MI ESTAS FIŜO round the bottom,
+  JMC over the hole and 169 under it. It needs only to look like text:
+  just recognizable as those words to someone told what the top says.
+  Retro Diffusion drew it, `ref/big-coin.png`, from a description of a
+  mock-up drawn by code at 56. It was cut to the coin, and the green
+  round it and in the hole cleared.
 - **Ball:** a sphere shaded as the nuggets are, but a very bright white,
   8 px across in play, and as tall as the digits by its count.
 
@@ -144,8 +192,9 @@ machines of the mine:
   were is a window, and in it, as in an old parking meter, a paddle that
   slides up: green, yellow, and red when the fuel is low. The window is
   clear, so the floor shows round the paddle, and the paddle nearly fills
-  it. Its red lamp blinks with each beep. Upgrades may add more machines
-  along the walls.
+  it. It is down while the level builds up, and comes up as the ball
+  lands. Its red lamp blinks with each beep. Upgrades may add more
+  machines along the walls.
 
 ### Curtain Sets
 
@@ -253,8 +302,7 @@ Diffusion or by hand, and `art/frames.py` cuts it to the game's sizes.
 - The concepts in `art/style/ref/frame-*.png` hold more looks for the next
   sets, such as the mine shaft frames of D1, D3 and D4.
 
-`art/screen.py` draws the machine, the digits, and the old energy bar, now
-only the upgrade screen's stand-in picture of the gauge. The machine's
+`art/screen.py` draws the machine and the digits. The machine's
 window is clear, and its meter's paddle, a sprite behind it, is drawn by
 hand in `art/gauge.py`, in the fitting row, as it is too small for any
 diffusion model.
@@ -327,11 +375,16 @@ post clear of it.
   it may. `art/gauge.py` draws it and the fittings.
 - Each time the ball bounces off the sled, a bubble rises from the foot of
   the fuel to its surface, a pale ring 3 across that sways a pixel either
-  way, while one of the 3 is free. At the surface it pops and throws up a
+  way, while one of the 16 is free. At the surface it pops and throws up a
   single drop of the fuel, which hops 3 px into the air and falls back in,
   as a real bubble does breaking through. A bubble is never taken from
   another: every one rises all the way, and is free again once its drop
   is back in.
+- While the fuel rises, as when it fills as a level builds up, every
+  bubble in it rises with it, a pixel for each pixel it rises, as well as
+  by itself, and it sends up bubbles of its own, each after 5 to 15 steps
+  of rising, at random: about 12 over a fill from empty. A refill that
+  bonuses bring will do the same.
 - The fittings are the pipe of the upgrade screen's backdrop, in its own
   steel colors, not brass, which would be taken for the safety yellow: a
   length of the U-shaped pipe behind the crusher in `art/backdrop.png`,
@@ -381,6 +434,60 @@ graphite steel with no yellow: there is nothing to be careful of here.
   Retro Diffusion can't make variants that join frame 1: at a low strength
   it copies it, at a high one it redraws its steel, and inpainting ignored
   its mask. New corners or edge pieces are drawn here, on frame 1's steel.
+- Each panel's picture is a sprite over its plate, in 16 colors at full
+  size, up to 1 KB, in the slot of XRAM its panel has. The text under it
+  moves up or down to fit it. WEIGHT's is `art/weight.png`, a cartoon ton
+  weight marked 1T, 40x40 in its own 15 colors. `art/weight-colors.png` has
+  them, then the same at half for a dim panel, as the sled's shade row is.
+  It sits at the top of the plate, a whole cell clear of the title.
+  Retro Diffusion drew it, `ref/ton-weight.png`, and its `color_reducer`
+  cut it to 15 colors with no dithering. SIZE and SPEED both show the
+  smallest sled with two jets, the game's own, doubled, its flames lit,
+  the same at every rank. EFFICIENCY's is `art/jerrycan.png`, 40x40, Retro
+  Diffusion's `ref/jerrycan.png` with its yellow paint mapped by lightness
+  onto the fuel's own colors, the liquid row of `art/palettes.png`, and its
+  hose cut off, as it read as a leak. The rest of its colors, but its black
+  outline and its display's green, were cut by median cut to make 15,
+  keeping the fuel's exact. `art/jerrycan-colors.png` holds them lit and at
+  half, as the weight's does.
+
+### The Title's Panels
+
+The title's panels are the upgrade screen's, made again by
+`art/title_panels.py` for a 4-bit tile layer of their own on plane 1, in
+one palette of 16 colors, in what XRAM the title has left. The steel is cut
+from frame 1's 22 colors to 11, merging the closest, beside black, the
+plate and the menus' two creams. Only the lit tiles come, as nothing on
+the title dims, and the text is the menus' font on the plate.
+
+- All the title's text is centered. `art/title_panels.py` draws the
+  menus' items into the maps, each centered to the pixel, so CONTINUE
+  GAME and DELETE SAVE, of odd lengths, are half a cell over, in tiles of
+  their own. The game writes only the progress, whose line is always an
+  even length. The upgrade screen's text stays on the cells, to keep it
+  simple to work on.
+
+- Every panel is symmetrical, unlike the upgrade screen's, whose plain
+  steel and bolts fall wherever the walk through frame 1's cells puts
+  them: frame 1's four corners as they are, the run between them along
+  the top and the bottom built for its left half and turned over for its
+  right, a pair of bolts in each half, and the run down each side built
+  for its top half and turned over for its bottom. Every panel has the
+  same pieces in the same places.
+- All are 20 cells across, as wide as a menu's box, so the menus' cursor
+  spans the plate. The menu's is 10 rows, its two items right under the
+  frame, and START GAME's 9, its item in the middle.
+- Frame 1's corners need 4 cells down each side, for the clamp by each
+  corner, so a panel is at least 8 rows. The progress panel is 7, a row of
+  plate over and under its line: its sides are plain steel, with one of
+  frame 1's clamps in the middle of each.
+- It hangs a row under the menu's panel on two of the upgrade screen's
+  hangers, at the ends of the run, each the other's mirror but lit from
+  the left, from 2 px into one frame to 2 px into the other.
+- The title has two maps in ROM, the save's and START GAME's, and room
+  for one in XRAM. It loads the one to show with the panels off the
+  screen, writes the progress, and puts them back, so they never show
+  half drawn.
 
 ### The Backdrop
 
@@ -488,7 +595,15 @@ shows, as the tape's 4 palette entries turn round.
 
 - `art/menus.py` builds the tiles: a glyph for each letter of the font,
   the frame's 4 corners and 4 edges, whose stripes join from cell to
-  cell, and the rule.
+  cell, the rule, and the halves.
+- Every title and item is centered in its box, which is 20 cells across.
+  Text an odd number of letters long goes half a cell over, in halves:
+  tiles of the right half of one letter and the left half of the next, a
+  tile for each pair side by side in `HALVES` of `art/menus.py`, with a
+  space at each end. RESTART, MAIN MENU, OUT OF FUEL and YES take 30,
+  which fit beside the dwarf the menus share their XRAM with. A new odd
+  text needs its pairs there; the upgrade screen's item says TO THE DRY,
+  10 letters, so it needs none.
 - A menu's title is set off from its items by a thin rule of light steel
   over its shadow, in the gap under it, two cells in from each side.
 - The holographic cursor of the upgrade screen picks in the menus too, a
@@ -500,52 +615,136 @@ shows, as the tape's 4 palette entries turn round.
   colors pulse. On the upgrade screen it
   slides into a question and back out; elsewhere it appears at once.
 - Nothing is grayed out: an item that doesn't apply is left off.
-- The title's boxes are plain, with no tape, until the title is
-  redesigned.
+- The title has no boxes but its question: its menus are on its panels,
+  with no box, and the cursor goes round their items there.
 
 ## The Dwarves
 
-Now and then a cartoon dwarf comes up from the foot of the screen with
-something to say, in a speech bubble that comes in from the right at the
-same time, the two stopping together. Half a second later the OK shows at
-the end of the last line, with the holographic cursor close round it, and the
-button sends them back the way they came. Only one dwarf shows at a time,
-and the cursor is off while they come and go. They show when a screen
-opens, never in the middle of play, and the screen under them carries on:
+Now and then a cartoon dwarf comes up from the foot of the screen, in a
+lower corner, with something to say, in a speech bubble that comes in from
+the other side at the same time, the two stopping together. Half a second
+later the OK shows at the end of the last line, with the holographic
+cursor close round it. Each bubble is as big as its lines. If he has more
+to say, the button sends his bubble back the way it came, and his next
+comes in the same way while he stays, its OK half a second later. After
+his last, it sends them both back the way they came. Only one dwarf shows at a
+time, and the cursor is off while they come and go. They show when a
+screen opens, never in the middle of play, and the screen under them
+carries on. There are three:
 
-- the first level of a new game starts with a welcome;
-- each first clear of a level has a dwarf hand over its coin, before the
-  menu opens;
-- on the upgrade screen, as level 2 unlocks, one says what an unlock
-  means, as the unlock goes on over the carts, and the first time there,
-  another says what the screen is for, after any other.
+- **The friendly dwarf**, down to earth and welcoming, the only one
+  without a helmet. He stands on the left.
+  - On the title with no save, he greets the player: "WELCOME,
+    GREENHORN. HEAD ON IN WHEN YOU'RE READY TO BREAK SOME ROCK." He has no
+    OK, and stays while the menu over him takes the input and keeps the
+    cursor, and goes with the title.
+  - The first time in THE DRY, in two bubbles: "THIS IS THE DRY. USE THE
+    PANELS TO UPGRADE YOUR MACHINES.", low over the carts so the panels
+    show, and "SELECT A CART TO BEGIN MINING THAT LEVEL.", higher, so the
+    carts show.
+- **The foreman**, serious but not mean. He stands on the right.
+  - At the start of the first level, over the level before it builds up,
+    which it does as he goes, clear of the count of balls, in three
+    bubbles: "OVER HERE, GREENHORN. PAY ATTENTION BECAUSE I WON'T REPEAT
+    MYSELF.", "PUSH THE BUTTON TO LAUNCH A WRECKING BALL THEN KEEP IT FROM
+    FALLING." and "THAT'S ALL. NOW GET TO WORK."
+  - The first time in THE DRY after level 2 unlocks, as the unlock goes on
+    over the carts, and before the friendly dwarf's word if that is due
+    too: "EVERY TIME YOU CLEAR A LEVEL THE NEXT BECOMES AVAILABLE."
+- **The committeeman**, the union steward, the union's Poobah, Lord High
+  Everything Else. He is friendly but not entirely trustworthy, and full
+  of himself: he is meant to be on the player's side, but the union and
+  the company battle it out with backroom deals and shifty stuff. That
+  has to come across in his face. He stands on the right. Each first
+  clear of a level, he hands over its coin, before the menu opens, the
+  big coin in his bubble beside the words. Level 1: "NICE WORK! HERE'S A UNION COIN." Level 2: "AREN'T YOU
+    QUITE THE NIPPER. YOU'VE EARNED ANOTHER COIN." Level 3: "DIDN'T ANYONE
+    EXPLAIN THE COINS TO YOU?" Level 4: "KEEP SAVING THESE COINS FOR
+    POWERFUL UPGRADES." Level 5, the last, in three bubbles: "YOU'VE EARNED
+    5 COINS AND COMPLETED THE GAME.", "SORRY, THE COINS DON'T DO ANYTHING
+    YET." and "THANK YOU FOR PLAYING MY GAME JAM ENTRY." A level with no
+    line of its own has level 1's.
 
 - A dwarf is a head-and-shoulders portrait, 80x80, in the outlined
   cartoon look of the sleds: bold shapes, a crisp dark outline, flat
-  shading in a few colors, light from the upper left, facing a little to
-  the right, toward his bubble. He stands in the lower left corner, his
-  shoulders on the foot of the screen, and covers the counts there. On the
-  upgrade screen his bubble's foot is just over the carts, so they show.
-- Each dwarf is a portrait in `art/dwarves/` as Retro Diffusion drew it,
-  in a frame of its own on a plain background. `art/talk.py` cuts off the
-  frame, clears the background from the edges in, and brings him down to
-  15 colors of his own. He is up to 3 sprites, a band across his head and
-  a band across his shoulders, each as narrow as he is there, in 2816
-  bytes at most, so every dwarf keeps to about his outline.
-- The miner, `art/dwarves/miner.png`, the third of four, `rd_pro__default`,
-  96x96: "Head and shoulders of a friendly cartoon dwarf miner, as a
-  character portrait in a 16-bit game's dialogue, facing a little to the
-  right as if talking to someone: a big bushy beard, a rounded steel
-  mining helmet with a lamp on the front, bright eyes under bushy brows,
-  sturdy work clothes with suspenders, a cheerful knowing expression,
-  clean bold shapes with a crisp dark outline, smooth flat shading in a
-  few colors, light from the upper left, on a plain flat pure green
-  background". Other dwarves, a schoolmaster or a general, are to be the
-  same dwarf in other clothes, each a talk of its own.
+  shading in a few colors, light from the upper left, facing a little
+  toward his bubble. He stands in a lower corner, his shoulders on the foot
+  of the screen: on the left he covers the counts there, and on the right
+  the foot of the gauge. On the upgrade screen his bubble's foot is just
+  over the carts, so they show. On the title, where he has no OK, his
+  bubble has no row under its last line.
+- Each dwarf is one portrait in `art/dwarves/`, named for him, and
+  `art/talk.py` says which way he faces in it. On the other side of the
+  screen he is the same turned round, and his light is let be.
+- Each is made in two takes, and the user picks one. A take not picked may
+  be kept for later.
+- Retro Diffusion draws him on an image wider than he is, so his arms are
+  whole, and the crop is ours: `art/talk.py` clears the background from
+  the edges in, and cuts him to 80x80, at the foot, and if he is wider, on
+  the side against the edge of the screen, so the arm toward his bubble
+  stays whole. A frame Retro Diffusion draws round him is cut off first;
+  the miner's cut off a few pixels of his arms. He is brought down to 15
+  colors of his own, in up to 3 sprites, a band across his head and a band
+  across his shoulders, each as narrow as he is there, in 2816 bytes at
+  most, so every dwarf keeps to about his outline.
+- The friendly dwarf, `art/dwarves/friendly.png`, began as the first of
+  two, `rd_pro__default`, 128x80: "Head and shoulders of a friendly cartoon
+  dwarf miner, down to earth and welcoming, bareheaded, facing a little to
+  the right as if talking to someone: a big bushy beard, bright eyes under
+  bushy brows, sturdy work clothes with suspenders, a cheerful knowing
+  expression, clean bold shapes with a crisp dark outline, smooth flat
+  shading in a few colors, light from the upper left, on a plain flat pure
+  green background". He is drawn bigger than the miner: his shoulders
+  reach about 115 of the 128 columns, and off its left edge. Retro
+  Diffusion's `image_edit` then made his gray shirt red flannel: "Change
+  his gray shirt to a red flannel shirt". He faced right lit from the
+  right: Retro Diffusion lights the side of his face, though the prompt
+  asks for the upper left. Turned round, he was lit again with
+  `image_edit`, "Change the light so it comes from the upper left", which
+  changed about a quarter of his pixels and redrew his brows and eyes a
+  little, his brows lower over them. That is his portrait, facing left;
+  on the left he is turned round. The edit sharpens light that already
+  comes from the left, but it can't move light from the right: tried that
+  way, it darkened half of him and the background behind it.
+- The foreman, `art/dwarves/foreman.png`, the first of four,
+  `rd_pro__default`, 128x80: "Head and shoulders of a cartoon dwarf mine
+  foreman, serious but not mean, facing a little to the right as if
+  talking to someone: a big bushy beard, a rounded steel mining helmet
+  with a lamp on the front, sturdy work clothes, clean bold shapes with a
+  crisp dark outline, smooth flat shading in a few colors, light from the
+  upper left, on a plain flat pure green background". He faces right, lit
+  from the right, and on the right he is turned round. Turned round and lit
+  again from the upper left, the edit changed about two fifths of his
+  pixels, and the user kept him as drawn.
+- The committeeman, `art/dwarves/committeeman.png`, the first of two in
+  his third round, `rd_pro__default`, 128x80: "Head and shoulders
+  of a cartoon dwarf union steward, obsessed with his appearance, facing a
+  little to the left as if talking to someone, his face friendly but
+  untrustworthy and full of himself: a big bushy beard with braids and
+  beads in it, a rounded steel mining helmet with a lamp on the front, no
+  arms or hands in the picture, clean bold shapes with a crisp dark
+  outline, smooth flat shading in a few colors, light from the upper
+  left, on a plain flat pure green background". His first round shouted
+  at the player with a hand raised, and his second reached toward his
+  bubble, too wide for a dwarf, so the user had arms and hands left out.
+  The top of his helmet ran off the top of the image, so Retro Diffusion's
+  `outpainting` added 8 rows above him, "the rounded top of his steel
+  mining helmet", keeping every pixel below, and the crop takes 8 rows
+  from his foot instead. He faces left.
+- The miner, `art/dwarves/miner.png`, is the dwarf all three stood in for
+  while they were drawn, and is no longer used. He is the third of four,
+  `rd_pro__default`, 96x96: "Head and shoulders of a friendly cartoon
+  dwarf miner, as a character portrait in a 16-bit game's dialogue,
+  facing a little to the right as if talking to someone: a big bushy
+  beard, a rounded steel mining helmet with a lamp on the front, bright
+  eyes under bushy brows, sturdy work clothes with suspenders, a cheerful
+  knowing expression, clean bold shapes with a crisp dark outline, smooth
+  flat shading in a few colors, light from the upper left, on a plain flat
+  pure green background".
 - The bubble is a comic speech bubble in 4 colors: near-black ink, cream
   paper, and a darker cream along the inside of its foot. Its corners are
-  rounded, its outline a pixel wide, and its tail reaches out of its left
-  side, low down, to tuck under his beard. Its corners, edges and tail
+  rounded, its outline a pixel wide, and its tail reaches out of its side
+  toward him, low down, to tuck under his beard. Its corners, edges and tail
   are drawn by hand in `art/talk.py`.
 - His lines are the panels' font in ink, a blank row of cells between
   them, in capitals: the font has `, ' !` for the dwarves' speech too.
@@ -577,7 +776,7 @@ darkest first. Each class of art gets a row of its own:
 | --- | --- |
 | main | the ball |
 | bricks | one per color: the brick, its cracks and chunks, and its nuggets |
-| fx | the smoke, and the old energy bar of the upgrade screen's picture |
+| fx | the smoke |
 | logo | the title logo |
 | sled | the sleds, their jets and flames, the machine, the digits, and the coin |
 | texture | the texture behind the playfield, its first 4 colors, loaded with each curtain set |
@@ -588,7 +787,7 @@ darkest first. Each class of art gets a row of its own:
 | fitting | the gauge's fittings, the backdrop's colors of its pipe, then the meter's paddle and its shade, which the game sets green, yellow or red |
 | glass | the curtain row through the gauge's glass, and its outline and glint, loaded with each curtain set |
 
-The upgrade panels have a palette of their own, 256 colors, outside these rows, since they are a tile layer, and so do the menus, 16 colors. Each frame set brings its own 16 colors, and the same darkened for its braces, with its pieces. Each talk brings its dwarf's 16 colors and its bubble's 4.
+The upgrade panels have a palette of their own, 256 colors, outside these rows, since they are a tile layer, and so do the title's panels and the menus, 16 colors each. Each frame set brings its own 16 colors, and the same darkened for its braces, with its pieces. Each talk brings its dwarf's 16 colors and its bubble's 4.
 
 A jet's nozzle and its flame are one sprite, so the flames share the sled
 row. Every curtain set brings its own palette into the one curtain row,
@@ -604,6 +803,8 @@ rows are left.
 | chunks | 16, 8x8, 2 bits a pixel |
 | nugget | 8x8 as it flies, and 10 across in a 12x12 sprite by its count |
 | coin | 10 across in a 12x12 sprite, by its count |
+| big coin | 44x44, at the left of the committeeman's bubble |
+| panel picture | up to 1 KB at 4 bits a pixel, such as 64x32, 44x44 or 36x56; the weight and the jerrycan are 40x40 |
 | ball | 8x8, and 10 across in a 12x12 sprite by its count |
 | digit | 8x12 sprite, a 6x8 digit with its outline |
 | texture | 320x240 at 2 bits a pixel |
@@ -620,12 +821,29 @@ rows are left.
 | cursor | 4 corners, 12x12, one image turned |
 | dwarf | 80x80, in up to 3 sprites |
 | speech bubble | up to 28x10 cells of 8x8, the tail's column with them |
+| title's panels | 20 cells across, the menu's 10 rows, START GAME's 9 and the progress 7; 150 tiles of 4 bits and a map, 5,192 bytes, of which the title has 238 left |
 
 The current sizes come from `src/xram.h`. RD Pro styles start at 12x12, so
 art 8 pixels tall is made as a larger study, then redrawn by hand at its
 size.
 
 ## Making Art with Retro Diffusion
+
+Read Retro Diffusion's own guides before planning a call:
+
+- [`llms.txt`](https://github.com/Retro-Diffusion/api-examples/blob/main/llms.txt):
+  every request field, the style catalog with each style's sizes, and its
+  "Craft guide" and "Agent best practices" for backgrounds, sizes and
+  prompts.
+- [`README.md`](https://github.com/Retro-Diffusion/api-examples/blob/main/README.md):
+  the same API at more length, with the models and their prices.
+- [`EDIT_TOOLS.md`](https://github.com/Retro-Diffusion/api-examples/blob/main/EDIT_TOOLS.md):
+  the edit tools, such as `color_reducer`, with their fields and defaults.
+- [`ASSISTANT.md`](https://github.com/Retro-Diffusion/api-examples/blob/main/ASSISTANT.md):
+  Retro Diffusion's own assistant, which picks the model, style, size and
+  settings and prices a plan before it generates.
+- [Prompting](https://astropulse.gitbook.io/retro-diffusion/aseprite-extension/retro-diffusion-faq/prompting),
+  from Astropulse, who makes Retro Diffusion.
 
 1. Choose the style: `rd_pro__default` for one piece or a curtain,
    `rd_pro__spritesheet` for a family of small pieces in one image, and
@@ -639,8 +857,8 @@ size.
    `ref/sled-kit.png` for industrial, and the others of
    [The Reference Images](#the-reference-images) for what they show. Pass
    them as RGB PNGs: the API refused the indexed `art/logo.png`.
-4. Reduce the colors to 15 with Retro Diffusion's `color_reducer`, which
-   is free, or map them onto a row with its `palette_converter`.
+4. Reduce the colors to 15 with Retro Diffusion's `color_reducer`, for
+   $0.001, or map them onto a row with its `palette_converter`.
 5. Convert it with `art/rd2png.py`:
 
    ```bash
@@ -673,6 +891,9 @@ The blocks of the looks:
 | File | What to take from it |
 | --- | --- |
 | `ref/panel-frame.png` | Frame 1, the upgrade panel's frame as Retro Diffusion made it: `rd_pro__default`, 154x138, with a 64x64 crop of a gauge frame from `ui-kit.png`: "A single heavy mechanical display panel seen straight on, filling the whole image: a thick frame of dark graphite gunmetal steel around all four edges, the frame about a tenth of the panel's width, built from bolted steel plates with seams and rivets, a different mechanical bracket or clamp at each corner, a thin bright bevel along the inner edge, worn edges but clean and well maintained, no yellow, no hazard stripes, no rust, the inside one plain flat dark blue-grey plate with nothing on it, slightly futuristic heavy machinery, light from the upper left". Chosen for its simplicity. |
+| `ref/big-coin.png` | The big coin as Retro Diffusion made it: `rd_pro__default`, 56x56, no references, the prompt as written (`bypass_prompt_expansion`): "A gold coin seen straight on, filling the whole image, its edge touching all four sides: a small square hole in the middle with its sides level, a raised rim round the edge, and embossed lettering in narrow blocky capitals: SMEGHEAD round the top and MI ESTAS FIŜO round the bottom, both reading left to right, JMC in a straight line above the hole and 169 in a straight line below it. Clean bold shapes with a crisp dark outline round the coin and the hole, smooth flat shading in a few colors, light from the upper left, on a plain flat pure green background". It drew the coin 44 across in a green square inside a tan border. The other take, at 48 with the prompt rewritten, filled the image, in 33 colors with no outline. Before them, `image_edit` on the code's mock-up at 48 and 56 shrank the coin to about half and lost the lettering. |
+| `ref/ton-weight.png` | WEIGHT's picture as Retro Diffusion made it: `rd_pro__default`, 44x44, no references, the prompt as written (`bypass_prompt_expansion`), `remove_bg`: "an icon for an upgrade that adds weight: a cartoon ton weight, in the style of heavy modern machinery, light from the upper left, on a plain white background". The weight filled 40x39 of it, in 34 colors, on a clear background. Before it: "wrecking ball" drew a ball on a chain with a glow, and "classic cartoon weight" with the prompt rewritten drew a smiling kettlebell with arms. Without the rewrite it drew the trapezoid, but on a gray square, as a background left unstated does. "Dumbbell" at 64x32 came out as a barbell, and `rd_plus__skill_icon` drew small blobs with 9 px clear all round. |
+| `ref/jerrycan.png` | EFFICIENCY's picture as Retro Diffusion made it: `rd_pro__default`, 44x44, no references, the prompt as written (`bypass_prompt_expansion`), `remove_bg`: "an icon for an upgrade that burns less fuel: a jerrycan, in the style of heavy modern machinery, light from the upper left, on a plain white background". The second of two takes: a yellow and black jerrycan with a green display and a hose. |
 | `ref/old-logo-qu.png` | 64x64 of the old logo's QU: fine, flecked rock at a small scale. The reference for the curtain sets, and the one that made the first. |
 | `ref/rock-crop.png` | 64x64 of the rock of the first curtain set: how stone is drawn. A reference for a stone piece, such as the logo. Not for a curtain set: it is zoomed in, so the rock comes out too big. |
 | `ref/logo-stone.png` | The logo as Retro Diffusion made it, before `art/logo.py`: `rd_pro__typography`, 192x64, with `rock-crop.png` and `old-logo-qu.png` as references: "\"QUARRY\" in big bold blocky capital letters, carefully carved from solid stone by a master stonemason: clean even letterforms with crisp chiseled bevels and flat faces, every letter whole and unbroken, only a few small natural chips and fine hairline marks, all the letters the same warm weathered sandstone with subtle flecks like the reference rock, cool blue-grey stone only in the shadowed bevels, a dark outline and a dark shadow under the letters, light from the upper left, on a plain white background". One of three, and the one with moss, which `art/logo.py` turns to rock; the others were plainer, or cracked with stray dots. |

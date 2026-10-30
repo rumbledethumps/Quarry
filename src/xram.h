@@ -10,6 +10,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <title_panels.h>
 
 /* Keyboard, from the RIA datasheet. */
 
@@ -316,7 +317,7 @@ typedef struct
    need no more. The art of their frames leaves the gap between them.
    art/panels.py makes the tiles, their palette and each panel's frame,
    and writes build/panels.h. */
-#define PANELS 5
+#define PANELS 4
 #define PANEL_COLS 20
 #define PANEL_PITCH PANEL_COLS
 #define PANEL_SLOTS 4 /* the panels around the one picked, each in a slot of the map */
@@ -347,9 +348,16 @@ typedef struct
 
 /* The pictures of the panels nearest the middle, each up to PICTURE_BYTES:
    the three that show, and the next one the way the rail moves, which
-   loads before it slides into view. For now a picture is a flat sled. */
+   loads before it slides into view. A picture is a flat sled, in the sled's
+   colors, or one in its own, lit and dim: the weight, art/weight.png and
+   art/weight-colors.png, or the jerrycan, art/jerrycan.png and
+   art/jerrycan-colors.png. */
 #define PICTURE_SLOTS 4
 #define PICTURE_BYTES 1024
+#define WEIGHT_W 40
+#define WEIGHT_H 40
+#define JERRYCAN_W 40
+#define JERRYCAN_H 40
 
 /* The texture behind a level's playfield, from art/texture.py: a bitmap at
    2 bits a pixel that wraps. */
@@ -445,7 +453,7 @@ typedef struct
 #define GLASS_GLINT 15
 #define LIQUID_H 16
 #define LIQUID_SEGMENTS (GLASS_H / LIQUID_H) /* the rows above them, the surface's alone */
-#define BUBBLES 3 /* rising through the fuel at once, a sprite each */
+#define BUBBLES 16 /* rising through the fuel at once, a sprite each */
 #define BUBBLE_SIZE 4
 
 /* The machine on the right wall shows how the fuel stands through a
@@ -460,30 +468,26 @@ typedef struct
 #define METER_PADDLE 10
 #define METER_SHADE 11
 
-/* Pieces of the old energy bar, in the order of art/energy.png, the
-   upgrade screen's stand-in picture of the gauge. */
-#define ENERGY_TOP 0
-#define ENERGY_FULL 1
-#define ENERGY_LOW 2
-#define ENERGY_EMPTY 3
-#define ENERGY_BOTTOM 4
-
 /* A dwarf with something to say, from art/talk.py. He and his speech
    bubble take the menus' place in XRAM, as the two never show together:
    the dwarf a portrait DWARF_SIZE square, in up to DWARF_PIECES sprites
    on plane 2 in his own colors, and the bubble a map of 2-bit tiles on
    plane 2's fill, BUBBLE_COLS by up to BUBBLE_ROWS, in place of the
-   menus. */
+   menus. The committeeman's bubble has the coin he hands over in it,
+   art/big-coin.png, BIG_COIN_SIZE square, a sprite on plane 2 in its own
+   colors. Only a level has room for it, in its own art. */
 #define DWARF_SIZE 80
 #define DWARF_PIECES 3
 #define DWARF_BYTES 2816
 #define BUBBLE_COLS 28
 #define BUBBLE_ROWS 10
+#define BIG_COIN_SIZE 44
 #define BUBBLE_TILES 48
 
 typedef MODE2_TILE(8, 8) panel_tile_t;
 typedef MODE2_TILE(4, 8) cart_tile_t;
 typedef MODE2_TILE(4, 8) menu_tile_t;
+typedef MODE2_TILE(4, 8) title_tile_t;
 typedef MODE2_TILE(2, 8) bubble_tile_t;
 typedef MODE5_CUSTOM_IMAGE(2, 24, 8) brick_image_t;
 typedef MODE5_CUSTOM_IMAGE(2, CRACK_W, CRACK_H) crack_image_t;
@@ -496,7 +500,6 @@ typedef MODE5_CUSTOM_IMAGE(4, 8, 12) jet_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 8, 12) digit_image_t;
 #define JET_IMAGE_BYTES sizeof(jet_image_t) /* these two for the tests */
 #define DIGIT_IMAGE_BYTES sizeof(digit_image_t)
-typedef MODE5_CUSTOM_IMAGE(4, 8, 8) energy_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, GAUGE_W, FITTING_H) fitting_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, GLASS_W, LIQUID_H) liquid_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, GLASS_W, GLASS_H) glass_image_t;
@@ -509,6 +512,7 @@ typedef MODE5_CUSTOM_IMAGE(4, POST_W, BEAM_H) cap_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, BRACE_SIZE, BRACE_SIZE) brace_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, MACHINE_W, MACHINE_H) machine_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 16, 16) lock_image_t;
+typedef MODE5_CUSTOM_IMAGE(4, BIG_COIN_SIZE, BIG_COIN_SIZE) big_coin_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 8, 16) half_lock_image_t;
 
 /* The palettes, in the order of the rows of art/palettes.png. */
@@ -516,7 +520,7 @@ typedef struct
 {
     uint16_t main[16];
     uint16_t bricks[BRICK_COLORS][16]; /* bricks, their cracks and chunks, and nuggets, a palette a color */
-    uint16_t fx[16];                   /* smoke and the energy gauge */
+    uint16_t fx[16];                   /* smoke */
     uint16_t logo[16];
     uint16_t sled[16];    /* the sleds, their jets, the digits, and the coin */
     uint16_t texture[16]; /* the first 4, loaded with each curtain set */
@@ -585,7 +589,8 @@ typedef struct
    list: the gauge, the upgrade screen's pictures and trolleys, which
    slide under the counts, the nuggets in flight, which land under them
    too, the counts with their nugget, coin or ball, a dwarf, and last, over
-   them all, the holographic cursor's 4 corners. */
+   them all, the holographic cursor's 4 corners. On a level the first of
+   the pictures' is the big coin in the committeeman's bubble. */
 typedef struct
 {
     gauge_sprites_t gauge;
@@ -618,6 +623,7 @@ typedef struct
     BACKDROP_BAND(BOTTOM) bottom;
     uint8_t backdrop_sprites[BACKDROP_SPRITE_BYTES]; /* the cogs' frames and the steam's */
     uint8_t pictures[PICTURE_SLOTS][PICTURE_BYTES];
+    uint16_t picture_colors[PICTURE_SLOTS][2][16]; /* of a picture in its own, lit and dim */
     uint16_t panel_palette[256]; /* these two, as ROM:panels holds them, then its frames */
     panel_tile_t panel_tiles[256];
     uint8_t panels[PANEL_ROWS][PANEL_MAP_COLS]; /* the slots */
@@ -658,8 +664,10 @@ typedef struct
 } gauge_art_t;
 
 /* A level's own art: its frame set, the cracks and the chunks, as
-   ROM:cracks and ROM:chunks hold them, its sprites on plane 1, and the
-   energy gauge's images. */
+   ROM:cracks and ROM:chunks hold them, its sprites on plane 1, the
+   energy gauge's images, and the coin in the committeeman's bubble, its
+   colors and its image, as ROM:big_coin_colors and ROM:big_coin hold
+   them, which load with his bubble. */
 typedef struct
 {
     frame_set_t frame;
@@ -667,6 +675,8 @@ typedef struct
     chunk_image_t chunks[CHUNK_IMAGES];
     level_sprites_t sprites;
     gauge_art_t gauge;
+    uint16_t big_coin_palette[16];
+    big_coin_image_t big_coin;
 } level_art_t;
 
 /* A piece of a dwarf: where it goes, from his top left, and its image,
@@ -679,36 +689,71 @@ typedef struct
     uint8_t unused;
 } dwarf_piece_t;
 
-/* Where a dwarf and his bubble stand once they are in, how many rows the
-   bubble has, the cell of its OK and the OK's two tiles, which go in when
-   it shows, and the pieces of the dwarf. */
+/* Where a dwarf stands once he is in, on his side of the screen, and his
+   pieces. */
 typedef struct
 {
-    int16_t dwarf_x, dwarf_y;
-    int16_t bubble_x, bubble_y;
-    uint8_t rows;
-    uint8_t ok_col, ok_row;
-    uint8_t ok_tiles[2];
+    int16_t x, y;
     uint8_t pieces;
+    uint8_t unused;
     dwarf_piece_t piece[DWARF_PIECES];
-} talk_head_t;
+} dwarf_head_t;
 
-/* What a dwarf says, as ROM:talk1 and on hold it: its head, then his
-   colors and his image, then the bubble's 4 colors, its tiles and its
-   map. */
+/* A dwarf, as ROM:dwarves holds them, one after another from 1: his head,
+   then his colors and his image. */
 typedef struct
 {
-    talk_head_t head;
+    dwarf_head_t head;
     uint16_t palette[16];
     uint8_t images[DWARF_BYTES];
-    uint16_t bubble_palette[4];
-    bubble_tile_t bubble_tiles[BUBBLE_TILES];
-    uint8_t bubble_map[BUBBLE_ROWS][BUBBLE_COLS];
+} dwarf_t;
+
+/* Where a speech bubble stands once it is in, how many rows and columns of
+   cells it has, the cell of its OK and the OK's two tiles, which go in
+   when it shows, and where the big coin is in it, from its top left, if
+   it has the coin, or 0, 0. */
+typedef struct
+{
+    int16_t x, y;
+    uint8_t rows, cols;
+    uint8_t ok_col, ok_row;
+    uint8_t ok_tiles[2];
+    uint8_t coin_x, coin_y;
+} bubble_head_t;
+
+/* A speech bubble, as ROM:bubbles holds them, one after another from 1:
+   its head, then its 4 colors, its tiles and its map. */
+typedef struct
+{
+    bubble_head_t head;
+    uint16_t palette[4];
+    bubble_tile_t tiles[BUBBLE_TILES];
+    uint8_t map[BUBBLE_ROWS][BUBBLE_COLS];
+} bubble_t;
+
+/* A dwarf talking, and his bubble up. */
+typedef struct
+{
+    dwarf_t dwarf;
+    bubble_t bubble;
 } talk_t;
 
+/* The title's own art: the logo, then its panels, from
+   art/title_panels.py, a map of 4-bit tiles on plane 1, TITLE_COLS by
+   TITLE_ROWS cells under the logo: their palette and tiles, as
+   ROM:title_panels holds them, then the map, which the title loads from
+   the maps after them. */
+typedef struct
+{
+    logo_image_t logo_images[3];
+    uint16_t panel_palette[16];
+    title_tile_t panel_tiles[TITLE_TILES];
+    uint8_t panel_map[TITLE_ROWS][TITLE_COLS];
+} title_art_t;
+
 /* The art of the title and of a level: the texture and a curtain set, the
-   level's sled, then the title's logo or, in its place, the level's own
-   art. Each screen loads its own when it starts. */
+   level's sled, then the title's own art or, in its place, the level's.
+   Each screen loads its own when it starts. */
 typedef struct
 {
     uint8_t texture[TEXTURE_H][TEXTURE_W / 4];
@@ -716,8 +761,8 @@ typedef struct
     uint8_t sled_images[SLED_SLOT]; /* the sled of a level */
     union
     {
-        logo_image_t logo_images[3]; /* the title's logo */
-        level_art_t level;           /* a level's own */
+        title_art_t title;
+        level_art_t level; /* a level's own */
     };
 } cave_art_t;
 
@@ -730,7 +775,7 @@ typedef struct
     mode3_config_t texture_config;
     mode2_config_t menu_config;
     mode2_config_t talk_config; /* the bubble, on plane 2 in the menus' place */
-    mode2_config_t panel_config;
+    mode2_config_t panel_config; /* the upgrade screen's panels, or the title's */
     mode2_config_t cart_config;
     palettes_t palettes;
     scenery_t scenery;
@@ -756,7 +801,6 @@ typedef struct
     cursor_image_t cursor_image;
     jet_image_t jet_images[JET_FRAMES];
     piece_image_t smoke_images[SMOKE_FRAMES];
-    energy_image_t energy_images[5];
     digit_image_t digit_images[10];
     machine_image_t machine_image;
     union
@@ -816,17 +860,19 @@ typedef struct
 #define XRAM_BALL_DIGITS offsetof(xram_layout_t, hud.ball_digits)
 #define XRAM_NUGGET_SPRITES offsetof(xram_layout_t, hud.nuggets)
 #define XRAM_MENU_SPRITES offsetof(xram_layout_t, hud.menu)
+#define XRAM_BIG_COIN_SPRITE XRAM_MENU_SPRITES /* the first, which a level leaves free */
 #define XRAM_DWARF_SPRITES offsetof(xram_layout_t, hud.dwarf)
 #define XRAM_CURSOR_SPRITES offsetof(xram_layout_t, hud.cursor)
 #define XRAM_MENU_MAP offsetof(xram_layout_t, menu_map)
 #define XRAM_MENU_PALETTE offsetof(xram_layout_t, menu_palette)
 #define XRAM_MENU_TILES offsetof(xram_layout_t, menu_tiles)
-#define XRAM_TALK offsetof(xram_layout_t, talk)
-#define XRAM_DWARF_PALETTE offsetof(xram_layout_t, talk.palette)
-#define XRAM_DWARF_IMAGES offsetof(xram_layout_t, talk.images)
-#define XRAM_BUBBLE_PALETTE offsetof(xram_layout_t, talk.bubble_palette)
-#define XRAM_BUBBLE_TILES offsetof(xram_layout_t, talk.bubble_tiles)
-#define XRAM_BUBBLE_MAP offsetof(xram_layout_t, talk.bubble_map)
+#define XRAM_TALK_DWARF offsetof(xram_layout_t, talk.dwarf)
+#define XRAM_DWARF_PALETTE offsetof(xram_layout_t, talk.dwarf.palette)
+#define XRAM_DWARF_IMAGES offsetof(xram_layout_t, talk.dwarf.images)
+#define XRAM_TALK_BUBBLE offsetof(xram_layout_t, talk.bubble)
+#define XRAM_BUBBLE_PALETTE offsetof(xram_layout_t, talk.bubble.palette)
+#define XRAM_BUBBLE_TILES offsetof(xram_layout_t, talk.bubble.tiles)
+#define XRAM_BUBBLE_MAP offsetof(xram_layout_t, talk.bubble.map)
 #define XRAM_BRICK_IMAGE offsetof(xram_layout_t, brick_image)
 #define XRAM_NUGGET_IMAGE offsetof(xram_layout_t, nugget_image)
 #define XRAM_NUGGET_ICON_IMAGE offsetof(xram_layout_t, nugget_icon_image)
@@ -836,7 +882,6 @@ typedef struct
 #define XRAM_CURSOR_IMAGE offsetof(xram_layout_t, cursor_image)
 #define XRAM_JET_IMAGES offsetof(xram_layout_t, jet_images)
 #define XRAM_SMOKE_IMAGES offsetof(xram_layout_t, smoke_images)
-#define XRAM_ENERGY_IMAGES offsetof(xram_layout_t, energy_images)
 #define XRAM_DIGIT_IMAGES offsetof(xram_layout_t, digit_images)
 #define XRAM_MACHINE_IMAGE offsetof(xram_layout_t, machine_image)
 #define XRAM_ART offsetof(xram_layout_t, art)
@@ -846,6 +891,7 @@ typedef struct
 #define XRAM_BAND_MAP(band) offsetof(xram_layout_t, art.menu.band.map)
 #define XRAM_BACKDROP_SPRITES offsetof(xram_layout_t, art.menu.backdrop_sprites)
 #define XRAM_PICTURE(slot) (offsetof(xram_layout_t, art.menu.pictures) + (slot) * PICTURE_BYTES)
+#define XRAM_PICTURE_COLORS(slot, dim) (offsetof(xram_layout_t, art.menu.picture_colors) + ((slot) * 2 + (dim)) * 32)
 #define XRAM_PANEL_PALETTE offsetof(xram_layout_t, art.menu.panel_palette)
 #define XRAM_PANEL_TILES offsetof(xram_layout_t, art.menu.panel_tiles)
 #define XRAM_PANELS offsetof(xram_layout_t, art.menu.panels)
@@ -882,14 +928,21 @@ typedef struct
 #define XRAM_DROP_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.drop)
 #define XRAM_METER_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.meter)
 #define XRAM_GLASS_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.glass)
+#define XRAM_BIG_COIN_PALETTE offsetof(xram_layout_t, art.cave.level.big_coin_palette)
+#define XRAM_BIG_COIN_IMAGE offsetof(xram_layout_t, art.cave.level.big_coin)
 #define XRAM_LEVEL_SLED offsetof(xram_layout_t, art.cave.sled_images)
-#define XRAM_LOGO_IMAGES offsetof(xram_layout_t, art.cave.logo_images)
+#define XRAM_LOGO_IMAGES offsetof(xram_layout_t, art.cave.title.logo_images)
+#define XRAM_TITLE_PALETTE offsetof(xram_layout_t, art.cave.title.panel_palette)
+#define XRAM_TITLE_TILES offsetof(xram_layout_t, art.cave.title.panel_tiles)
+#define XRAM_TITLE_MAP offsetof(xram_layout_t, art.cave.title.panel_map)
 
 MODE5_PALETTE_CHECK(palettes_t);
 
 #define PALETTES_BYTES sizeof(palettes_t) /* for tests/assets.py */
 
 PSG_PAGE_CHECK(XRAM_PSG);
+
+_Static_assert(sizeof(xram_layout_t) <= 0x10000, "XRAM holds 64 KB.");
 
 /* video_init() hides every sprite from XRAM_SCENERY up to XRAM_MENU_MAP, and
    plane 0 draws the scenery and the bricks as one list. A level's plane 1

@@ -14,11 +14,18 @@ stripes along: the tape marches. The frame comes as its 4 corners and its
 4 edges; the stripes join from cell to cell. A thin rule of light steel
 over its shadow sets a menu's title off from its items.
 
+A menu's text is centered in its box, which is an even number of cells
+across, so text an odd number of letters long goes half a cell over. Its
+cells are tiles of the right half of one letter and the left half of the
+next: a tile for each pair of letters side by side in HALVES, with a
+space at each end.
+
 out.bin is the palette, 16 colors as png2bin.py writes a palette row, then
 the tiles, 32 bytes each, the left pixel of each pair in the high nibble:
 tile 0 clear, then a tile for each glyph of FONT, the space the box's
-inside, then the frame, then the rule. out.h gives the tile numbers. Only the Python
-standard library is used.
+inside, then the frame, then the rule, then the halves. out.h gives the tile
+numbers, and the pairs of the halves in order. Only the Python standard
+library is used.
 """
 
 import argparse
@@ -44,6 +51,21 @@ PALETTE = [
 FILL, CREAM, CREAM2, OUTLINE, STEEL_LIGHT, STEEL_DARK, TAPE = range(1, 8)
 TAPE_PHASES = 4
 
+# The menus' texts an odd number of letters long, which go half a cell over.
+HALVES = ['RESTART', 'MAIN MENU', 'OUT OF FUEL', 'YES']
+
+
+def pairs():
+    """The pairs of letters side by side in HALVES, a space at each end,
+    each once, in order."""
+    out = []
+    for text in HALVES:
+        padded = f' {text} '
+        for pair in (a + b for a, b in zip(padded, padded[1:])):
+            if pair not in out:
+                out.append(pair)
+    return out
+
 
 def glyph(ch):
     """A letter on the inside of a box: cream, darker toward its foot, with
@@ -56,6 +78,12 @@ def glyph(ch):
     for x, y in on:
         cell[y][x] = CREAM if y < 4 else CREAM2
     return cell
+
+
+def half(a, b):
+    """A cell over the right half of letter a and the left half of b."""
+    left, right = glyph(a), glyph(b)
+    return [left[y][4:] + right[y][:4] for y in range(8)]
 
 
 def frame(top, bottom, left, right):
@@ -107,6 +135,8 @@ def main():
     first_frame = len(tiles)
     tiles += [frame(*f[1:]) for f in FRAMES]
     tiles.append(rule())
+    first_half = len(tiles)
+    tiles += [half(*pair) for pair in pairs()]
 
     data = bytearray()
     palette = PALETTE + [None] * (16 - len(PALETTE))
@@ -126,7 +156,9 @@ def main():
                 '#define MENU_TILE_GLYPH 1\n'
                 f'#define MENU_TILE_FRAME {first_frame} /* the corners, top left, top right, bottom left, '
                 'bottom right, then the top, bottom, left and right edges */\n'
-                f'#define MENU_TILE_RULE {len(tiles) - 1} /* under a title */\n'
+                f'#define MENU_TILE_RULE {first_half - 1} /* under a title */\n'
+                f'#define MENU_TILE_HALF {first_half} /* the halves, a tile for each pair of MENU_HALVES */\n'
+                f'#define MENU_HALVES "{"".join(pairs())}"\n'
                 f'#define MENU_TILES {len(tiles)}\n'
                 f'#define MENU_TAPE {TAPE} /* the first of the tape\'s palette entries */\n'
                 f'#define MENU_TAPE_PHASES {TAPE_PHASES}\n\n'

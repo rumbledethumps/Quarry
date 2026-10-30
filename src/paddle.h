@@ -9,6 +9,7 @@
 #define PADDLE_FALLING 2 /* gave up in a puff of smoke */
 #define PADDLE_GONE 3    /* off the bottom of the screen, fallen or flown */
 #define PADDLE_LEAVING 4 /* the level cleared or out of balls, flying home */
+#define PADDLE_RISING 5  /* from below the screen into place, as the level builds up */
 
 extern uint8_t paddle_state;
 extern int32_t paddle_x; /* the left edge, in 1/256 px */
@@ -16,7 +17,8 @@ extern int32_t paddle_y; /* the top, in 1/256 px */
 extern uint8_t paddle_width;
 extern uint8_t paddle_left; /* the paddle last moved left */
 
-void paddle_start(void);
+void paddle_start(uint8_t again);
+void paddle_rise(uint8_t step);
 void paddle_give_up(void);
 void paddle_leave(void);
 void paddle_step(uint8_t controls);

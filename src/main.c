@@ -3,6 +3,7 @@
 #include "bricks.h"
 #include "cursor.h"
 #include "debug.h"
+#include "energy.h"
 #include "frame.h"
 #include "input.h"
 #include "menu.h"
@@ -29,32 +30,22 @@
 #define STATE_MENU 2    /* the menu when a level ends */
 #define STATE_SHOP 3    /* the upgrade screen */
 #define STATE_TITLE 4
-#define STATE_CONFIRM 5 /* yes or no to a new game over the save */
-#define STATE_PAUSE 6
+#define STATE_PAUSE 5
 
 /* The menus. The items of each are numbered from 1, as menu_step()
    returns them. The menus and the dwarves call the upgrade screen THE
    DRY, the change house at a mine where miners wait for their shift. */
-static const char *const end_items[] = {"THE DRY", "REPLAY", "MAIN MENU"};
+static const char *const end_items[] = {"TO THE DRY", "REPLAY", "MAIN MENU"};
 #define END_UPGRADES 1
 #define END_REPLAY 2
 #define END_MAIN_MENU 3
-static const char *const pause_items[] = {"RESUME", "THE DRY", "RESTART", "MAIN MENU"};
+static const char *const pause_items[] = {"RESUME", "TO THE DRY", "RESTART", "MAIN MENU"};
 #define PAUSE_RESUME 1
 #define PAUSE_UPGRADES 2
 #define PAUSE_RESTART 3
 #define PAUSE_MAIN_MENU 4
-static const char *const title_items[] = {"RESUME", "NEW GAME"};
-#define TITLE_RESUME 1
-#define TITLE_NEW_GAME 2
-static const char *const confirm_items[] = {"YES", "NO"};
-#define CONFIRM_YES 1
-#define CONFIRM_NO 2
 
-/* The question to start over takes the title menu's place. */
 static const menu_t pause_menu = {20, 7, BOX_TAPE, "PAUSED", pause_items, 4};
-static const menu_t title_menu = {20, 11, BOX_PLAIN, 0, title_items, 2};
-static const menu_t confirm_menu = {20, 11, BOX_TAPE, "START OVER?", confirm_items, 2};
 /* The menu when a level ends says how, by what play_step() returned, from
    PLAY_CLEARED. */
 static const menu_t end_menus[] = {
@@ -69,14 +60,18 @@ static uint8_t level = 1; /* the level being played, from 1 */
 static uint8_t level_how; /* how it ended, as play_step() returned */
 
 /* Lays out the level, its playfield with its frame and curtains, and sets
-   up the paddle and every ball, ready to play. It starts from no
-   sprites and the level's own art, so nothing is left of another screen.
-   The bricks' cracks are new only with the screen, as its rock is. */
+   it up to build up and play. From another screen it starts from no
+   sprites and the level's own art, so nothing is left of that screen.
+   Played again, what is left of the last try stays, the bricks and a
+   hovering paddle, until the level builds up over it. The bricks' cracks
+   are new only with the screen, as its rock is. */
 static void level_setup(void)
 {
-    video_hide_sprites();
+    uint8_t again;
+
     cursor_hide();
-    if (scene_level(upgrade_ranks[UPGRADE_WIDTH]))
+    again = !scene_level(upgrade_ranks[UPGRADE_WIDTH]);
+    if (!again)
         bricks_shuffle();
     play_init();
     bricks_layout(level);
@@ -84,26 +79,28 @@ static void level_setup(void)
     menu_clear();
     bricks_start();
     nuggets_start();
-    play_start();
+    play_start(again);
 }
 
 /* A level starts, set up from the start, and the game saves. The first
-   level of a game starts with a dwarf's welcome. */
+   level of a game starts with the foreman's word. */
 static void level_play(void)
 {
     menu_close();
     level_setup();
     game_state = STATE_PLAY;
-    talk_once(TALK_WELCOME);
+    talk_once(TALK_FOREMAN);
     save_write();
     DEBUG_LOG("level %u start\n", level);
 }
 
 /* The menu when a level ends, which waits wait steps before it takes a
-   choice. */
+   choice. It covers the machine, and the meter's paddle goes down under
+   it. */
 static void end_menu(uint8_t wait)
 {
     menu_open(&end_menus[level_how - PLAY_CLEARED], END_UPGRADES - 1, 0, wait);
+    energy_meter_down();
 }
 
 /* The first clear of a level earns a coin and opens the next, which the
@@ -117,7 +114,7 @@ static void level_end(uint8_t how)
         levels_cleared = level;
         level_picked = save_levels_open();
         coins_add();
-        talk_queue(TALK_COIN);
+        talk_queue(talk_coin(level));
         DEBUG_LOG("coin for level %u\n", level);
     }
     else
@@ -126,12 +123,9 @@ static void level_end(uint8_t how)
     save_write();
 }
 
-/* Resume is left off until there is a save. */
 static void title_show(void)
 {
-    title_open(&title_menu);
-    menu_open(&title_menu, save_exists ? TITLE_RESUME - 1 : TITLE_NEW_GAME - 1,
-              save_exists ? 0 : 1 << (TITLE_RESUME - 1), 0);
+    title_open();
     game_state = STATE_TITLE;
     DEBUG_LOG("title\n");
 }
@@ -171,7 +165,7 @@ static void pause_close(void)
 
 /* The last dwarf has gone: the menu waiting for him opens, or the upgrade
    screen's cursor comes back. Only the test keys bring one over the pause
-   menu, the title or its question, and they come back too. */
+   menu or the title, and they come back too. */
 static void talk_over(void)
 {
     switch (game_state)
@@ -188,10 +182,6 @@ static void talk_over(void)
     case STATE_TITLE:
         title_show();
         break;
-    case STATE_CONFIRM:
-        title_open(&title_menu);
-        menu_open(&confirm_menu, CONFIRM_NO - 1, 0, 0);
-        break;
     }
 }
 
@@ -204,8 +194,9 @@ static void wait_vsync(void)
     last = ria_vsync();
 }
 
-/* The title screen first. Resume opens the upgrade screen, where a level
-   begins, and New Game begins level 1. When a level ends, its menu goes
+/* The title screen first. With a save, Continue Game opens the upgrade
+   screen, where a level begins; with none, Start Game begins level 1.
+   When a level ends, its menu goes
    to the upgrade screen, plays it again, or goes to the title. Esc pauses
    a level, with the same choices and Restart. There is no way out of the
    game: every menu leads to another screen. */
@@ -239,10 +230,14 @@ int main(void)
         input_read();
         sfx_step();
 #ifndef NDEBUG
-        /* In a debug build, Shift and a number brings in that talk, to see
-           how it looks on any screen. */
-        if (shift_digit && shift_digit <= TALKS)
-            talk_queue(shift_digit);
+        /* In a debug build, Shift and the letters of the top row, Q, W, E
+           and on, bring in the talks but the coins', in order, and Shift
+           and a level's number, of a digit or two, the coin's for that
+           level as Shift is let go, to see how each looks on any screen. */
+        if (shift_letter && shift_letter < TALK_COIN1)
+            talk_queue(shift_letter);
+        if (shift_number)
+            talk_queue(talk_coin(shift_number));
 #endif
         if (talk_step())
         {
@@ -329,37 +324,15 @@ int main(void)
             }
             break;
         case STATE_TITLE:
-            title_step();
-            switch (menu_step())
+            switch (title_step())
             {
-            case TITLE_RESUME:
+            case TITLE_CONTINUE:
                 save_load();
                 shop_show(SHOP_ON_LEVELS);
                 break;
-            case TITLE_NEW_GAME:
-                if (save_exists)
-                {
-                    menu_close();
-                    menu_open(&confirm_menu, CONFIRM_NO - 1, 0, 0);
-                    game_state = STATE_CONFIRM;
-                }
-                else
-                    new_game();
-                break;
-            }
-            break;
-        case STATE_CONFIRM:
-            /* Esc is No. */
-            switch (input_pressed & INPUT_PAUSE ? CONFIRM_NO : menu_step())
-            {
-            case CONFIRM_YES:
+            case TITLE_START:
                 DEBUG_LOG("new game\n");
                 new_game();
-                break;
-            case CONFIRM_NO:
-                menu_close();
-                menu_open(&title_menu, TITLE_NEW_GAME - 1, 0, 0);
-                game_state = STATE_TITLE;
                 break;
             }
             break;

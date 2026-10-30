@@ -34,19 +34,26 @@ def main():
     # Each asset, and the bytes it must be.
     exact = {'palettes': 'PALETTES_BYTES', 'backdrop': 'BACKDROP_BYTES', 'panels': 'PANELS_BYTES',
              'carts': 'CARTS_BYTES', 'menus': 'MENUS_BYTES', 'logo': 'LOGO_BYTES',
-             'cracks': 'CRACKS_BYTES', 'chunks': 'CHUNKS_BYTES', 'gauge': 'GAUGE_BYTES'}
+             'title_panels': 'TITLE_PANELS_BYTES',
+             'cracks': 'CRACKS_BYTES', 'chunks': 'CHUNKS_BYTES', 'gauge': 'GAUGE_BYTES',
+             'big-coin': 'BIG_COIN_BYTES', 'big-coin-colors': 'BIG_COIN_PALETTE_BYTES',
+             'weight': 'WEIGHT_BYTES', 'weight-colors': 'PICTURE_COLORS_BYTES',
+             'jerrycan': 'JERRYCAN_BYTES', 'jerrycan-colors': 'PICTURE_COLORS_BYTES'}
+    counted = {'dwarves': ('TALK_DWARVES', 'DWARF_ASSET_BYTES'), 'bubbles': ('TALK_BUBBLES', 'BUBBLE_ASSET_BYTES')}
     exact.update({name: 'TEXTURE_BYTES' for name in numbered('texture', sym['TEXTURES'])})
     exact.update({name: 'CURTAIN_SET_BYTES' for name in numbered('curtain', sym['CURTAIN_SETS'])})
     exact.update({name: 'FRAME_SET_BYTES' for name in numbered('frame', sym['FRAME_SETS'])})
-    exact.update({name: 'TALK_BYTES' for name in numbered('talk', sym['TALKS'])})
     size = lambda name: os.path.getsize(os.path.join(build, f'{name}.bin'))
     for name, bytes_name in exact.items():
         check(size(name) == sym[bytes_name], f'{name}.bin is {size(name)} bytes, not the {sym[bytes_name]} of {bytes_name}')
+    for name, (count, bytes_name) in counted.items():
+        want = sym[count] * sym[bytes_name]
+        check(size(name) == want, f'{name}.bin is {size(name)} bytes, not a {bytes_name} for each of {count}, {want}')
     levels = sym['LEVELS'] * sym['LEVEL_BYTES']
     check(size('levels') == levels, f'levels.bin is {size("levels")} bytes, not a LEVEL_BYTES for each level, {levels}')
     sleds = (sym['WIDTH_RANKS'] + 1) * sym['SLED_SLOT']
     check(size('sleds') == sleds, f'sleds.bin is {size("sleds")} bytes, not a SLED_SLOT for each width, {sleds}')
-    print(f'ok: {len(exact) + 2} assets, each the size of what it loads into')
+    print(f'ok: {len(exact) + len(counted) + 2} assets, each the size of what it loads into')
 
     # The images that load as the ROM starts, but the palettes, checked
     # whole above.
@@ -64,7 +71,7 @@ def main():
     row = lambda palette: (sym[f'XRAM_PALETTE_{palette}'] - sym['XRAM_PALETTES']) // 32
     rows = [(bricks, 'BRICK_ROW', 'BRICKS'), (bricks, 'SLED_ROW', 'SLED'),
             (logo, 'LOGO_ROW', 'LOGO'), (sled, 'SLED_ROW', 'SLED'), (screen, 'SLED_ROW', 'SLED'),
-            (screen, 'FX_ROW', 'FX'), (screen, 'HOLO_ROW', 'HOLO'), (texture, 'TEXTURE_ROW', 'TEXTURE'),
+            (screen, 'HOLO_ROW', 'HOLO'), (texture, 'TEXTURE_ROW', 'TEXTURE'),
             (frames, 'SLED_ROW', 'SLED'), (frames, 'SHADE_ROW', 'SHADE'),
             (gauge, 'LIQUID_ROW', 'LIQUID'), (gauge, 'FITTING_ROW', 'FITTING')]
     for module, name, palette in rows:

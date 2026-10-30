@@ -51,9 +51,9 @@ def main():
         return lo + (x if x <= span else 2 * span - x)
 
     full = game.ram('energy', 2)
-    check(game.ram('balls') == balls, f'{balls} balls at the start')
+    check(game.ram('balls') == balls - 1, f'{balls} balls at the start, one on the sled')
     count = lambda: game.count('XRAM_BALL_DIGITS', sym['BALL_DIGITS'])
-    check(count() == balls, f'the count shows {balls} balls at the start')
+    check(count() == balls - 1, f'the count shows the {balls - 1} left')
     check(game.ram('bricks_left') == bricks, f'{bricks} bricks at the start')
     check(game.shown('XRAM_BRICKS', bricks) == bricks, f'{bricks} brick sprites at the start')
 
@@ -77,8 +77,8 @@ def main():
                 game.cmd('release space')
                 game.run(2)
                 launches += 1
-                check(game.ram('balls') == balls - launches, 'each launch takes a ball')
-                check(count() == balls - launches, 'the count goes down with each launch')
+                check(game.ram('balls') == balls - launches, 'each ball comes from the count')
+                check(count() == balls - launches, 'and the count goes down as it does')
             continue
         if state == sym['BALL_FLYING'] and 0 <= y < sym['SCREEN_H']:
             check(play_left <= x <= play_right - ball, f'ball x {x} left the playfield')
@@ -125,7 +125,7 @@ def main():
     if how == 'cleared':
         game.talk_ok()  # the dwarf with the coin, before the menu
     title = {'cleared': 'LEVEL COMPLETE', 'out of energy': 'OUT OF FUEL', 'out of balls': 'OUT OF BALLS'}[how]
-    check(game.shows(title) and game.shows('THE DRY') and game.shows('REPLAY'),
+    check(game.shows(title) and game.shows('TO THE DRY') and game.shows('REPLAY'),
           f'the menu says {title} when the level ends')
     if how != 'out of energy':
         images = set()
@@ -145,12 +145,13 @@ def main():
     game.run(5)
     check(game.ram('game_state') == sym['STATE_PLAY'], 'the level starts again')
     check(game.ram('bricks_left') == bricks, 'the bricks come back')
+    game.ready()
     check(game.shown('XRAM_BRICKS', bricks) == bricks, 'the brick sprites come back')
-    check(game.ram('balls') == balls, 'the balls come back')
+    check(game.ram('balls') == balls - 1, 'the balls come back, one on the sled')
     check(game.ram('nuggets', 2) == counted, 'the nuggets are kept')
-    check(count() == balls, 'the count of balls comes back')
+    check(count() == balls - 1, 'the count of balls comes back')
     check(game.ram('energy', 2) == full, 'the energy is full again')
-    check(not game.shows('THE DRY'), 'the menu is gone')
+    check(not game.shows('TO THE DRY'), 'the menu is gone')
     game.close()
     print('PASS')
 

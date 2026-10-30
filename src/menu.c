@@ -5,7 +5,6 @@
 #include "sfx.h"
 #include "video.h"
 #include "xram.h"
-#include <string.h>
 
 /* A menu box: its frame, then, with a title, a gap, the title and a thin
    rule under it, then each item ITEM_ROWS tall, its text in the middle row, then a gap and
@@ -76,7 +75,8 @@ static void pick_step(int8_t step)
    that can be picked. disabled has a bit for each item that can't be,
    which the menu leaves off. It waits wait steps before it takes a choice,
    so a press meant for what came before doesn't choose. The cursor comes
-   to it: it slides there if it shows already, or appears there. */
+   to it: it slides there if it shows already, or appears there. A menu of
+   BOX_NONE draws nothing. */
 void menu_open(const menu_t *menu, uint8_t pick, uint8_t disabled, uint8_t wait)
 {
     uint8_t i;
@@ -86,16 +86,18 @@ void menu_open(const menu_t *menu, uint8_t pick, uint8_t disabled, uint8_t wait)
     picked = pick;
     if (disabled & (1 << pick))
         pick_step(1);
-    video_box(menu->center - MENU_COLS / 2, menu->top, menu->center + MENU_COLS / 2 - 1, bottom(), menu->frame);
-    if (menu->title)
+    if (menu->frame != BOX_NONE)
     {
-        video_text(menu->center - strlen(menu->title) / 2, menu->top + 2, menu->title);
-        video_rule(menu->center - MENU_COLS / 2 + 2, menu->center + MENU_COLS / 2 - 3, menu->top + 3);
+        video_box(menu->center - MENU_COLS / 2, menu->top, menu->center + MENU_COLS / 2 - 1, bottom());
+        if (menu->title)
+        {
+            video_text_centered(menu->center, menu->top + 2, menu->title);
+            video_rule(menu->center - MENU_COLS / 2 + 2, menu->center + MENU_COLS / 2 - 3, menu->top + 3);
+        }
+        for (i = 0; i < menu->count; i++)
+            if (!(disabled & (1 << i)))
+                video_text_centered(menu->center, first_item_row() + place(i) * ITEM_ROWS + 1, menu->items[i]);
     }
-    for (i = 0; i < menu->count; i++)
-        if (!(disabled & (1 << i)))
-            video_text(menu->center - strlen(menu->items[i]) / 2, first_item_row() + place(i) * ITEM_ROWS + 1,
-                       menu->items[i]);
     cursor_aim();
     waiting = wait;
     DEBUG_LOG("menu %s\n", menu->items[0]);
@@ -114,15 +116,9 @@ void menu_clear(void)
    cursor stays, for whatever is picked next. */
 void menu_close(void)
 {
-    if (shown)
+    if (shown && shown->frame != BOX_NONE)
         video_clear(shown->center - MENU_COLS / 2, shown->top, shown->center + MENU_COLS / 2 - 1, bottom());
     shown = 0;
-}
-
-/* The item picked, counting from 0. */
-uint8_t menu_picked(void)
-{
-    return picked;
 }
 
 /* Up picks the item before, down the item after, but for the first and
@@ -152,14 +148,16 @@ uint8_t menu_step(void)
     return MENU_NONE;
 }
 
-/* At the start of a frame, while a menu shows: every TAPE_STEPS, its
-   tape's colors turn round a place, and the stripes move along. */
+/* At the start of a frame, while a menu of tape shows: every TAPE_STEPS,
+   its tape's colors turn round a place, and the stripes move along. A
+   menu of BOX_NONE has no tape, and a dwarf that stays over it has the
+   menus' palette for his image. */
 void menu_draw(void)
 {
     uint16_t tape[MENU_TAPE_PHASES], last;
     uint8_t i;
 
-    if (!shown || ++tape_steps < TAPE_STEPS)
+    if (!shown || shown->frame != BOX_TAPE || ++tape_steps < TAPE_STEPS)
         return;
     tape_steps = 0;
     xram0_read(tape, XRAM_MENU_PALETTE + MENU_TAPE * sizeof(uint16_t), sizeof tape);

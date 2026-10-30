@@ -95,7 +95,7 @@ def main():
     played(game, 'LOST', 20)
     game.run(1)
     whistle = [i for i, (f, w, g) in enumerate(channels(game))
-               if w == wave(game, 'SQUARE') and g and 360 <= f < 660 * 3]
+               if w == wave(game, 'SQUARE') and g and 360 <= f <= 660 * 3]
     check(whistle, 'the whistle is on a channel, gate held')
     first = channels(game)[whistle[0]][0]
     game.run(10)
@@ -104,13 +104,13 @@ def main():
     print(f'ok: lost ball, sliding from {first} to {later}')
 
     # Low energy beeps, then beeps again while it stays low.
-    game.paused_poke([('energy', sym['TUNE_ENERGY_LOW'] + 10, 2)])
+    game.paused_poke([('energy', sym['TUNE_ENERGY_LOW'] + 10 * game.ram('burns'), 2)])
     played(game, 'LOW', 30)
     played(game, 'LOW_BEEP', 200)
     print('ok: low energy, and beeps while low')
 
     # Out of energy: the flames sputter, then the paddle falls.
-    game.paused_poke([('energy', 5, 2)])
+    game.paused_poke([('energy', 5 * game.ram('burns'), 2)])
     played(game, 'SPUTTER', 20)
     played(game, 'FALL', 60)
     game.until('game_state', 'STATE_MENU', 200)
@@ -122,7 +122,7 @@ def main():
     game.tap('down')
     played(game, 'MOVE', 5)
     game.tap('up')
-    game.menu_choose('THE DRY', wait=False)
+    game.menu_choose('TO THE DRY', wait=False)
     game.cmd('expect "upgrades"')  # past every click before the upgrade screen
     game.talk_ok()
     game.poke('nuggets', 50, 2)

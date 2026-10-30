@@ -13,9 +13,10 @@
    when the screen starts. The upgrade screen has its backdrop, its panels
    and carts, and slots for the pictures of the panels near the middle,
    which load as the panels come near. The title has a texture, a curtain
-   set and the logo, and a level a texture, a curtain set, a frame set,
+   set, the logo and its panels, and a level a texture, a curtain set, a frame set,
    the cracks and the chunks of its bricks, the fittings and the fuel of
-   the energy gauge, and its own sled. The texture,
+   the energy gauge, and its own sled, and room for the big coin, which
+   loads with the committeeman's bubble. The texture,
    the curtain set and the frame set are picked at random only when the
    screen changes, so a level played again keeps its rock and its frame,
    and nobody sees them change. */
@@ -45,7 +46,10 @@ _Static_assert(CURTAIN_SETS <= 9 && TEXTURES <= 9 && FRAME_SETS <= 9, "An asset'
 #define PANELS_BYTES (PANEL_ART_BYTES + PANEL_LAYOUTS * PANEL_FRAME_BYTES)
 #define CARTS_BYTES (XRAM_CART_TILES + CART_TILES * sizeof(cart_tile_t) - XRAM_CART_PALETTE)
 #define MENUS_BYTES (XRAM_MENU_TILES + MENU_TILES * sizeof(menu_tile_t) - XRAM_MENU_PALETTE)
-#define LOGO_BYTES sizeof(((xram_layout_t *)0)->art.cave.logo_images)
+#define LOGO_BYTES sizeof(((xram_layout_t *)0)->art.cave.title.logo_images)
+#define TITLE_ART_BYTES (XRAM_TITLE_MAP - XRAM_TITLE_PALETTE) /* the palette and the tiles */
+#define TITLE_MAP_BYTES (TITLE_ROWS * TITLE_COLS)
+#define TITLE_PANELS_BYTES (TITLE_ART_BYTES + TITLE_MAPS * TITLE_MAP_BYTES)
 #define TEXTURE_BYTES sizeof(((xram_layout_t *)0)->art.cave.texture)
 #define CURTAIN_PALETTE_BYTES sizeof(((palettes_t *)0)->curtain)
 #define CURTAIN_SET_BYTES (2 * CURTAIN_PALETTE_BYTES + 4 * sizeof(uint16_t) + 2 * CURTAIN_BYTES)
@@ -53,7 +57,10 @@ _Static_assert(CURTAIN_SETS <= 9 && TEXTURES <= 9 && FRAME_SETS <= 9, "An asset'
 #define CRACKS_BYTES sizeof(((level_art_t *)0)->cracks)
 #define CHUNKS_BYTES sizeof(((level_art_t *)0)->chunks)
 #define GAUGE_BYTES offsetof(gauge_art_t, glass)
-#define TALK_BYTES sizeof(talk_t)
+#define DWARF_ASSET_BYTES sizeof(dwarf_t)
+#define BUBBLE_ASSET_BYTES sizeof(bubble_t)
+#define BIG_COIN_PALETTE_BYTES sizeof(((level_art_t *)0)->big_coin_palette)
+#define BIG_COIN_BYTES sizeof(big_coin_image_t)
 
 static uint8_t scene;
 static uint8_t curtain_set; /* the one shown, from 0 */
@@ -220,30 +227,63 @@ static void cave(void)
     xreg_vga_mode3(MODE3_2BPP, XRAM_TEXTURE_CONFIG, 0);
 }
 
-/* The title: a cave, if it comes from another screen, and the logo. */
-void scene_title(void)
+/* The title: a cave, if it comes from another screen, the logo, and the
+   palette and tiles of its panels, on plane 1 from scanline y, off the
+   screen to the right until scene_title_panels() shows them. */
+void scene_title(int16_t y)
 {
+    mode2_config_t config;
+
     if (scene_change(SCENE_TITLE))
     {
         video_start(0);
         cave();
     }
     load("ROM:logo", 0, XRAM_LOGO_IMAGES, LOGO_BYTES);
+    load("ROM:title_panels", 0, XRAM_TITLE_PALETTE, TITLE_ART_BYTES);
+    memset(&config, 0, sizeof config);
+    config.x_pos_px = SCREEN_W;
+    config.y_pos_px = y;
+    config.width_tiles = TITLE_COLS;
+    config.height_tiles = TITLE_ROWS;
+    config.xram_data_ptr = XRAM_TITLE_MAP;
+    config.xram_palette_ptr = XRAM_TITLE_PALETTE;
+    config.xram_tile_ptr = XRAM_TITLE_TILES;
+    xram0_write(XRAM_PANEL_CONFIG, &config, sizeof config);
+    xreg_vga_mode2(MODE2_4BPP | MODE2_8X8, XRAM_PANEL_CONFIG, 1, y, y + TITLE_ROWS * 8);
 }
 
-/* A level: a cave, its frame set, the cracks and chunks of its bricks and
-   the gauge's fittings and fuel, if it comes from another screen, and the sled of a rank of the width
-   upgrade. Its own sprites start hidden, before plane 1 shows them.
-   Returns whether the screen changed. */
+/* The title's panels off the screen, and with a map, TITLE_MAP_SAVE and on,
+   loaded in their place, which the title then shows with
+   scene_title_show(), once it has put in their text. */
+void scene_title_panels(uint8_t map)
+{
+    scene_title_show(SCREEN_W);
+    load("ROM:title_panels", TITLE_ART_BYTES + (long)map * TITLE_MAP_BYTES, XRAM_TITLE_MAP, TITLE_MAP_BYTES);
+}
+
+/* The title's panels with their left at x, or off the screen at SCREEN_W. */
+void scene_title_show(int16_t x)
+{
+    xram0_poke16(XRAM_PANEL_CONFIG + offsetof(mode2_config_t, x_pos_px), x);
+}
+
+
+/* A level: if it comes from another screen, no sprites, and a cave, its
+   frame set, the cracks and chunks of its bricks and the gauge's fittings
+   and fuel, and the sled of a rank of the width upgrade. Its own sprites
+   start hidden, before plane 1 shows them. Returns whether the screen
+   changed. */
 uint8_t scene_level(uint8_t sled_rank)
 {
     uint8_t changed = scene_change(SCENE_LEVEL);
 
-    video_hide_level_sprites();
     if (changed)
     {
         char frame[] = "ROM:frame1";
 
+        video_hide_sprites();
+        video_hide_level_sprites();
         video_start(1);
         cave();
         frame[9] = '1' + frame_set;
@@ -252,8 +292,8 @@ uint8_t scene_level(uint8_t sled_rank)
         load("ROM:chunks", 0, XRAM_CHUNK_IMAGES, CHUNKS_BYTES);
         load("ROM:gauge", 0, XRAM_GAUGE_ART, GAUGE_BYTES);
         DEBUG_LOG("frame %u\n", frame_set + 1);
+        load("ROM:sleds", (long)sled_rank * SLED_SLOT, XRAM_LEVEL_SLED, SLED_SLOT);
     }
-    load("ROM:sleds", (long)sled_rank * SLED_SLOT, XRAM_LEVEL_SLED, SLED_SLOT);
     return changed;
 }
 
@@ -290,6 +330,31 @@ void scene_picture_sled(uint8_t slot, uint8_t rank)
     load("ROM:sleds", (long)rank * SLED_SLOT, XRAM_PICTURE(slot), SLED_WIDTH_MAX * 8 / 2);
 }
 
+#define WEIGHT_BYTES (WEIGHT_W * WEIGHT_H / 2)
+#define JERRYCAN_BYTES (JERRYCAN_W * JERRYCAN_H / 2)
+#define PICTURE_COLORS_BYTES sizeof(((menu_art_t *)0)->picture_colors[0])
+_Static_assert(WEIGHT_BYTES <= PICTURE_BYTES && JERRYCAN_BYTES <= PICTURE_BYTES, "A picture is too big for its slot.");
+
+/* A picture in its own colors, and its colors, lit and dim, into slot
+   slot. */
+static void picture_own(uint8_t slot, const char *image, unsigned bytes, const char *colors)
+{
+    load(image, 0, XRAM_PICTURE(slot), bytes);
+    load(colors, 0, XRAM_PICTURE_COLORS(slot, 0), PICTURE_COLORS_BYTES);
+}
+
+/* The weight, the weight panel's picture. */
+void scene_picture_weight(uint8_t slot)
+{
+    picture_own(slot, "ROM:weight", WEIGHT_BYTES, "ROM:weight_colors");
+}
+
+/* The jerrycan, the efficiency panel's picture. */
+void scene_picture_jerrycan(uint8_t slot)
+{
+    picture_own(slot, "ROM:jerrycan", JERRYCAN_BYTES, "ROM:jerrycan_colors");
+}
+
 /* The menus' palette and tiles, at the start, and again after a dwarf has
    talked in their place. */
 void scene_menus(void)
@@ -297,11 +362,25 @@ void scene_menus(void)
     load("ROM:menus", 0, XRAM_MENU_PALETTE, MENUS_BYTES);
 }
 
-/* A talk, ROM:talk1 and on, in the menus' place. */
-void scene_talk(uint8_t talk)
+/* A dwarf of ROM:dwarves, from 1, in the menus' place. */
+void scene_dwarf(uint8_t dwarf)
 {
-    char path[] = "ROM:talk1";
+    load("ROM:dwarves", (long)(dwarf - 1) * DWARF_ASSET_BYTES, XRAM_TALK_DWARF, DWARF_ASSET_BYTES);
+}
 
-    path[8] = '0' + talk;
-    load(path, 0, XRAM_TALK, TALK_BYTES);
+/* A speech bubble of ROM:bubbles, from 1, beside the dwarf. */
+void scene_bubble(uint8_t bubble)
+{
+    load("ROM:bubbles", (long)(bubble - 1) * BUBBLE_ASSET_BYTES, XRAM_TALK_BUBBLE, BUBBLE_ASSET_BYTES);
+}
+
+/* The big coin, for a bubble with it, in a level's own art. Returns
+   whether a level is up to have it. */
+uint8_t scene_big_coin(void)
+{
+    if (scene != SCENE_LEVEL)
+        return 0;
+    load("ROM:big_coin_colors", 0, XRAM_BIG_COIN_PALETTE, BIG_COIN_PALETTE_BYTES);
+    load("ROM:big_coin", 0, XRAM_BIG_COIN_IMAGE, BIG_COIN_BYTES);
+    return 1;
 }

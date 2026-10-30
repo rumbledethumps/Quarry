@@ -5,7 +5,8 @@
 uint8_t input_held;
 uint8_t input_pressed;
 uint8_t shift_pressed;
-uint8_t shift_digit;
+uint8_t shift_letter;
+uint8_t shift_number;
 
 /* A held key repeats after REPEAT_DELAY steps, then every REPEAT_STEPS. */
 #define REPEAT_DELAY 20
@@ -13,19 +14,41 @@ uint8_t shift_digit;
 
 static uint8_t shift_held;
 static uint8_t shift_steps;
-static uint8_t digit_held;
+static uint16_t digits_held;  /* a bit for each number key, from 0 */
+static uint16_t letters_held; /* and each letter of the top row */
+static uint8_t typed;         /* the number typed while Shift is held */
+static uint8_t typing;        /* whether one is */
+
+/* The top row of letters, in order. */
+static const uint8_t top_row[] = {HID_KEY_Q, HID_KEY_W, HID_KEY_E, HID_KEY_R, HID_KEY_T,
+                                  HID_KEY_Y, HID_KEY_U, HID_KEY_I, HID_KEY_O, HID_KEY_P};
 static uint8_t repeat_keys; /* the INPUT_ bits of the last press input_repeat() saw */
 static uint8_t repeat_steps;
 
 static void shift_read(const uint8_t *keys)
 {
-    uint8_t held = 0, digit = 0, d;
+    uint16_t digits = 0, letters = 0;
+    uint8_t held = 0, i;
 
-    for (d = 9; d; d--)
-        if (KEYBOARD_PRESSED(keys, HID_KEY_1 + d - 1))
-            digit = d;
-    shift_digit = digit != digit_held ? digit : 0;
-    digit_held = digit;
+    for (i = 0; i < 10; i++)
+    {
+        if (KEYBOARD_PRESSED(keys, i ? HID_KEY_1 + i - 1 : HID_KEY_0))
+            digits |= 1u << i;
+        if (KEYBOARD_PRESSED(keys, top_row[i]))
+            letters |= 1u << i;
+    }
+    for (i = 0; i < 10; i++)
+        if (digits & ~digits_held & 1u << i)
+        {
+            typed = typed % 10 * 10 + i;
+            typing = 1;
+        }
+    shift_letter = 0;
+    for (i = 10; i; i--)
+        if (letters & ~letters_held & 1u << (i - 1))
+            shift_letter = i;
+    digits_held = digits;
+    letters_held = letters;
 
     if (KEYBOARD_PRESSED(keys, HID_KEY_ARROW_RIGHT))
         held |= SHIFT_RIGHT;
@@ -64,36 +87,40 @@ void input_init(void)
    the button. Every connected gamepad: the d-pad merged with the left
    stick, and A, B, X or Y, which every pad has where you expect them,
    for the button, which launches. Esc, P or Pause, or Start or
-   Select, is the menu. The arrow keys with Shift are the SHIFT_ keys instead. */
+   Select, is the menu. With Shift, the arrows, WASD and P are keys for
+   testing instead. */
 void input_read(void)
 {
     uint8_t keys[sizeof(keyboard_t)];
     gamepad_t pads;
     uint8_t held = 0;
-    uint8_t arrows;
+    uint8_t plain; /* no Shift */
     uint8_t i;
 
     xram0_read(keys, XRAM_KEYBOARD, sizeof keys);
-    arrows = !KEYBOARD_PRESSED(keys, HID_KEY_SHIFT_LEFT) &&
-             !KEYBOARD_PRESSED(keys, HID_KEY_SHIFT_RIGHT);
-    if (arrows)
-        shift_held = shift_pressed = shift_digit = digit_held = 0;
+    plain = !KEYBOARD_PRESSED(keys, HID_KEY_SHIFT_LEFT) &&
+            !KEYBOARD_PRESSED(keys, HID_KEY_SHIFT_RIGHT);
+    shift_number = 0;
+    if (plain)
+    {
+        /* Letting Shift go gives the number typed. */
+        if (typing)
+            shift_number = typed;
+        shift_held = shift_pressed = shift_letter = typed = typing = 0;
+        digits_held = letters_held = 0;
+    }
     else
         shift_read(keys);
-    if (KEYBOARD_PRESSED(keys, HID_KEY_A) ||
-        (arrows && KEYBOARD_PRESSED(keys, HID_KEY_ARROW_LEFT)) ||
+    if ((plain && (KEYBOARD_PRESSED(keys, HID_KEY_A) || KEYBOARD_PRESSED(keys, HID_KEY_ARROW_LEFT))) ||
         KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_4))
         held |= INPUT_LEFT;
-    if (KEYBOARD_PRESSED(keys, HID_KEY_D) ||
-        (arrows && KEYBOARD_PRESSED(keys, HID_KEY_ARROW_RIGHT)) ||
+    if ((plain && (KEYBOARD_PRESSED(keys, HID_KEY_D) || KEYBOARD_PRESSED(keys, HID_KEY_ARROW_RIGHT))) ||
         KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_6))
         held |= INPUT_RIGHT;
-    if (KEYBOARD_PRESSED(keys, HID_KEY_W) ||
-        (arrows && KEYBOARD_PRESSED(keys, HID_KEY_ARROW_UP)) ||
+    if ((plain && (KEYBOARD_PRESSED(keys, HID_KEY_W) || KEYBOARD_PRESSED(keys, HID_KEY_ARROW_UP))) ||
         KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_8))
         held |= INPUT_UP;
-    if (KEYBOARD_PRESSED(keys, HID_KEY_S) ||
-        (arrows && KEYBOARD_PRESSED(keys, HID_KEY_ARROW_DOWN)) ||
+    if ((plain && (KEYBOARD_PRESSED(keys, HID_KEY_S) || KEYBOARD_PRESSED(keys, HID_KEY_ARROW_DOWN))) ||
         KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_2))
         held |= INPUT_DOWN;
     if (KEYBOARD_PRESSED(keys, HID_KEY_SPACE) ||
@@ -105,7 +132,7 @@ void input_read(void)
     if (KEYBOARD_PRESSED(keys, HID_KEY_KEYPAD_0))
         held |= INPUT_LAUNCH;
     if (KEYBOARD_PRESSED(keys, HID_KEY_ESCAPE) ||
-        KEYBOARD_PRESSED(keys, HID_KEY_P) ||
+        (plain && KEYBOARD_PRESSED(keys, HID_KEY_P)) ||
         KEYBOARD_PRESSED(keys, HID_KEY_PAUSE))
         held |= INPUT_PAUSE;
 

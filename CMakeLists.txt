@@ -29,11 +29,16 @@ quarry_art(ball.bin image ball.png)
 quarry_art(ball-icon.bin image ball-icon.png)
 quarry_art(jet.bin image jet.png --tile 8x12)
 quarry_art(smoke.bin image smoke.png --tile 8x8)
-quarry_art(energy.bin image energy.png --tile 8x8)
 quarry_art(logo.bin image logo.png --tile 64x64)
 quarry_art(digits.bin image digits.png --tile 8x12)
 quarry_art(machine.bin image machine.png)
 quarry_art(coin.bin image coin.png)
+quarry_art(big-coin.bin image big-coin.png)
+quarry_art(big-coin-colors.bin palette big-coin-colors.png)
+quarry_art(weight.bin image weight.png)
+quarry_art(weight-colors.bin palette weight-colors.png)
+quarry_art(jerrycan.bin image jerrycan.png)
+quarry_art(jerrycan-colors.bin palette jerrycan-colors.png)
 quarry_art(cursor.bin image cursor.png)
 
 # The textures behind a level, one for each seed, as ROM:texture1 and on,
@@ -92,6 +97,19 @@ add_custom_command(
     VERBATIM
 )
 
+# The panels of the title, from art/panel-frame.png in 16 colors, and the
+# menus' font, and title_panels.h, which gives the tile numbers and the
+# maps. art/title_panels.py also writes title_panels.png to look at.
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/title_panels.bin ${CMAKE_CURRENT_BINARY_DIR}/title_panels.h
+    COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/art/title_panels.py ${CMAKE_CURRENT_BINARY_DIR}/title_panels.bin
+        ${CMAKE_CURRENT_BINARY_DIR}/title_panels.h --preview ${CMAKE_CURRENT_BINARY_DIR}/title_panels.png
+    DEPENDS art/title_panels.py art/panels.py art/menus.py art/panel_font.py art/curtain.py art/rd2png.py
+        art/panel-frame.png
+    VERBATIM
+)
+
 # The backdrop of the upgrade screen, from art/backdrop.png, in three bands,
 # and backdrop.h, which gives their sizes. art/backdrop.py also writes
 # backdrop.png to look at. It reads PANEL_Y in src/xram.h and the panels'
@@ -128,22 +146,18 @@ add_custom_command(
     VERBATIM
 )
 
-# What the dwarves say, from art/talk.py with the dwarves of art/dwarves/,
-# each as ROM:talk1 and on, and talks.h, which numbers them. There are
-# QUARRY_TALKS of them, as art/talk.py lists them, and talk.png is the
-# first, to look at.
-set(QUARRY_TALKS 4)
-set(QUARRY_TALK_BINS)
-foreach(n RANGE 1 ${QUARRY_TALKS})
-    list(APPEND QUARRY_TALK_BINS ${CMAKE_CURRENT_BINARY_DIR}/talk${n}.bin)
-endforeach()
+# What the dwarves say, from art/talk.py with the dwarves of art/dwarves/:
+# each dwarf as ROM:dwarves holds them, each bubble as ROM:bubbles, and
+# talks.h, which numbers the talks. talk.png is the first, to look at.
+file(GLOB QUARRY_DWARVES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/art/dwarves/*.png)
 add_custom_command(
-    OUTPUT ${QUARRY_TALK_BINS} ${CMAKE_CURRENT_BINARY_DIR}/talks.h
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/dwarves.bin ${CMAKE_CURRENT_BINARY_DIR}/bubbles.bin
+        ${CMAKE_CURRENT_BINARY_DIR}/talks.h
     COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/art/talk.py ${CMAKE_CURRENT_BINARY_DIR}
-        ${CMAKE_CURRENT_BINARY_DIR}/talks.h --count ${QUARRY_TALKS}
+        ${CMAKE_CURRENT_BINARY_DIR}/talks.h
         --preview ${CMAKE_CURRENT_BINARY_DIR}/talk.png
-    DEPENDS art/talk.py art/curtain.py art/panel_font.py art/panels.py art/rd2png.py art/dwarves/miner.png
+    DEPENDS art/talk.py art/curtain.py art/panel_font.py art/panels.py art/rd2png.py ${QUARRY_DWARVES}
     VERBATIM
 )
 
@@ -193,7 +207,6 @@ rp6502_asset(quarry XRAM(XRAM_BALL_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/ball.bin)
 rp6502_asset(quarry XRAM(XRAM_BALL_ICON_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/ball-icon.bin)
 rp6502_asset(quarry XRAM(XRAM_JET_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/jet.bin)
 rp6502_asset(quarry XRAM(XRAM_SMOKE_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/smoke.bin)
-rp6502_asset(quarry XRAM(XRAM_ENERGY_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/energy.bin)
 rp6502_asset(quarry XRAM(XRAM_DIGIT_IMAGES) ${CMAKE_CURRENT_BINARY_DIR}/digits.bin)
 rp6502_asset(quarry XRAM(XRAM_MACHINE_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/machine.bin)
 rp6502_asset(quarry XRAM(XRAM_COIN_IMAGE) ${CMAKE_CURRENT_BINARY_DIR}/coin.bin)
@@ -205,13 +218,19 @@ rp6502_asset(quarry sleds ${CMAKE_CURRENT_BINARY_DIR}/sleds.bin)
 rp6502_asset(quarry cracks ${CMAKE_CURRENT_BINARY_DIR}/cracks.bin)
 rp6502_asset(quarry chunks ${CMAKE_CURRENT_BINARY_DIR}/chunks.bin)
 rp6502_asset(quarry gauge ${CMAKE_CURRENT_BINARY_DIR}/gauge.bin)
+rp6502_asset(quarry big_coin ${CMAKE_CURRENT_BINARY_DIR}/big-coin.bin)
+rp6502_asset(quarry big_coin_colors ${CMAKE_CURRENT_BINARY_DIR}/big-coin-colors.bin)
+rp6502_asset(quarry weight ${CMAKE_CURRENT_BINARY_DIR}/weight.bin)
+rp6502_asset(quarry weight_colors ${CMAKE_CURRENT_BINARY_DIR}/weight-colors.bin)
+rp6502_asset(quarry jerrycan ${CMAKE_CURRENT_BINARY_DIR}/jerrycan.bin)
+rp6502_asset(quarry jerrycan_colors ${CMAKE_CURRENT_BINARY_DIR}/jerrycan-colors.bin)
 rp6502_asset(quarry levels ${CMAKE_CURRENT_BINARY_DIR}/levels.bin)
 rp6502_asset(quarry panels ${CMAKE_CURRENT_BINARY_DIR}/panels.bin)
+rp6502_asset(quarry title_panels ${CMAKE_CURRENT_BINARY_DIR}/title_panels.bin)
 rp6502_asset(quarry carts ${CMAKE_CURRENT_BINARY_DIR}/carts.bin)
 rp6502_asset(quarry menus ${CMAKE_CURRENT_BINARY_DIR}/menus.bin)
-foreach(n RANGE 1 ${QUARRY_TALKS})
-    rp6502_asset(quarry talk${n} ${CMAKE_CURRENT_BINARY_DIR}/talk${n}.bin)
-endforeach()
+rp6502_asset(quarry dwarves ${CMAKE_CURRENT_BINARY_DIR}/dwarves.bin)
+rp6502_asset(quarry bubbles ${CMAKE_CURRENT_BINARY_DIR}/bubbles.bin)
 foreach(texture IN LISTS QUARRY_TEXTURES)
     rp6502_asset(quarry ${texture} ${CMAKE_CURRENT_BINARY_DIR}/${texture}.bin)
 endforeach()
@@ -225,7 +244,12 @@ rp6502_executable(quarry DATA default RESET default)
 rp6502_web(quarry CONFIG [[
     title: 'Quarry',
     db: 'rumbledethumps-quarry',
-    footer: 'Arrows, WASD or the keypad to move. Space, Enter or Ctrl is the button, which launches. In menus, up and down to pick and the button to choose. Esc or P for the menu. Gamepads work too: A, B, X or Y is the button, and Start or Select the menu.',
+    footer: 'Arrows or WASD to move. Space, Enter or Ctrl is the button. Esc or P for the menu.',
+]])
+rp6502_web(quarry OUTPUT quarry-itch.zip CONFIG [[
+    title: 'Quarry',
+    db: 'rumbledethumps-quarry',
+    overlay: false,
 ]])
 target_sources(quarry PRIVATE
     src/machines.c
@@ -249,6 +273,7 @@ target_sources(quarry PRIVATE
     src/video.c
     ${CMAKE_CURRENT_BINARY_DIR}/backdrop.h
     ${CMAKE_CURRENT_BINARY_DIR}/panels.h
+    ${CMAKE_CURRENT_BINARY_DIR}/title_panels.h
     ${CMAKE_CURRENT_BINARY_DIR}/carts.h
     ${CMAKE_CURRENT_BINARY_DIR}/menus.h
     ${CMAKE_CURRENT_BINARY_DIR}/talks.h
@@ -265,6 +290,7 @@ rp6502_test(NAME assets COMMAND tests/assets.py ${QUARRY_ROM})
 rp6502_test(NAME autoplay COMMAND tests/autoplay.py ${QUARRY_ROM})
 rp6502_test(NAME autoplay-miss COMMAND tests/autoplay.py --miss 5 ${QUARRY_ROM})
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    rp6502_test(NAME build COMMAND tests/build.py ${QUARRY_ROM})
     rp6502_test(NAME controls COMMAND tests/controls.py ${QUARRY_ROM})
     rp6502_test(NAME energy COMMAND tests/energy.py ${QUARRY_ROM})
     rp6502_test(NAME nuggets COMMAND tests/nuggets.py ${QUARRY_ROM})

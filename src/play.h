@@ -17,7 +17,7 @@ extern int16_t play_left;  /* the inner edges of the side walls */
 extern int16_t play_right;
 
 void play_init(void);
-void play_start(void);
+void play_start(uint8_t again);
 uint8_t play_step(void);
 void play_idle(void);
 void play_finish(void);

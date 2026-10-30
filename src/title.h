@@ -1,9 +1,14 @@
 #ifndef TITLE_H
 #define TITLE_H
 
-#include "menu.h"
+#include <stdint.h>
 
-void title_open(const menu_t *menu);
-void title_step(void);
+/* What title_step() returns. */
+#define TITLE_NONE 0
+#define TITLE_CONTINUE 1 /* the save, on the upgrade screen */
+#define TITLE_START 2    /* a new game, as there is no save */
+
+void title_open(void);
+uint8_t title_step(void);
 
 #endif

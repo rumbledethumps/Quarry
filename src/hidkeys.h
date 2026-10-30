@@ -5,10 +5,19 @@
 
 #define HID_KEY_A 0x04
 #define HID_KEY_D 0x07
+#define HID_KEY_E 0x08
+#define HID_KEY_I 0x0C
+#define HID_KEY_O 0x12
 #define HID_KEY_P 0x13
+#define HID_KEY_Q 0x14
+#define HID_KEY_R 0x15
 #define HID_KEY_S 0x16
+#define HID_KEY_T 0x17
+#define HID_KEY_U 0x18
 #define HID_KEY_W 0x1A
+#define HID_KEY_Y 0x1C
 #define HID_KEY_1 0x1E /* to 9, one after another */
+#define HID_KEY_0 0x27
 
 #define HID_KEY_ENTER 0x28
 #define HID_KEY_ESCAPE 0x29

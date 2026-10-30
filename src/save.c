@@ -15,7 +15,7 @@
    with a tag that names its layout, so a save of another layout is not
    read as this one. */
 #define SAVE_PATH "SAVE:quarry.save"
-#define SAVE_TAG "QRY6"
+#define SAVE_TAG "QRY7"
 
 typedef struct
 {
@@ -113,10 +113,9 @@ void save_write(void)
     DEBUG_LOG("saved\n");
 }
 
-/* Starts over: no nuggets, no coins, no upgrades, no level cleared,
-   level 1 picked and shown open, no talk seen and no line of the counts,
-   and replaces the save with that. */
-void save_new_game(void)
+/* No nuggets, no coins, no upgrades, no level cleared, level 1 picked and
+   shown open, no talk seen and no line of the counts. */
+static void start_over(void)
 {
     memset(nuggets, 0, sizeof nuggets);
     coins = 0;
@@ -126,5 +125,28 @@ void save_new_game(void)
     levels_shown = 1;
     talks_seen = 0;
     counts_shown = 0;
+}
+
+/* Starts over, and replaces the save with that. */
+void save_new_game(void)
+{
+    start_over();
     save_write();
+}
+
+/* Deletes the save, and starts over, with no save until the game writes
+   one. unlink() of a file on SAVE: fails, with ENODEV, so it empties the
+   file, and an empty file is no save. */
+void save_delete(void)
+{
+    int fd = open(SAVE_PATH, O_WRONLY | O_CREAT | O_TRUNC);
+
+    if (fd >= 0)
+    {
+        syncfs(fd);
+        close(fd);
+    }
+    start_over();
+    save_exists = 0;
+    DEBUG_LOG("deleted\n");
 }

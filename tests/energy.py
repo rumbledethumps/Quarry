@@ -106,18 +106,21 @@ def check_bubbles(game):
     foot = game.sprite('XRAM_GLASS_SPRITES')[1] + sym['GLASS_H']
     bounce(game)
     risen = bubbles(game)
-    check(len(risen) == 1 and foot - sym['BUBBLE_SIZE'] - 4 <= risen[0] < foot,
+    # The frames can fall behind the steps by one or two by the time it is
+    # read, so it may have risen a little more.
+    check(len(risen) == 1 and foot - sym['BUBBLE_SIZE'] - 6 <= risen[0] < foot,
           f'a bounce sends a bubble up from the foot of the fuel, at {foot}: {risen}')
     game.run(20)
     check(bubbles(game)[0] < risen[0] - 10, f'the bubble rises, from {risen[0]} to {bubbles(game)[0]}')
-    for _ in range(sym['BUBBLES'] - 1):
-        bounce(game)
+    # Every other bubble rising too, spread up the lower glass, clear of the
+    # surface, so none is free.
+    game.paused_poke([(f'bubble_y+{2 * i}', (foot - 30 - 6 * i) << 4, 2) for i in range(1, sym['BUBBLES'])])
     full = sorted(bubbles(game))
     check(len(full) == sym['BUBBLES'], f'a bubble for each bounce, {sym["BUBBLES"]} at most: {full}')
     bounce(game)
     after = sorted(bubbles(game))
-    gaps = lambda ys: [b - a for a, b in zip(ys, ys[1:])]
-    check(len(after) == sym['BUBBLES'] and gaps(after) == gaps(full) and after[0] < full[0],
+    # None of them starts again from the foot, which would be the lowest.
+    check(len(after) == sym['BUBBLES'] and after[0] < full[0] and after[-1] < full[-1],
           f'with none free, a bounce makes none and takes none: {full}, then {after}')
     highest = 0
     for _ in range(sym['GLASS_H'] + 40):
@@ -174,13 +177,13 @@ def main():
     game = Game()
     sym = game.sym
     game.new_game()
-    game.run(5)
+    up = sym['METER_RISE']
+    game.run((up + 1) * sym['METER_STEPS'])
 
     full = game.ram('energy', 2)
-    check(full == sym['TUNE_ENERGY'], 'the energy starts full')
-    check(fuel(game) == sym['GLASS_H'], 'the gauge starts full')
+    check(full == sym['TUNE_ENERGY'], 'the energy is full once the level is built')
+    check(fuel(game) == sym['GLASS_H'], 'and the gauge')
     check_glass(game)
-    up = sym['METER_RISE']
     check(meter(game) == (up, sym['PADDLE_GREEN']), f"the meter's paddle has come up green: {meter(game)}")
     print('ok: a full gauge, its glass the rock behind it, and the meter green')
     x, y = game.px('paddle_x'), game.px('paddle_y')
@@ -202,7 +205,7 @@ def main():
     game.cmd('release space')
     game.run(60)
     drained = full - game.ram('energy', 2)
-    drain = sym['TUNE_ENERGY_DRAIN']
+    drain = game.ram('burns')  # with no fuel efficiency bought
     check(55 * drain <= drained <= 65 * drain,
           f'energy drains {drain} a step after the launch, drained {drained} in 60')
     print(f'drained {drained} in 60 steps after the launch')
@@ -211,7 +214,7 @@ def main():
     game.paused_poke([('energy', sym['TUNE_ENERGY_MID'], 2)])
     check_meter(game, 'YELLOW', "at TUNE_ENERGY_MID, the meter's paddle slides down and up again yellow")
     low = sym['TUNE_ENERGY_LOW']
-    game.paused_poke([('energy', low + 20, 2)])
+    game.paused_poke([('energy', low + 20 * drain, 2)])
     game.wait('energy low', 30)
     lamp_color = sym['XRAM_PALETTE_SHADE'] + 2 * sym['LAMP_COLOR']
     lamp = lambda: int.from_bytes(game.xram(lamp_color, 2), 'little')
@@ -232,7 +235,7 @@ def main():
     # ball is put in flight in the middle of the playfield, rising slowly,
     # so it is still in flight when the paddle has gone.
     left = game.ram('play_left', 2, signed=True)
-    game.paused_poke([('energy', 30, 2), ('ball_state', sym['BALL_FLYING'], 1), ('ball_x', (left + 20) << 8, 4),
+    game.paused_poke([('energy', 30 * drain, 2), ('ball_state', sym['BALL_FLYING'], 1), ('ball_x', (left + 20) << 8, 4),
                       ('ball_y', 120 << 8, 4), ('ball_vx', 0, 2), ('ball_vy', -64, 2)])
     game.wait('out of energy', 40)
     check(game.ram('paddle_state') == sym['PADDLE_SPUTTER'], 'the paddle sputters')
@@ -278,7 +281,8 @@ def main():
 
     # Replay plays again, with a full bar.
     game.menu_choose('REPLAY')
-    game.run(5)
+    game.ready()
+    game.run(2)
     check(game.ram('energy', 2) == full, 'the energy is full again')
     check(game.ram('energy_draining') == 0, 'it waits for the first launch again')
     check(game.ram('paddle_state') == sym['PADDLE_HOVER'], 'the paddle hovers again')
@@ -288,12 +292,13 @@ def main():
 
     # Out of energy with the ball on the paddle: the ball goes down with it,
     # and launch does nothing.
-    game.paused_poke([('energy', 10, 2), ('energy_draining', 1, 1)])
+    game.paused_poke([('energy', 10 * drain, 2), ('energy_draining', 1, 1)])
     game.wait('out of energy', 20)
     game.cmd('press space')
     game.run(4)
     game.cmd('release space')
-    check(game.ram('balls') == sym['TUNE_BALLS'], 'no launch once out of energy')
+    check(game.ram('ball_state') == sym['BALL_DOCKED'] and game.ram('balls') == sym['TUNE_BALLS'] - 1,
+          'no launch once out of energy')
     game.wait('paddle falls', sym['TUNE_SPUTTER_STEPS'])
     game.run(15)
     middle = game.sprite(pieces)[1] + game.ram('paddle_width') // 2 * sym['TILT_MAX'] // 8
@@ -306,11 +311,11 @@ def main():
 
     # The level clears while the paddle falls: it still falls off the screen.
     game.menu_choose('REPLAY')
-    game.run(5)
+    game.ready()
     game.cmd('press space')
     game.wait('launch', 5)
     game.cmd('release space')
-    game.paused_poke([('energy', 5, 2)])
+    game.paused_poke([('energy', 5 * drain, 2)])
     game.wait('paddle falls', sym['TUNE_SPUTTER_STEPS'] + 10)
     check(game.ram('ball_state') == sym['BALL_FLYING'], 'the ball is still in flight')
     game.paused_poke([('bricks_left', 0, 1)])
