@@ -22,7 +22,8 @@ come in, but on the title, where he stays while the player picks from the
 menu above him. The bubble is cut into tiles, the same ones shared.
 
 TALKS lists what the dwarves say: each one's name, the dwarf, his side,
-the screen, and his bubbles, one after another, each its lines. Each
+where his bubbles go, and his bubbles, one after another, each its lines,
+or a place of its own and its lines. Each
 dwarf on each side a talk uses is a dwarf_t of src/xram.h in
 out_dir/dwarves.bin, and each bubble a bubble_t in out_dir/bubbles.bin,
 one after another from 1. The header gives the talks' numbers as
@@ -78,12 +79,14 @@ SEEN = {'FOREMAN': 0, 'UNLOCK': 2, 'DRY': 3}
 # Where they stand: he is in a lower corner, and his bubble beside him, its
 # tail under his beard. The bubble is placed by its foot, so the tail is as
 # high whatever its lines, and BUBBLE_GAP px from the edge of the screen on
-# his side. On the upgrade screen its foot is over the carts, which show
-# what he talks about. On the title he stays, with no OK, and his bubble is
-# a row shorter, clear of the panel over it.
+# his side. On the upgrade screen its foot is just over the carts, so they
+# show, or for what he says of the panels, low over the carts, so the
+# panels show. On the title he stays, with no OK, and his bubble is a row
+# shorter, clear of the panel over it.
 BUBBLE_GAP = 68
 LEVEL = {'foot': SCREEN_H - 24}
 DRY = {'foot': 196}
+DRY_LOW = dict(LEVEL)
 TITLE = dict(LEVEL, stays=True)
 
 # What the dwarves say: the talks but the coins', each with a key of its
@@ -93,9 +96,10 @@ TALKS = [
     # The title, with no save.
     ('GREENHORN', 'FRIENDLY', LEFT, TITLE,
      [['WELCOME, GREENHORN.', "HEAD ON IN WHEN YOU'RE", 'READY TO BREAK SOME ROCK.']]),
-    # The first time on the upgrade screen, after any other.
+    # The first time on the upgrade screen, after any other: the panels, with
+    # his bubble over the carts, then the carts, with it over the panels.
     ('DRY', 'FRIENDLY', LEFT, DRY,
-     [['THIS IS THE DRY. USE THE', 'PANELS TO UPGRADE YOUR', 'MACHINES.'],
+     [(DRY_LOW, ['THIS IS THE DRY. USE THE', 'PANELS TO UPGRADE YOUR', 'MACHINES.']),
       ['SELECT A CART TO BEGIN', 'MINING THAT LEVEL.']]),
     # A new game's first level.
     ('FOREMAN', 'FOREMAN', LEFT, LEVEL,
@@ -403,7 +407,9 @@ def main():
         if (dwarf, side) not in dwarves:
             dwarves.append((dwarf, side))
         table.append((dwarves.index((dwarf, side)) + 1, len(bubbles) + 1, len(said)))
-        bubbles += [(lines, side, where) for lines in said]
+        for lines in said:
+            at, lines = lines if isinstance(lines, tuple) else (where, lines)
+            bubbles.append((lines, side, at))
     built = [dwarf_asset(*d) for d in dwarves]
     with open(os.path.join(args.out_dir, 'dwarves.bin'), 'wb') as f:
         f.write(b''.join(data for data, *_ in built))

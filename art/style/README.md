@@ -607,8 +607,9 @@ carries on. There are three:
     OK, and stays while the menu over him takes the input and keeps the
     cursor, and goes with the title.
   - The first time in THE DRY, in two bubbles: "THIS IS THE DRY. USE THE
-    PANELS TO UPGRADE YOUR MACHINES." and "SELECT A CART TO BEGIN MINING
-    THAT LEVEL."
+    PANELS TO UPGRADE YOUR MACHINES.", low over the carts so the panels
+    show, and "SELECT A CART TO BEGIN MINING THAT LEVEL.", higher, so the
+    carts show.
 - **The foreman**, serious but not mean, seen once, at the start of the
   first level, over the level before it builds up, which it does as he
   goes. He stands on the left. In three bubbles: "OVER HERE, GREENHORN.
