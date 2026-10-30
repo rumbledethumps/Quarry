@@ -144,6 +144,7 @@ add_custom_command(
 # What the dwarves say, from art/talk.py with the dwarves of art/dwarves/:
 # each dwarf as ROM:dwarves holds them, each bubble as ROM:bubbles, and
 # talks.h, which numbers the talks. talk.png is the first, to look at.
+file(GLOB QUARRY_DWARVES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/art/dwarves/*.png)
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/dwarves.bin ${CMAKE_CURRENT_BINARY_DIR}/bubbles.bin
         ${CMAKE_CURRENT_BINARY_DIR}/talks.h
@@ -151,7 +152,7 @@ add_custom_command(
         ${CMAKE_CURRENT_SOURCE_DIR}/art/talk.py ${CMAKE_CURRENT_BINARY_DIR}
         ${CMAKE_CURRENT_BINARY_DIR}/talks.h
         --preview ${CMAKE_CURRENT_BINARY_DIR}/talk.png
-    DEPENDS art/talk.py art/curtain.py art/panel_font.py art/panels.py art/rd2png.py art/dwarves/miner.png
+    DEPENDS art/talk.py art/curtain.py art/panel_font.py art/panels.py art/rd2png.py ${QUARRY_DWARVES}
     VERBATIM
 )
 

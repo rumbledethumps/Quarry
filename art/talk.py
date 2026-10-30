@@ -183,6 +183,11 @@ def close(a, b, d):
     return sum((x - y) ** 2 for x, y in zip(a, b)) < d * d
 
 
+def green(c):
+    """Whether a color is a green, as of the background."""
+    return c[1] > c[0] + 50 and c[1] > c[2] + 50
+
+
 def portrait(name, turned, side):
     """The dwarf as rows of colors, None clear, DWARF_SIZE square, his
     shoulders on the bottom row, turned round if asked, for the side of the
@@ -200,7 +205,8 @@ def portrait(name, turned, side):
         w, h = right - left, bottom - top
     edge = [(x, y) for y in range(h) for x in range(w) if x in (0, w - 1) or y in (0, h - 1)]
     ground = Counter(px[y][x] for x, y in edge).most_common(1)[0][0]
-    # The background, from the edges in.
+    # The background, from the edges in, and any other green of it left in
+    # his outline, as he is drawn on plain green.
     todo = [(x, y) for x, y in edge if close(px[y][x], ground, 40)]
     clear = set(todo)
     while todo:
@@ -209,6 +215,7 @@ def portrait(name, turned, side):
             if 0 <= nx < w and 0 <= ny < h and (nx, ny) not in clear and close(px[ny][nx], ground, 40):
                 clear.add((nx, ny))
                 todo.append((nx, ny))
+    clear |= {(x, y) for y in range(h) for x in range(w) if green(px[y][x])}
     he = [(x, y) for y in range(h) for x in range(w) if (x, y) not in clear]
     left, top = min(x for x, _ in he), min(y for _, y in he)
     right, bottom = max(x for x, _ in he) + 1, max(y for _, y in he) + 1
