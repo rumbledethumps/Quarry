@@ -59,10 +59,10 @@ SCREEN_W, SCREEN_H = 320, 240
 # art/dwarves/, and whether to turn it round: on the left he faces right,
 # toward his bubble, and on the right, left, lit from the upper left either
 # way. Until each is drawn, the miner stands in for him, turned round on the
-# right.
+# right, as he does for the friendly dwarf on the right.
 LEFT, RIGHT = 'left', 'right'
 DWARVES = {
-    'FRIENDLY': {LEFT: ('miner', False), RIGHT: ('miner', True)},
+    'FRIENDLY': {LEFT: ('friendly-1-left', False), RIGHT: ('miner', True)},
     'FOREMAN': {LEFT: ('miner', False), RIGHT: ('miner', True)},
     'COMMITTEEMAN': {LEFT: ('miner', False), RIGHT: ('miner', True)},
 }

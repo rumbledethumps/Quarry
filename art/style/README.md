@@ -642,8 +642,9 @@ carries on. There are three:
   left, facing right, and one for the right, facing left, each lit from
   the upper left. Both are kept in `art/dwarves/`, even while he is only
   used on one side.
-- Each is made in two sets, a portrait for each side in each, and the
-  user picks one. A set not picked may be kept for later.
+- Each is made in two takes for the side he stands on, and the user picks
+  one. Only then is the other side made, from the take picked. A take not
+  picked may be kept for later.
 - Retro Diffusion draws him on an image wider than he is, so his arms are
   whole, and the crop is ours: `art/talk.py` clears the background from
   the edges in, and cuts him to 80x80, at the foot, and if he is wider, on
@@ -653,7 +654,16 @@ carries on. There are three:
   colors of his own, in up to 3 sprites, a band across his head and a band
   across his shoulders, each as narrow as he is there, in 2816 bytes at
   most, so every dwarf keeps to about his outline.
-- The miner, `art/dwarves/miner.png`, stands in for all three until each
+- The friendly dwarf, `art/dwarves/friendly-1-left.png`, the first of two,
+  `rd_pro__default`, 128x80: "Head and shoulders of a friendly cartoon
+  dwarf miner, down to earth and welcoming, bareheaded, facing a little to
+  the right as if talking to someone: a big bushy beard, bright eyes under
+  bushy brows, sturdy work clothes with suspenders, a cheerful knowing
+  expression, clean bold shapes with a crisp dark outline, smooth flat
+  shading in a few colors, light from the upper left, on a plain flat pure
+  green background". He is drawn bigger than the miner: his shoulders
+  reach about 115 of the 128 columns, and off its left edge.
+- The miner, `art/dwarves/miner.png`, stands in for the others until each
   is drawn, turned round on the right. He is the third of four,
   `rd_pro__default`, 96x96: "Head and shoulders of a friendly cartoon
   dwarf miner, as a character portrait in a 16-bit game's dialogue,
