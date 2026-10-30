@@ -64,7 +64,7 @@ def main():
     # As he goes, after his last bubble, it builds up.
     for _ in range(game.ram('to_say')):
         game.tap('space')
-        game.until('talk_state', 'TALK_READY', 60)
+        game.until('talk_state', 'TALK_READY', 120)
         check(not game.ram('build_steps'), 'not before his last bubble')
     game.tap('space')  # his last OK
     check(game.ram('talk_state') == sym['TALK_OUT'] and game.ram('build_steps') > 0, 'it builds up as he goes')

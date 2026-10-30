@@ -592,9 +592,10 @@ Now and then a cartoon dwarf comes up from the foot of the screen, in a
 lower corner, with something to say, in a speech bubble that comes in from
 the other side at the same time, the two stopping together. Half a second
 later the OK shows at the end of the last line, with the holographic
-cursor close round it. If he has more to say, the button brings his next
-bubble in its place at once, its OK half a second later, and after his
-last, it sends them back the way they came. Only one dwarf shows at a
+cursor close round it. Each bubble is as big as its lines. If he has more
+to say, the button sends his bubble back the way it came, and his next
+comes in the same way while he stays, its OK half a second later. After
+his last, it sends them both back the way they came. Only one dwarf shows at a
 time, and the cursor is off while they come and go. They show when a
 screen opens, never in the middle of play, and the screen under them
 carries on. There are three:

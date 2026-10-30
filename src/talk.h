@@ -10,6 +10,7 @@
 #define TALK_WAIT 2  /* in, before the OK shows */
 #define TALK_READY 3 /* the OK showing, with the cursor round it */
 #define TALK_OUT 4   /* going */
+#define TALK_NEXT 5  /* his bubble going, for his next to come in */
 
 extern uint8_t talk_state;
 

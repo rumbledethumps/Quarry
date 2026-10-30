@@ -27,8 +27,9 @@ dwarf on each side a talk uses is a dwarf_t of src/xram.h in
 out_dir/dwarves.bin, and each bubble a bubble_t in out_dir/bubbles.bin,
 one after another from 1. The header gives the talks' numbers as
 TALK_name, TALK_STAYS a bit for each that stays, and TALK_TABLE each
-one's dwarf, first bubble and how many. Only the Python standard library
-is used.
+one's dwarf, first bubble and how many, TALK_SEEN each one's bit of the
+save's talks seen, or 0, and TALK_SEEN_name the bit of each with one.
+Only the Python standard library is used.
 """
 
 import argparse
@@ -64,6 +65,15 @@ DWARVES = {
     'FOREMAN': {LEFT: ('miner', False), RIGHT: ('miner', True)},
     'COMMITTEEMAN': {LEFT: ('miner', False), RIGHT: ('miner', True)},
 }
+
+# The talks shown only once, and each one's bit of the save's talks seen.
+# The others need none: the greeting is for a game with no save, and a
+# coin's for a level's first clear, which the save keeps. A bit keeps its
+# meaning for good, so a save is still good as talks, levels and their
+# coins are added: the foreman's was the first level's welcome, and the
+# dry's the first word on the upgrade screen. Bits 1 and 4 were never set,
+# and are free.
+SEEN = {'FOREMAN': 0, 'UNLOCK': 2, 'DRY': 3}
 
 # Where they stand: he is in a lower corner, and his bubble beside him, its
 # tail under his beard. The bubble is placed by its foot, so the tail is as
@@ -373,6 +383,11 @@ def bubble_asset(lines, side, where):
     return data, shown, (x, y)
 
 
+def seen(name):
+    """The talk's bit of the save's talks seen, or 0."""
+    return 1 << SEEN[name] if name in SEEN else 0
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('out_dir')
@@ -425,8 +440,12 @@ def main():
                 f'#define TALK_DWARVES {len(dwarves)}\n'
                 f'#define TALK_BUBBLES {len(bubbles)}\n'
                 '/* For each talk from 1: its dwarf, its first bubble, and how many. */\n'
-                '#define TALK_TABLE {' + ', '.join('{%d, %d, %d}' % t for t in table) + '}\n\n'
-                '#endif\n')
+                '#define TALK_TABLE {' + ', '.join('{%d, %d, %d}' % t for t in table) + '}\n'
+                '/* For each talk from 1: its bit of talks_seen, if it is shown once, or 0. */\n'
+                '#define TALK_SEEN {' + ', '.join(f'0x{seen(name):02X}' for name, *_ in TALKS) + '}\n')
+        for name in SEEN:
+            f.write(f'#define TALK_SEEN_{name} 0x{seen(name):02X}\n')
+        f.write('\n#endif\n')
 
 
 if __name__ == '__main__':

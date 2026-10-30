@@ -95,20 +95,34 @@ def main():
           'Esc does nothing while he talks')
     print('ok: the OK, with the cursor')
 
-    # The button brings his next bubble in its place, at once, and he stays.
-    # Its OK shows a moment later, as the first's did.
+    # The button sends his bubble back the way it came, and his next comes
+    # in the same way, while he stays. Its OK shows a moment later, as the
+    # first's did.
     first_bubble = game.ram('said')
+    stays = lambda: [(x, y) for x, y, _ in game.sprites(dwarf, count)] == \
+        [(dwarf_x + x, dwarf_y + y) for x, y, *_ in parts]
     game.tap('space')
-    check(game.ram('talk_state') == sym['TALK_WAIT'] and game.ram('said') == first_bubble + 1 and
-          game.shown(cursor, 4) == 0, 'the button brings his next bubble, and the cursor goes')
-    game.run(2)
-    _, (x, y, *_) = heads(game)
-    check(bubble() == x and x == bubble_x, f'in the same place, at once: {bubble()}')
-    check([(x, y) for x, y, _ in game.sprites(dwarf, count)] == [(dwarf_x + x, dwarf_y + y) for x, y, *_ in parts],
-          'and he stays')
+    check(game.ram('talk_state') == sym['TALK_NEXT'] and game.shown(cursor, 4) == 0,
+          'the button sends his bubble away, and the cursor goes')
+    going = []
+    while game.ram('talk_state') == sym['TALK_NEXT']:
+        going.append(bubble())
+        check(stays(), 'and he stays')
+        game.run(1)
+    check(going == sorted(going) and going[-1] > going[0], f'his bubble goes back to the right: {going}')
+    check(game.ram('said') == first_bubble + 1, 'and his next')
+    coming = []
+    while game.ram('talk_state') == sym['TALK_IN']:
+        coming.append(bubble())
+        check(stays(), 'and he stays')
+        game.run(1)
+    _, (x, *_) = heads(game)
+    game.run(1)
+    check(coming == sorted(coming, reverse=True) and bubble() == x == bubble_x,
+          f'comes in from the right, to the same place: {coming}')
     game.until('talk_state', 'TALK_READY', 60)
     game.tap('space')
-    game.until('talk_state', 'TALK_READY', 60)
+    game.until('talk_state', 'TALK_READY', 120)
     check(game.ram('said') == first_bubble + 2, 'his third bubble')
     print('ok: his bubbles, one after another')
 

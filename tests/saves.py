@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'
 from rp6502 import Symbols  # noqa: E402
 
 SAVE = 'quarry.save'
-TAG = b'QRY7'
+TAG = b'QRY6'
 SYM = Symbols(os.path.splitext(rom())[0] + '.sym')
 NO_RANKS = (0,) * SYM['UPGRADES']
 NEW_GAME = (0, 0, NO_RANKS, 0, 1, 1, 0, 0)  # as read_save() gives it
@@ -37,7 +37,7 @@ def read_save(folder):
     data = open(path, 'rb').read()
     check(len(data) == SYM['SAVE_BYTES'] and data[:4] == TAG, f'the save is a good one: {data!r}')
     colors, upgrades = SYM['BRICK_COLORS'], SYM['UPGRADES']
-    values = struct.unpack(f'<{colors}HH{upgrades}B3BHB', data[4:])
+    values = struct.unpack(f'<{colors}HH{upgrades}B5B', data[4:])
     nuggets, coins = values[:colors], values[colors]
     ranks, rest = values[colors + 1:colors + 1 + upgrades], values[colors + 1 + upgrades:]
     return (nuggets[0], coins, ranks) + rest
@@ -107,8 +107,7 @@ def main():
     broken = game.sym['LEVEL1_BRICKS'] - game.ram('bricks_left')
     saved = read_save(folder)
     check(saved and saved[0] == broken, f'pausing saves a nugget for each broken brick, {saved} for {broken}')
-    foreman = 1 << game.sym['TALK_FOREMAN'] - 1
-    check(saved[6] == foreman, "and that the foreman's word was seen")
+    check(saved[6] == game.sym['TALK_SEEN_FOREMAN'], "and that the foreman's word was seen")
     check(saved[7] == 1 << game.sym['BRICK_GRAY'], "and that the gray nuggets' line of the counts shows")
     ball = 'XRAM_BALL_SPRITE'
     tape = f'XRAM_MENU_PALETTE+{game.sym["MENU_TAPE"] * 2}'

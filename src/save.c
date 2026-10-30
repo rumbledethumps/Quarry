@@ -15,7 +15,7 @@
    with a tag that names its layout, so a save of another layout is not
    read as this one. */
 #define SAVE_PATH "SAVE:quarry.save"
-#define SAVE_TAG "QRY7"
+#define SAVE_TAG "QRY6"
 
 typedef struct
 {
@@ -26,7 +26,7 @@ typedef struct
     uint8_t levels_cleared;
     uint8_t level_picked;
     uint8_t levels_shown;
-    uint16_t talks_seen;
+    uint8_t talks_seen;
     uint8_t counts_shown;
 } save_t;
 
@@ -36,7 +36,7 @@ uint8_t save_exists;
 uint8_t levels_cleared;
 uint8_t level_picked = 1;
 uint8_t levels_shown = 1;
-uint16_t talks_seen;
+uint8_t talks_seen;
 
 /* The levels that can be played: every one cleared, and the next. */
 uint8_t save_levels_open(void)

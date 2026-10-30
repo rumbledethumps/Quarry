@@ -12,8 +12,8 @@
    the foot of the screen, in a lower corner, as his bubble comes in from
    the other side, the two meeting as they stop, with what he says already
    in it. Half a second later the OK shows, with the cursor round it, and
-   the button brings his next bubble in its place at once, or sends them
-   back the way they came after his last. While he talks the screen under
+   the button sends his bubble back the way it came, and his next comes in
+   the same way while he stays, or after his last sends them both back. While he talks the screen under
    him takes no input, and the cursor is off until each OK shows, and off
    again when it is pressed. More can wait their turn, each coming in as
    the last goes. A talk of TALK_STAYS has no OK: he stays, and the screen
@@ -26,7 +26,6 @@
 #define OK_STEPS 30 /* half a second */
 #define OUT_STEPS 12
 
-_Static_assert(TALKS <= 16, "talks_seen has a bit for each talk.");
 
 #define DWARF(i) (XRAM_DWARF_SPRITES + (i) * sizeof(mode5_csprite_t))
 
@@ -37,18 +36,21 @@ static const uint16_t coming[IN_STEPS + 1] = {256, 219, 187, 157, 131, 108, 88, 
                                               32,  23,  16,  11,  7,   4,   2,  1,  0};
 static const uint16_t going[OUT_STEPS + 1] = {0, 2, 7, 16, 28, 44, 64, 87, 114, 144, 178, 215, 256};
 
-/* Each talk's dwarf, its first bubble, and how many it has. */
+/* Each talk's dwarf, its first bubble, and how many it has, and its bit
+   of talks_seen, if it is shown once. */
 static const uint8_t talks[TALKS][3] = TALK_TABLE;
+static const uint8_t seen[TALKS] = TALK_SEEN;
 
 uint8_t talk_state;
 static uint8_t queue[QUEUE], queued;
 static uint8_t showing; /* the talk up, while talk_state isn't TALK_OFF */
 static uint8_t stays;   /* whether it is of TALK_STAYS */
-static uint16_t once;   /* a bit for each talk waiting or up that talk_once() asked for */
+static uint8_t once;    /* the seen bits of the talks waiting or up that talk_once() asked for */
 static uint8_t said;    /* the bubble up, of ROM:bubbles */
 static uint8_t to_say;  /* his bubbles after it */
 static uint8_t steps;
-static uint16_t away; /* as in coming and going */
+static uint16_t away;        /* his, as in coming and going */
+static uint16_t bubble_away; /* his bubble's */
 static dwarf_head_t dwarf;   /* his, as it loaded */
 static bubble_head_t bubble; /* the bubble's */
 
@@ -73,11 +75,12 @@ void talk_queue(uint8_t talk)
     queue_add(talk);
 }
 
-/* The talk, unless the player has seen it. It counts as seen once its OK
-   is pressed, and the save keeps that the next time the game saves. */
+/* The talk, unless the player has seen it. It counts as seen once its
+   last OK is pressed, and the save keeps that the next time the game
+   saves. */
 void talk_once(uint8_t talk)
 {
-    uint16_t bit = 1u << (talk - 1);
+    uint8_t bit = seen[talk - 1];
 
     if (!(talks_seen & bit) && queue_add(talk))
         once |= bit;
@@ -163,7 +166,7 @@ static void talk_start(void)
             sprite_hide(DWARF(i));
     talk_state = TALK_IN;
     steps = 0;
-    away = coming[0];
+    away = bubble_away = coming[0];
 }
 
 /* The last talk is over: the dwarf goes, and the menus come back. */
@@ -192,7 +195,10 @@ uint8_t talk_step(void)
         talk_start();
         break;
     case TALK_IN:
-        away = coming[++steps];
+        /* He comes in with his first bubble, and stays for the rest. */
+        bubble_away = coming[++steps];
+        if (away)
+            away = bubble_away;
         if (steps == IN_STEPS)
         {
             talk_state = TALK_WAIT;
@@ -223,17 +229,13 @@ uint8_t talk_step(void)
     case TALK_READY:
         if (input_pressed & INPUT_CHOOSE)
         {
-            uint16_t bit = 1u << (showing - 1);
+            uint8_t bit = seen[showing - 1];
 
             cursor_hide();
             steps = 0;
             if (to_say)
             {
-                said++;
-                to_say--;
-                bubble_load();
-                talk_state = TALK_WAIT;
-                DEBUG_LOG("bubble %u\n", said);
+                talk_state = TALK_NEXT;
                 break;
             }
             if (once & bit)
@@ -243,6 +245,20 @@ uint8_t talk_step(void)
             }
             talk_state = TALK_OUT;
         }
+        break;
+    case TALK_NEXT:
+        /* Once his bubble is off the screen, his next comes in. */
+        if (steps == OUT_STEPS)
+        {
+            said++;
+            to_say--;
+            bubble_load();
+            talk_state = TALK_IN;
+            steps = 0;
+            DEBUG_LOG("bubble %u\n", said);
+        }
+        else
+            bubble_away = going[++steps];
         break;
     case TALK_OUT:
         /* Once they are off the screen, the next comes in, or the menus
@@ -255,7 +271,7 @@ uint8_t talk_step(void)
                 talk_end();
         }
         else
-            away = going[++steps];
+            away = bubble_away = going[++steps];
         break;
     }
     return !stays;
@@ -283,8 +299,8 @@ void talk_draw(void)
     for (i = 0; i < dwarf.pieces; i++)
         sprite_move(DWARF(i), dwarf.x + dwarf.piece[i].x, y + dwarf.piece[i].y);
     if (bubble.x < dwarf.x)
-        x = bubble.x - (int16_t)((int32_t)(bubble.x + bubble.cols * 8) * away >> 8);
+        x = bubble.x - (int16_t)((int32_t)(bubble.x + bubble.cols * 8) * bubble_away >> 8);
     else
-        x = bubble.x + (int16_t)((int32_t)(SCREEN_W - bubble.x) * away >> 8);
+        x = bubble.x + (int16_t)((int32_t)(SCREEN_W - bubble.x) * bubble_away >> 8);
     xram0_poke16(XRAM_TALK_CONFIG + offsetof(mode2_config_t, x_pos_px), x);
 }
