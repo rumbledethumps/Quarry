@@ -101,8 +101,8 @@ TALKS = [
     ('DRY', 'FRIENDLY', LEFT, DRY,
      [(DRY_LOW, ['THIS IS THE DRY. USE THE', 'PANELS TO UPGRADE YOUR', 'MACHINES.']),
       ['SELECT A CART TO BEGIN', 'MINING THAT LEVEL.']]),
-    # A new game's first level.
-    ('FOREMAN', 'FOREMAN', LEFT, LEVEL,
+    # A new game's first level, on the right, clear of the count of balls.
+    ('FOREMAN', 'FOREMAN', RIGHT, LEVEL,
      [['OVER HERE, GREENHORN.', 'PAY ATTENTION BECAUSE I', "WON'T REPEAT MYSELF."],
       ['PUSH THE BUTTON TO LAUNCH', 'A WRECKING BALL THEN KEEP', 'IT FROM FALLING.'],
       ["THAT'S ALL.", 'NOW GET TO WORK.']]),

@@ -612,7 +612,7 @@ carries on. There are three:
     carts show.
 - **The foreman**, serious but not mean, seen once, at the start of the
   first level, over the level before it builds up, which it does as he
-  goes. He stands on the left. In three bubbles: "OVER HERE, GREENHORN.
+  goes. He stands on the right, so the count of balls shows. In three bubbles: "OVER HERE, GREENHORN.
   PAY ATTENTION BECAUSE I WON'T REPEAT MYSELF.", "PUSH THE BUTTON TO
   LAUNCH A WRECKING BALL THEN KEEP IT FROM FALLING." and "THAT'S ALL. NOW
   GET TO WORK."

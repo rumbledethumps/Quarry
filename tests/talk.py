@@ -59,15 +59,16 @@ def main():
     dwarf, cursor, hidden = sym['XRAM_DWARF_SPRITES'], sym['XRAM_CURSOR_SPRITES'], sym['SPRITE_HIDDEN_Y']
     bubble = lambda: struct.unpack('<h', game.xram(f'XRAM_TALK_CONFIG+2', 2))[0]
     ok = f'XRAM_BUBBLE_MAP+{ok_row * sym["BUBBLE_COLS"] + ok_col}'
-    check(game.ram('showing') == sym['TALK_FOREMAN'] and dwarf_x == 0, 'the foreman, on the left')
+    check(game.ram('showing') == sym['TALK_FOREMAN'] and dwarf_x == sym['SCREEN_W'] - sym['DWARF_SIZE'],
+          'the foreman, on the right')
 
     # He comes up from the foot of the screen as his bubble comes in from the
-    # right, and both stop at once.
+    # left, the other side, and both stop at once.
     game.run(2)
     first = game.sprite(dwarf), bubble()
     game.run(4)
     second = game.sprite(dwarf), bubble()
-    check(first[0][1] > second[0][1] and first[1] > second[1], f'they come in together: {first}, {second}')
+    check(first[0][1] > second[0][1] and first[1] < second[1], f'they come in together: {first}, {second}')
     game.until('talk_state', 'TALK_WAIT', 30)
     game.run(1)
     check([(x, y) for x, y, _ in game.sprites(dwarf, count)] == [(dwarf_x + x, dwarf_y + y) for x, y, *_ in parts],
@@ -109,21 +110,22 @@ def main():
         going.append(bubble())
         check(stays(), 'and he stays')
         game.run(1)
-    check(going == sorted(going) and going[-1] > going[0], f'his bubble goes back to the right: {going}')
+    check(going == sorted(going, reverse=True) and going[-1] < going[0], f'his bubble goes back to the left: {going}')
     check(game.ram('said') == first_bubble + 1, 'and his next')
     coming = []
     while game.ram('talk_state') == sym['TALK_IN']:
         coming.append(bubble())
         check(stays(), 'and he stays')
         game.run(1)
-    _, (x, *_) = heads(game)
+    _, (x, _, _, next_cols, *_) = heads(game)
     game.run(1)
-    check(coming == sorted(coming, reverse=True) and bubble() == x == bubble_x,
-          f'comes in from the right, to the same place: {coming}')
+    check(coming == sorted(coming) and bubble() == x and x + 8 * next_cols == bubble_x + 8 * cols,
+          f'comes in from the left, its right edge where the last one\'s was: {coming}')
     game.until('talk_state', 'TALK_READY', 60)
     game.tap('space')
     game.until('talk_state', 'TALK_READY', 120)
     check(game.ram('said') == first_bubble + 2, 'his third bubble')
+    _, (_, _, _, last_cols, *_) = heads(game)
     print('ok: his bubbles, one after another')
 
     # The button after his last sends them away, and doesn't launch. The
@@ -133,7 +135,7 @@ def main():
           'the button sends them away, and the cursor goes')
     game.until('talk_state', 'TALK_OFF', 30)
     game.run(2)
-    check(game.shown(dwarf, pieces) == 0 and bubble() >= 320, 'they are gone')
+    check(game.shown(dwarf, pieces) == 0 and (bubble() >= 320 or bubble() + 8 * last_cols <= 0), 'they are gone')
     game.ready()
     check(game.ram('ball_state') == sym['BALL_DOCKED'] and not game.ram('energy_draining'),
           'the press that sent them away did not launch')
