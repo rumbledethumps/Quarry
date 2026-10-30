@@ -475,14 +475,14 @@ typedef struct
    on plane 2 in his own colors, and the bubble a map of 2-bit tiles on
    plane 2's fill, BUBBLE_COLS by up to BUBBLE_ROWS, in place of the
    menus. The committeeman's bubble has the coin he hands over in it,
-   from art/bricks.py, BIG_COIN_SIZE square, a sprite on plane 2 in the
-   sled's colors. Only a level has room for it, in its own art. */
+   art/big-coin.png, BIG_COIN_SIZE square, a sprite on plane 2 in its own
+   colors. Only a level has room for it, in its own art. */
 #define DWARF_SIZE 80
 #define DWARF_PIECES 3
 #define DWARF_BYTES 2816
 #define BUBBLE_COLS 28
 #define BUBBLE_ROWS 10
-#define BIG_COIN_SIZE 56
+#define BIG_COIN_SIZE 44
 #define BUBBLE_TILES 48
 
 typedef MODE2_TILE(8, 8) panel_tile_t;
@@ -666,8 +666,9 @@ typedef struct
 
 /* A level's own art: its frame set, the cracks and the chunks, as
    ROM:cracks and ROM:chunks hold them, its sprites on plane 1, the
-   energy gauge's images, and the coin in the committeeman's bubble, as
-   ROM:big_coin holds it, which loads with his bubble. */
+   energy gauge's images, and the coin in the committeeman's bubble, its
+   colors and its image, as ROM:big_coin_colors and ROM:big_coin hold
+   them, which load with his bubble. */
 typedef struct
 {
     frame_set_t frame;
@@ -675,6 +676,7 @@ typedef struct
     chunk_image_t chunks[CHUNK_IMAGES];
     level_sprites_t sprites;
     gauge_art_t gauge;
+    uint16_t big_coin_palette[16];
     big_coin_image_t big_coin;
 } level_art_t;
 
@@ -928,6 +930,7 @@ typedef struct
 #define XRAM_DROP_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.drop)
 #define XRAM_METER_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.meter)
 #define XRAM_GLASS_IMAGE offsetof(xram_layout_t, art.cave.level.gauge.glass)
+#define XRAM_BIG_COIN_PALETTE offsetof(xram_layout_t, art.cave.level.big_coin_palette)
 #define XRAM_BIG_COIN_IMAGE offsetof(xram_layout_t, art.cave.level.big_coin)
 #define XRAM_LEVEL_SLED offsetof(xram_layout_t, art.cave.sled_images)
 #define XRAM_LOGO_IMAGES offsetof(xram_layout_t, art.cave.title.logo_images)

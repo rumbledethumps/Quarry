@@ -59,6 +59,7 @@ _Static_assert(CURTAIN_SETS <= 9 && TEXTURES <= 9 && FRAME_SETS <= 9, "An asset'
 #define GAUGE_BYTES offsetof(gauge_art_t, glass)
 #define DWARF_ASSET_BYTES sizeof(dwarf_t)
 #define BUBBLE_ASSET_BYTES sizeof(bubble_t)
+#define BIG_COIN_PALETTE_BYTES sizeof(((level_art_t *)0)->big_coin_palette)
 #define BIG_COIN_BYTES sizeof(big_coin_image_t)
 
 static uint8_t scene;
@@ -354,6 +355,7 @@ uint8_t scene_big_coin(void)
 {
     if (scene != SCENE_LEVEL)
         return 0;
+    load("ROM:big_coin_colors", 0, XRAM_BIG_COIN_PALETTE, BIG_COIN_PALETTE_BYTES);
     load("ROM:big_coin", 0, XRAM_BIG_COIN_IMAGE, BIG_COIN_BYTES);
     return 1;
 }

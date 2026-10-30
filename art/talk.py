@@ -21,7 +21,7 @@ ends with an OK, at the right, which the game puts in once the bubble has
 come in, but on the title, where he stays while the player picks from the
 menu above him. The bubble is cut into tiles, the same ones shared. The
 bubble the committeeman hands his coin over in has room at its left for
-the big coin of art/bricks.py, which the game shows over it.
+the big coin, art/big-coin.png, which the game shows over it.
 
 TALKS lists what the dwarves say: each one's name, the dwarf, his side,
 where his bubbles go, and his bubbles, one after another, each its lines,
@@ -54,7 +54,7 @@ BUBBLE_COLS = 28
 BUBBLE_ROWS = 10
 BUBBLE_TILES = 48
 DWARF_ASSET_BYTES = 6 + 8 * DWARF_PIECES + 32 + DWARF_BYTES
-BIG_COIN_SIZE = 56
+BIG_COIN_SIZE = 44
 BUBBLE_ASSET_BYTES = 12 + 8 + 16 * BUBBLE_TILES + BUBBLE_ROWS * BUBBLE_COLS
 SCREEN_W, SCREEN_H = 320, 240
 
@@ -85,9 +85,10 @@ SEEN = {'FOREMAN': 0, 'UNLOCK': 2, 'DRY': 3}
 # panels show. On the title he stays, with no OK, and his bubble is a row
 # shorter, clear of the panel over it. The committeeman's bubble with the
 # coin he hands over has the big coin at the left of it, in COIN_COLS of
-# its cells, and it is as tall as a bubble can be.
+# its cells, and it is at least COIN_ROWS tall, to hold it.
 BUBBLE_GAP = 68
-COIN_COLS = 8
+COIN_COLS = (BIG_COIN_SIZE + 7) // 8
+COIN_ROWS = COIN_COLS + 2
 LEVEL = {'foot': SCREEN_H - 24}
 DRY = {'foot': 196}
 DRY_LOW = dict(LEVEL)
@@ -273,8 +274,8 @@ def bubble(lines, ok, side, coin):
     line, at the right, a cell after it, with a cell clear all round it for
     the cursor. Without one, the cell is 0, 0, which is a corner of the
     picture, and there is no row under the last line. With the coin, the
-    bubble is BUBBLE_ROWS tall, the coin in the middle of the first
-    COIN_COLS cells of its inside, and the lines after them, halfway
+    bubble is at least COIN_ROWS tall, the coin in the middle of the first
+    COIN_COLS cells of its inside, and the lines after them, both halfway
     down."""
     lead = COIN_COLS if coin else 0
     cols = lead + max(max(len(line) for line in lines), len(lines[-1]) + 4 if ok else 0) + 2
@@ -282,9 +283,9 @@ def bubble(lines, ok, side, coin):
     if cols + 1 > BUBBLE_COLS or rows > BUBBLE_ROWS:
         raise SystemExit(f'talk.py: a bubble of {cols} by {rows} cells is too big')
     first = 1  # the row of the first line
-    if coin:
-        first += (BUBBLE_ROWS - rows) // 2
-        rows = BUBBLE_ROWS
+    if coin and rows < COIN_ROWS:
+        first += (COIN_ROWS - rows) // 2
+        rows = COIN_ROWS
     w, h = 8 * (cols + 1), 8 * rows
     img = [[CLEAR] * w for _ in range(h)]
     at = 1 if side == LEFT else 0  # the picture's column of the bubble's left edge

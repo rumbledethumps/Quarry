@@ -5,9 +5,9 @@
 
 Writes the ball's row and the brick rows of art/palettes.png, and
 art/brick.png, art/cracks.png, art/chunks.png, art/nugget.png,
-art/nugget-icon.png, art/coin.png, art/big-coin.png, art/ball.png and
-art/ball-icon.png. Run it after a change to the drawing here. Every piece
-is drawn here, by rule, and nothing is touched up by hand.
+art/nugget-icon.png, art/coin.png, art/ball.png and art/ball-icon.png. Run it
+after a change to the drawing here. Every piece is drawn here, by rule, and
+nothing is touched up by hand.
 
 The bricks are plain colors, in the order of COLORS, picked to be told
 apart with any kind of color blindness and to stay clear of the white
@@ -34,10 +34,7 @@ colors that fly when it breaks. The nugget is a sphere 7 px across, with
 an outline, as it flies, and 10 px across beside its count, as tall as
 the outlined digits, and the coin is the same big circle in the gold of
 the sled row, beveled, with a hole in the middle, square or diamond, as
-HOLE says. The big coin, which the committeeman hands over in his bubble,
-is that coin BIG_D across, its hole small, with a rim and lettering round
-it and across it, all raised, in the panels' font squeezed narrower, and
-lit as it is. The ball is a sphere as the nuggets are, a very bright white,
+HOLE says. The ball is a sphere as the nuggets are, a very bright white,
 8 px across as it is in play and as big as the digits by its count.
 """
 
@@ -45,7 +42,6 @@ import math
 import os
 import random
 
-from panel_font import GLYPHS
 from rd2png import rgba, write_png
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -68,21 +64,6 @@ CRACK_SEED = 2  # picks the cracks' shapes, all their sets at once
 CHUNKS = 16
 ICON_D, ICON_SIZE = 10, 12  # the icons of the counts, as tall as the outlined digits
 HOLE = 'square'  # or 'diamond'
-
-# The coin the committeeman hands over in his bubble, BIG_COIN_SIZE of
-# src/xram.h across, and what it says, in the panels' font squeezed to
-# BIG_LETTER_W, a space BIG_SPACE: round the top and the bottom, between
-# its rim, from BIG_RIM out, and a circle BIG_LETTERING from the middle,
-# and two short lines across, over the hole and under it. The hole is
-# square, BIG_HOLE from the middle.
-BIG_D = 56
-BIG_HOLE = 3.5
-BIG_RIM = 24.6
-BIG_LETTERING = 24
-BIG_LETTER_W, BIG_SPACE = 5, 3
-BIG_TOP, BIG_BOTTOM = 'SMEGHEAD', 'MI ESTAS FIŜO'
-BIG_MIDDLE = 'JMC', '169'
-BIG_GLYPHS = dict(GLYPHS, Ŝ=['..##..', '.#..#.', '......'] + GLYPHS['S'])  # the hat over the top
 
 # The brick row, by index.
 LIGHT, FACE, DARK, EDGE, DEEP, SHINE = range(1, 7)
@@ -302,98 +283,6 @@ def coin(d=ICON_D, size=ICON_SIZE):
     return img
 
 
-def arc(text, top, rows):
-    """The pixels of text round the big coin, in the panels' font squeezed
-    to BIG_LETTER_W, rows tall, each letter whole and turned to the circle:
-    on the top with its feet in, reading clockwise, and on the bottom with
-    its feet out, reading anticlockwise, so both read left to right. Each
-    is placed by the middle of the band, so the letters meet at their feet
-    on the top and their tops on the bottom. A hat sits over a letter's
-    top."""
-    outer = BIG_LETTERING
-    inner = outer - rows
-    middle = (outer + inner) / 2
-    advance = [BIG_SPACE if ch == ' ' else BIG_LETTER_W + 1 for ch in text]
-    across = sum(advance) - 1
-    mid = (BIG_D - 1) / 2
-    covered, s = set(), 0
-    for ch, a in zip(text, advance):
-        if ch != ' ':
-            along = (s + BIG_LETTER_W / 2 - across / 2) / middle
-            at = -math.pi / 2 + along if top else math.pi / 2 - along
-            out = (math.cos(at), math.sin(at))
-            right = (-out[1], out[0]) if top else (out[1], -out[0])
-            shape = BIG_GLYPHS[ch]
-            hat = len(shape) - 7
-            for y in range(BIG_D):
-                for x in range(BIG_D):
-                    radial = (x - mid) * out[0] + (y - mid) * out[1]
-                    col = (x - mid) * right[0] + (y - mid) * right[1] + BIG_LETTER_W / 2
-                    row = (outer - radial if top else radial - inner) * 7 / rows
-                    if 0 <= col < BIG_LETTER_W and -hat <= row < 7 and \
-                            shape[math.floor(row) + hat][int(col * 6 / BIG_LETTER_W)] == '#':
-                        covered.add((x, y))
-        s += a
-    return covered
-
-
-def straight(text, top):
-    """The pixels of a line of text across the big coin, its top at row top,
-    in the same squeezed font."""
-    across = len(text) * (BIG_LETTER_W + 1) - 1
-    left = int((BIG_D - across) / 2)
-    covered = set()
-    for i, ch in enumerate(text):
-        for y, line in enumerate(BIG_GLYPHS[ch]):
-            for col in range(BIG_LETTER_W):
-                if line[int(col * 6 / BIG_LETTER_W)] == '#':
-                    covered.add((left + i * (BIG_LETTER_W + 1) + col, top + y))
-    return covered
-
-
-def big_coin(rows=7, lit=True):
-    """The coin the committeeman hands over, BIG_D across: the coin of the
-    counts, its hole small in the middle, with a rim, BIG_TOP and
-    BIG_BOTTOM round it and BIG_MIDDLE across it, over the hole and under
-    it, all of it raised from the face. Lit, as the counts' coin is, from
-    the upper left: what is raised is light where it rises toward the light
-    and dark where it falls away from it, and casts a shadow down and to
-    the right. Not lit, the face is one gold, the rim lighter and the
-    lettering dark."""
-    inside, edge, mid = circle(BIG_D, BIG_D)
-    hole = {(x, y) for x, y in inside if max(abs(x - mid), abs(y - mid)) <= BIG_HOLE}
-    hole_edge = {(x, y) for x, y in hole
-                 if any((x + ax, y + ay) not in hole for ax, ay in ((1, 0), (-1, 0), (0, 1), (0, -1)))}
-    # The line over the hole is halfway down the rows clear between the
-    # lettering round it and the hole, and the line under it as far up.
-    clear = math.ceil(mid - BIG_LETTERING + rows), math.ceil(mid - BIG_HOLE)
-    over = (sum(clear) - 7) // 2
-    lettering = arc(BIG_TOP, True, rows) | arc(BIG_BOTTOM, False, rows) | \
-        straight(BIG_MIDDLE[0], over) | straight(BIG_MIDDLE[1], BIG_D - 7 - over)
-    height = {}
-    for x, y in inside - hole:
-        height[x, y] = 2 if math.hypot(x - mid, y - mid) >= BIG_RIM else 1 if (x, y) in lettering else 0
-    img = [[0] * BIG_D for _ in range(BIG_D)]
-    for x, y in edge | hole_edge:
-        img[y][x] = OUT
-    for (x, y), up in height.items():
-        if not lit:
-            img[y][x] = Y4 if up == 2 else Y1 if up else Y3
-            continue
-        near = lambda ax, ay: height.get((x + ax, y + ay), -1)  # the edges fall away
-        toward = (near(-1, 0), near(0, -1))
-        away = (near(1, 0), near(0, 1))
-        if min(toward) < up:
-            img[y][x] = Y5 if up - min(toward) >= 2 else Y4
-        elif min(away) < up:
-            img[y][x] = Y1 if up - min(away) >= 2 else Y2
-        elif max(toward) > up:
-            img[y][x] = Y2
-        else:
-            img[y][x] = Y4 if up == 2 else Y3
-    return img
-
-
 def sheet(images, across):
     """Images side by side, across to a row, and rows down."""
     w, h = len(images[0][0]), len(images[0])
@@ -419,7 +308,6 @@ def main():
                               ('chunks', sheet([chunk(i) for i in range(CHUNKS)], CHUNKS), gray),
                               ('nugget', nugget(), gray), ('nugget-icon', nugget(ICON_D, ICON_SIZE), gray),
                               ('coin', coin(), palettes[SLED_ROW]),
-                              ('big-coin', big_coin(), palettes[SLED_ROW]),
                               ('ball', nugget(8, 8, 0), palettes[BALL_ROW]),
                               ('ball-icon', nugget(ICON_D, ICON_SIZE), palettes[BALL_ROW])):
         write_png(os.path.join(HERE, f'{name}.png'), len(img[0]), len(img), 3, img, colors)

@@ -136,7 +136,7 @@ static void bubble_load(void)
     bubble_config(SCREEN_W);
     big_coin = bubble.coin_y && scene_big_coin();
     if (big_coin)
-        sprite_set(XRAM_BIG_COIN_SPRITE, XRAM_BIG_COIN_IMAGE, XRAM_PALETTE_SLED, MODE5_SIZE(BIG_COIN_SIZE, BIG_COIN_SIZE));
+        sprite_set(XRAM_BIG_COIN_SPRITE, XRAM_BIG_COIN_IMAGE, XRAM_BIG_COIN_PALETTE, MODE5_SIZE(BIG_COIN_SIZE, BIG_COIN_SIZE));
 }
 
 /* The next talk comes in from off the screen. The cursor goes, but for
