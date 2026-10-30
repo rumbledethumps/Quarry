@@ -805,6 +805,22 @@ size.
 
 ## Making Art with Retro Diffusion
 
+Read Retro Diffusion's own guides before planning a call:
+
+- [`llms.txt`](https://github.com/Retro-Diffusion/api-examples/blob/main/llms.txt):
+  every request field, the style catalog with each style's sizes, and its
+  "Craft guide" and "Agent best practices" for backgrounds, sizes and
+  prompts.
+- [`README.md`](https://github.com/Retro-Diffusion/api-examples/blob/main/README.md):
+  the same API at more length, with the models and their prices.
+- [`EDIT_TOOLS.md`](https://github.com/Retro-Diffusion/api-examples/blob/main/EDIT_TOOLS.md):
+  the edit tools, such as `color_reducer`, with their fields and defaults.
+- [`ASSISTANT.md`](https://github.com/Retro-Diffusion/api-examples/blob/main/ASSISTANT.md):
+  Retro Diffusion's own assistant, which picks the model, style, size and
+  settings and prices a plan before it generates.
+- [Prompting](https://astropulse.gitbook.io/retro-diffusion/aseprite-extension/retro-diffusion-faq/prompting),
+  from Astropulse, who makes Retro Diffusion.
+
 1. Choose the style: `rd_pro__default` for one piece or a curtain,
    `rd_pro__spritesheet` for a family of small pieces in one image, and
    `rd_pro__ui_panel` for the parts of the upgrade screen. Each image
@@ -817,8 +833,8 @@ size.
    `ref/sled-kit.png` for industrial, and the others of
    [The Reference Images](#the-reference-images) for what they show. Pass
    them as RGB PNGs: the API refused the indexed `art/logo.png`.
-4. Reduce the colors to 15 with Retro Diffusion's `color_reducer`, which
-   is free, or map them onto a row with its `palette_converter`.
+4. Reduce the colors to 15 with Retro Diffusion's `color_reducer`, for
+   $0.001, or map them onto a row with its `palette_converter`.
 5. Convert it with `art/rd2png.py`:
 
    ```bash
