@@ -71,7 +71,7 @@ def main():
     row = lambda palette: (sym[f'XRAM_PALETTE_{palette}'] - sym['XRAM_PALETTES']) // 32
     rows = [(bricks, 'BRICK_ROW', 'BRICKS'), (bricks, 'SLED_ROW', 'SLED'),
             (logo, 'LOGO_ROW', 'LOGO'), (sled, 'SLED_ROW', 'SLED'), (screen, 'SLED_ROW', 'SLED'),
-            (screen, 'FX_ROW', 'FX'), (screen, 'HOLO_ROW', 'HOLO'), (texture, 'TEXTURE_ROW', 'TEXTURE'),
+            (screen, 'HOLO_ROW', 'HOLO'), (texture, 'TEXTURE_ROW', 'TEXTURE'),
             (frames, 'SLED_ROW', 'SLED'), (frames, 'SHADE_ROW', 'SHADE'),
             (gauge, 'LIQUID_ROW', 'LIQUID'), (gauge, 'FITTING_ROW', 'FITTING')]
     for module, name, palette in rows:

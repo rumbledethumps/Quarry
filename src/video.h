@@ -22,7 +22,6 @@ void video_hide_level_sprites(void);
 void video_text_clear(void);
 void video_clear(uint8_t left, uint8_t top, uint8_t right, uint8_t bottom);
 void video_text(uint8_t col, uint8_t row, const char *s);
-void video_number(uint8_t col, uint8_t row, uint16_t n, uint8_t width);
 void video_box(uint8_t left, uint8_t top, uint8_t right, uint8_t bottom);
 void video_rule(uint8_t left, uint8_t right, uint8_t row);
 

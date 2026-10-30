@@ -302,8 +302,7 @@ Diffusion or by hand, and `art/frames.py` cuts it to the game's sizes.
 - The concepts in `art/style/ref/frame-*.png` hold more looks for the next
   sets, such as the mine shaft frames of D1, D3 and D4.
 
-`art/screen.py` draws the machine, the digits, and the old energy bar, now
-only the upgrade screen's stand-in picture of the gauge. The machine's
+`art/screen.py` draws the machine and the digits. The machine's
 window is clear, and its meter's paddle, a sprite behind it, is drawn by
 hand in `art/gauge.py`, in the fitting row, as it is too small for any
 diffusion model.
@@ -769,7 +768,7 @@ darkest first. Each class of art gets a row of its own:
 | --- | --- |
 | main | the ball |
 | bricks | one per color: the brick, its cracks and chunks, and its nuggets |
-| fx | the smoke, and the old energy bar of the upgrade screen's picture |
+| fx | the smoke |
 | logo | the title logo |
 | sled | the sleds, their jets and flames, the machine, the digits, and the coin |
 | texture | the texture behind the playfield, its first 4 colors, loaded with each curtain set |

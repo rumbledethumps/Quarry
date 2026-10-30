@@ -123,12 +123,6 @@ void menu_close(void)
     shown = 0;
 }
 
-/* The item picked, counting from 0. */
-uint8_t menu_picked(void)
-{
-    return picked;
-}
-
 /* Up picks the item before, down the item after, but for the first and
    the last, and choose returns the one picked, from 1. */
 uint8_t menu_step(void)

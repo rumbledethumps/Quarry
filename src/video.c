@@ -130,29 +130,6 @@ void video_text(uint8_t col, uint8_t row, const char *s)
     xram0_write(XRAM_MENU_MAP + row * TEXT_COLS + col, cells, n);
 }
 
-/* A number, left aligned in width cells, spaces after it. */
-void video_number(uint8_t col, uint8_t row, uint16_t n, uint8_t width)
-{
-    char text[6];
-    uint8_t i, len = 0;
-
-    do
-    {
-        text[len++] = '0' + n % 10;
-        n /= 10;
-    } while (n);
-    for (i = 0; i < len / 2; i++)
-    {
-        char c = text[i];
-        text[i] = text[len - 1 - i];
-        text[len - 1 - i] = c;
-    }
-    while (len < width)
-        text[len++] = ' ';
-    text[len] = 0;
-    video_text(col, row, text);
-}
-
 /* A thin steel rule across the cells from left to right, on row. */
 void video_rule(uint8_t left, uint8_t right, uint8_t row)
 {

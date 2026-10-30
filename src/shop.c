@@ -246,11 +246,6 @@ static void panel_light(uint8_t p, uint8_t on)
     }
 }
 
-static uint8_t lit(uint8_t p)
-{
-    return panel_lit[p];
-}
-
 static uint8_t can_buy(uint8_t u)
 {
     uint16_t cost = upgrades_cost(u);
@@ -372,7 +367,7 @@ static void pictures_load(void)
 static void pictures_draw(uint8_t p)
 {
     int16_t x = panel_x(p), top = PANEL_Y + PICTURE_ROW * 8;
-    uint8_t dim = lit(p) ? 0 : SLED_DIM, i;
+    uint8_t dim = panel_lit[p] ? 0 : SLED_DIM, i;
 
     for (i = 0; i < PANEL_SPRITES; i++)
         sprite_hide(PANEL_SPRITE(p, i));
@@ -394,7 +389,7 @@ static void pictures_draw(uint8_t p)
     {
         uint8_t slot = p % PICTURE_SLOTS, weight = p == UPGRADE_DAMAGE;
         uint8_t w = weight ? WEIGHT_W : JERRYCAN_W, h = weight ? WEIGHT_H : JERRYCAN_H;
-        sprite_set(PANEL_SPRITE(p, 0), XRAM_PICTURE(slot), XRAM_PICTURE_COLORS(slot, !lit(p)), MODE5_SIZE(w, h));
+        sprite_set(PANEL_SPRITE(p, 0), XRAM_PICTURE(slot), XRAM_PICTURE_COLORS(slot, !panel_lit[p]), MODE5_SIZE(w, h));
         sprite_move(PANEL_SPRITE(p, 0), x + (PANEL_COLS * 8 - w) / 2, top);
     }
     if (upgrades_cost(p) && !talk_busy())

@@ -468,14 +468,6 @@ typedef struct
 #define METER_PADDLE 10
 #define METER_SHADE 11
 
-/* Pieces of the old energy bar, in the order of art/energy.png, the
-   upgrade screen's stand-in picture of the gauge. */
-#define ENERGY_TOP 0
-#define ENERGY_FULL 1
-#define ENERGY_LOW 2
-#define ENERGY_EMPTY 3
-#define ENERGY_BOTTOM 4
-
 /* A dwarf with something to say, from art/talk.py. He and his speech
    bubble take the menus' place in XRAM, as the two never show together:
    the dwarf a portrait DWARF_SIZE square, in up to DWARF_PIECES sprites
@@ -508,7 +500,6 @@ typedef MODE5_CUSTOM_IMAGE(4, 8, 12) jet_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, 8, 12) digit_image_t;
 #define JET_IMAGE_BYTES sizeof(jet_image_t) /* these two for the tests */
 #define DIGIT_IMAGE_BYTES sizeof(digit_image_t)
-typedef MODE5_CUSTOM_IMAGE(4, 8, 8) energy_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, GAUGE_W, FITTING_H) fitting_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, GLASS_W, LIQUID_H) liquid_image_t;
 typedef MODE5_CUSTOM_IMAGE(4, GLASS_W, GLASS_H) glass_image_t;
@@ -529,7 +520,7 @@ typedef struct
 {
     uint16_t main[16];
     uint16_t bricks[BRICK_COLORS][16]; /* bricks, their cracks and chunks, and nuggets, a palette a color */
-    uint16_t fx[16];                   /* smoke and the energy gauge */
+    uint16_t fx[16];                   /* smoke */
     uint16_t logo[16];
     uint16_t sled[16];    /* the sleds, their jets, the digits, and the coin */
     uint16_t texture[16]; /* the first 4, loaded with each curtain set */
@@ -810,7 +801,6 @@ typedef struct
     cursor_image_t cursor_image;
     jet_image_t jet_images[JET_FRAMES];
     piece_image_t smoke_images[SMOKE_FRAMES];
-    energy_image_t energy_images[5];
     digit_image_t digit_images[10];
     machine_image_t machine_image;
     union
@@ -892,7 +882,6 @@ typedef struct
 #define XRAM_CURSOR_IMAGE offsetof(xram_layout_t, cursor_image)
 #define XRAM_JET_IMAGES offsetof(xram_layout_t, jet_images)
 #define XRAM_SMOKE_IMAGES offsetof(xram_layout_t, smoke_images)
-#define XRAM_ENERGY_IMAGES offsetof(xram_layout_t, energy_images)
 #define XRAM_DIGIT_IMAGES offsetof(xram_layout_t, digit_images)
 #define XRAM_MACHINE_IMAGE offsetof(xram_layout_t, machine_image)
 #define XRAM_ART offsetof(xram_layout_t, art)

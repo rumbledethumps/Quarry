@@ -3,19 +3,16 @@
 
   screen.py
 
-Writes art/machine.png, art/digits.png, art/energy.png and
-art/cursor.png. Run it after a change to the drawing here, then touch up
+Writes art/machine.png, art/digits.png and art/cursor.png. Run it after a change to the drawing here, then touch up
 any of them by hand. The frame of the playfield comes from art/frames.py.
 
 The machine is drawn for the left wall, stands behind the ball, and the
 right wall shows it with MODE5_HFLIP. Its window is clear, for the meter
 behind it, which art/gauge.py draws. The digits are 6x8 with a 1 px
-outline, in 8x12 sprites. The old energy bar is now only the upgrade
-screen's stand-in picture of the gauge, whose sight glass is
-art/gauge.py's.
+outline, in 8x12 sprites.
 
-The machine and the digits use the sled row of art/palettes.png, the
-gauge the fx row, and the cursor the holo row. The coin is drawn by
+The machine and the digits use the sled row of art/palettes.png, and the
+cursor the holo row. The coin is drawn by
 art/bricks.py. The cursor is one corner of the holographic outline of the
 upgrade screen and the menus, and MODE5_HFLIP and MODE5_VFLIP turn it for
 the other three.
@@ -26,7 +23,7 @@ import os
 from rd2png import rgba, write_png
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SLED_ROW, FX_ROW, HOLO_ROW = 8, 6, 12
+SLED_ROW, HOLO_ROW = 8, 12
 
 # The sled row, by index.
 OUT, G0, TAIL, G1, Y1, G2, RED, G3, ORANGE, Y2, Y3, Y4, Y5, CREAM = range(1, 15)
@@ -93,30 +90,6 @@ def digit(ch):
     return rows
 
 
-def gauge():
-    """The old energy bar, in the fx row: the top, a full, a low and
-    an empty segment, and the bottom, 8x8 each."""
-    DARK, EMPTY, STEEL, PALE, FULL, LIGHT, LOW = 1, 2, 4, 5, 11, 12, 13
-    pieces = []
-    for kind in ('top', 'full', 'low', 'empty', 'bottom'):
-        rows = grid(8, 8)
-        for y in range(8):
-            rows[y] = [DARK, STEEL] + [EMPTY] * 4 + [STEEL, DARK]
-        if kind in ('full', 'low'):
-            for y in range(7):
-                rows[y][2:6] = [LIGHT if kind == 'full' and y == 0 else FULL if kind == 'full' else LOW] * 4
-        if kind == 'top':
-            rows[0] = [DARK] * 8
-            rows[1] = rows[2] = [DARK] + [PALE] * 6 + [DARK]
-            rows[3] = [DARK] + [STEEL] * 6 + [DARK]
-        if kind == 'bottom':
-            rows[4] = [DARK] + [STEEL] * 6 + [DARK]
-            rows[5] = rows[6] = [DARK] + [PALE] * 6 + [DARK]
-            rows[7] = [DARK] * 8
-        pieces.append(rows)
-    return [[c for piece in pieces for c in piece[y]] for y in range(8)]
-
-
 def cursor(n=11, size=12):
     """The top left corner of the cursor, size x size, in the holo row: a
     bright bracket whose arms fade out. It is drawn at 8 px below, and its
@@ -153,10 +126,10 @@ def strip(frames):
 
 def main():
     _, _, palettes = rgba(os.path.join(HERE, 'palettes.png'))
-    sled, fx, holo = palettes[SLED_ROW], palettes[FX_ROW], palettes[HOLO_ROW]
+    sled, holo = palettes[SLED_ROW], palettes[HOLO_ROW]
     for name, rows, colors in (
         ('machine', machine(), sled),
-        ('digits', strip([digit(c) for c in '0123456789']), sled), ('energy', gauge(), fx),
+        ('digits', strip([digit(c) for c in '0123456789']), sled),
         ('cursor', cursor(), holo),
     ):
         write_png(os.path.join(HERE, f'{name}.png'), len(rows[0]), len(rows), 3, rows, colors)

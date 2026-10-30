@@ -29,7 +29,6 @@ typedef struct
 void menu_clear(void);
 void menu_open(const menu_t *menu, uint8_t pick, uint8_t disabled, uint8_t wait);
 void menu_close(void);
-uint8_t menu_picked(void);
 uint8_t menu_step(void);
 void menu_draw(void);
 
