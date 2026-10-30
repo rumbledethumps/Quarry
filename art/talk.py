@@ -62,7 +62,7 @@ SCREEN_W, SCREEN_H = 320, 240
 # right, as he does for the friendly dwarf on the right.
 LEFT, RIGHT = 'left', 'right'
 DWARVES = {
-    'FRIENDLY': {LEFT: ('friendly-red-left', False), RIGHT: ('friendly-red-right', False)},
+    'FRIENDLY': {LEFT: ('friendly-red-right', True), RIGHT: ('friendly-red-right', False)},
     'FOREMAN': {LEFT: ('miner', False), RIGHT: ('miner', True)},
     'COMMITTEEMAN': {LEFT: ('miner', False), RIGHT: ('miner', True)},
 }

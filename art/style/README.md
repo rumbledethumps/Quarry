@@ -677,7 +677,8 @@ carries on. There are three:
   upper left. The edit sharpens light that already comes from the left,
   as it did on his right side, but it can't move light from the right:
   on his left side as drawn, and on his right side turned round, it
-  darkened half of him and the background behind it.
+  darkened half of him and the background behind it. The game shows his
+  right side, turned round to face his bubble, on the left.
 - The miner, `art/dwarves/miner.png`, stands in for the others until each
   is drawn, turned round on the right. He is the third of four,
   `rd_pro__default`, 96x96: "Head and shoulders of a friendly cartoon
