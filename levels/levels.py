@@ -55,10 +55,10 @@ BALL = 8
 
 # The letters of a grid, a color each, in the order of BRICK_GRAY and on,
 # and . for no brick.
-COLORS = 'xrgby'  # gray, red, green, blue, gold
+COLORS = 'wrgby'  # gray (white), red, green, blue, gold
 
 # The hits a brick of each color takes to break, unless its level says.
-HITS = {'x': 1, 'r': 2, 'g': 3, 'b': 4, 'y': 5}
+HITS = {'w': 1, 'r': 2, 'g': 3, 'b': 4, 'y': 5}
 
 
 class Level:
@@ -81,32 +81,61 @@ def grid(rows, x=0, y=0, gap=2, hits=None):
 def fit(bricks, left, right, top=32):
     """A level of the bricks with left px of room between the left wall and
     them, and right px between them and the right wall, the playfield in
-    the middle of the screen and the bricks' top at top."""
+    the middle of the screen, or as near it as the energy gauge lets it,
+    and the bricks' top at top."""
     x0, y0 = min(b[0] for b in bricks), min(b[1] for b in bricks)
     width = max(b[0] for b in bricks) + BRICK_W - x0 + left + right
-    wall = (SCREEN_W - width) // 2
+    wall = min((SCREEN_W - width) // 2, GAUGE_X - POST_W - width)
     return Level(wall, wall + width, [(x - x0 + wall + left, y - y0 + top, c, h) for x, y, c, h in bricks])
 
 
 def level_1():
     """A block of 4 by 4 gray bricks, 2 px apart, with half a brick of room
     for the ball between it and each wall."""
-    return fit(grid(['xxxx',
-                     'xxxx',
-                     'xxxx',
-                     'xxxx']), left=12, right=12)
+    return fit(grid(['wwww',
+                     'wwww',
+                     'wwww',
+                     'wwww']), left=12, right=12)
 
 
 def level_2():
     """Level 1 with red bricks in the middle of its top two rows, and
     tougher: the gray take two hits, and the red three."""
-    return fit(grid(['xrrx',
-                     'xrrx',
-                     'xxxx',
-                     'xxxx'], hits={'x': 2, 'r': 3}), left=12, right=12)
+    return fit(grid(['wrrw',
+                     'wrrw',
+                     'wwww',
+                     'wwww'], hits={'w': 2, 'r': 3}), left=12, right=12)
 
 
-DESIGNED = [level_1, level_2]
+def level_3():
+    """Five across: three rows of red over one of gray. The gray take three
+    hits, and the red four."""
+    return fit(grid(['rrrrr',
+                     'rrrrr',
+                     'rrrrr',
+                     'wwwww'], hits={'w': 3, 'r': 4}), left=12, right=12)
+
+
+def level_4():
+    """Six across: green ringed by red, between rows of gray. The gray take
+    four hits, the red five, and the green six."""
+    return fit(grid(['wwwwww',
+                     'rggggr',
+                     'rggggr',
+                     'rrrrrr',
+                     'wwwwww'], hits={'w': 4, 'r': 5, 'g': 6}), left=12, right=12)
+
+
+def level_5():
+    """Two blocks of four across, a brick's room apart: green over red over
+    gray. The gray take five hits, the red six, and the green seven."""
+    return fit(grid(['gggg.gggg',
+                     'gggg.gggg',
+                     'rrrr.rrrr',
+                     'wwww.wwww'], hits={'w': 5, 'r': 6, 'g': 7}), left=12, right=12)
+
+
+DESIGNED = [level_1, level_2, level_3, level_4, level_5]
 
 
 def check(n, level):
