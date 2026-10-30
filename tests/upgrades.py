@@ -129,6 +129,10 @@ def main():
     check(panel(2, sym['TITLE_ROW']) == 'WEIGHT' and panel(2, sym['EFFECT_ROW']) == '1 \x10 2 DAMAGE',
           "and the ball's damage has its panel")
     check(panel_lit(0) and not panel_lit(1), 'the middle panel is lit and the next one dim')
+    # The size and speed panels' picture is the smallest sled with two jets.
+    rank = sym['SLED_PICTURE']
+    check(game.ram(f'jets+{rank}') == 2 and game.ram(f'jets+{rank - 1}') < 2,
+          f'size and speed show the sled of rank {rank}, the smallest with two jets')
     # The weight panel's picture is the weight, centered at the top of its
     # plate, a whole cell clear of the title, in its own colors, dim, as the
     # panel is.

@@ -90,6 +90,10 @@ _Static_assert(PANEL_SLOTS * PANEL_SPRITES <= MENU_SPRITES, "MENU_SPRITES is too
 static const uint8_t panel_heights[PANELS] = PANEL_HEIGHTS; /* the rows of each frame */
 
 _Static_assert(WEIGHT_H + 8 <= PICTURE_H, "The weight leaves a whole cell clear of the title.");
+
+/* The size and speed panels' picture: the sled of this rank, the smallest
+   with two jets, as tests/upgrades.py checks. */
+#define SLED_PICTURE 3
 static const uint8_t hanger_x[PANEL_HANGERS] = PANEL_HANGER_X;  /* from a panel's left */
 
 _Static_assert(PANEL_LAYOUTS == PANELS, "art/panels.py needs a layout for each panel.");
@@ -152,7 +156,6 @@ static uint8_t slot_holds[PANEL_SLOTS];
    one the way the rail last moved, which loads before it slides into
    view. Those are four panels side by side, so each has a slot. */
 static uint8_t slot_panel[PICTURE_SLOTS]; /* whose picture each slot holds, or PANELS */
-static uint8_t slot_rank[PICTURE_SLOTS]; /* and at which rank */
 static int8_t heading = 1; /* the way the rail last moved: 1 to the panels on the right, -1 to the left */
 
 _Static_assert(PICTURE_SLOTS >= 4, "A slot for each of the four panels near the one picked.");
@@ -334,13 +337,10 @@ static unsigned trolley_image(int16_t x)
            (x / 2 & (BACKDROP_TROLLEY_FRAMES - 1)) * (BACKDROP_TROLLEY_W * BACKDROP_TROLLEY_H / 2);
 }
 
-/* Whether panel p's picture is in its slot. The size and speed panels'
-   pictures are the sled of the size bought. */
+/* Whether panel p's picture is in its slot. */
 static uint8_t picture_ready(uint8_t p)
 {
-    uint8_t slot = p % PICTURE_SLOTS;
-
-    return slot_panel[slot] == p && (p == UPGRADE_DAMAGE || slot_rank[slot] == upgrade_ranks[UPGRADE_WIDTH]);
+    return slot_panel[p % PICTURE_SLOTS] == p;
 }
 
 /* Loads the pictures of the panels near the one picked that aren't in
@@ -357,16 +357,15 @@ static void pictures_load(void)
             if (p == UPGRADE_DAMAGE)
                 scene_picture_weight(slot);
             else
-                scene_picture_sled(slot, upgrade_ranks[UPGRADE_WIDTH]);
+                scene_picture_sled(slot, SLED_PICTURE);
             slot_panel[slot] = p;
-            slot_rank[slot] = upgrade_ranks[UPGRADE_WIDTH];
         }
 }
 
-/* A panel's picture and cost icons, where it is now: the weight for
-   weight, at the top of the plate, a whole cell clear of the title, and
-   the rest stand-ins, doubled: the sled for size, the sled with its flames
-   lit for speed, and the old energy bar for efficiency. */
+/* A panel's picture and cost icons, where it is now: for size and speed,
+   the smallest sled with two jets, doubled, its flames lit; the weight for
+   weight, at the top of the plate, a whole cell clear of the title; and a
+   stand-in for efficiency, the old energy bar, doubled. */
 static void pictures_draw(uint8_t p)
 {
     int16_t x = panel_x(p), top = PANEL_Y + PICTURE_ROW * 8;
@@ -383,11 +382,10 @@ static void pictures_draw(uint8_t p)
     }
     if (p == UPGRADE_WIDTH || p == UPGRADE_SPEED)
     {
-        uint8_t rank = upgrade_ranks[UPGRADE_WIDTH];
-        uint8_t w = upgrades_width_at(rank) * 2;
+        uint8_t w = upgrades_width_at(SLED_PICTURE) * 2;
         if (picture_ready(p))
-            sled_show(PANEL_SPRITE(p, 0), PICTURE_SPRITES, x + (PANEL_COLS * 8 - w) / 2, top + 7, rank,
-                      SLED_DOUBLE | dim | (p == UPGRADE_SPEED ? SLED_FLAMES : 0), XRAM_PICTURE(p % PICTURE_SLOTS));
+            sled_show(PANEL_SPRITE(p, 0), PICTURE_SPRITES, x + (PANEL_COLS * 8 - w) / 2, top + 7, SLED_PICTURE,
+                      SLED_DOUBLE | dim | SLED_FLAMES, XRAM_PICTURE(p % PICTURE_SLOTS));
     }
     else if (p == UPGRADE_EFFICIENCY)
     {
@@ -712,7 +710,6 @@ static void cheats_step(void)
         if (up ? upgrade_ranks[u] >= upgrades_max(u) : !upgrade_ranks[u])
             return;
         upgrade_ranks[u] += up ? 1 : -1;
-        pictures_load();
         upgrades_draw();
         pictures_dirty = 1;
         DEBUG_LOG("cheat: upgrade %u, rank %u\n", u, upgrade_ranks[u]);
@@ -966,7 +963,6 @@ uint8_t shop_step(void)
             sfx_play(SFX_BUY, SFX_CENTER);
             upgrades_draw();
             nuggets_start();
-            pictures_load();
             pictures_dirty = 1;
             save_write();
         }

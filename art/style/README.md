@@ -442,8 +442,9 @@ graphite steel with no yellow: there is nothing to be careful of here.
   them, then the same at half for a dim panel, as the sled's shade row is.
   It sits at the top of the plate, a whole cell clear of the title.
   Retro Diffusion drew it, `ref/ton-weight.png`, and its `color_reducer`
-  cut it to 15 colors with no dithering. SIZE, SPEED and EFFICIENCY still
-  show stand-ins.
+  cut it to 15 colors with no dithering. SIZE and SPEED both show the
+  smallest sled with two jets, the game's own, doubled, its flames lit,
+  the same at every rank. EFFICIENCY still shows a stand-in.
 
 ### The Title's Panels
 
