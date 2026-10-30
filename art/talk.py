@@ -274,9 +274,9 @@ def bubble(lines, ok, side, coin):
     line, at the right, a cell after it, with a cell clear all round it for
     the cursor. Without one, the cell is 0, 0, which is a corner of the
     picture, and there is no row under the last line. With the coin, the
-    bubble is at least COIN_ROWS tall, the coin in the middle of the first
-    COIN_COLS cells of its inside, and the lines after them, both halfway
-    down."""
+    bubble is at least COIN_ROWS tall, the coin at the left of the first
+    COIN_COLS cells of its inside, so it has a little room before the
+    lines after them, both halfway down."""
     lead = COIN_COLS if coin else 0
     cols = lead + max(max(len(line) for line in lines), len(lines[-1]) + 4 if ok else 0) + 2
     rows = 2 * len(lines) + (2 if ok else 1)
@@ -309,7 +309,7 @@ def bubble(lines, ok, side, coin):
     for i, line in enumerate(lines):
         for j, ch in enumerate(line):
             glyph(img, 8 * (at + 1 + lead + j), 8 * (first + 2 * i), ch)
-    coin_at = ((8 * (at + 1) + (8 * COIN_COLS - BIG_COIN_SIZE) // 2, 8 + (8 * (rows - 2) - BIG_COIN_SIZE) // 2)
+    coin_at = ((8 * (at + 1), 8 + (8 * (rows - 2) - BIG_COIN_SIZE) // 2)
                if coin else (0, 0))
     return img, (at + cols - 4, first + 2 * len(lines) - 2) if ok else (0, 0), coin_at
 
