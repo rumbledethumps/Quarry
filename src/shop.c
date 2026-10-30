@@ -94,8 +94,17 @@ _Static_assert(WEIGHT_H + 8 <= PICTURE_H && JERRYCAN_H + 8 <= PICTURE_H,
                "The pictures leave a whole cell clear of the title.");
 
 /* The size and speed panels' picture: the sled of this rank, the smallest
-   with two jets, as tests/upgrades.py checks. */
+   with two jets, as TUNE_JETS has it now. */
 #define SLED_PICTURE 3
+
+/* That rank, or the top one, while SIZE has fewer. */
+static uint8_t sled_picture(void)
+{
+    uint8_t top = upgrades_max(UPGRADE_WIDTH);
+
+    return SLED_PICTURE < top ? SLED_PICTURE : top;
+}
+
 static const uint8_t hanger_x[PANEL_HANGERS] = PANEL_HANGER_X;  /* from a panel's left */
 
 _Static_assert(PANEL_LAYOUTS == PANELS, "art/panels.py needs a layout for each panel.");
@@ -257,9 +266,8 @@ static uint8_t can_buy(uint8_t u)
     return cost && nuggets[upgrades_cost_color(u)] >= cost;
 }
 
-/* Upgrade u's value at a rank, as its panel shows it. A speed is in 1/256
-   px a step, at 60 steps a second, and a burn in tenths of a liter a
-   second. */
+/* Upgrade u's value at a rank, as its panel shows it. A burn is in tenths
+   of a liter a second. */
 static char *put_value(char *at, uint8_t u, uint8_t rank)
 {
     if (u == UPGRADE_EFFICIENCY)
@@ -272,7 +280,7 @@ static char *put_value(char *at, uint8_t u, uint8_t rank)
     }
     return put_number(at, u == UPGRADE_BALLS   ? upgrades_balls_at(rank)
                           : u == UPGRADE_WIDTH ? upgrades_width_at(rank)
-                          : u == UPGRADE_SPEED ? (uint16_t)(upgrades_speed_at(rank) * 60u / 256)
+                          : u == UPGRADE_SPEED ? upgrades_speed_at(rank)
                                                : upgrades_damage_at(rank));
 }
 
@@ -381,7 +389,7 @@ static void pictures_load(void)
             else if (p == UPGRADE_EFFICIENCY)
                 scene_picture_jerrycan(slot);
             else
-                scene_picture_sled(slot, SLED_PICTURE);
+                scene_picture_sled(slot, sled_picture());
             slot_panel[slot] = p;
         }
 }
@@ -413,9 +421,9 @@ static void pictures_draw(uint8_t p)
     }
     else if (p == UPGRADE_WIDTH || p == UPGRADE_SPEED)
     {
-        uint8_t w = upgrades_width_at(SLED_PICTURE) * 2;
+        uint8_t rank = sled_picture(), w = upgrades_width_at(rank) * 2;
         if (picture_ready(p))
-            sled_show(PANEL_SPRITE(p, 0), PICTURE_SPRITES, x + (PANEL_COLS * 8 - w) / 2, top + 7, SLED_PICTURE,
+            sled_show(PANEL_SPRITE(p, 0), PICTURE_SPRITES, x + (PANEL_COLS * 8 - w) / 2, top + 7, rank,
                       SLED_DOUBLE | dim | SLED_FLAMES, XRAM_PICTURE(p % PICTURE_SLOTS));
     }
     else if (picture_ready(p))

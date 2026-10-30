@@ -39,6 +39,8 @@ def main():
     paddle_y, paddle_w = sym['TUNE_PADDLE_Y'], game.ram('paddle_width')
     ball = sym['BALL_SIZE']
     bricks = sym['LEVEL1_BRICKS']
+    # The nuggets of every color, whatever colors the level's bricks are.
+    nuggets = lambda: sum(game.ram(f'nuggets+{2 * c}', 2) for c in range(sym['BRICK_COLORS']))
     # A level starts with the balls of the BALLS upgrade's rank, the first
     # in a new game, where one lost ball ends the level.
     rank = game.ram(f"upgrade_ranks+{sym['UPGRADE_BALLS']}")
@@ -139,7 +141,7 @@ def main():
         check(len(images) > 1, 'the flames still burn as the sled flies home')
     game.run(90)
     check(game.shown('XRAM_BRICKS', bricks) == left, 'a sprite for each brick left')
-    counted = game.ram('nuggets', 2)
+    counted = nuggets()
     check(counted == bricks - left, f'a nugget for each broken brick, {counted} of {bricks - left}')
 
     # Replay starts the level again.
@@ -152,7 +154,7 @@ def main():
     game.ready()
     check(game.shown('XRAM_BRICKS', bricks) == bricks, 'the brick sprites come back')
     check(game.ram('balls') == balls - 1, 'the balls come back, one on the sled')
-    check(game.ram('nuggets', 2) == counted, 'the nuggets are kept')
+    check(nuggets() == counted, 'the nuggets are kept')
     check(count() == balls - 1, 'the count of balls comes back')
     check(game.ram('energy', 2) == full, 'the energy is full again')
     check(not game.shows('TO THE DRY'), 'the menu is gone')

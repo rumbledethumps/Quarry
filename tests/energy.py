@@ -4,7 +4,8 @@
   energy.py rom.rp6502
 
 Needs a Debug ROM, which logs the game's events. The energy is poked low
-to skip ahead, and the ball poked over the sled to make it bounce. Reads
+to skip ahead, and the ball poked over the sled to make it bounce, with
+the bricks out of play, so the level's layout has no say. Reads
 the fuel in the gauge, its bubbles, the jets and the tilt of the falling
 sled from their sprites, the glass from its image, the meter from its
 sprite and its paddle's color, and the smoke from screenshots. Exits 0
@@ -77,6 +78,20 @@ def check_glass(game):
         want = [sym['GLASS_OUTLINE']] + [rock(gx + x, gy + y) for x in range(1, w - 1)] + [sym['GLASS_OUTLINE']]
         want[col] = sym['GLASS_GLINT']
         check(row == want, f'row {y} of the glass is {row}, the rock behind it {want}')
+
+
+def bought(game, table, upgrade):
+    """An upgrade's value at the rank bought, from its table in RAM, a byte
+    a rank, such as burns for UPGRADE_EFFICIENCY."""
+    rank = game.ram(f'upgrade_ranks+{game.sym[upgrade]}')
+    return game.ram(f'{table}+{rank}')
+
+
+def ghost_bricks(game):
+    """Takes the level's bricks out of play, still showing, so the ball
+    flies through them: whatever the level, none turns the ball back early
+    or breaks to clear the level while the sled is checked."""
+    game.poke('brick_alive', 0, game.sym['BRICKS_MAX'])
 
 
 def bubbles(game, image='XRAM_BUBBLE_IMAGE'):
@@ -200,17 +215,20 @@ def main():
     game.run(90)
     check(game.ram('energy', 2) == full, 'no energy drains before the first launch')
 
-    # A new game has only the ball on the sled, and losing it would end the
-    # level, so some spares let play go on while the gauge is checked.
+    # Losing the ball could end the level, so some spares let play go on
+    # while the gauge is checked. Fuel efficiency is put at its top rank, as
+    # though bought, so the burn is the rank's and not the first one's.
     game.poke('balls', 4)
+    ghost_bricks(game)
+    game.poke(f'upgrade_ranks+{sym["UPGRADE_EFFICIENCY"]}', sym['BURN_RANKS'])
     game.cmd('press space')
     game.wait('launch', 5)
     game.cmd('release space')
     game.run(60)
     drained = full - game.ram('energy', 2)
-    drain = game.ram('burns')  # with no fuel efficiency bought
+    drain = bought(game, 'burns', 'UPGRADE_EFFICIENCY')
     check(55 * drain <= drained <= 65 * drain,
-          f'energy drains {drain} a step after the launch, drained {drained} in 60')
+          f'energy drains the burn bought, {drain} a step, after the launch: drained {drained} in 60')
     print(f'drained {drained} in 60 steps after the launch')
     check_bubbles(game)
 
@@ -257,7 +275,7 @@ def main():
     game.wait('paddle falls', sym['TUNE_SPUTTER_STEPS'])
     top = game.px('paddle_y')
     game.run(6)
-    puff = smoke_pixels(game, shot, x - 4, x + 32, top - 8, top + 16)
+    puff = smoke_pixels(game, shot, x - 4, x + game.ram('paddle_width') + 4, top - 8, top + 16)
     check(puff > 10, f'a puff of smoke where the paddle gave up, {puff} pixels')
     jets = game.ram('sled_jets')
     check(game.shown('XRAM_SMOKE_SPRITES', sym['JETS_MAX']) == jets, f'a puff for each of its {jets} jets')
@@ -300,13 +318,14 @@ def main():
     game.cmd('press space')
     game.run(4)
     game.cmd('release space')
-    # The replay starts with the balls for no BALLS bought, one on the sled.
-    check(game.ram('ball_state') == sym['BALL_DOCKED'] and game.ram('balls') == game.ram('ball_counts') - 1,
+    # The replay starts with the balls bought, one on the sled.
+    check(game.ram('ball_state') == sym['BALL_DOCKED'] and
+          game.ram('balls') == bought(game, 'ball_counts', 'UPGRADE_BALLS') - 1,
           'no launch once out of energy')
     game.wait('paddle falls', sym['TUNE_SPUTTER_STEPS'])
     game.run(15)
     middle = game.sprite(pieces)[1] + game.ram('paddle_width') // 2 * sym['TILT_MAX'] // 8
-    check(game.sprite(ball)[1] == middle - 8, 'the ball rides the middle of the tilted paddle')
+    check(game.sprite(ball)[1] == middle - sym['BALL_SIZE'], 'the ball rides the middle of the tilted paddle')
     game.wait('paddle gone', 120)
     game.wait('ball lost', 10)
     game.run(2)
@@ -316,6 +335,7 @@ def main():
     # The level clears while the paddle falls: it still falls off the screen.
     game.menu_choose('REPLAY')
     game.ready()
+    ghost_bricks(game)
     game.cmd('press space')
     game.wait('launch', 5)
     game.cmd('release space')

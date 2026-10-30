@@ -30,6 +30,18 @@ def bricks_shown(game):
             if y != hidden}
 
 
+def aim(game):
+    """Of the bricks a ball going straight up from under them all would hit
+    first, the one laid last, and the x for the ball, in px."""
+    w, size = game.sym['BRICK_W'], game.sym['BALL_SIZE']
+    shown = bricks_shown(game)
+    under = lambda x: max((i for i, (bx, _) in shown.items() if bx < x + size and x < bx + w),
+                          key=lambda i: shown[i][1])
+    hit = {under(x + (w - size) // 2): x + (w - size) // 2 for x, _ in shown.values()}
+    last = max(hit, key=lambda i: (-shown[i][1], shown[i][0]))
+    return last, hit[last]
+
+
 def rising(game):
     """The top of each bubble rising through the fuel, in px, from RAM, or
     None for one that is not."""
@@ -45,7 +57,6 @@ def main():
     sym = game.sym
     steps, rise, paddle_y = sym['TUNE_BUILD_STEPS'], sym['TUNE_RISE_STEPS'], sym['TUNE_PADDLE_Y']
     bricks = sym['LEVEL1_BRICKS']
-    balls = game.ram('ball_counts')  # a new game's, before any upgrade
     sled, ball = 'XRAM_SLED_SPRITE', 'XRAM_BALL_SPRITE'
     count = lambda: game.count('XRAM_BALL_DIGITS', sym['BALL_DIGITS'])
 
@@ -55,6 +66,7 @@ def main():
     game.tap('space')  # START GAME
     game.until('game_state', 'STATE_PLAY')
     game.until('talk_state', 'TALK_READY', 120)
+    balls = game.ram('ball_counts')  # a new game's, with none bought
     check(not bricks_shown(game), 'no bricks under the welcome')
     check(game.sprite(sled)[1] >= sym['SCREEN_H'] or game.sprite(sled)[1] == sym['SPRITE_HIDDEN_Y'], 'no sled')
     check(game.sprite(ball)[1] == sym['SPRITE_HIDDEN_Y'], 'no ball')
@@ -132,12 +144,19 @@ def main():
     # Restart with the sled hovering: the ball goes at once, the sled stays
     # and is the player's, the broken bricks stay gone until they are laid
     # again, the fuel rises only once the fill reaches it, and the meter
-    # goes down, to come up again once the ball lands.
+    # goes down, to come up again once the ball lands. A brick is broken
+    # first, whatever the level: the ball is poked under every brick, two
+    # balls above the sled, going straight up into the last laid of those
+    # it can reach, which is poked to take one hit.
     game.tap('space')
-    game.wait('brick', 600)
+    game.wait('launch', 5)
+    target, at = aim(game)
+    game.paused_poke([(f'brick_hits+{target}', 1, 1), ('ball_x', at << 8, 4),
+                      ('ball_y', (paddle_y - 2 * sym['BALL_SIZE']) << 8, 4), ('ball_vx', 0, 2), ('ball_vy', -600, 2)])
+    game.wait('brick', 120)
     game.run(3)
     broken = set(range(bricks)) - set(bricks_shown(game))
-    check(broken, 'a brick is broken')
+    check(target in broken, f'brick {target} is broken')
     x = game.sprite(sled)[0]
     held = game.ram('rows')
     game.tap('escape')

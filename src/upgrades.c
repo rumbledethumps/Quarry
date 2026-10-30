@@ -5,17 +5,20 @@
 #include "tuning.h"
 #include "xram.h"
 
-static const uint8_t ball_counts[] = TUNE_BALLS;
-static const uint16_t ball_costs[] = TUNE_BALL_COSTS;
-static const uint8_t damages[] = TUNE_DAMAGES;
-static const uint16_t damage_costs[] = TUNE_DAMAGE_COSTS;
-static const uint8_t burns[] = TUNE_BURNS;
-static const uint16_t burn_costs[] = TUNE_BURN_COSTS;
-static const uint16_t speeds[] = TUNE_SPEEDS;
-static const uint16_t speed_costs[] = TUNE_SPEED_COSTS;
-static const uint8_t widths[] = TUNE_WIDTHS;
-static const uint16_t width_costs[] = TUNE_WIDTH_COSTS;
-static const uint8_t jets[] = TUNE_JETS;
+/* The tables are used and retained, so they stay whole in RAM for the
+   tests to read: without, the compiler and the linker could do without
+   one such as {1, 2, 3}, working its values out instead. */
+__attribute__((used, retain)) static const uint8_t ball_counts[] = TUNE_BALLS;
+__attribute__((used, retain)) static const uint16_t ball_costs[] = TUNE_BALL_COSTS;
+__attribute__((used, retain)) static const uint8_t damages[] = TUNE_DAMAGES;
+__attribute__((used, retain)) static const uint16_t damage_costs[] = TUNE_DAMAGE_COSTS;
+__attribute__((used, retain)) static const uint8_t burns[] = TUNE_BURNS;
+__attribute__((used, retain)) static const uint16_t burn_costs[] = TUNE_BURN_COSTS;
+__attribute__((used, retain)) static const uint16_t speeds[] = TUNE_SPEEDS;
+__attribute__((used, retain)) static const uint16_t speed_costs[] = TUNE_SPEED_COSTS;
+__attribute__((used, retain)) static const uint8_t widths[] = TUNE_WIDTHS;
+__attribute__((used, retain)) static const uint16_t width_costs[] = TUNE_WIDTH_COSTS;
+__attribute__((used, retain)) static const uint8_t jets[] = TUNE_JETS;
 
 /* The ranks after the first, one for each cost. */
 #define BALL_RANKS (sizeof ball_costs / sizeof *ball_costs)
@@ -35,8 +38,9 @@ _Static_assert(SPEED_RANKS == sizeof speeds / sizeof *speeds - 1,
 _Static_assert(WIDTH_RANKS == sizeof widths / sizeof *widths - 1,
                "TUNE_WIDTH_COSTS needs a cost for each width after the first.");
 _Static_assert(BALL_RANKS <= UPGRADE_RANKS_MAX && DAMAGE_RANKS <= UPGRADE_RANKS_MAX &&
-                   BURN_RANKS <= UPGRADE_RANKS_MAX && SPEED_RANKS <= 5 && WIDTH_RANKS <= UPGRADE_RANKS_MAX,
-               "Too many ranks: 5 speeds, and 10 of the others, after the first at most.");
+                   BURN_RANKS <= UPGRADE_RANKS_MAX && SPEED_RANKS <= UPGRADE_RANKS_MAX &&
+                   WIDTH_RANKS <= UPGRADE_RANKS_MAX,
+               "Too many ranks: 10 of each upgrade after the first at most.");
 _Static_assert(sizeof jets == sizeof widths, "TUNE_JETS needs the jets of each width.");
 _Static_assert(sizeof widths <= SLEDS, "SLEDS in xram.h needs a sled for each width.");
 _Static_assert(BRICK_GOLD < 1 << (16 - COST_COLOR_SHIFT), "A cost's color fits its top bits.");
@@ -47,7 +51,7 @@ static const uint16_t *const costs[UPGRADES] = {
     [UPGRADE_BALLS] = ball_costs,   [UPGRADE_DAMAGE] = damage_costs, [UPGRADE_EFFICIENCY] = burn_costs,
     [UPGRADE_SPEED] = speed_costs, [UPGRADE_WIDTH] = width_costs,
 };
-static const uint8_t ranks[UPGRADES] = {
+__attribute__((used, retain)) static const uint8_t ranks[UPGRADES] = {
     [UPGRADE_BALLS] = BALL_RANKS,   [UPGRADE_DAMAGE] = DAMAGE_RANKS, [UPGRADE_EFFICIENCY] = BURN_RANKS,
     [UPGRADE_SPEED] = SPEED_RANKS, [UPGRADE_WIDTH] = WIDTH_RANKS,
 };
@@ -126,11 +130,14 @@ uint8_t upgrades_jets_at(uint8_t rank)
     return jets[rank];
 }
 
+/* The sled's speed, in 1/256 px a step, from its px a second, to the
+   nearest. */
 uint16_t upgrades_speed(void)
 {
-    return speeds[upgrade_ranks[UPGRADE_SPEED]];
+    return ((uint32_t)speeds[upgrade_ranks[UPGRADE_SPEED]] * 256 + 30) / 60;
 }
 
+/* A rank's speed in px a second, as its panel shows it. */
 uint16_t upgrades_speed_at(uint8_t rank)
 {
     return speeds[rank];

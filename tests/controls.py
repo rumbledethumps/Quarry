@@ -4,16 +4,16 @@
   controls.py rom.rp6502
 
 Needs a Debug ROM, which logs the game's events. The paddle starts centered
-in the playfield and moves 2 px a step: each move must reach 12 px to the
-side, and the paddle must stop when the control is let go. Each test starts
-from the same saved state, with the ball on the paddle. Exits 0 when every
-check passes.
+in the playfield and moves at the speed of the SPEED bought: each move must
+reach 12 px to the side in the steps that takes, and the paddle must stop
+when the control is let go. Each test starts from the same saved state, with
+the ball on the paddle. Exits 0 when every check passes.
 """
 
 import os
 import tempfile
 
-from game import Game, check
+from game import Game, check, fail
 
 MOVES = [('d', 'right'), ('a', 'left'), ('right', 'right'), ('left', 'left'),
          ('kp6', 'right'), ('kp4', 'left')]
@@ -58,12 +58,21 @@ def main():
     game.cmd('pad 1 connect')
     game.run(2)
     game.cmd(f'state save "{state}"')
+    # The steps 12 px take at the paddle's speed, in 1/256 px a step, and a
+    # few more for the control to reach the game. The paddle need not land
+    # on a whole pixel each step, so it is followed a frame at a time.
+    reach = 12 * 256 // game.ram('paddle_speed', 2) + 10
 
     def move(press, release, direction, label):
         game.cmd(f'state load "{state}"')
         game.cmd(press)
-        target = start_x + 12 if direction == 'right' else start_x - 12
-        game.cmd(f'wait xram:{paddle} {target} 30')
+        way = 1 if direction == 'right' else -1
+        for _ in range(reach):
+            game.run(1)
+            if (game.sprite(paddle)[0] - start_x) * way >= 12:
+                break
+        else:
+            fail(f'{label}: the paddle does not move 12 px {direction}')
         game.cmd(release)
         game.run(3)
         x = game.sprite(paddle)[0]
@@ -137,8 +146,8 @@ def main():
     # takes one away, and Shift and up or down a twelfth of the energy. With
     # Shift, the arrows neither move nor launch.
     game.cmd(f'state load "{state}"')
-    # A new game's only ball is on the paddle, which leaves the count empty
-    # and nothing for Shift and left to take away: give the count a spare.
+    # The count can be empty, as when a new game's only ball is on the
+    # paddle, with nothing for Shift and left to take away: give it a spare.
     game.poke('balls', game.ram('balls') + 1)
     x, balls, energy = game.sprite(paddle)[0], game.ram('balls'), game.ram('energy', 2)
     game.cmd('press lshift')

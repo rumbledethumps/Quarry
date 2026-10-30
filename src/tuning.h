@@ -1,6 +1,7 @@
 /* Every gameplay number, so a playtest change is a one-line edit.
    The game steps once per VSYNC, 60 times a second. Speeds are in
-   1/256 pixel per step, so 256 is one pixel per step. */
+   1/256 pixel per step, so 256 is one pixel per step, but for the sled's,
+   in pixels a second, as its panel shows them. */
 
 #ifndef TUNING_H
 #define TUNING_H
@@ -54,15 +55,15 @@
 #define GREEN(n) ((n) | (unsigned)BRICK_GREEN << COST_COLOR_SHIFT)
 #define BLUE(n) ((n) | (unsigned)BRICK_BLUE << COST_COLOR_SHIFT)
 #define GOLD(n) ((n) | (unsigned)BRICK_GOLD << COST_COLOR_SHIFT)
-#define TUNE_BALLS {1, 2, 3} /* at the start of a level */
-#define TUNE_BALL_COSTS {1, 20}
-#define TUNE_DAMAGES {1, 2, 3, 4}  /* a brick's hits each hit of the ball takes */
-#define TUNE_DAMAGE_COSTS {RED(4), 20, 40}
-#define TUNE_BURNS {42, 41, 40, 39, 38, 37} /* 1/10 L a second: 4.2 to 3.7, a tank 24 to 27 seconds */
-#define TUNE_BURN_COSTS {5, 10, 15, 20, 25}
-#define TUNE_SPEEDS {512, 576, 640, 704, 768} /* 2 to 3 px per step */
-#define TUNE_SPEED_COSTS {6, 10, 16, 24}
-#define TUNE_WIDTHS {20, 23, 26, 29, 32, 35, 38, 41, 44, 47, 50} /* px, 64 at most */
+#define TUNE_BALLS {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11} /* at the start of a level */
+#define TUNE_BALL_COSTS {1, 20, 30, 40, 50, 60, 70, 80, 90, 100}
+#define TUNE_DAMAGES {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}  /* a brick's hits each hit of the ball takes */
+#define TUNE_DAMAGE_COSTS {RED(4), 20, 40, 60, 80, 100, 120, 140, 160, 180}
+#define TUNE_BURNS {50, 40, 35, 31, 28, 26, 24, 23, 22, 21, 20} /* 1/10 L a second: a tank 20 to 50 seconds */
+#define TUNE_BURN_COSTS {5, 10, 15, 20, 25, 30, 35, 40, 45, 50}
+#define TUNE_SPEEDS {100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150} /* px a second */
+#define TUNE_SPEED_COSTS {6, 10, 16, 24, 34, 46, 60, 76, 94, 114}
+#define TUNE_WIDTHS {17, 20, 23, 26, 29, 32, 35, 38, 41, 44, 47} /* px, 64 at most */
 #define TUNE_WIDTH_COSTS {3, 4, 5, 6, 7, 9, 11, 13, 15, 17}
 #define TUNE_JETS {1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3} /* under the sled of each width, 3 at most */
 

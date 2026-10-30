@@ -141,8 +141,10 @@ def main():
           'the press that sent them away did not launch')
     menus = open(os.path.join(os.path.dirname(os.path.dirname(rom())), 'menus.bin'), 'rb').read()
     check(game.xram('XRAM_MENU_PALETTE', len(menus)) == menus, "the menus' art is back")
+    # The field, under the beam and over the sled, bricks and all: a restart
+    # lays the same bricks again, and none has been hit.
     left, right = game.ram('play_left', 2), game.ram('play_right', 2)
-    field = lambda rows: [row[left:right] for row in rows[70:140]]  # under the bricks, over the paddle
+    field = lambda rows: [row[left:right] for row in rows[sym['BEAM_H']:sym['TUNE_PADDLE_Y'] - 16]]
     after = field(game.screen(shot))
     game.tap('escape')
     game.until('game_state', 'STATE_PAUSE', 10)
