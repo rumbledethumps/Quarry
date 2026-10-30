@@ -92,10 +92,10 @@ static const uint8_t hanger_x[PANEL_HANGERS] = PANEL_HANGER_X;  /* from a panel'
 
 _Static_assert(PANEL_LAYOUTS == PANELS, "art/panels.py needs a layout for each panel.");
 
-/* The first panels are the upgrades; the rest are stand-ins. */
-#define PANEL_ENERGY 3
-static const char *const panel_titles[PANELS] = {"WIDER SLED", "FASTER SLED", "HEAVIER BALL", "MORE ENERGY",
-                                                 "SPECIAL BRICKS"};
+/* A panel for each upgrade. */
+static const char *const panel_titles[PANELS] = {"WIDER SLED", "FASTER SLED", "HEAVIER BALL", "FUEL EFFICIENCY"};
+
+_Static_assert(PANELS == UPGRADES, "A panel for each upgrade.");
 
 /* The levels are a train of mine carts along the bottom, the one picked
    in the middle, its number lit. A cart is 4 cells across, with its
@@ -252,45 +252,52 @@ static uint8_t can_buy(uint8_t u)
     return cost && nuggets[BRICK_GRAY] >= cost;
 }
 
+/* Upgrade u's value at a rank, as its panel shows it. A speed is in 1/256
+   px a step, at 60 steps a second, and a burn in tenths of a liter a
+   second. */
+static char *put_value(char *at, uint8_t u, uint8_t rank)
+{
+    if (u == UPGRADE_EFFICIENCY)
+    {
+        uint8_t burn = upgrades_burn_at(rank);
+        at = put_number(at, burn / 10);
+        *at++ = '.';
+        *at++ = '0' + burn % 10;
+        return at;
+    }
+    return put_number(at, u == UPGRADE_WIDTH   ? upgrades_width_at(rank)
+                          : u == UPGRADE_SPEED ? (uint16_t)(upgrades_speed_at(rank) * 60u / 256)
+                                               : upgrades_damage_at(rank));
+}
+
 /* What the next rank does, as the numbers now and then, with the units. */
 static void effect_draw(uint8_t p)
 {
     char text[PANEL_INSIDE + 1];
     char *at = text;
     uint8_t rank = upgrade_ranks[p], max = rank >= upgrades_max(p);
-    static const char *const units[UPGRADES] = {" PX", " PX/S", " DAMAGE"};
-    /* A speed is in 1/256 px a step, at 60 steps a second. */
-#define VALUE(l)                                                                                         \
-    (p == UPGRADE_WIDTH   ? upgrades_width_at(l)                                                         \
-     : p == UPGRADE_SPEED ? (uint16_t)(upgrades_speed_at(l) * 60u / 256)                                 \
-                          : upgrades_damage_at(l))
+    static const char *const units[UPGRADES] = {" PX", " PX/S", " DAMAGE", " L/S"};
 
-    at = put_number(at, VALUE(rank));
+    at = put_value(at, p, rank);
     if (!max)
     {
         at = put_text(at, " \x10 ");
-        at = put_number(at, VALUE(rank + 1));
+        at = put_value(at, p, rank + 1);
     }
     at = put_text(at, units[p]);
     *at = 0;
     text_draw(p, EFFECT_ROW, text);
-#undef VALUE
 }
 
 /* A panel's contents: its title, a pip for each rank, filled for each
    bought, what the next rank does, and its cost, in short digits while it
-   can't be paid, or MAX. A stand-in says it is coming. The frame is the
-   map's, as art/panels.py made it. */
+   can't be paid, or MAX. The frame is the map's, as art/panels.py made
+   it. */
 static void panel_draw(uint8_t p)
 {
     uint8_t tiles[PANEL_INSIDE], i;
 
     text_draw(p, TITLE_ROW, panel_titles[p]);
-    if (p >= UPGRADES)
-    {
-        text_draw(p, PIPS_ROW + 1, "COMING SOON");
-        return;
-    }
     {
         uint8_t max = upgrades_max(p), rank = upgrade_ranks[p];
         for (i = 0; i < max; i++)
@@ -353,8 +360,8 @@ static void pictures_load(void)
 
 /* A panel's picture and cost icons, where it is now. The pictures are
    stand-ins, doubled: the sled for width, the sled with its flames lit
-   for speed, a ball under a brick for damage, the energy gauge, and a
-   brick. */
+   for speed, a ball under a brick for damage, and the old energy bar for
+   fuel efficiency. */
 static void pictures_draw(uint8_t p)
 {
     int16_t x = panel_x(p), top = PANEL_Y + PICTURE_ROW * 8;
@@ -377,7 +384,7 @@ static void pictures_draw(uint8_t p)
             sled_show(PANEL_SPRITE(p, 0), PICTURE_SPRITES, x + (PANEL_COLS * 8 - w) / 2, top + 7, rank,
                       SLED_DOUBLE | dim | (p == UPGRADE_SPEED ? SLED_FLAMES : 0), XRAM_PICTURE(p % PICTURE_SLOTS));
     }
-    else if (p == PANEL_ENERGY)
+    else if (p == UPGRADE_EFFICIENCY)
     {
         static const uint8_t pieces[] = {ENERGY_TOP, ENERGY_FULL, ENERGY_BOTTOM};
         for (i = 0; i < sizeof pieces; i++)
@@ -390,19 +397,16 @@ static void pictures_draw(uint8_t p)
     }
     else
     {
-        int16_t y = p == UPGRADE_DAMAGE ? top + 4 : top + (PICTURE_H - 2 * BRICK_H) / 2;
+        int16_t y = top + 4;
         sprite_set(PANEL_SPRITE(p, 0), XRAM_BRICK_IMAGE, XRAM_PALETTE_BRICK(BRICK_GRAY),
                    MODE5_SIZE(BRICK_W, BRICK_H));
         sprite_mode(PANEL_SPRITE(p, 0), MODE5_2BPP | MODE5_HDOUBLE | MODE5_VDOUBLE);
         sprite_move(PANEL_SPRITE(p, 0), x + PANEL_COLS * 4 - BRICK_W, y);
-        if (p == UPGRADE_DAMAGE)
-        {
-            sprite_set(PANEL_SPRITE(p, 1), XRAM_BALL_ICON_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(ICON_SIZE, ICON_SIZE));
-            sprite_attributes(PANEL_SPRITE(p, 1), MODE5_HDOUBLE | MODE5_VDOUBLE);
-            sprite_move(PANEL_SPRITE(p, 1), x + PANEL_COLS * 4 - ICON_ROUND, y + 2 * BRICK_H + 2);
-        }
+        sprite_set(PANEL_SPRITE(p, 1), XRAM_BALL_ICON_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(ICON_SIZE, ICON_SIZE));
+        sprite_attributes(PANEL_SPRITE(p, 1), MODE5_HDOUBLE | MODE5_VDOUBLE);
+        sprite_move(PANEL_SPRITE(p, 1), x + PANEL_COLS * 4 - ICON_ROUND, y + 2 * BRICK_H + 2);
     }
-    if (p < UPGRADES && upgrades_cost(p) && !talk_busy())
+    if (upgrades_cost(p) && !talk_busy())
     {
         /* The big nugget of the counts, in the middle of the two cells
            before the cost, as panel_draw() centers it, and of its row, but
@@ -704,7 +708,7 @@ static void cheats_step(void)
     if (cursor_on == ON_RAIL)
     {
         uint8_t u = panel_picked;
-        if (u >= UPGRADES || (up ? upgrade_ranks[u] >= upgrades_max(u) : !upgrade_ranks[u]))
+        if (up ? upgrade_ranks[u] >= upgrades_max(u) : !upgrade_ranks[u])
             return;
         upgrade_ranks[u] += up ? 1 : -1;
         pictures_load();
@@ -956,7 +960,7 @@ uint8_t shop_step(void)
     {
         if (cursor_on == ON_LEVELS)
             ask(ASK_BEGIN);
-        else if (panel_picked < UPGRADES && upgrades_buy(panel_picked))
+        else if (upgrades_buy(panel_picked))
         {
             sfx_play(SFX_BUY, SFX_CENTER);
             upgrades_draw();

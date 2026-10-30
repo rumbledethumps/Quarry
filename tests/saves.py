@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'
 from rp6502 import Symbols  # noqa: E402
 
 SAVE = 'quarry.save'
-TAG = b'QRY6'
+TAG = b'QRY7'
 SYM = Symbols(os.path.splitext(rom())[0] + '.sym')
 NO_RANKS = (0,) * SYM['UPGRADES']
 NEW_GAME = (0, 0, NO_RANKS, 0, 1, 1, 0, 0)  # as read_save() gives it

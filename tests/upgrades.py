@@ -22,12 +22,14 @@ END_ITEMS = ['THE DRY', 'REPLAY', 'MAIN MENU']
 
 def tuning(game):
     """The upgrade tables of src/upgrades.c, from RAM."""
-    width_ranks, speed_ranks = game.sym['WIDTH_RANKS'], game.sym['SPEED_RANKS']
+    width_ranks, speed_ranks, burn_ranks = (game.sym[f'{u}_RANKS'] for u in ('WIDTH', 'SPEED', 'BURN'))
     table = lambda name, count, size: [game.ram(f'{name}+{i * size}', size) for i in range(count)]
     return {'TUNE_WIDTHS': table('widths', width_ranks + 1, 1),
             'TUNE_WIDTH_COSTS': table('width_costs', width_ranks, 2),
             'TUNE_SPEEDS': table('speeds', speed_ranks + 1, 2),
-            'TUNE_SPEED_COSTS': table('speed_costs', speed_ranks, 2)}
+            'TUNE_SPEED_COSTS': table('speed_costs', speed_ranks, 2),
+            'TUNE_BURNS': table('burns', burn_ranks + 1, 1),
+            'TUNE_BURN_COSTS': table('burn_costs', burn_ranks, 2)}
 
 
 def main():
@@ -141,6 +143,11 @@ def main():
     check(game.sprite(f'XRAM_MENU_SPRITES')[0] == picture - sym['PANEL_STEP'],
           'the picture slides with its panel')
     check(panel_lit(1) and not panel_lit(0), 'and it is lit, the one it left dim')
+    burns = [f'{b // 10}.{b % 10}' for b in tune['TUNE_BURNS']]
+    check(panel(3, sym['TITLE_ROW']) == 'FUEL EFFICIENCY' and
+          panel(3, sym['EFFECT_ROW']) == f'{burns[0]} \x10 {burns[1]} L/S' and
+          panel(3, sym['COST_ROW']) == str(tune['TUNE_BURN_COSTS'][0]),
+          f'and the last, fuel efficiency, in liters a second: {panel(3, sym["EFFECT_ROW"])!r}')
     for _ in range(sym['PANELS']):
         game.tap('right')
     check(game.ram('panel_picked') == sym['PANELS'] - 1, 'right stops at the last panel')
@@ -202,12 +209,18 @@ def main():
     check(panel(0, sym['COST_ROW']) == 'MAX', 'the top rank shows MAX')
     print('ok: bought every width')
 
-    # A rank of speed, on the next panel.
+    # A rank of speed, on the next panel, and of fuel efficiency, on the last.
     game.tap('right')
     game.tap('space')
     game.wait('bought speed 1', 10)
     have -= tune['TUNE_SPEED_COSTS'][0]
     check(game.ram('nuggets', 2) == have, 'speed 1 costs its cost')
+    game.tap('right')
+    game.tap('right')
+    game.tap('space')
+    game.wait('bought efficiency 1', 10)
+    have -= tune['TUNE_BURN_COSTS'][0]
+    check(game.ram('nuggets', 2) == have, 'fuel efficiency 1 costs its cost')
 
     # Down goes to the levels, where only the open ones can be picked.
     game.tap('down')
@@ -267,6 +280,13 @@ def main():
     check(abs(moved - (steps - 1) * speed / 256) <= speed / 256 + 1,
           f'the paddle moves at its new speed, {moved} px in {steps} steps')
     print(f'ok: a {width} px paddle moving {speed / 256} px a step')
+    game.cmd('press space')
+    game.wait('launch', 5)
+    game.cmd('release space')
+    full = game.ram('energy', 2)
+    game.run(60)
+    burn, burned = tune['TUNE_BURNS'][1], full - game.ram('energy', 2)
+    check(55 * burn <= burned <= 65 * burn, f'and the fuel burns {burn} a step, burned {burned} in 60')
 
     # The first clear of level 1 earns a coin and opens level 2, which the
     # upgrade screen picks. Clearing it again earns nothing.

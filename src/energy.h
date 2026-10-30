@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-extern uint16_t energy;         /* steps of thrust left */
+extern uint16_t energy;         /* the fuel left, in 1/600 L */
 extern uint8_t energy_draining; /* set at the first launch of a level */
 
 void energy_start(int16_t x, int16_t y, uint8_t again);

@@ -104,13 +104,13 @@ def main():
     print(f'ok: lost ball, sliding from {first} to {later}')
 
     # Low energy beeps, then beeps again while it stays low.
-    game.paused_poke([('energy', sym['TUNE_ENERGY_LOW'] + 10, 2)])
+    game.paused_poke([('energy', sym['TUNE_ENERGY_LOW'] + 10 * game.ram('burns'), 2)])
     played(game, 'LOW', 30)
     played(game, 'LOW_BEEP', 200)
     print('ok: low energy, and beeps while low')
 
     # Out of energy: the flames sputter, then the paddle falls.
-    game.paused_poke([('energy', 5, 2)])
+    game.paused_poke([('energy', 5 * game.ram('burns'), 2)])
     played(game, 'SPUTTER', 20)
     played(game, 'FALL', 60)
     game.until('game_state', 'STATE_MENU', 200)

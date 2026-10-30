@@ -205,7 +205,7 @@ def main():
     game.cmd('release space')
     game.run(60)
     drained = full - game.ram('energy', 2)
-    drain = sym['TUNE_ENERGY_DRAIN']
+    drain = game.ram('burns')  # with no fuel efficiency bought
     check(55 * drain <= drained <= 65 * drain,
           f'energy drains {drain} a step after the launch, drained {drained} in 60')
     print(f'drained {drained} in 60 steps after the launch')
@@ -214,7 +214,7 @@ def main():
     game.paused_poke([('energy', sym['TUNE_ENERGY_MID'], 2)])
     check_meter(game, 'YELLOW', "at TUNE_ENERGY_MID, the meter's paddle slides down and up again yellow")
     low = sym['TUNE_ENERGY_LOW']
-    game.paused_poke([('energy', low + 20, 2)])
+    game.paused_poke([('energy', low + 20 * drain, 2)])
     game.wait('energy low', 30)
     lamp_color = sym['XRAM_PALETTE_SHADE'] + 2 * sym['LAMP_COLOR']
     lamp = lambda: int.from_bytes(game.xram(lamp_color, 2), 'little')
@@ -235,7 +235,7 @@ def main():
     # ball is put in flight in the middle of the playfield, rising slowly,
     # so it is still in flight when the paddle has gone.
     left = game.ram('play_left', 2, signed=True)
-    game.paused_poke([('energy', 30, 2), ('ball_state', sym['BALL_FLYING'], 1), ('ball_x', (left + 20) << 8, 4),
+    game.paused_poke([('energy', 30 * drain, 2), ('ball_state', sym['BALL_FLYING'], 1), ('ball_x', (left + 20) << 8, 4),
                       ('ball_y', 120 << 8, 4), ('ball_vx', 0, 2), ('ball_vy', -64, 2)])
     game.wait('out of energy', 40)
     check(game.ram('paddle_state') == sym['PADDLE_SPUTTER'], 'the paddle sputters')
@@ -292,7 +292,7 @@ def main():
 
     # Out of energy with the ball on the paddle: the ball goes down with it,
     # and launch does nothing.
-    game.paused_poke([('energy', 10, 2), ('energy_draining', 1, 1)])
+    game.paused_poke([('energy', 10 * drain, 2), ('energy_draining', 1, 1)])
     game.wait('out of energy', 20)
     game.cmd('press space')
     game.run(4)
@@ -315,7 +315,7 @@ def main():
     game.cmd('press space')
     game.wait('launch', 5)
     game.cmd('release space')
-    game.paused_poke([('energy', 5, 2)])
+    game.paused_poke([('energy', 5 * drain, 2)])
     game.wait('paddle falls', sym['TUNE_SPUTTER_STEPS'] + 10)
     check(game.ram('ball_state') == sym['BALL_FLYING'], 'the ball is still in flight')
     game.paused_poke([('bricks_left', 0, 1)])

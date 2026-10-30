@@ -22,7 +22,7 @@ bought its rank.
 | NUGGET | The token that comes out of a broken brick, a ball of its color, and flies to the counts. Nuggets buy upgrades. |
 | COIN | One for the first clear of each level, never again. Coins will open the upgrades' next tiers. |
 | SLED | The paddle, which floats on its jets. |
-| FUEL | What the gauge on the right shows. When it runs out, the sled falls, and the level ends once the balls in play have fallen off the screen too. |
+| FUEL | What the gauge on the right shows, 100 liters full, burned in liters a second, L/S. FUEL EFFICIENCY burns less. When it runs out, the sled falls, and the level ends once the balls in play have fallen off the screen too. |
 | BALL | The ball, and the count of those left. |
 | HITS | What breaks a brick: each hit of the ball does its DAMAGE, and the brick breaks once the damage reaches its hits. |
 | THE DRY | The upgrade screen, as the menus and the dwarves call it: the change house at a mine, where miners change into their work clothes, hang their wet gear to dry, and wait for their shift. The code and this guide still call it the upgrade screen. |

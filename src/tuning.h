@@ -16,12 +16,16 @@
 #define TUNE_BALL_SPEED 640   /* 2.5 px per step */
 #define TUNE_BALL_COME 1024   /* a new ball flies from the count to the sled, 4 px per step */
 
-/* Energy. A full gauge holds this many steps of thrust, and it drains
-   from the first launch of a level until the level ends. */
-#define TUNE_ENERGY 1440      /* 24 seconds */
-#define TUNE_ENERGY_DRAIN 1   /* per step */
-#define TUNE_ENERGY_MID 720   /* the meter's paddle turns yellow: the last 12 seconds */
-#define TUNE_ENERGY_LOW 288   /* it turns red, and the beeps start: the last 4.8 seconds */
+/* Fuel, which the code calls energy. A full gauge holds TUNE_FUEL liters,
+   and it burns from the first launch of a level until the level ends, at
+   the rate of the fuel efficiency bought. Energy is counted in 1/600 L,
+   ENERGY_LITER of them a liter, so a burn of so many tenths of a liter a
+   second takes that many a step. */
+#define ENERGY_LITER 600u
+#define TUNE_FUEL 100                        /* liters */
+#define TUNE_ENERGY (TUNE_FUEL * ENERGY_LITER)
+#define TUNE_ENERGY_MID (50 * ENERGY_LITER)  /* the meter's paddle turns yellow: the last 50 L */
+#define TUNE_ENERGY_LOW (20 * ENERGY_LITER)  /* it turns red, and the beeps start: the last 20 L */
 
 /* Out of energy: the flames sputter, then the paddle falls. */
 #define TUNE_SPUTTER_STEPS 45 /* how long the flames sputter */
@@ -53,6 +57,8 @@
 #define TUNE_SPEED_COSTS {6, 10, 16, 24}
 #define TUNE_DAMAGES {1, 2, 3, 4}  /* a brick's hits each hit of the ball takes */
 #define TUNE_DAMAGE_COSTS {10, 20, 40}
+#define TUNE_BURNS {42, 41, 40, 39, 38, 37} /* 1/10 L a second: 4.2 to 3.7, a tank 24 to 27 seconds */
+#define TUNE_BURN_COSTS {5, 10, 15, 20, 25}
 
 /* The paddle is cut into six zones of equal width. The two in the center
    send the ball up steeply, the zones beside them at 45 degrees, and the

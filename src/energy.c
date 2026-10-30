@@ -3,6 +3,7 @@
 #include "frame.h"
 #include "sfx.h"
 #include "tuning.h"
+#include "upgrades.h"
 #include "video.h"
 #include "xram.h"
 #include <stdlib.h>
@@ -231,7 +232,7 @@ void energy_draw(void)
 /* A cheat: adds a twelfth of the energy, up to full, or takes it away. */
 void energy_cheat(int8_t steps)
 {
-    int16_t more = energy + steps * (int16_t)CHEAT_ENERGY;
+    int32_t more = energy + (int32_t)steps * CHEAT_ENERGY;
 
     energy = more < 0 ? 0 : more > TUNE_ENERGY ? TUNE_ENERGY : more;
     rows_count();
@@ -340,6 +341,7 @@ static void beep(uint8_t sound)
 void energy_step(void)
 {
     uint16_t was = energy;
+    uint8_t burn = upgrades_burn();
 
     bubbles_step();
     meter_step();
@@ -347,8 +349,8 @@ void energy_step(void)
         frame_lamp(0);
     if (!energy_draining || !energy)
         return;
-    if (energy > TUNE_ENERGY_DRAIN)
-        energy -= TUNE_ENERGY_DRAIN;
+    if (energy > burn)
+        energy -= burn;
     else
         energy = 0;
     if (energy <= TUNE_ENERGY_LOW && was > TUNE_ENERGY_LOW)
