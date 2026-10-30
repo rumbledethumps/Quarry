@@ -246,8 +246,6 @@ rp6502_web(quarry CONFIG [[
     db: 'rumbledethumps-quarry',
     footer: 'Arrows or WASD to move. Space, Enter or Ctrl is the button. Esc or P for the menu.',
 ]])
-# For itch.io, which has its own page around the game: no footer, and no
-# play button over the game.
 rp6502_web(quarry OUTPUT quarry-itch.zip CONFIG [[
     title: 'Quarry',
     db: 'rumbledethumps-quarry',
