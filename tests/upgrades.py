@@ -121,12 +121,12 @@ def main():
     game.run(20)  # past the flicker of the panel in the middle
     check(game.ram('panel_picked') == 0 and game.ram('cursor_on') == sym['ON_RAIL'],
           'it opens on the rail, with the first panel picked')
-    check(panel(0, sym['TITLE_ROW']) == 'WIDER SLED' and panel(1, sym['TITLE_ROW']) == 'FASTER SLED',
+    check(panel(0, sym['TITLE_ROW']) == 'SIZE' and panel(1, sym['TITLE_ROW']) == 'SPEED',
           'the panels show their titles')
     widths = tune['TUNE_WIDTHS']
     check(panel(0, sym['EFFECT_ROW']) == f'{widths[0]} \x10 {widths[1]} PX', 'and what the next width is')
     check(panel(0, sym['COST_ROW']) == str(tune['TUNE_WIDTH_COSTS'][0]), 'and what it costs')
-    check(panel(2, sym['TITLE_ROW']) == 'HEAVIER BALL' and panel(2, sym['EFFECT_ROW']) == '1 \x10 2 DAMAGE',
+    check(panel(2, sym['TITLE_ROW']) == 'WEIGHT' and panel(2, sym['EFFECT_ROW']) == '1 \x10 2 DAMAGE',
           "and the ball's damage has its panel")
     check(panel_lit(0) and not panel_lit(1), 'the middle panel is lit and the next one dim')
     game.tap('space')
@@ -144,10 +144,10 @@ def main():
           'the picture slides with its panel')
     check(panel_lit(1) and not panel_lit(0), 'and it is lit, the one it left dim')
     burns = [f'{b // 10}.{b % 10}' for b in tune['TUNE_BURNS']]
-    check(panel(3, sym['TITLE_ROW']) == 'FUEL EFFICIENCY' and
+    check(panel(3, sym['TITLE_ROW']) == 'EFFICIENCY' and
           panel(3, sym['EFFECT_ROW']) == f'{burns[0]} \x10 {burns[1]} L/S' and
           panel(3, sym['COST_ROW']) == str(tune['TUNE_BURN_COSTS'][0]),
-          f'and the last, fuel efficiency, in liters a second: {panel(3, sym["EFFECT_ROW"])!r}')
+          f'and the last, efficiency, in liters a second: {panel(3, sym["EFFECT_ROW"])!r}')
     for _ in range(sym['PANELS']):
         game.tap('right')
     check(game.ram('panel_picked') == sym['PANELS'] - 1, 'right stops at the last panel')

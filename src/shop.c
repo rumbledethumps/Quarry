@@ -93,7 +93,7 @@ static const uint8_t hanger_x[PANEL_HANGERS] = PANEL_HANGER_X;  /* from a panel'
 _Static_assert(PANEL_LAYOUTS == PANELS, "art/panels.py needs a layout for each panel.");
 
 /* A panel for each upgrade. */
-static const char *const panel_titles[PANELS] = {"WIDER SLED", "FASTER SLED", "HEAVIER BALL", "FUEL EFFICIENCY"};
+static const char *const panel_titles[PANELS] = {"SIZE", "SPEED", "WEIGHT", "EFFICIENCY"};
 
 _Static_assert(PANELS == UPGRADES, "A panel for each upgrade.");
 
@@ -359,9 +359,9 @@ static void pictures_load(void)
 }
 
 /* A panel's picture and cost icons, where it is now. The pictures are
-   stand-ins, doubled: the sled for width, the sled with its flames lit
-   for speed, a ball under a brick for damage, and the old energy bar for
-   fuel efficiency. */
+   stand-ins, doubled: the sled for size, the sled with its flames lit
+   for speed, a ball under a brick for weight, and the old energy bar for
+   efficiency. */
 static void pictures_draw(uint8_t p)
 {
     int16_t x = panel_x(p), top = PANEL_Y + PICTURE_ROW * 8;
