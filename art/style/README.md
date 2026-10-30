@@ -643,8 +643,11 @@ carries on. There are three:
   the upper left. Both are kept in `art/dwarves/`, even while he is only
   used on one side.
 - Each is made in two takes for the side he stands on, and the user picks
-  one. Only then is the other side made, from the take picked. A take not
-  picked may be kept for later.
+  one. Only then is the other side made, from the take picked, the same
+  day and with the same model, and both sides are kept, even while only
+  one is used: the pick turned round, which lights him from the upper
+  right, then Retro Diffusion's `image_edit`: "Change the light so it comes
+  from the upper left". A take not picked may be kept for later.
 - Retro Diffusion draws him on an image wider than he is, so his arms are
   whole, and the crop is ours: `art/talk.py` clears the background from
   the edges in, and cuts him to 80x80, at the foot, and if he is wider, on
@@ -664,8 +667,11 @@ carries on. There are three:
   green background". He is drawn bigger than the miner: his shoulders
   reach about 115 of the 128 columns, and off its left edge. He wears
   `art/dwarves/friendly-red-left.png`, take 1 with Retro Diffusion's
-  `image_edit`: "Change his gray shirt to a red flannel shirt". The same
-  in blue, `friendly-blue-left.png`, is kept too.
+  `image_edit`: "Change his gray shirt to a red flannel shirt". His right
+  side, `friendly-red-right.png`, is that turned round and lit again from
+  the upper left: the edit changed about a quarter of his pixels, lighting
+  the side toward the upper left and shading the other, and redrew his
+  brows and eyes a little, his brows lower over them.
 - The miner, `art/dwarves/miner.png`, stands in for the others until each
   is drawn, turned round on the right. He is the third of four,
   `rd_pro__default`, 96x96: "Head and shoulders of a friendly cartoon
