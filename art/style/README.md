@@ -643,11 +643,12 @@ carries on. There are three:
   the upper left. Both are kept in `art/dwarves/`, even while he is only
   used on one side.
 - Each is made in two takes for the side he stands on, and the user picks
-  one. Only then is the other side made, from the take picked, the same
-  day and with the same model, and both sides are kept, even while only
-  one is used: the pick turned round, which lights him from the upper
-  right, then Retro Diffusion's `image_edit`: "Change the light so it comes
-  from the upper left". A take not picked may be kept for later.
+  one. His other side is the pick turned round. Retro Diffusion's
+  `image_edit`, "Change the light so it comes from the upper left", can
+  light the turned one again, the same day and with the same model, and
+  the user keeps whichever is better: the friendly dwarf relit, the
+  foreman as drawn, turned round, his light let be. A take not picked may
+  be kept for later.
 - Retro Diffusion draws him on an image wider than he is, so his arms are
   whole, and the crop is ours: `art/talk.py` clears the background from
   the edges in, and cuts him to 80x80, at the foot, and if he is wider, on
@@ -685,10 +686,10 @@ carries on. There are three:
   talking to someone: a big bushy beard, a rounded steel mining helmet
   with a lamp on the front, sturdy work clothes, clean bold shapes with a
   crisp dark outline, smooth flat shading in a few colors, light from the
-  upper left, on a plain flat pure green background". His right side,
-  `foreman-1-right.png`, is that turned round and lit again from the upper
-  left, as the friendly dwarf's was: the edit changed about two fifths of
-  his pixels.
+  upper left, on a plain flat pure green background". He is lit from the
+  right. On the right he is the same turned round: lit again from the
+  upper left, the edit changed about two fifths of his pixels, and the
+  user kept him as drawn.
 - The miner, `art/dwarves/miner.png`, stands in for the committeeman until
   he is drawn, turned round on the right. He is the third of four,
   `rd_pro__default`, 96x96: "Head and shoulders of a friendly cartoon
