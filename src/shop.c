@@ -88,6 +88,8 @@ _Static_assert(PANEL_SLOTS * PANEL_SPRITES <= MENU_SPRITES, "MENU_SPRITES is too
 #define EFFECT_ROW 12
 #define COST_ROW 14
 static const uint8_t panel_heights[PANELS] = PANEL_HEIGHTS; /* the rows of each frame */
+
+_Static_assert(WEIGHT_H + 8 <= PICTURE_H, "The weight leaves a whole cell clear of the title.");
 static const uint8_t hanger_x[PANEL_HANGERS] = PANEL_HANGER_X;  /* from a panel's left */
 
 _Static_assert(PANEL_LAYOUTS == PANELS, "art/panels.py needs a layout for each panel.");
@@ -332,13 +334,13 @@ static unsigned trolley_image(int16_t x)
            (x / 2 & (BACKDROP_TROLLEY_FRAMES - 1)) * (BACKDROP_TROLLEY_W * BACKDROP_TROLLEY_H / 2);
 }
 
-/* Whether panel p's picture is in its slot. The width and speed panels'
-   pictures are the sled of the width bought. */
+/* Whether panel p's picture is in its slot. The size and speed panels'
+   pictures are the sled of the size bought. */
 static uint8_t picture_ready(uint8_t p)
 {
     uint8_t slot = p % PICTURE_SLOTS;
 
-    return slot_panel[slot] == p && slot_rank[slot] == upgrade_ranks[UPGRADE_WIDTH];
+    return slot_panel[slot] == p && (p == UPGRADE_DAMAGE || slot_rank[slot] == upgrade_ranks[UPGRADE_WIDTH]);
 }
 
 /* Loads the pictures of the panels near the one picked that aren't in
@@ -349,19 +351,22 @@ static void pictures_load(void)
     uint8_t p = first > 0 ? first : 0;
 
     for (; p <= first + 3 && p < PANELS; p++)
-        if ((p == UPGRADE_WIDTH || p == UPGRADE_SPEED) && !picture_ready(p))
+        if (p != UPGRADE_EFFICIENCY && !picture_ready(p))
         {
             uint8_t slot = p % PICTURE_SLOTS;
-            scene_picture_sled(slot, upgrade_ranks[UPGRADE_WIDTH]);
+            if (p == UPGRADE_DAMAGE)
+                scene_picture_weight(slot);
+            else
+                scene_picture_sled(slot, upgrade_ranks[UPGRADE_WIDTH]);
             slot_panel[slot] = p;
             slot_rank[slot] = upgrade_ranks[UPGRADE_WIDTH];
         }
 }
 
-/* A panel's picture and cost icons, where it is now. The pictures are
-   stand-ins, doubled: the sled for size, the sled with its flames lit
-   for speed, a ball under a brick for weight, and the old energy bar for
-   efficiency. */
+/* A panel's picture and cost icons, where it is now: the weight for
+   weight, at the top of the plate, a whole cell clear of the title, and
+   the rest stand-ins, doubled: the sled for size, the sled with its flames
+   lit for speed, and the old energy bar for efficiency. */
 static void pictures_draw(uint8_t p)
 {
     int16_t x = panel_x(p), top = PANEL_Y + PICTURE_ROW * 8;
@@ -395,16 +400,12 @@ static void pictures_draw(uint8_t p)
             sprite_move(PANEL_SPRITE(p, i), x + PANEL_COLS * 4 - 8, top + i * 16);
         }
     }
-    else
+    else if (picture_ready(p))
     {
-        int16_t y = top + 4;
-        sprite_set(PANEL_SPRITE(p, 0), XRAM_BRICK_IMAGE, XRAM_PALETTE_BRICK(BRICK_GRAY),
-                   MODE5_SIZE(BRICK_W, BRICK_H));
-        sprite_mode(PANEL_SPRITE(p, 0), MODE5_2BPP | MODE5_HDOUBLE | MODE5_VDOUBLE);
-        sprite_move(PANEL_SPRITE(p, 0), x + PANEL_COLS * 4 - BRICK_W, y);
-        sprite_set(PANEL_SPRITE(p, 1), XRAM_BALL_ICON_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(ICON_SIZE, ICON_SIZE));
-        sprite_attributes(PANEL_SPRITE(p, 1), MODE5_HDOUBLE | MODE5_VDOUBLE);
-        sprite_move(PANEL_SPRITE(p, 1), x + PANEL_COLS * 4 - ICON_ROUND, y + 2 * BRICK_H + 2);
+        uint8_t slot = p % PICTURE_SLOTS;
+        sprite_set(PANEL_SPRITE(p, 0), XRAM_PICTURE(slot), XRAM_PICTURE_COLORS(slot, !lit(p)),
+                   MODE5_SIZE(WEIGHT_W, WEIGHT_H));
+        sprite_move(PANEL_SPRITE(p, 0), x + (PANEL_COLS * 8 - WEIGHT_W) / 2, top);
     }
     if (upgrades_cost(p) && !talk_busy())
     {

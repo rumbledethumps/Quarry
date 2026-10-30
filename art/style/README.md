@@ -435,6 +435,15 @@ graphite steel with no yellow: there is nothing to be careful of here.
   Retro Diffusion can't make variants that join frame 1: at a low strength
   it copies it, at a high one it redraws its steel, and inpainting ignored
   its mask. New corners or edge pieces are drawn here, on frame 1's steel.
+- Each panel's picture is a sprite over its plate, in 16 colors at full
+  size, up to 1 KB, in the slot of XRAM its panel has. The text under it
+  moves up or down to fit it. WEIGHT's is `art/weight.png`, a cartoon ton
+  weight marked 1T, 40x40 in its own 15 colors. `art/weight-colors.png` has
+  them, then the same at half for a dim panel, as the sled's shade row is.
+  It sits at the top of the plate, a whole cell clear of the title.
+  Retro Diffusion drew it, `ref/ton-weight.png`, and its `color_reducer`
+  cut it to 15 colors with no dithering. SIZE, SPEED and EFFICIENCY still
+  show stand-ins.
 
 ### The Title's Panels
 
@@ -781,6 +790,7 @@ rows are left.
 | nugget | 8x8 as it flies, and 10 across in a 12x12 sprite by its count |
 | coin | 10 across in a 12x12 sprite, by its count |
 | big coin | 44x44, at the left of the committeeman's bubble |
+| panel picture | up to 1 KB at 4 bits a pixel, such as 64x32, 44x44 or 36x56; the weight is 40x40 |
 | ball | 8x8, and 10 across in a 12x12 sprite by its count |
 | digit | 8x12 sprite, a 6x8 digit with its outline |
 | texture | 320x240 at 2 bits a pixel |
@@ -868,6 +878,7 @@ The blocks of the looks:
 | --- | --- |
 | `ref/panel-frame.png` | Frame 1, the upgrade panel's frame as Retro Diffusion made it: `rd_pro__default`, 154x138, with a 64x64 crop of a gauge frame from `ui-kit.png`: "A single heavy mechanical display panel seen straight on, filling the whole image: a thick frame of dark graphite gunmetal steel around all four edges, the frame about a tenth of the panel's width, built from bolted steel plates with seams and rivets, a different mechanical bracket or clamp at each corner, a thin bright bevel along the inner edge, worn edges but clean and well maintained, no yellow, no hazard stripes, no rust, the inside one plain flat dark blue-grey plate with nothing on it, slightly futuristic heavy machinery, light from the upper left". Chosen for its simplicity. |
 | `ref/big-coin.png` | The big coin as Retro Diffusion made it: `rd_pro__default`, 56x56, no references, the prompt as written (`bypass_prompt_expansion`): "A gold coin seen straight on, filling the whole image, its edge touching all four sides: a small square hole in the middle with its sides level, a raised rim round the edge, and embossed lettering in narrow blocky capitals: SMEGHEAD round the top and MI ESTAS FIŜO round the bottom, both reading left to right, JMC in a straight line above the hole and 169 in a straight line below it. Clean bold shapes with a crisp dark outline round the coin and the hole, smooth flat shading in a few colors, light from the upper left, on a plain flat pure green background". It drew the coin 44 across in a green square inside a tan border. The other take, at 48 with the prompt rewritten, filled the image, in 33 colors with no outline. Before them, `image_edit` on the code's mock-up at 48 and 56 shrank the coin to about half and lost the lettering. |
+| `ref/ton-weight.png` | WEIGHT's picture as Retro Diffusion made it: `rd_pro__default`, 44x44, no references, the prompt as written (`bypass_prompt_expansion`), `remove_bg`: "an icon for an upgrade that adds weight: a cartoon ton weight, in the style of heavy modern machinery, light from the upper left, on a plain white background". The weight filled 40x39 of it, in 34 colors, on a clear background. Before it: "wrecking ball" drew a ball on a chain with a glow, and "classic cartoon weight" with the prompt rewritten drew a smiling kettlebell with arms. Without the rewrite it drew the trapezoid, but on a gray square, as a background left unstated does. "Dumbbell" at 64x32 came out as a barbell, and `rd_plus__skill_icon` drew small blobs with 9 px clear all round. |
 | `ref/old-logo-qu.png` | 64x64 of the old logo's QU: fine, flecked rock at a small scale. The reference for the curtain sets, and the one that made the first. |
 | `ref/rock-crop.png` | 64x64 of the rock of the first curtain set: how stone is drawn. A reference for a stone piece, such as the logo. Not for a curtain set: it is zoomed in, so the rock comes out too big. |
 | `ref/logo-stone.png` | The logo as Retro Diffusion made it, before `art/logo.py`: `rd_pro__typography`, 192x64, with `rock-crop.png` and `old-logo-qu.png` as references: "\"QUARRY\" in big bold blocky capital letters, carefully carved from solid stone by a master stonemason: clean even letterforms with crisp chiseled bevels and flat faces, every letter whole and unbroken, only a few small natural chips and fine hairline marks, all the letters the same warm weathered sandstone with subtle flecks like the reference rock, cool blue-grey stone only in the shadowed bevels, a dark outline and a dark shadow under the letters, light from the upper left, on a plain white background". One of three, and the one with moss, which `art/logo.py` turns to rock; the others were plainer, or cracked with stray dots. |

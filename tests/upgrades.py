@@ -12,7 +12,7 @@ import os
 import struct
 import sys
 
-from game import Game, check
+from game import Game, check, rom
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'art'))
 from panels import FONT  # noqa: E402
@@ -129,6 +129,21 @@ def main():
     check(panel(2, sym['TITLE_ROW']) == 'WEIGHT' and panel(2, sym['EFFECT_ROW']) == '1 \x10 2 DAMAGE',
           "and the ball's damage has its panel")
     check(panel_lit(0) and not panel_lit(1), 'the middle panel is lit and the next one dim')
+    # The weight panel's picture is the weight, centered at the top of its
+    # plate, a whole cell clear of the title, in its own colors, dim, as the
+    # panel is.
+    build = os.path.dirname(os.path.dirname(rom()))
+    art = lambda name: open(os.path.join(build, name), 'rb').read()
+    weight = sym['XRAM_MENU_SPRITES'] + 2 % sym['PANEL_SLOTS'] * sym['PANEL_SPRITES'] * sym['SPRITE_BYTES']
+    x, y, image, colors, size = struct.unpack('<hhHHB', game.xram(weight, 9))
+    w = sym['WEIGHT_W']
+    top = sym['PANEL_Y'] + sym['PICTURE_ROW'] * 8
+    check(size == (sym['WEIGHT_H'] // 4 - 1) << 4 | (w // 4 - 1) and
+          x == sym['PANEL_LEFT'] + 2 * sym['PANEL_STEP'] + (8 * sym['PANEL_COLS'] - w) // 2 and y == top and
+          y + sym['WEIGHT_H'] + 8 <= sym['PANEL_Y'] + sym['TITLE_ROW'] * 8,
+          f'the weight is {w} across, centered on its panel, a cell clear of the title: {x}, {y}')
+    check(game.xram(image, sym['WEIGHT_BYTES']) == art('weight.bin') and
+          game.xram(colors, 32) == art('weight-colors.bin')[32:], 'in its own colors, dim')
     game.tap('space')
     game.cmd('expect-not "bought"')
     check(game.ram('upgrade_ranks', 2) == 0, 'no upgrade without the nuggets')

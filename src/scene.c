@@ -330,6 +330,18 @@ void scene_picture_sled(uint8_t slot, uint8_t rank)
     load("ROM:sleds", (long)rank * SLED_SLOT, XRAM_PICTURE(slot), SLED_WIDTH_MAX * 8 / 2);
 }
 
+#define WEIGHT_BYTES (WEIGHT_W * WEIGHT_H / 2)
+#define WEIGHT_COLORS_BYTES sizeof(((menu_art_t *)0)->picture_colors[0])
+_Static_assert(WEIGHT_BYTES <= PICTURE_BYTES, "The weight is too big for a picture.");
+
+/* The weight, the picture of the weight panel, and its colors, into slot
+   slot. */
+void scene_picture_weight(uint8_t slot)
+{
+    load("ROM:weight", 0, XRAM_PICTURE(slot), WEIGHT_BYTES);
+    load("ROM:weight_colors", 0, XRAM_PICTURE_COLORS(slot, 0), WEIGHT_COLORS_BYTES);
+}
+
 /* The menus' palette and tiles, at the start, and again after a dwarf has
    talked in their place. */
 void scene_menus(void)

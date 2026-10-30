@@ -348,9 +348,13 @@ typedef struct
 
 /* The pictures of the panels nearest the middle, each up to PICTURE_BYTES:
    the three that show, and the next one the way the rail moves, which
-   loads before it slides into view. For now a picture is a flat sled. */
+   loads before it slides into view. A picture is a flat sled, in the sled's
+   colors, or the weight, art/weight.png, in its own, lit and dim, from
+   art/weight-colors.png. */
 #define PICTURE_SLOTS 4
 #define PICTURE_BYTES 1024
+#define WEIGHT_W 40
+#define WEIGHT_H 40
 
 /* The texture behind a level's playfield, from art/texture.py: a bitmap at
    2 bits a pixel that wraps. */
@@ -625,6 +629,7 @@ typedef struct
     BACKDROP_BAND(BOTTOM) bottom;
     uint8_t backdrop_sprites[BACKDROP_SPRITE_BYTES]; /* the cogs' frames and the steam's */
     uint8_t pictures[PICTURE_SLOTS][PICTURE_BYTES];
+    uint16_t picture_colors[PICTURE_SLOTS][2][16]; /* of a picture in its own, lit and dim */
     uint16_t panel_palette[256]; /* these two, as ROM:panels holds them, then its frames */
     panel_tile_t panel_tiles[256];
     uint8_t panels[PANEL_ROWS][PANEL_MAP_COLS]; /* the slots */
@@ -894,6 +899,7 @@ typedef struct
 #define XRAM_BAND_MAP(band) offsetof(xram_layout_t, art.menu.band.map)
 #define XRAM_BACKDROP_SPRITES offsetof(xram_layout_t, art.menu.backdrop_sprites)
 #define XRAM_PICTURE(slot) (offsetof(xram_layout_t, art.menu.pictures) + (slot) * PICTURE_BYTES)
+#define XRAM_PICTURE_COLORS(slot, dim) (offsetof(xram_layout_t, art.menu.picture_colors) + ((slot) * 2 + (dim)) * 32)
 #define XRAM_PANEL_PALETTE offsetof(xram_layout_t, art.menu.panel_palette)
 #define XRAM_PANEL_TILES offsetof(xram_layout_t, art.menu.panel_tiles)
 #define XRAM_PANELS offsetof(xram_layout_t, art.menu.panels)
