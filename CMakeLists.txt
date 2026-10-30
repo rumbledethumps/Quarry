@@ -244,7 +244,7 @@ rp6502_executable(quarry DATA default RESET default)
 rp6502_web(quarry CONFIG [[
     title: 'Quarry',
     db: 'rumbledethumps-quarry',
-    footer: 'Arrows, WASD or the keypad to move. Space, Enter or Ctrl is the button, which launches. In menus, up and down to pick and the button to choose. Esc or P for the menu. Gamepads work too: A, B, X or Y is the button, and Start or Select the menu.',
+    footer: 'Arrows or WASD to move. Space, Enter or Ctrl is the button. Esc or P for the menu.',
 ]])
 # For itch.io, which has its own page around the game: no footer.
 rp6502_web(quarry OUTPUT quarry-itch.zip CONFIG [[
