@@ -87,10 +87,9 @@ Three cartoon dwarves have something to say, each coming up in a lower
 corner with his speech bubble coming in beside him. The button on its OK
 brings his next bubble, or sends them away. A friendly dwarf greets the
 player on the title with no save, and says what the upgrade screen is for
-the first time there. The foreman starts a new game's first level. The
-union's committeeman hands over the coin for each first clear, and on the
-upgrade screen explains the first unlock. A miner stands in for each of
-them until they are drawn.
+the first time there. The foreman starts a new game's first level, and on
+the upgrade screen explains the first unlock. The union's committeeman
+hands over the coin for each first clear.
 
 The game saves when a level starts or ends, when it pauses, and when an
 upgrade is bought, in `SAVE:quarry.save`, with what the dwarves have

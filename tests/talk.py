@@ -188,7 +188,7 @@ def main():
     check(game.ram('game_state') == sym['STATE_MENU'], 'which takes no choice at once')
     print('ok: the coin, then the menu')
 
-    # The upgrade screen: as level 2 unlocks, the committeeman says what that
+    # The upgrade screen: as level 2 unlocks, the foreman says what that
     # means, and the unlock goes on under him. Then another says what the
     # screen is for, in two bubbles. The cursor is off until each OK, and comes back to the rail after.
     game.run(sym['TALK_OVER_WAIT'])

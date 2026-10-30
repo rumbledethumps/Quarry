@@ -610,22 +610,21 @@ carries on. There are three:
     PANELS TO UPGRADE YOUR MACHINES.", low over the carts so the panels
     show, and "SELECT A CART TO BEGIN MINING THAT LEVEL.", higher, so the
     carts show.
-- **The foreman**, serious but not mean, seen once, at the start of the
-  first level, over the level before it builds up, which it does as he
-  goes. He stands on the right, so the count of balls shows. In three bubbles: "OVER HERE, GREENHORN.
-  PAY ATTENTION BECAUSE I WON'T REPEAT MYSELF.", "PUSH THE BUTTON TO
-  LAUNCH A WRECKING BALL THEN KEEP IT FROM FALLING." and "THAT'S ALL. NOW
-  GET TO WORK."
+- **The foreman**, serious but not mean. He stands on the right.
+  - At the start of the first level, over the level before it builds up,
+    which it does as he goes, clear of the count of balls, in three
+    bubbles: "OVER HERE, GREENHORN. PAY ATTENTION BECAUSE I WON'T REPEAT
+    MYSELF.", "PUSH THE BUTTON TO LAUNCH A WRECKING BALL THEN KEEP IT FROM
+    FALLING." and "THAT'S ALL. NOW GET TO WORK."
+  - The first time in THE DRY after level 2 unlocks, as the unlock goes on
+    over the carts, and before the friendly dwarf's word if that is due
+    too: "EVERY TIME YOU CLEAR A LEVEL THE NEXT BECOMES AVAILABLE."
 - **The committeeman**, the union steward, the union's Poobah, Lord High
   Everything Else. He is friendly but not entirely trustworthy, and full
   of himself: he is meant to be on the player's side, but the union and
   the company battle it out with backroom deals and shifty stuff. That
-  has to come across in his face. He stands on the right, for now.
-  - The first time in THE DRY after level 2 unlocks, as the unlock goes on
-    over the carts, and before the friendly dwarf's word if that is due
-    too: "EVERY TIME YOU CLEAR A LEVEL THE NEXT BECOMES AVAILABLE."
-  - Each first clear of a level, he hands over its coin, before the menu
-    opens. Level 1: "NICE WORK! HERE'S A UNION COIN." Level 2: "AREN'T YOU
+  has to come across in his face. He stands on the right. Each first
+  clear of a level, he hands over its coin, before the menu opens. Level 1: "NICE WORK! HERE'S A UNION COIN." Level 2: "AREN'T YOU
     QUITE THE NIPPER. YOU'VE EARNED ANOTHER COIN." Level 3: "DIDN'T ANYONE
     EXPLAIN THE COINS TO YOU?" Level 4: "KEEP SAVING THESE COINS FOR
     POWERFUL UPGRADES." Level 5, the last, in three bubbles: "YOU'VE EARNED
@@ -641,16 +640,10 @@ carries on. There are three:
   the foot of the gauge. On the upgrade screen his bubble's foot is just
   over the carts, so they show. On the title, where he has no OK, his
   bubble has no row under its last line.
-- Each dwarf is made for both sides of the screen: a portrait for the
-  left, facing right, and one for the right, facing left, each lit from
-  the upper left. Both are kept in `art/dwarves/`, even while he is only
-  used on one side.
-- Each is made in two takes for the side he stands on, and the user picks
-  one. His other side is the pick turned round. Retro Diffusion's
-  `image_edit`, "Change the light so it comes from the upper left", can
-  light the turned one again, the same day and with the same model, and
-  the user keeps whichever is better: the friendly dwarf relit, the
-  foreman as drawn, turned round, his light let be. A take not picked may
+- Each dwarf is one portrait in `art/dwarves/`, named for him, and
+  `art/talk.py` says which way he faces in it. On the other side of the
+  screen he is the same turned round, and his light is let be.
+- Each is made in two takes, and the user picks one. A take not picked may
   be kept for later.
 - Retro Diffusion draws him on an image wider than he is, so his arms are
   whole, and the crop is ours: `art/talk.py` clears the background from
@@ -661,40 +654,37 @@ carries on. There are three:
   colors of his own, in up to 3 sprites, a band across his head and a band
   across his shoulders, each as narrow as he is there, in 2816 bytes at
   most, so every dwarf keeps to about his outline.
-- The friendly dwarf, `art/dwarves/friendly-1-left.png`, the first of two,
-  `rd_pro__default`, 128x80: "Head and shoulders of a friendly cartoon
+- The friendly dwarf, `art/dwarves/friendly.png`, began as the first of
+  two, `rd_pro__default`, 128x80: "Head and shoulders of a friendly cartoon
   dwarf miner, down to earth and welcoming, bareheaded, facing a little to
   the right as if talking to someone: a big bushy beard, bright eyes under
   bushy brows, sturdy work clothes with suspenders, a cheerful knowing
   expression, clean bold shapes with a crisp dark outline, smooth flat
   shading in a few colors, light from the upper left, on a plain flat pure
   green background". He is drawn bigger than the miner: his shoulders
-  reach about 115 of the 128 columns, and off its left edge. He wears
-  `art/dwarves/friendly-red-left.png`, take 1 with Retro Diffusion's
-  `image_edit`: "Change his gray shirt to a red flannel shirt". His right
-  side, `friendly-red-right.png`, is that turned round and lit again from
-  the upper left: the edit changed about a quarter of his pixels, lighting
-  the side toward the upper left and shading the other, and redrew his
-  brows and eyes a little, his brows lower over them. His left side is lit
-  from the right: Retro Diffusion lights the side of his face, so facing
-  right he came out lit from the right, though the prompt asks for the
-  upper left. The edit sharpens light that already comes from the left,
-  as it did on his right side, but it can't move light from the right:
-  on his left side as drawn, and on his right side turned round, it
-  darkened half of him and the background behind it. The game shows his
-  right side, turned round to face his bubble, on the left.
-- The foreman, `art/dwarves/foreman-1-left.png`, the first of four,
+  reach about 115 of the 128 columns, and off its left edge. Retro
+  Diffusion's `image_edit` then made his gray shirt red flannel: "Change
+  his gray shirt to a red flannel shirt". He faced right lit from the
+  right: Retro Diffusion lights the side of his face, though the prompt
+  asks for the upper left. Turned round, he was lit again with
+  `image_edit`, "Change the light so it comes from the upper left", which
+  changed about a quarter of his pixels and redrew his brows and eyes a
+  little, his brows lower over them. That is his portrait, facing left;
+  on the left he is turned round. The edit sharpens light that already
+  comes from the left, but it can't move light from the right: tried that
+  way, it darkened half of him and the background behind it.
+- The foreman, `art/dwarves/foreman.png`, the first of four,
   `rd_pro__default`, 128x80: "Head and shoulders of a cartoon dwarf mine
   foreman, serious but not mean, facing a little to the right as if
   talking to someone: a big bushy beard, a rounded steel mining helmet
   with a lamp on the front, sturdy work clothes, clean bold shapes with a
   crisp dark outline, smooth flat shading in a few colors, light from the
-  upper left, on a plain flat pure green background". He is lit from the
-  right. On the right he is the same turned round: lit again from the
-  upper left, the edit changed about two fifths of his pixels, and the
-  user kept him as drawn.
-- The committeeman, `art/dwarves/committeeman-5-right.png`, the first of
-  two in his third round, `rd_pro__default`, 128x80: "Head and shoulders
+  upper left, on a plain flat pure green background". He faces right, lit
+  from the right, and on the right he is turned round. Turned round and lit
+  again from the upper left, the edit changed about two fifths of his
+  pixels, and the user kept him as drawn.
+- The committeeman, `art/dwarves/committeeman.png`, the first of two in
+  his third round, `rd_pro__default`, 128x80: "Head and shoulders
   of a cartoon dwarf union steward, obsessed with his appearance, facing a
   little to the left as if talking to someone, his face friendly but
   untrustworthy and full of himself: a big bushy beard with braids and
@@ -707,9 +697,9 @@ carries on. There are three:
   The top of his helmet ran off the top of the image, so Retro Diffusion's
   `outpainting` added 8 rows above him, "the rounded top of his steel
   mining helmet", keeping every pixel below, and the crop takes 8 rows
-  from his foot instead. On the left he is the same turned round.
+  from his foot instead. He faces left.
 - The miner, `art/dwarves/miner.png`, is the dwarf all three stood in for
-  while they were drawn. He is the third of four,
+  while they were drawn, and is no longer used. He is the third of four,
   `rd_pro__default`, 96x96: "Head and shoulders of a friendly cartoon
   dwarf miner, as a character portrait in a 16-bit game's dialogue,
   facing a little to the right as if talking to someone: a big bushy

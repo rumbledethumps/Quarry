@@ -55,16 +55,14 @@ DWARF_ASSET_BYTES = 6 + 8 * DWARF_PIECES + 32 + DWARF_BYTES
 BUBBLE_ASSET_BYTES = 10 + 8 + 16 * BUBBLE_TILES + BUBBLE_ROWS * BUBBLE_COLS
 SCREEN_W, SCREEN_H = 320, 240
 
-# The dwarves, and the portrait of each for each side of the screen, in
-# art/dwarves/, and whether to turn it round: on the left he faces right,
-# toward his bubble, and on the right, left, lit from the upper left either
-# way. Until each is drawn, the miner stands in for him, turned round on the
-# right, as he does for the friendly dwarf on the right.
+# The dwarves, each a portrait in art/dwarves/, and the way he faces in it.
+# On the left of the screen he faces right, toward his bubble, and on the
+# right, left, turned round if need be.
 LEFT, RIGHT = 'left', 'right'
 DWARVES = {
-    'FRIENDLY': {LEFT: ('friendly-red-right', True), RIGHT: ('friendly-red-right', False)},
-    'FOREMAN': {LEFT: ('foreman-1-left', False), RIGHT: ('foreman-1-left', True)},
-    'COMMITTEEMAN': {LEFT: ('committeeman-5-right', True), RIGHT: ('committeeman-5-right', False)},
+    'FRIENDLY': ('friendly', LEFT),
+    'FOREMAN': ('foreman', RIGHT),
+    'COMMITTEEMAN': ('committeeman', LEFT),
 }
 
 # The talks shown only once, and each one's bit of the save's talks seen.
@@ -107,7 +105,7 @@ TALKS = [
       ['PUSH THE BUTTON TO LAUNCH', 'A WRECKING BALL THEN KEEP', 'IT FROM FALLING.'],
       ["THAT'S ALL.", 'NOW GET TO WORK.']]),
     # The upgrade screen, as level 2 unlocks.
-    ('UNLOCK', 'COMMITTEEMAN', RIGHT, DRY,
+    ('UNLOCK', 'FOREMAN', RIGHT, DRY,
      [['EVERY TIME YOU CLEAR A', 'LEVEL THE NEXT BECOMES', 'AVAILABLE.']]),
     # The first clear of each level, before its menu, with its coin.
     ('COIN1', 'COMMITTEEMAN', RIGHT, LEVEL,
@@ -330,7 +328,8 @@ def color16(c):
 
 def dwarf_asset(dwarf, side):
     """A dwarf_t, and the dwarf as RGBA rows to look at."""
-    img = portrait(*DWARVES[dwarf][side], side)
+    name, faces = DWARVES[dwarf]
+    img = portrait(name, faces == side, side)
     counts = Counter(c for row in img for c in row if c)
     to = reduce(counts, 15)
     colors = sorted(set(to.values()), key=lambda c: 299 * c[0] + 587 * c[1] + 114 * c[2])
