@@ -671,7 +671,13 @@ carries on. There are three:
   side, `friendly-red-right.png`, is that turned round and lit again from
   the upper left: the edit changed about a quarter of his pixels, lighting
   the side toward the upper left and shading the other, and redrew his
-  brows and eyes a little, his brows lower over them.
+  brows and eyes a little, his brows lower over them. His left side is lit
+  from the right: Retro Diffusion lights the side of his face, so facing
+  right he came out lit from the right, though the prompt asks for the
+  upper left. The edit sharpens light that already comes from the left,
+  as it did on his right side, but it can't move light from the right:
+  on his left side as drawn, and on his right side turned round, it
+  darkened half of him and the background behind it.
 - The miner, `art/dwarves/miner.png`, stands in for the others until each
   is drawn, turned round on the right. He is the third of four,
   `rd_pro__default`, 96x96: "Head and shoulders of a friendly cartoon
