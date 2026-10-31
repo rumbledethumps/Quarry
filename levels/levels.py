@@ -127,12 +127,12 @@ def level_4():
 
 
 def level_5():
-    """Two blocks of four across, a brick's room apart: green over red over
-    gray. The gray take five hits, the red six, and the green seven."""
-    return fit(grid(['gggg.gggg',
-                     'gggg.gggg',
-                     'rrrr.rrrr',
-                     'wwww.wwww'], hits={'w': 5, 'r': 6, 'g': 7}), left=12, right=12)
+    """Two blocks of four across, as far apart as each is from its wall:
+    green over red over gray. The gray take five hits, the red six, and the
+    green seven."""
+    block, hits, room = ['gggg', 'gggg', 'rrrr', 'wwww'], {'w': 5, 'r': 6, 'g': 7}, 12
+    width = 4 * BRICK_W + 3 * 2
+    return fit(grid(block, hits=hits) + grid(block, x=width + room, hits=hits), left=room, right=room)
 
 
 DESIGNED = [level_1, level_2, level_3, level_4, level_5]
