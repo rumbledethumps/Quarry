@@ -137,6 +137,9 @@ def check_bubbles(game):
     # None of them starts again from the foot, which would be the lowest.
     check(len(after) == sym['BUBBLES'] and after[0] < full[0] and after[-1] < full[-1],
           f'with none free, a bounce makes none and takes none: {full}, then {after}')
+    # The ball, rising slowly, can't come back down to the sled to send up
+    # another bubble while these pop, however wide the sled and the level.
+    game.paused_poke([('ball_vx', 0, 2), ('ball_vy', -64, 2)])
     highest = 0
     for _ in range(sym['GLASS_H'] + 40):
         tops, drops = bubbles(game), bubbles(game, 'XRAM_DROP_IMAGE')

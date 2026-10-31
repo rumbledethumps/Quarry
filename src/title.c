@@ -104,12 +104,12 @@ static void panels_open(uint8_t pick)
     {
         scene_title_panels(TITLE_MAP_SAVE);
         progress_draw();
-        menu_open(&save_menu, pick, 0, 0);
+        menu_open(&save_menu, pick, 0);
     }
     else
     {
         scene_title_panels(TITLE_MAP_START);
-        menu_open(&start_menu, 0, 0, 0);
+        menu_open(&start_menu, 0, 0);
         talk_queue(TALK_GREENHORN);
     }
     scene_title_show(PANELS_COL * 8);
@@ -166,7 +166,7 @@ uint8_t title_step(void)
         case SAVE_DELETE:
             menu_close();
             scene_title_show(SCREEN_W);
-            menu_open(&delete_menu, ASK_NO - 1, 0, 0);
+            menu_open(&delete_menu, ASK_NO - 1, 0);
             asking = 1;
             break;
         }

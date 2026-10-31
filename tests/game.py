@@ -43,6 +43,11 @@ import title_panels  # noqa: E402
 from png2bin import read_png  # noqa: E402
 
 
+# Each upgrade's table of costs in RAM, by its name after UPGRADE_.
+COSTS = {'BALLS': 'ball_costs', 'DAMAGE': 'damage_costs', 'EFFICIENCY': 'burn_costs',
+         'SPEED': 'speed_costs', 'WIDTH': 'width_costs'}
+
+
 def fail(message):
     sys.exit(f'FAIL: {message}')
 
@@ -155,6 +160,25 @@ class Game(rp6502.Emu):
         data = (value & ((1 << 8 * size) - 1)).to_bytes(size, 'little')
         self.cmd(f'poke {name} {" ".join(str(b) for b in data)}')
 
+    def cost(self, upgrade):
+        """The parts of the cost of an upgrade's next rank, as tuning.h has
+        them, each as (count, color) of the nuggets, leaving out the parts
+        it doesn't use: none at its highest rank."""
+        rank, parts, shift = self.ram(f'upgrade_ranks+{upgrade}'), self.sym['COST_PARTS'], self.sym['COST_COLOR_SHIFT']
+        if rank >= self.ram(f'ranks+{upgrade}'):
+            return []
+        table = next(t for n, t in COSTS.items() if self.sym[f'UPGRADE_{n}'] == upgrade)
+        words = [self.ram(f'{table}+{2 * (rank * parts + i)}', 2) for i in range(parts)]
+        return [(w & ((1 << shift) - 1), w >> shift) for w in words if w & ((1 << shift) - 1)]
+
+    def cost_in(self, upgrade):
+        """The nuggets of each color the next rank of an upgrade costs, in
+        all its parts, by color."""
+        need = [0] * self.sym['BRICK_COLORS']
+        for count, color in self.cost(upgrade):
+            need[color] += count
+        return need
+
     def paused_poke(self, pokes):
         """Pokes (name, value, size) into the game's RAM while play is paused,
         so no step is under way to overwrite them. Pausing saves the game."""
@@ -264,14 +288,12 @@ class Game(rp6502.Emu):
         name such as 'STATE_PLAY'."""
         self.cmd(f'wait {name} {value} {frames}')
 
-    def menu_choose(self, item, wait=True):
+    def menu_choose(self, item):
         """Choose TO THE DRY, REPLAY or MAIN MENU on the menu when a level
-        ends. It opens with TO THE DRY picked and waits a second before it takes a
-        choice. Works with a Release ROM too, which logs nothing."""
+        ends. It opens with TO THE DRY picked. Works with a Release ROM too,
+        which logs nothing."""
         items = ['TO THE DRY', 'REPLAY', 'MAIN MENU']
         states = ['STATE_SHOP', 'STATE_PLAY', 'STATE_TITLE']
-        if wait:
-            self.run(self.sym['LEVEL_OVER_WAIT'] + 10)
         for _ in range(items.index(item)):
             self.tap('down')
         self.tap('space')

@@ -18,7 +18,6 @@
 static const menu_t *shown; /* NULL when no menu is shown */
 static uint8_t picked;
 static uint8_t disabled_items; /* a bit for each item left off */
-static uint8_t waiting;        /* steps before it takes a choice */
 static uint8_t tape_steps;
 
 static uint8_t first_item_row(void)
@@ -73,11 +72,9 @@ static void pick_step(int8_t step)
 
 /* Opens the menu with item pick picked, counting from 0, or the next one
    that can be picked. disabled has a bit for each item that can't be,
-   which the menu leaves off. It waits wait steps before it takes a choice,
-   so a press meant for what came before doesn't choose. The cursor comes
-   to it: it slides there if it shows already, or appears there. A menu of
-   BOX_NONE draws nothing. */
-void menu_open(const menu_t *menu, uint8_t pick, uint8_t disabled, uint8_t wait)
+   which the menu leaves off. The cursor comes to it: it slides there if it
+   shows already, or appears there. A menu of BOX_NONE draws nothing. */
+void menu_open(const menu_t *menu, uint8_t pick, uint8_t disabled)
 {
     uint8_t i;
 
@@ -99,7 +96,6 @@ void menu_open(const menu_t *menu, uint8_t pick, uint8_t disabled, uint8_t wait)
                 video_text_centered(menu->center, first_item_row() + place(i) * ITEM_ROWS + 1, menu->items[i]);
     }
     cursor_aim();
-    waiting = wait;
     DEBUG_LOG("menu %s\n", menu->items[0]);
 }
 
@@ -129,11 +125,6 @@ uint8_t menu_step(void)
 
     if (!shown)
         return MENU_NONE;
-    if (waiting)
-    {
-        waiting--;
-        return MENU_NONE;
-    }
     if (input_pressed & INPUT_UP)
         pick_step(-1);
     else if (input_pressed & INPUT_DOWN)

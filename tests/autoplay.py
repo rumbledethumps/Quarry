@@ -147,7 +147,7 @@ def main():
     # Replay starts the level again.
     if held:
         game.cmd(f'release {held}')
-    game.menu_choose('REPLAY', wait=False)
+    game.menu_choose('REPLAY')
     game.run(5)
     check(game.ram('game_state') == sym['STATE_PLAY'], 'the level starts again')
     check(game.ram('bricks_left') == bricks, 'the bricks come back')

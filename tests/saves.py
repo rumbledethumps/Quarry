@@ -187,7 +187,7 @@ def main():
         """The level's curtain set, its texture's place, and its frame set's colors."""
         return game.ram('curtain_set'), game.xram('XRAM_TEXTURE_CONFIG', 8), game.xram('XRAM_FRAME_PALETTE', 32)
     cave = look()
-    game.menu_choose('REPLAY', wait=False)
+    game.menu_choose('REPLAY')
     game.wait('level 1 start', 30)  # logged once it has saved
     check(read_save(folder) is not None, 'the level starting saves')
     check(look() == cave, 'the level played again keeps its curtains, its texture and its frame')
@@ -206,17 +206,18 @@ def main():
     print('ok: Replay and Restart')
 
     # A purchase on the upgrade screen saves: a ball more, on the first
-    # panel, with nuggets enough of its cost's color, and 20 over. Esc there
-    # asks to go back to the title, which has the save's panels now.
+    # panel, with nuggets enough of each color it costs, and 20 over. Esc
+    # there asks to go back to the title, which has the save's panels now.
     game.ready()
     game.paused_poke(drop)
     game.wait('out of balls', 3000)
     game.menu_choose('TO THE DRY')
     game.talk_ok()
-    shift, cost = game.sym['COST_COLOR_SHIFT'], game.ram('ball_costs', 2)
-    color, count = cost >> shift, cost & ((1 << shift) - 1)
-    game.poke(f'nuggets+{2 * color}', count + 20, 2)
-    left = tuple(n - count * (c == color) for c, n in enumerate(nuggets(game)))
+    need = game.cost_in(game.sym['UPGRADE_BALLS'])
+    for color, count in enumerate(need):
+        if count:
+            game.poke(f'nuggets+{2 * color}', count + 20, 2)
+    left = tuple(n - need[c] for c, n in enumerate(nuggets(game)))
     bought = tuple(int(u == game.sym['UPGRADE_BALLS']) for u in range(game.sym['UPGRADES']))
     game.tap('enter')
     game.wait('bought balls 1', 10)

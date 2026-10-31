@@ -32,11 +32,6 @@ NOTES = {
 }
 
 
-# Each upgrade's table of costs in RAM, by its name after UPGRADE_.
-COSTS = {'BALLS': 'ball_costs', 'DAMAGE': 'damage_costs', 'EFFICIENCY': 'burn_costs',
-         'SPEED': 'speed_costs', 'WIDTH': 'width_costs'}
-
-
 def channels(game):
     """Each channel as (freq, wave, gate)."""
     data = game.xram('XRAM_PSG', game.sym['PSG_CHANNELS'] * 8)
@@ -143,23 +138,21 @@ def main():
 
     # On the menu when a level ends and on the upgrade screen, moves click,
     # and a purchase plays four notes, letting go between them: the next
-    # rank of the panel picked, with just the nuggets of the color it costs.
+    # rank of the panel picked, with just the nuggets of each color it costs.
     game.run(70)
     game.tap('down')
     played(game, 'MOVE', 5)
     game.tap('up')
-    game.menu_choose('TO THE DRY', wait=False)
+    game.menu_choose('TO THE DRY')
     game.cmd('expect "upgrades"')  # past every click before the upgrade screen
     game.talk_ok()
     game.tap('right')
     played(game, 'MOVE', 5)
     game.tap('left')
     game.run(20)
-    picked = game.ram('panel_picked')
-    costs = next(t for n, t in COSTS.items() if sym[f'UPGRADE_{n}'] == picked)
-    cost = game.ram(f'{costs}+{2 * game.ram(f"upgrade_ranks+{picked}")}', 2)
-    shift = sym['COST_COLOR_SHIFT']
-    game.poke(f'nuggets+{2 * (cost >> shift)}', cost & ((1 << shift) - 1), 2)
+    for color, count in enumerate(game.cost_in(game.ram('panel_picked'))):
+        if count:
+            game.poke(f'nuggets+{2 * color}', count, 2)
     game.cmd('press enter')
     played(game, 'BUY', 10)
     game.cmd('release enter')

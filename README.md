@@ -70,7 +70,8 @@ The upgrade screen is coming together. Panels hang from a rail, one for
 each upgrade, BALLS, WEIGHT, EFFICIENCY, SPEED and SIZE, and slide left
 and right; the one in the middle lights up, and the button buys it. A
 new game starts with one ball a level, and BALLS adds more. A cost is in
-nuggets of one color, gray unless it says another. Left, right and the
+nuggets of up to three colors, each count by a nugget of its color, in red
+digits while there are too few. Left, right and the
 button repeat while held. The panels have their final frames and font,
 and hang in front of a workshop whose cogs turn and whose vent puffs
 steam, their trolleys riding the rail. Down goes to a train of mine

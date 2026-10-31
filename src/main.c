@@ -19,12 +19,6 @@
 #include "upgrades.h"
 #include "video.h"
 
-/* Steps after a level ends before the menu takes a choice, so a press
-   meant for the last ball doesn't choose. */
-#define LEVEL_OVER_WAIT 60
-/* And after a dwarf, so a second press meant for him doesn't choose. */
-#define TALK_OVER_WAIT 20
-
 /* game_state */
 #define STATE_PLAY 1
 #define STATE_MENU 2    /* the menu when a level ends */
@@ -94,12 +88,11 @@ static void level_play(void)
     DEBUG_LOG("level %u start\n", level);
 }
 
-/* The menu when a level ends, which waits wait steps before it takes a
-   choice. It covers the machine, and the meter's paddle goes down under
-   it. */
-static void end_menu(uint8_t wait)
+/* The menu when a level ends. It covers the machine, and the meter's
+   paddle goes down under it. */
+static void end_menu(void)
 {
-    menu_open(&end_menus[level_how - PLAY_CLEARED], END_UPGRADES - 1, 0, wait);
+    menu_open(&end_menus[level_how - PLAY_CLEARED], END_UPGRADES - 1, 0);
     energy_meter_down();
 }
 
@@ -118,7 +111,7 @@ static void level_end(uint8_t how)
         DEBUG_LOG("coin for level %u\n", level);
     }
     else
-        end_menu(LEVEL_OVER_WAIT);
+        end_menu();
     game_state = STATE_MENU;
     save_write();
 }
@@ -150,7 +143,7 @@ static void new_game(void)
 static void pause_open(void)
 {
     save_write();
-    menu_open(&pause_menu, PAUSE_RESUME - 1, 0, 0);
+    menu_open(&pause_menu, PAUSE_RESUME - 1, 0);
     game_state = STATE_PAUSE;
     DEBUG_LOG("paused\n");
 }
@@ -171,13 +164,13 @@ static void talk_over(void)
     switch (game_state)
     {
     case STATE_MENU:
-        end_menu(TALK_OVER_WAIT);
+        end_menu();
         break;
     case STATE_SHOP:
         shop_resume();
         break;
     case STATE_PAUSE:
-        menu_open(&pause_menu, PAUSE_RESUME - 1, 0, 0);
+        menu_open(&pause_menu, PAUSE_RESUME - 1, 0);
         break;
     case STATE_TITLE:
         title_show();

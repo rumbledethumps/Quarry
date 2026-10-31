@@ -41,14 +41,14 @@
 #define SPRITE(i) (XRAM_MENU_SPRITES + (i) * sizeof(mode5_csprite_t))
 
 /* Each slot of the panels has PANEL_SPRITES sprites, for the panel in
-   it: its picture, then an icon for each of up to 4 currencies of its
-   cost, then the trolley over each of its hangers, which rides the rail. The locks are on plane 1, in the
+   it: its picture, then an icon for each part of its cost, then the
+   trolley over each of its hangers, which rides the rail. The locks are on plane 1, in the
    actors' place: the two halves of the lock that breaks, and the padlocks
    of the carts. The cart picked is open and in the middle, so the locked
    ones are all to its right, and no more than LOCKS of them show. */
-#define PANEL_SPRITES (PICTURE_SPRITES + 4 + PANEL_HANGERS)
+#define PANEL_SPRITES (PICTURE_SPRITES + COST_PARTS + PANEL_HANGERS)
 #define PICTURE_SPRITES 4
-#define TROLLEY_SPRITES (PICTURE_SPRITES + 4) /* a panel's first trolley */
+#define TROLLEY_SPRITES (PICTURE_SPRITES + COST_PARTS) /* a panel's first trolley */
 #define PANEL_SLOT(p) ((p) % PANEL_SLOTS)
 #define PANEL_SPRITE(p, i) SPRITE(PANEL_SLOT(p) * PANEL_SPRITES + (i))
 #define PANEL_AT(p, row) (XRAM_PANELS + (row) * PANEL_MAP_COLS + PANEL_SLOT(p) * PANEL_PITCH)
@@ -74,7 +74,7 @@ _Static_assert(PANEL_SLOTS * PANEL_SPRITES <= MENU_SPRITES, "MENU_SPRITES is too
    PANEL_BORDER cells thick all around, which leaves PANEL_INSIDE cells
    across inside. The rows of the panel cells: the hangers, the top of the
    frame, the picture, the title, the pips, what the next rank does, and
-   two lines of cost. The balls' picture is a count, on a row of its own.
+   the cost. The balls' picture is a count, on a row of its own.
    Each panel's frame is as tall as art/panels.py makes it. */
 #define PANEL_LEFT ((SCREEN_W - PANEL_COLS * 8) / 2)
 #define PANEL_STEP (PANEL_PITCH * 8)
@@ -259,13 +259,6 @@ static void panel_light(uint8_t p, uint8_t on)
     }
 }
 
-static uint8_t can_buy(uint8_t u)
-{
-    uint16_t cost = upgrades_cost(u);
-
-    return cost && nuggets[upgrades_cost_color(u)] >= cost;
-}
-
 /* Upgrade u's value at a rank, as its panel shows it. A burn is in tenths
    of a liter a second. */
 static char *put_value(char *at, uint8_t u, uint8_t rank)
@@ -306,40 +299,89 @@ static void effect_draw(uint8_t p)
     text_draw(p, EFFECT_ROW, text);
 }
 
-/* A count on a row of panel p, centered with the two cells before it,
-   which its icon, a sprite, goes in: in short digits if it is a cost that
-   can't be paid. */
-static void count_draw(uint8_t p, uint8_t row, uint16_t n, uint8_t shorts)
+/* A row of counts across the inside of a panel, centered: each the two
+   cells its icon goes in, a sprite, then its digits, short digits where
+   its bit of shorts is set, with a cell between counts, as many as fit.
+   Puts the row in tiles, and the first of each count's two cells in
+   cells. Returns the counts that fit. */
+static uint8_t counts_row(uint8_t *tiles, uint8_t *cells, const uint16_t *counts, uint8_t n, uint8_t shorts)
 {
-    uint8_t tiles[PANEL_INSIDE];
-    char number[6];
-    uint8_t len = put_number(number, n) - number, i;
+    char digits[6], *end, *d;
+    uint8_t len = 0, fit, at, i;
 
-    tiles[0] = tiles[1] = PANEL_TILE_GLYPH;
-    for (i = 0; i < len; i++)
-        tiles[2 + i] = shorts ? PANEL_TILE_SHORT + number[i] - '0' : glyph(number[i]);
-    row_draw(p, row, tiles, 2 + len);
+    for (fit = 0; fit < n; fit++)
+    {
+        uint8_t w = (fit ? 3 : 2) + (put_number(digits, counts[fit]) - digits);
+        if (len + w > PANEL_INSIDE)
+            break;
+        len += w;
+    }
+    memset(tiles, PANEL_TILE_GLYPH, PANEL_INSIDE);
+    at = (PANEL_INSIDE - len) / 2;
+    for (i = 0; i < fit; i++)
+    {
+        at += i ? 1 : 0;
+        cells[i] = at;
+        at += 2;
+        end = put_number(digits, counts[i]);
+        for (d = digits; d < end; d++)
+            tiles[at++] = shorts >> i & 1 ? PANEL_TILE_SHORT + *d - '0' : glyph(*d);
+    }
+    return fit;
 }
 
-/* The left edge of a count's icon, in the middle of the two cells before
-   it, as count_draw() centers them, on panel p at x. */
-static int16_t count_icon_x(int16_t x, uint16_t n)
+/* The count of balls a level starts with, as counts_row() lays it out.
+   Returns its icon's cell. */
+static uint8_t balls_row(uint8_t *tiles)
 {
-    char number[6];
+    uint16_t balls = upgrades_balls();
+    uint8_t cell;
 
-    return x + (PANEL_BORDER + (PANEL_INSIDE - 2 - (put_number(number, n) - number)) / 2) * 8 + 3;
+    counts_row(tiles, &cell, &balls, 1, 0);
+    return cell;
+}
+
+/* The next rank's cost on panel p, as counts_row() lays it out: a count
+   for each part, in short digits while there are too few of its color.
+   Puts each part's color in colors. Returns the parts that fit. */
+static uint8_t cost_row(uint8_t p, uint8_t *tiles, uint8_t *cells, uint8_t *colors)
+{
+    const uint16_t *cost = upgrades_cost(p);
+    uint16_t counts[COST_PARTS];
+    uint8_t n = 0, shorts = 0, i;
+
+    for (i = 0; i < COST_PARTS; i++)
+        if (COST_COUNT(cost[i]))
+        {
+            counts[n] = COST_COUNT(cost[i]);
+            colors[n] = COST_COLOR(cost[i]);
+            if (nuggets[colors[n]] < upgrades_cost_in(p, colors[n]))
+                shorts |= 1 << n;
+            n++;
+        }
+    return counts_row(tiles, cells, counts, n, shorts);
+}
+
+/* The left edge of the icon in the two cells from cell, inside a panel at
+   x. */
+static int16_t icon_x(int16_t x, uint8_t cell)
+{
+    return x + (PANEL_BORDER + cell) * 8 + 3;
 }
 
 /* A panel's contents: its title, a pip for each rank, filled for each
-   bought, what the next rank does, and its cost, in short digits while it
-   can't be paid, or MAX. The balls' panel has the count of balls over its
-   title. The frame is the map's, as art/panels.py made it. */
+   bought, what the next rank does, and its cost, or MAX. The balls' panel
+   has the count of balls over its title. The frame is the map's, as
+   art/panels.py made it. */
 static void panel_draw(uint8_t p)
 {
-    uint8_t tiles[PANEL_INSIDE], i;
+    uint8_t tiles[PANEL_INSIDE], cells[COST_PARTS], colors[COST_PARTS], i;
 
     if (p == UPGRADE_BALLS)
-        count_draw(p, BALLS_ROW, upgrades_balls(), 0);
+    {
+        balls_row(tiles);
+        row_draw(p, BALLS_ROW, tiles, PANEL_INSIDE);
+    }
     text_draw(p, TITLE_ROW, panel_titles[p]);
     {
         uint8_t max = upgrades_max(p), rank = upgrade_ranks[p];
@@ -349,7 +391,10 @@ static void panel_draw(uint8_t p)
     }
     effect_draw(p);
     if (upgrades_cost(p))
-        count_draw(p, COST_ROW, upgrades_cost(p), !can_buy(p));
+    {
+        cost_row(p, tiles, cells, colors);
+        row_draw(p, COST_ROW, tiles, PANEL_INSIDE);
+    }
     else
         text_draw(p, COST_ROW, "MAX");
 }
@@ -404,6 +449,7 @@ static void pictures_draw(uint8_t p)
 {
     int16_t x = panel_x(p), top = PANEL_Y + PICTURE_ROW * 8;
     uint8_t dim = panel_lit[p] ? 0 : SLED_DIM, i;
+    uint8_t tiles[PANEL_INSIDE], cells[COST_PARTS], colors[COST_PARTS];
 
     for (i = 0; i < PANEL_SPRITES; i++)
         sprite_hide(PANEL_SPRITE(p, i));
@@ -417,7 +463,7 @@ static void pictures_draw(uint8_t p)
     if (p == UPGRADE_BALLS)
     {
         sprite_set(PANEL_SPRITE(p, 0), XRAM_BALL_ICON_IMAGE, XRAM_PALETTE_MAIN, MODE5_SIZE(ICON_SIZE, ICON_SIZE));
-        sprite_move(PANEL_SPRITE(p, 0), count_icon_x(x, upgrades_balls()), PANEL_Y + BALLS_ROW * 8 - 1);
+        sprite_move(PANEL_SPRITE(p, 0), icon_x(x, balls_row(tiles)), PANEL_Y + BALLS_ROW * 8 - 1);
     }
     else if (p == UPGRADE_WIDTH || p == UPGRADE_SPEED)
     {
@@ -435,12 +481,16 @@ static void pictures_draw(uint8_t p)
     }
     if (upgrades_cost(p) && !talk_busy())
     {
-        /* The big nugget of the counts, of the cost's color, before the
-           cost, but not while a dwarf talks, as it would show over his
+        /* The big nugget of the counts, of each part's color, before its
+           count, but not while a dwarf talks, as they would show over his
            bubble. */
-        sprite_set(PANEL_SPRITE(p, PICTURE_SPRITES), XRAM_NUGGET_ICON_IMAGE, XRAM_PALETTE_BRICK(upgrades_cost_color(p)),
-                   MODE5_SIZE(ICON_SIZE, ICON_SIZE));
-        sprite_move(PANEL_SPRITE(p, PICTURE_SPRITES), count_icon_x(x, upgrades_cost(p)), PANEL_Y + COST_ROW * 8 - 1);
+        uint8_t n = cost_row(p, tiles, cells, colors);
+        for (i = 0; i < n; i++)
+        {
+            sprite_set(PANEL_SPRITE(p, PICTURE_SPRITES + i), XRAM_NUGGET_ICON_IMAGE, XRAM_PALETTE_BRICK(colors[i]),
+                       MODE5_SIZE(ICON_SIZE, ICON_SIZE));
+            sprite_move(PANEL_SPRITE(p, PICTURE_SPRITES + i), icon_x(x, cells[i]), PANEL_Y + COST_ROW * 8 - 1);
+        }
     }
 }
 
@@ -791,7 +841,7 @@ static void ask(uint8_t what)
     asking = what;
     input_repeat_stop();
     icons_hide();
-    menu_open(what == ASK_BEGIN ? &begin_menu : &title_menu, 0, 0, 0);
+    menu_open(what == ASK_BEGIN ? &begin_menu : &title_menu, 0, 0);
     DEBUG_LOG("asked %s\n", what == ASK_BEGIN ? "begin" : "title");
 }
 

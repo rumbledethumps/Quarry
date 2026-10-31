@@ -44,6 +44,40 @@ def heads(game):
     return (dwarf_x, dwarf_y, parts), bubble
 
 
+def cost_icons(game):
+    """The cost icons of each slot of the panels, as (how many show, how many
+    its panel's cost has): one for each part of the next rank's cost, as
+    many as fit across the panel as src/shop.c lays the row out, two cells
+    for each icon, then its digits, with a cell between. An empty slot has
+    none."""
+    sym = game.sym
+    icons = []
+    for s in range(sym['PANEL_SLOTS']):
+        p, due, width = game.ram(f'slot_holds+{s}'), 0, 0
+        for count, _ in game.cost(p) if p < sym['PANELS'] else []:
+            width += (3 if due else 2) + len(str(count))
+            if width > sym['PANEL_INSIDE']:
+                break
+            due += 1
+        first = sym['XRAM_MENU_SPRITES'] + (s * sym['PANEL_SPRITES'] + sym['PICTURE_SPRITES']) * sym['SPRITE_BYTES']
+        icons.append((game.shown(first, sym['COST_PARTS']), due))
+    return icons
+
+
+def multi_part(game):
+    """Raises the first upgrade whose panel the upgrade screen opens with in
+    view to a rank whose cost has more than one part, so an icon for each
+    of them shows. Returns which, or None when none of theirs has such a
+    cost."""
+    for p in range(game.sym['PANEL_SLOTS'] - 1):
+        for rank in range(game.ram(f'ranks+{p}')):
+            game.poke(f'upgrade_ranks+{p}', rank)
+            if len(game.cost(p)) > 1:
+                return p
+        game.poke(f'upgrade_ranks+{p}', 0)
+    return None
+
+
 def main():
     game = Game()
     sym = game.sym
@@ -191,22 +225,20 @@ def main():
     game.talk_ok()
     check(game.shows('LEVEL COMPLETE') and game.shown(cursor, 4) == 4, 'then the menu, with the cursor')
     check(game.sprite(coin)[1] == hidden, 'and the big coin gone with him')
-    game.tap('space')
-    check(game.ram('game_state') == sym['STATE_MENU'], 'which takes no choice at once')
     print('ok: the coin, then the menu')
 
     # The upgrade screen: as level 2 unlocks, the foreman says what that
     # means, and the unlock goes on under him. Then another says what the
     # screen is for, in two bubbles. The cursor is off until each OK, and comes back to the rail after.
-    game.run(sym['TALK_OVER_WAIT'])
+    # A panel in view has a cost of several parts, if the tuning has one, so
+    # every icon of it hides and comes back.
+    raised = multi_part(game)
     game.tap('space')  # TO THE DRY
-    game.until('game_state', 'STATE_SHOP', 60)
+    check(game.ram('game_state') == sym['STATE_SHOP'], 'the menu takes the button at once')
     talk('TALK_UNLOCK')
     check(game.shown(cursor, 4) == 0, 'no cursor while he comes in')
-    icon = sym['XRAM_MENU_SPRITES'] + (game.ram('panel_picked') % sym['PANEL_SLOTS'] * sym['PANEL_SPRITES'] +
-                                       sym['PICTURE_SPRITES']) * \
-        sym['SPRITE_BYTES']
-    check(game.shown(icon, 1) == 0, "nor the cost icon that would show over his bubble")
+    icons = cost_icons(game)
+    check(all(shown == 0 for shown, _ in icons), f'nor any cost icon, which would show over his bubble: {icons}')
     game.until('talk_state', 'TALK_READY', 120)
     size = sym['DWARF_ASSET_BYTES']
     dwarves = open(os.path.join(os.path.dirname(os.path.dirname(rom())), 'dwarves.bin'), 'rb').read()
@@ -225,7 +257,11 @@ def main():
     game.talk_ok()
     game.run(2)
     check(game.ram('cursor_on') == sym['ON_RAIL'] and game.shown(cursor, 4) == 4, 'then it comes back to the rail')
-    check(game.shown(icon, 1) == 1, 'and the cost icon comes back')
+    icons = cost_icons(game)
+    check(all(shown == due for shown, due in icons) and any(due for _, due in icons),
+          f"and the cost icons come back, one for each part of each panel's cost: {icons}")
+    if raised is not None:
+        game.poke(f'upgrade_ranks+{raised}', 0)
     print('ok: the unlock, the upgrade screen, and the cursor back')
 
     # The next first clear has a coin but no more of the upgrade screen's.

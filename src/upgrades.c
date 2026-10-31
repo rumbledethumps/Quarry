@@ -7,17 +7,19 @@
 
 /* The tables are used and retained, so they stay whole in RAM for the
    tests to read: without, the compiler and the linker could do without
-   one such as {1, 2, 3}, working its values out instead. */
+   one such as {1, 2, 3}, working its values out instead. A cost of more
+   parts than COST_PARTS fails the build, so none is dropped. */
+#pragma clang diagnostic error "-Wexcess-initializers"
 __attribute__((used, retain)) static const uint8_t ball_counts[] = TUNE_BALLS;
-__attribute__((used, retain)) static const uint16_t ball_costs[] = TUNE_BALL_COSTS;
+__attribute__((used, retain)) static const uint16_t ball_costs[][COST_PARTS] = TUNE_BALL_COSTS;
 __attribute__((used, retain)) static const uint8_t damages[] = TUNE_DAMAGES;
-__attribute__((used, retain)) static const uint16_t damage_costs[] = TUNE_DAMAGE_COSTS;
+__attribute__((used, retain)) static const uint16_t damage_costs[][COST_PARTS] = TUNE_DAMAGE_COSTS;
 __attribute__((used, retain)) static const uint8_t burns[] = TUNE_BURNS;
-__attribute__((used, retain)) static const uint16_t burn_costs[] = TUNE_BURN_COSTS;
+__attribute__((used, retain)) static const uint16_t burn_costs[][COST_PARTS] = TUNE_BURN_COSTS;
 __attribute__((used, retain)) static const uint16_t speeds[] = TUNE_SPEEDS;
-__attribute__((used, retain)) static const uint16_t speed_costs[] = TUNE_SPEED_COSTS;
+__attribute__((used, retain)) static const uint16_t speed_costs[][COST_PARTS] = TUNE_SPEED_COSTS;
 __attribute__((used, retain)) static const uint8_t widths[] = TUNE_WIDTHS;
-__attribute__((used, retain)) static const uint16_t width_costs[] = TUNE_WIDTH_COSTS;
+__attribute__((used, retain)) static const uint16_t width_costs[][COST_PARTS] = TUNE_WIDTH_COSTS;
 __attribute__((used, retain)) static const uint8_t jets[] = TUNE_JETS;
 
 /* The ranks after the first, one for each cost. */
@@ -43,11 +45,11 @@ _Static_assert(BALL_RANKS <= UPGRADE_RANKS_MAX && DAMAGE_RANKS <= UPGRADE_RANKS_
                "Too many ranks: 10 of each upgrade after the first at most.");
 _Static_assert(sizeof jets == sizeof widths, "TUNE_JETS needs the jets of each width.");
 _Static_assert(sizeof widths <= SLEDS, "SLEDS in xram.h needs a sled for each width.");
-_Static_assert(BRICK_GOLD < 1 << (16 - COST_COLOR_SHIFT), "A cost's color fits its top bits.");
+_Static_assert(BRICK_GOLD < 1 << (16 - COST_COLOR_SHIFT), "A part's color fits its top bits.");
 
 /* Each upgrade's costs, its ranks after the first, and its name for the
    log. */
-static const uint16_t *const costs[UPGRADES] = {
+static const uint16_t (*const costs[UPGRADES])[COST_PARTS] = {
     [UPGRADE_BALLS] = ball_costs,   [UPGRADE_DAMAGE] = damage_costs, [UPGRADE_EFFICIENCY] = burn_costs,
     [UPGRADE_SPEED] = speed_costs, [UPGRADE_WIDTH] = width_costs,
 };
@@ -70,36 +72,53 @@ uint8_t upgrades_max(uint8_t upgrade)
     return ranks[upgrade];
 }
 
-/* The next rank's cost as tuning.h has it, with its color, or 0 at the
+/* The parts of the next rank's cost, as tuning.h has them, or 0 at the
    highest rank. */
-static uint16_t next_cost(uint8_t upgrade)
+const uint16_t *upgrades_cost(uint8_t upgrade)
 {
     uint8_t rank = upgrade_ranks[upgrade];
 
     return rank < ranks[upgrade] ? costs[upgrade][rank] : 0;
 }
 
-/* The nuggets the next rank costs, 0 at the highest rank. */
-uint16_t upgrades_cost(uint8_t upgrade)
+/* The nuggets of a color the next rank costs, in all its parts. */
+uint16_t upgrades_cost_in(uint8_t upgrade, uint8_t color)
 {
-    return COST_COUNT(next_cost(upgrade));
+    const uint16_t *cost = upgrades_cost(upgrade);
+    uint16_t n = 0;
+    uint8_t i;
+
+    if (cost)
+        for (i = 0; i < COST_PARTS; i++)
+            if (COST_COLOR(cost[i]) == color)
+                n += COST_COUNT(cost[i]);
+    return n;
 }
 
-/* The color of the nuggets the next rank costs. */
-uint8_t upgrades_cost_color(uint8_t upgrade)
+/* Whether the next rank can be bought: there is one, and nuggets enough
+   of every color it costs. */
+static uint8_t can_buy(uint8_t upgrade)
 {
-    return COST_COLOR(next_cost(upgrade));
+    uint8_t color;
+
+    if (!upgrades_cost(upgrade))
+        return 0;
+    for (color = 0; color < BRICK_COLORS; color++)
+        if (nuggets[color] < upgrades_cost_in(upgrade, color))
+            return 0;
+    return 1;
 }
 
 /* Buys the next rank if there are nuggets enough. Returns whether it did. */
 uint8_t upgrades_buy(uint8_t upgrade)
 {
-    uint16_t cost = upgrades_cost(upgrade);
-    uint8_t color = upgrades_cost_color(upgrade);
+    const uint16_t *cost = upgrades_cost(upgrade);
+    uint8_t i;
 
-    if (!cost || nuggets[color] < cost)
+    if (!can_buy(upgrade))
         return 0;
-    nuggets[color] -= cost;
+    for (i = 0; i < COST_PARTS; i++)
+        nuggets[COST_COLOR(cost[i])] -= COST_COUNT(cost[i]);
     upgrade_ranks[upgrade]++;
     DEBUG_LOG("bought %s %u\n", names[upgrade], upgrade_ranks[upgrade]);
     return 1;

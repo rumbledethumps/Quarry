@@ -48,23 +48,26 @@
 
 /* Upgrades, paid in nuggets, in the order of their panels. Each rank of
    an upgrade has its value, starting with the value before any upgrade,
-   and each rank after the first has its cost, in gray nuggets, or in
-   another color as RED(4) is 4 red. The build draws a sled for each
+   and each rank after the first has its cost, of up to three counts of
+   nuggets, each gray unless it says another color, as RED(4) is 4 red:
+   {25, RED(5)} is 25 gray and 5 red. The build draws a sled for each
    width, with its jets. */
 #define RED(n) ((n) | (unsigned)BRICK_RED << COST_COLOR_SHIFT)
 #define GREEN(n) ((n) | (unsigned)BRICK_GREEN << COST_COLOR_SHIFT)
 #define BLUE(n) ((n) | (unsigned)BRICK_BLUE << COST_COLOR_SHIFT)
 #define GOLD(n) ((n) | (unsigned)BRICK_GOLD << COST_COLOR_SHIFT)
 #define TUNE_BALLS {1, 2, 3, 4, 5, 6} /* at the start of a level */
-#define TUNE_BALL_COSTS {1, 20, 30, 40, 50}
+#define TUNE_BALL_COSTS {{1}, {20}, {25, RED(25)}, {30, GREEN(30)}, {50, RED(50), GREEN(50)}}
 #define TUNE_DAMAGES {1, 2, 3, 4, 5, 6, 7}  /* a brick's hit */
-#define TUNE_DAMAGE_COSTS {RED(4), 20, 40, 60, 80, 100}
+#define TUNE_DAMAGE_COSTS {{RED(1)}, {RED(10)}, {RED(25)}, {GREEN(1)}, {GREEN(10)}, {GREEN(25)}}
 #define TUNE_BURNS {50, 40, 35, 31, 28, 25, 23, 21, 19, 17, 15} /* 1/10 L a second */
-#define TUNE_BURN_COSTS {5, 10, 15, 20, 25, 30, 35, 40, 45, 50}
+#define TUNE_BURN_COSTS {{5}, {10}, {25}, {25, RED(5)}, {25, RED(10)}, {25, RED(25)}, \
+                         {25, RED(25), GREEN(5)}, {25, RED(25), GREEN(10)}, {25, RED(25), GREEN(25)}, \
+                         {25, RED(25), GREEN(25)}}
 #define TUNE_SPEEDS {100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150} /* px a second */
-#define TUNE_SPEED_COSTS {6, 10, 16, 24, 34, 46, 60, 76, 94, 114}
+#define TUNE_SPEED_COSTS {{6}, {10}, {16}, {24}, {34}, {46}, {60}, {76}, {94}, {114}}
 #define TUNE_WIDTHS {17, 20, 23, 26, 29, 32, 35, 38, 41, 44, 47} /* px, 64 at most */
-#define TUNE_WIDTH_COSTS {3, 4, 5, 6, 7, 9, 11, 13, 15, 17}
+#define TUNE_WIDTH_COSTS {{3}, {4}, {5}, {6}, {7}, {9}, {11}, {13}, {15}, {17}}
 #define TUNE_JETS {1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3} /* visible jets, 3 at most */
 
 /* The paddle is cut into six zones of equal width. The two in the center
