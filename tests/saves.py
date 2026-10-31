@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'
 from rp6502 import Symbols  # noqa: E402
 
 SAVE = 'quarry.save'
-TAG = b'QRY8'
+TAG = b'QRY9'
 SYM = Symbols(os.path.splitext(rom())[0] + '.sym')
 COLORS = SYM['BRICK_COLORS']
 NO_NUGGETS = (0,) * COLORS
@@ -205,20 +205,26 @@ def main():
     check(look() == cave, 'with its curtains, texture and frame')
     print('ok: Replay and Restart')
 
-    # A purchase on the upgrade screen saves: a ball more, on the first
-    # panel, with nuggets enough of each color it costs, and 20 over. Esc
-    # there asks to go back to the title, which has the save's panels now.
+    # A purchase on the upgrade screen saves: a ball more, on the BALLS
+    # panel, wherever it is on the rail, with nuggets enough of each color
+    # it costs, and 20 over. Esc there asks to go back to the title, which
+    # has the save's panels now.
     game.ready()
     game.paused_poke(drop)
     game.wait('out of balls', 3000)
     game.menu_choose('TO THE DRY')
     game.talk_ok()
-    need = game.cost_in(game.sym['UPGRADE_BALLS'])
+    balls = game.sym['UPGRADE_BALLS']
+    picked = game.ram('panel_picked')
+    for _ in range(abs(balls - picked)):
+        game.tap('right' if balls > picked else 'left')
+    check(game.ram('panel_picked') == balls, 'the rail moves to the BALLS panel')
+    need = game.cost_in(balls)
     for color, count in enumerate(need):
         if count:
             game.poke(f'nuggets+{2 * color}', count + 20, 2)
     left = tuple(n - need[c] for c, n in enumerate(nuggets(game)))
-    bought = tuple(int(u == game.sym['UPGRADE_BALLS']) for u in range(game.sym['UPGRADES']))
+    bought = tuple(int(u == balls) for u in range(game.sym['UPGRADES']))
     game.tap('enter')
     game.wait('bought balls 1', 10)
     check(read_save(folder)[:3] == (left, 0, bought), 'buying saves the upgrade bought')

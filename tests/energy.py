@@ -140,21 +140,24 @@ def check_bubbles(game):
     # The ball, rising slowly, can't come back down to the sled to send up
     # another bubble while these pop, however wide the sled and the level.
     game.paused_poke([('ball_vx', 0, 2), ('ball_vy', -64, 2)])
+    burn = bought(game, 'burns', 'UPGRADE_EFFICIENCY')
     highest = 0
     for _ in range(sym['GLASS_H'] + 40):
+        # A read a step, as it drains the burn, once it has drawn the gauge.
+        # A frame can end while the game draws, and a read there catches a
+        # sprite half written, a byte at a time: a drop's y as it hides, or
+        # the surface fallen a row with its drops not yet moved.
+        game.until('energy', (game.ram('energy') - burn) & 255, 2)
         tops, drops = bubbles(game), bubbles(game, 'XRAM_DROP_IMAGE')
         if not tops and not drops:
             break
         surface = game.sprite('XRAM_SURFACE_SPRITE')[1] + 1
         check(not tops or min(tops) > surface, f'no bubble rises past the surface, at {surface}: {tops}')
-        # A read can land part way through the gauge's drawing, when the
-        # surface has fallen a row and its drops have not yet moved.
-        check(all(surface - sym['DROP_PEAK'] - 1 <= y < surface for y in drops),
+        check(all(surface - sym['DROP_PEAK'] <= y < surface for y in drops),
               f'a drop hops up to {sym["DROP_PEAK"]} px over the surface, at {surface}: {drops}')
         highest = max([highest] + [surface - y for y in drops])
-        game.run()
     check(not bubbles(game) and not bubbles(game, 'XRAM_DROP_IMAGE'), 'every bubble pops and its drop falls back')
-    check(sym['DROP_PEAK'] <= highest <= sym['DROP_PEAK'] + 1, f'the drops hop {sym["DROP_PEAK"]} px, saw {highest}')
+    check(highest == sym['DROP_PEAK'], f'the drops hop {sym["DROP_PEAK"]} px, saw {highest}')
     print(f'ok: {sym["BUBBLES"]} bubbles at most, each up to the surface, where it throws up a drop')
 
 

@@ -4,9 +4,9 @@
 #include <stdint.h>
 
 /* The upgrades, in the order of their panels on the rail. */
-#define UPGRADE_BALLS 0
-#define UPGRADE_DAMAGE 1
-#define UPGRADE_EFFICIENCY 2
+#define UPGRADE_EFFICIENCY 0
+#define UPGRADE_BALLS 1
+#define UPGRADE_DAMAGE 2
 #define UPGRADE_SPEED 3
 #define UPGRADE_WIDTH 4
 #define UPGRADES 5

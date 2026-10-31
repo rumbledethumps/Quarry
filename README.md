@@ -67,7 +67,7 @@ framed in marching caution tape, and the upgrade screen's holographic
 cursor picks in them.
 
 The upgrade screen is coming together. Panels hang from a rail, one for
-each upgrade, BALLS, WEIGHT, EFFICIENCY, SPEED and SIZE, and slide left
+each upgrade, EFFICIENCY, BALLS, WEIGHT, SPEED and SIZE, and slide left
 and right; the one in the middle lights up, and the button buys it. A
 new game starts with one ball a level, and BALLS adds more. A cost is in
 nuggets of up to three colors, each count by a nugget of its color, in red

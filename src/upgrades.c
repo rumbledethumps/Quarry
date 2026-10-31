@@ -50,17 +50,17 @@ _Static_assert(BRICK_GOLD < 1 << (16 - COST_COLOR_SHIFT), "A part's color fits i
 /* Each upgrade's costs, its ranks after the first, and its name for the
    log. */
 static const uint16_t (*const costs[UPGRADES])[COST_PARTS] = {
-    [UPGRADE_BALLS] = ball_costs,   [UPGRADE_DAMAGE] = damage_costs, [UPGRADE_EFFICIENCY] = burn_costs,
-    [UPGRADE_SPEED] = speed_costs, [UPGRADE_WIDTH] = width_costs,
+    [UPGRADE_EFFICIENCY] = burn_costs, [UPGRADE_BALLS] = ball_costs, [UPGRADE_DAMAGE] = damage_costs,
+    [UPGRADE_SPEED] = speed_costs,     [UPGRADE_WIDTH] = width_costs,
 };
 __attribute__((used, retain)) static const uint8_t ranks[UPGRADES] = {
-    [UPGRADE_BALLS] = BALL_RANKS,   [UPGRADE_DAMAGE] = DAMAGE_RANKS, [UPGRADE_EFFICIENCY] = BURN_RANKS,
-    [UPGRADE_SPEED] = SPEED_RANKS, [UPGRADE_WIDTH] = WIDTH_RANKS,
+    [UPGRADE_EFFICIENCY] = BURN_RANKS, [UPGRADE_BALLS] = BALL_RANKS, [UPGRADE_DAMAGE] = DAMAGE_RANKS,
+    [UPGRADE_SPEED] = SPEED_RANKS,     [UPGRADE_WIDTH] = WIDTH_RANKS,
 };
 #ifndef NDEBUG
 static const char *const names[UPGRADES] = {
-    [UPGRADE_BALLS] = "balls", [UPGRADE_DAMAGE] = "damage", [UPGRADE_EFFICIENCY] = "efficiency",
-    [UPGRADE_SPEED] = "speed", [UPGRADE_WIDTH] = "width",
+    [UPGRADE_EFFICIENCY] = "efficiency", [UPGRADE_BALLS] = "balls", [UPGRADE_DAMAGE] = "damage",
+    [UPGRADE_SPEED] = "speed",           [UPGRADE_WIDTH] = "width",
 };
 #endif
 

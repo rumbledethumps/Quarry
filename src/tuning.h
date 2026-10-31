@@ -56,19 +56,19 @@
 #define GREEN(n) ((n) | (unsigned)BRICK_GREEN << COST_COLOR_SHIFT)
 #define BLUE(n) ((n) | (unsigned)BRICK_BLUE << COST_COLOR_SHIFT)
 #define GOLD(n) ((n) | (unsigned)BRICK_GOLD << COST_COLOR_SHIFT)
+#define TUNE_BURNS {50, 40, 35, 30, 26, 22, 18, 16, 14, 12, 10} /* 1/10 L a second */
+#define TUNE_BURN_COSTS {{5}, {10}, {20}, {25}, {25, RED(5)}, {25, RED(10)}, {25, RED(25)}, \
+                         {25, RED(25), GREEN(5)}, {25, RED(25), GREEN(10)}, {25, RED(25), GREEN(25)}}
 #define TUNE_BALLS {1, 2, 3, 4, 5, 6} /* at the start of a level */
 #define TUNE_BALL_COSTS {{1}, {20}, {25, RED(25)}, {30, GREEN(30)}, {50, RED(50), GREEN(50)}}
 #define TUNE_DAMAGES {1, 2, 3, 4, 5, 6, 7}  /* a brick's hit */
 #define TUNE_DAMAGE_COSTS {{RED(1)}, {RED(10)}, {RED(25)}, {GREEN(1)}, {GREEN(10)}, {GREEN(25)}}
-#define TUNE_BURNS {50, 40, 35, 31, 28, 25, 23, 21, 19, 17, 15} /* 1/10 L a second */
-#define TUNE_BURN_COSTS {{5}, {10}, {25}, {25, RED(5)}, {25, RED(10)}, {25, RED(25)}, \
-                         {25, RED(25), GREEN(5)}, {25, RED(25), GREEN(10)}, {25, RED(25), GREEN(25)}, \
-                         {25, RED(25), GREEN(25)}}
-#define TUNE_SPEEDS {100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150} /* px a second */
-#define TUNE_SPEED_COSTS {{6}, {10}, {16}, {24}, {34}, {46}, {60}, {76}, {94}, {114}}
-#define TUNE_WIDTHS {17, 20, 23, 26, 29, 32, 35, 38, 41, 44, 47} /* px, 64 at most */
-#define TUNE_WIDTH_COSTS {{3}, {4}, {5}, {6}, {7}, {9}, {11}, {13}, {15}, {17}}
-#define TUNE_JETS {1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3} /* visible jets, 3 at most */
+#define TUNE_SPEEDS {100, 110, 120, 130, 140, 150} /* px a second */
+#define TUNE_SPEED_COSTS {{10}, {25}, {RED(10)}, {RED(25)}, {GREEN(10)}}
+#define TUNE_WIDTHS {17, 20, 23, 26, 29, 32, 35, 38} /* px, 64 at most */
+#define TUNE_WIDTH_COSTS {{10}, {25}, {25, RED(5)}, {25, RED(10)}, {25, GREEN(5)}, {25, GREEN(10)}, \
+                          {25, RED(25), GREEN(25)}}
+#define TUNE_JETS {1, 1, 1, 2, 2, 2, 2, 3} /* visible jets, 3 at most */
 
 /* The paddle is cut into six zones of equal width. The two in the center
    send the ball up steeply, the zones beside them at 45 degrees, and the

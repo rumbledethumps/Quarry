@@ -111,7 +111,7 @@ _Static_assert(PANEL_LAYOUTS == PANELS, "art/panels.py needs a layout for each p
 
 /* A panel for each upgrade. */
 static const char *const panel_titles[PANELS] = {
-    [UPGRADE_BALLS] = "BALLS", [UPGRADE_DAMAGE] = "WEIGHT", [UPGRADE_EFFICIENCY] = "EFFICIENCY",
+    [UPGRADE_EFFICIENCY] = "EFFICIENCY", [UPGRADE_BALLS] = "BALLS", [UPGRADE_DAMAGE] = "WEIGHT",
     [UPGRADE_SPEED] = "SPEED", [UPGRADE_WIDTH] = "SIZE",
 };
 
@@ -284,7 +284,7 @@ static void effect_draw(uint8_t p)
     char *at = text;
     uint8_t rank = upgrade_ranks[p], max = rank >= upgrades_max(p);
     static const char *const units[UPGRADES] = {
-        [UPGRADE_BALLS] = " BALLS", [UPGRADE_DAMAGE] = " DAMAGE", [UPGRADE_EFFICIENCY] = " L/S",
+        [UPGRADE_EFFICIENCY] = " L/S", [UPGRADE_BALLS] = " BALLS", [UPGRADE_DAMAGE] = " DAMAGE",
         [UPGRADE_SPEED] = " PX/S", [UPGRADE_WIDTH] = " PX",
     };
 
